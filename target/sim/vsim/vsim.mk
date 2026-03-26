@@ -45,16 +45,16 @@ vsim-compile: $(VSIM_DIR)/compile.tcl $(PB_HW_ALL)
 	$(VSIM) -c $(VSIM_FLAGS) -do "source $<; quit"
 
 $(VSIM_DIR)/compile.tcl: $(BENDER_YML) $(BENDER_LOCK)
-	bender script vsim --compilation-mode common $(COMMON_TARGS) $(SIM_TARGS) --vlog-arg="$(VLOG_ARGS)"> $@
+	$(BENDER) script vsim --compilation-mode common $(COMMON_TARGS) $(SIM_TARGS) --vlog-arg="$(VLOG_ARGS)"> $@
 	echo 'vlog -work $(VSIM_WORK) "$(realpath $(CHS_ROOT))/target/sim/src/elfloader.cpp" -ccflags "-std=c++11"' >> $@
 
 vsim-run:
-	$(VSIM) $(VSIM_FLAGS) $(VSIM_FLAGS_GUI) $(TB_DUT) -do "log -r /*"
+	cd $(SIM_DIR) && $(VSIM) $(VSIM_FLAGS) $(VSIM_FLAGS_GUI) $(TB_DUT) -do "log -r /*"
 
 vsim-run-batch:
-	$(VSIM) -c $(VSIM_FLAGS) $(TB_DUT) -do "run -all; quit"
+	cd $(SIM_DIR) && $(VSIM) -c $(VSIM_FLAGS) $(TB_DUT) -do "run -all; quit"
 
 vsim-run-batch-verify: vsim-run-batch
 ifdef VERIFY_PY
-	$(VERIFY_PY) placeholder $(SN_BINARY) --no-ipc --memdump l2mem.bin --memaddr 0x70000000
+	cd $(SIM_DIR) && $(VERIFY_PY) placeholder $(SN_BINARY) --no-ipc --memdump l2mem.bin --memaddr 0x70000000
 endif

@@ -6,6 +6,9 @@ include:
   - local: .gitlab/common.yml
   - local: .gitlab/sw-tests.yml
 
+default:
+  interruptible: true
+
 stages:
   - init
   - build
@@ -57,6 +60,9 @@ chs-sw:
 
 vsim-compile:
   stage: build
+  extends:
+    - .cache-deps
+    - .init-env
   needs:
     - generate-rtl
   variables:
@@ -100,6 +106,29 @@ sim-vsim:
   artifacts:
     paths:
       - transcript
+
+#####################
+# Run Experiments   #
+#####################
+
+sim-exps:
+  stage: run
+  extends:
+    - .cache-deps
+    - .init-env
+  needs:
+    - chs-sw
+    - sn-sw
+    - vsim-compile
+  parallel:
+    matrix:
+      - EXPERIMENT: multicast
+      - EXPERIMENT: reduction
+      - EXPERIMENT: barrier
+  script:
+    - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j
+  artifacts:
+    expire_in: 7 days
 
 ###################
 # Physical Design #

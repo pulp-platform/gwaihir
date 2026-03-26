@@ -1,0 +1,26 @@
+// Copyright 2025 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+<%
+    def pb_cluster_idx(c, r):
+        return c * 4 + r
+
+    n_rows = experiment['n_rows']
+%>
+[
+% for r in range(n_rows):
+    % for c in range(4):
+    {
+        "thread": "${f'hart_{1 + pb_cluster_idx(c, r) * 9 + 8}'}",
+        "roi": [
+            // First iteration
+            {"idx": 2, "label": "row reduction"},
+            {"idx": 4, "label": "column reduction"},
+            // Second iteration
+            {"idx": 8, "label": "row reduction"},
+            {"idx": 10, "label": "column reduction"},
+        ]
+    },
+    % endfor
+% endfor
+]

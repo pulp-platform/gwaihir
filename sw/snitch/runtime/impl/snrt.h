@@ -7,6 +7,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Additional optional configurations to change the runtime behaviour
+// #define SNRT_ENABLE_NARROW_REDUCTION
+
 // Configuration- and system-specific definitions (HAL)
 #include "pb_addrmap.h"
 #include "snitch_cluster_cfg.h"
@@ -52,7 +55,6 @@ typedef snitch_cluster__stride40000_t snitch_cluster_t;
 #include "sync.h"
 #include "team.h"
 #include "types.h"
-#include "pb_team.h"
 
 // Accelerators
 #include "datamover/archi_datamover.h"
@@ -61,3 +63,7 @@ typedef snitch_cluster__stride40000_t snitch_cluster_t;
 #include "redmule/archi_redmule.h"
 #include "redmule/hal_redmule.h"
 #include "redmule/redmule_utils.h"
+
+// Picobello specific
+#include "pb_team.h"
+#include "pb_sync.h"

@@ -22,8 +22,9 @@ tabulate
 
 # Miscellaneous requirements
 hjson  # for reggen
+seaborn  # for experiments
 
 # For peakrdl
 peakrdl
-peakrdl-rawheader @ git+https://github.com/colluca/PeakRDL-rawheader.git@7b8dbc9ad5854dc1cdaf36d4ea024c29ffb00a4c
+peakrdl-rawheader==0.1.3
 peakrdl-markdown

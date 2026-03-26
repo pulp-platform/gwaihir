@@ -47,32 +47,41 @@ module fhg_spu_tile
 
   floo_req_t [Eject:North] router_floo_req_out, router_floo_req_in;
   floo_rsp_t [Eject:North] router_floo_rsp_out, router_floo_rsp_in;
-  floo_wide_t [Eject:North] router_floo_wide_out, router_floo_wide_in;
+  floo_wide_t [Eject:North] router_floo_wide_in;
+  floo_wide_t [Eject:North] router_floo_wide_out;
 
   floo_nw_router #(
-    .AxiCfgN     (AxiCfgN),
-    .AxiCfgW     (AxiCfgW),
-    .RouteAlgo   (RouteCfg.RouteAlgo),
-    .NumRoutes   (5),
-    .InFifoDepth (2),
-    .OutFifoDepth(2),
-    .id_t        (id_t),
-    .hdr_t       (hdr_t),
-    .floo_req_t  (floo_req_t),
-    .floo_rsp_t  (floo_rsp_t),
-    .floo_wide_t (floo_wide_t)
+    .AxiCfgN       (AxiCfgN),
+    .AxiCfgW       (AxiCfgW),
+    .RouteAlgo     (RouteCfg.RouteAlgo),
+    .NumRoutes     (5),
+    .InFifoDepth   (2),
+    .OutFifoDepth  (2),
+    .id_t          (id_t),
+    .hdr_t         (hdr_t),
+    .floo_req_t    (floo_req_t),
+    .floo_rsp_t    (floo_rsp_t),
+    .floo_wide_t   (floo_wide_t),
+    .WideRwDecouple(WideRwDecouple),
+    .VcImpl        (VcImpl)
   ) i_router (
     .clk_i,
     .rst_ni,
     .test_enable_i,
     .id_i,
-    .id_route_map_i('0),
-    .floo_req_i    (router_floo_req_in),
-    .floo_rsp_o    (router_floo_rsp_out),
-    .floo_req_o    (router_floo_req_out),
-    .floo_rsp_i    (router_floo_rsp_in),
-    .floo_wide_i   (router_floo_wide_in),
-    .floo_wide_o   (router_floo_wide_out)
+    .id_route_map_i      ('0),
+    .floo_req_i          (router_floo_req_in),
+    .floo_rsp_o          (router_floo_rsp_out),
+    .floo_req_o          (router_floo_req_out),
+    .floo_rsp_i          (router_floo_rsp_in),
+    .floo_wide_i         (router_floo_wide_in),
+    .floo_wide_o         (router_floo_wide_out),
+    // Wide Reduction offload port
+    .offload_wide_req_o  (),
+    .offload_wide_rsp_i  ('0),
+    // Narrow Reduction offload port
+    .offload_narrow_req_o(),
+    .offload_narrow_rsp_i('0)
   );
 
   assign floo_req_west_o            = router_floo_req_out[West];
@@ -87,6 +96,12 @@ module fhg_spu_tile
   assign router_floo_rsp_in[South]  = '0;  // No South port in this tile
   assign router_floo_rsp_in[East]   = '0;  // No East port in this tile
   assign router_floo_rsp_in[North]  = floo_rsp_north_i;
+  // assign floo_wide_west_o.valid     = router_floo_wide_out[West].valid;
+  // assign floo_wide_west_o.ready     = router_floo_wide_out[West].ready;
+  // assign floo_wide_west_o.wide      = router_floo_wide_out[West].wide[0];
+  // assign floo_wide_north_o.valid    = router_floo_wide_out[North].valid;
+  // assign floo_wide_north_o.ready    = router_floo_wide_out[North].ready;
+  // assign floo_wide_north_o.wide     = router_floo_wide_out[North].wide[0];
   assign floo_wide_west_o           = router_floo_wide_out[West];
   assign floo_wide_north_o          = router_floo_wide_out[North];
   assign router_floo_wide_in[West]  = floo_wide_west_i;

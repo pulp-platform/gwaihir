@@ -248,7 +248,7 @@ package picobello_pkg;
   function automatic floo_pkg::route_cfg_t gen_nomcast_route_cfg();
     floo_pkg::route_cfg_t ret = floo_picobello_noc_pkg::RouteCfg;
     // Disable multicast for non-cluster tiles
-    ret.EnMultiCast = 1'b0;
+    ret.CollectiveCfg = CollectiveDefaultCfg;
     return ret;
   endfunction
 

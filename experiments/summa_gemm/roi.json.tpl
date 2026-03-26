@@ -1,0 +1,1 @@
+../../sw/snitch/apps/power_benchmarks/roi.json
