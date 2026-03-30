@@ -1,0 +1,52 @@
+# Copyright 2025 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+[project]
+name = "picobello"
+version = "0.1.0"
+description = "whatever it means"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "floogen>=0.8.0",
+    "peakrdl>=1.5.0",
+    "peakrdl-rawheader>=0.2.4",
+    "snitch[kernels]",
+    "cheshire"
+]
+
+[dependency-groups]
+dev = [
+    "reuse>=6.2.0",
+]
+
+[tool.uv.workspace]
+members = [
+    # To locally edit floogen, run `bender clone floo_noc` and add:
+    #   "working_dir/floo_noc",
+    # Note: .deps/floo_noc cannot be used here because uv_build does not
+    # support symlinks as workspace members (https://github.com/astral-sh/uv/issues/15243).
+    ".deps/snitch_cluster",
+    ".deps/cheshire",
+]
+
+[tool.uv.sources]
+# To locally edit floogen, also uncomment:
+#   floogen = { workspace = true, editable = true }
+snitch = { workspace = true, editable = true }
+cheshire = { workspace = true }
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[build-system]
+requires = ["uv_build>=0.6,<1"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "experiments"

@@ -17,6 +17,10 @@ stages:
 # Sources the environment variables for the IIS environment
 .init-env:
   before_script:
+    # Hard link cached python packages since the UV cache directory
+    # is configured to be on the same filesystem as the build directory in the CI.
+    - export UV_CACHE_DIR=$CI_BUILDS_DIR/../cache/uv
+    - export UV_LINK_MODE=hardlink
     - source iis-env.sh
 
 ##################
@@ -26,6 +30,7 @@ stages:
 init-deps:
   stage: init
   extends:
+    - .init-env
     - .init-deps-tpl
   artifacts:
     paths:
@@ -65,8 +70,8 @@ vsim-compile:
     - .init-env
   needs:
     - generate-rtl
-  variables:
-    FLOO_GEN_ARGS: --no-format
+  extends:
+    - .init-env
   script:
     - make vsim-compile | tee compile.log 2>&1
     - '! grep "\*\* Error" compile.log'
@@ -136,6 +141,7 @@ sim-exps:
 
 subpipe:
   stage: build
+  interruptible: true
   needs:
     - init-deps
   trigger:

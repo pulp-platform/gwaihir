@@ -4,7 +4,7 @@
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PD_COMMIT: "65800b0f2d1c7d331feaffbd83bfe2d8086453e0"
+  PD_COMMIT: "4828594842a7955a8d3a3077ac6454443565da27"
   SPU_COMMIT: "c2e8815487bd713624d74ef3e3e0465196b6d67f"
 
 # Check the cache for bender and python dependencies
@@ -13,31 +13,17 @@ variables:
     key:
       files:
         - Bender.lock
-        - requirements.txt
     paths:
       - .bender
-      - .cache/pip
     policy: pull
 
 # Update the cache with bender and python dependencies
 .init-deps-tpl:
   script:
-    # Check out the biggest bender dependencies serially
-    # to avoid rate limiting issues
-    # TODO(fischeti): Remove once bender supports rate limiting
-    - bender path cheshire
-    - bender path cva6
-    - bender path ibex
-    - bender path floo_noc
-    - bender path idma
-    - bender path cluster_interconnect
-    - bender path snitch_cluster
-    # Collect bender sourcess
-    - bender checkout
-    # Install the python venv
-    - source iis-env.sh
     # Initialize the PD repository
     - make init-pd
+    # Collect bender sources
+    - bender checkout
   cache:
     # inherit all global cache settings
     <<: *global_cache

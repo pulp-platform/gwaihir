@@ -34,15 +34,15 @@ L2_TILES = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.l2_spm.num 2>/dev/
 BENDER_YML = $(PB_ROOT)/Bender.yml
 BENDER_LOCK = $(PB_ROOT)/Bender.lock
 
-$(PB_GEN_DIR):
-	mkdir -p $@
-
 ################
 # Bender flags #
 ################
 
 COMMON_TARGS += -t rtl -t cva6 -t cv64a6_imafdchsclic_sv39_wb -t snitch_cluster -t pb_gen_rtl
 SIM_TARGS += -t simulation -t test -t idma_test
+
+# Get rid of non-existing PD path dependency warnings
+BENDER += --suppress W22
 
 #############
 # systemRDL #
@@ -72,7 +72,7 @@ $(PB_GEN_DIR)/pb_addrmap.h: $(PB_GEN_DIR)/picobello_addrmap.rdl $(PB_RDL_ALL)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
 
 $(PB_GEN_DIR)/pb_addrmap.svh: $(PB_RDL_ALL)
-	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh
+	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
 
 PB_RDL_HW_ALL += $(PB_GEN_DIR)/pb_soc_regs.sv
 PB_RDL_HW_ALL += $(PB_GEN_DIR)/pb_soc_regs_pkg.sv
@@ -111,7 +111,7 @@ include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/rtl.mk
 
 $(SN_CFG): $(FLOO_CFG)
-	@sed -i 's/nr_clusters: .*/nr_clusters: $(SN_CLUSTERS),/' $<
+	@sed -i 's/nr_clusters: .*/nr_clusters: $(SN_CLUSTERS),/' $@
 
 .PHONY: sn-hw-clean sn-hw-all
 
@@ -132,7 +132,7 @@ ifeq ($(shell $(VERIBLE_FMT) --version >/dev/null 2>&1 && echo OK),OK)
 endif
 
 floo-hw-all: $(PB_GEN_DIR)/floo_picobello_noc_pkg.sv
-$(PB_GEN_DIR)/floo_picobello_noc_pkg.sv: $(FLOO_CFG) | $(PB_GEN_DIR)
+$(PB_GEN_DIR)/floo_picobello_noc_pkg.sv: $(FLOO_CFG)
 	$(FLOO_GEN) pkg -c $(FLOO_CFG) -o $(PB_GEN_DIR) $(FLOO_GEN_FLAGS)
 
 
@@ -213,26 +213,11 @@ $(call sn_include_deps)
 # Misc #
 ########
 
-BASE_PYTHON ?= python
-PIP_CACHE_DIR ?= $(PB_ROOT)/.cache/pip
 
-.PHONY: dvt-flist python-venv python-venv-clean verible-fmt
+.PHONY: dvt-flist verible-fmt
 
 dvt-flist:
 	$(BENDER) script flist-plus $(COMMON_TARGS) $(SIM_TARGS) > .dvt/default.build
-
-python-venv: .venv
-.venv:
-	$(BASE_PYTHON) -m venv $@
-	. $@/bin/activate && \
-	python -m pip install --upgrade pip "setuptools<81" && \
-	python -m pip install --no-build-isolation --cache-dir $(PIP_CACHE_DIR) -r requirements.txt && \
-	python -m pip install --cache-dir $(PIP_CACHE_DIR) $(shell $(BENDER) path floo_noc) --no-deps && \
-	python -m pip install --cache-dir $(PIP_CACHE_DIR) -e "$(shell $(BENDER) path snitch_cluster)[kernels]"
-
-python-venv-clean:
-	rm -rf .venv
-	rm -rf $(PIP_CACHE_DIR)
 
 verible-fmt:
 	$(VERIBLE_FMT) $(VERIBLE_FMT_ARGS) $(shell $(BENDER) script flist $(SIM_TARGS) --no-deps)
