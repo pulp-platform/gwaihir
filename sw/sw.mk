@@ -16,7 +16,6 @@ PB_INCDIR = $(PB_SW_DIR)/include
 PB_GEN_DIR = $(PB_ROOT)/.generated
 
 -include $(PD_DIR)/sw/sw.mk
--include $(SPU_DIR)/sw/sw.mk
 
 ####################
 ## Snitch Cluster ##

@@ -208,11 +208,8 @@ package picobello_pkg;
   endfunction
 
   // localparam dummy_idx_t DummyIdx = get_dummy_idx(MeshMap, MeshDim.x, MeshDim.y);
-  localparam dummy_idx_t DummyIdx = '{'{x: 9, y: 2, port_id: 1}, '{x: 9, y: 1, port_id: 0}};
-  localparam dummy_idx_t DummyPhysicalIdx = '{
-      '{x: 6, y: 2, port_id: 1},
-      '{x: 6, y: 1, port_id: 0}
-  };
+  localparam dummy_idx_t DummyIdx = '{'{x: 9, y: 0, port_id: 0}};
+  localparam dummy_idx_t DummyPhysicalIdx = '{'{x: 6, y: 0, port_id: 0}};
 
 
   // Whether the connection is a tie-off or a valid neighbor

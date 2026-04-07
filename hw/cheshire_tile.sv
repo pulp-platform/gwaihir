@@ -95,9 +95,7 @@ module cheshire_tile
   output logic [NumClusters-1:0] cluster_rst_no,
   output logic [NumClusters-1:0] cluster_clk_en_o,
   output logic [NumMemTiles-1:0] mem_tile_rst_no,
-  output logic [NumMemTiles-1:0] mem_tile_clk_en_o,
-  output logic fhg_spu_rst_no,
-  output logic fhg_spu_clk_en_o
+  output logic [NumMemTiles-1:0] mem_tile_clk_en_o
 );
 
   ////////////
@@ -489,9 +487,6 @@ module cheshire_tile
     assign mem_tile_rst_no[i]   = control_reg.mem_tile_rsts.rst.value[i];
     assign mem_tile_clk_en_o[i] = control_reg.mem_tile_clk_enables.clk_en.value[i];
   end
-  assign fhg_spu_rst_no   = control_reg.fhg_spu_rsts.rst.value;
-  assign fhg_spu_clk_en_o = control_reg.fhg_spu_clk_enables.clk_en.value;
-
   // Add Assertion that no multicast / reduction can enter this tile!
   for (genvar r = 0; r < 4; r++) begin : gen_virt
     `ASSERT(NoCollectivOperation_NReq_In,

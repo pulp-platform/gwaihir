@@ -74,7 +74,6 @@ module picobello_top
 
   logic [NumClusters-1:0] cluster_clk_en, cluster_rst_n;
   logic [NumMemTiles-1:0] mem_tile_clk_en, mem_tile_rst_n;
-  logic fhg_spu_clk_en, fhg_spu_rst_n;
 
   ///////////////////
   // Cluster tiles //
@@ -189,8 +188,6 @@ module picobello_top
     .cluster_rst_no   (cluster_rst_n),
     .mem_tile_clk_en_o(mem_tile_clk_en),
     .mem_tile_rst_no  (mem_tile_rst_n),
-    .fhg_spu_clk_en_o (fhg_spu_clk_en),
-    .fhg_spu_rst_no   (fhg_spu_rst_n),
     .floo_req_west_o  (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
     .floo_rsp_west_i  (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
     .floo_wide_west_o (floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
@@ -210,58 +207,6 @@ module picobello_top
   assign floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]   = '0;
   assign floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]   = '0;
   assign floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]  = '0;
-
-  //////////////////
-  // FhG SPU tile //
-  //////////////////
-
-  // TODO: Connect the debug and interrupt signals
-  logic [8:0] fhg_spu_debug_req, fhg_spu_meip, fhg_spu_mtip, fhg_spu_msip;
-
-  assign fhg_spu_debug_req = '0;
-  assign fhg_spu_meip      = '0;
-  assign fhg_spu_mtip      = '0;
-  assign fhg_spu_msip      = '0;
-
-  localparam id_t FhgSpuId = Sam[FhgSpuSamIdx].idx;
-
-  // Add offset to consider Cheshire as hart 0
-  localparam int unsigned FhgSpuHartBaseId = NumClusters * NrCores + 1;
-  localparam id_t FhgSpuPhysicalId = SamPhysical[FhgSpuSamIdx].idx;
-
-  fhg_spu_tile i_fhg_spu_tile (
-    .clk_i,
-    .rst_ni,
-    .test_enable_i      (test_mode_i),
-    .tile_clk_en_i      (fhg_spu_clk_en),
-    .tile_rst_ni        (fhg_spu_rst_n),
-    .clk_rst_bypass_i   (clk_rst_bypass_i),
-    .debug_req_i        (fhg_spu_debug_req),
-    .meip_i             (fhg_spu_meip),
-    .mtip_i             (fhg_spu_mtip),
-    .msip_i             (fhg_spu_msip),
-    .hart_base_id_i     (FhgSpuHartBaseId[9:0]),
-    .cluster_base_addr_i(Sam[FhgSpuSamIdx].start_addr),
-    .id_i               (FhgSpuId),
-    .floo_req_west_o    (floo_req_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][West]),
-    .floo_rsp_west_i    (floo_rsp_in[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][West]),
-    .floo_wide_west_o   (floo_wide_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][West]),
-    .floo_req_west_i    (floo_req_in[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][West]),
-    .floo_rsp_west_o    (floo_rsp_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][West]),
-    .floo_wide_west_i   (floo_wide_in[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][West]),
-    .floo_req_north_o   (floo_req_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][North]),
-    .floo_rsp_north_i   (floo_rsp_in[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][North]),
-    .floo_wide_north_o  (floo_wide_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][North]),
-    .floo_req_north_i   (floo_req_in[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][North]),
-    .floo_rsp_north_o   (floo_rsp_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][North]),
-    .floo_wide_north_i  (floo_wide_in[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][North])
-  );
-  assign floo_req_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][East]   = '0;
-  assign floo_rsp_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][East]   = '0;
-  assign floo_wide_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][East]  = '0;
-  assign floo_req_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][South]  = '0;
-  assign floo_rsp_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][South]  = '0;
-  assign floo_wide_out[FhgSpuPhysicalId.x][FhgSpuPhysicalId.y][South] = '0;
 
   //////////////
   // Mem tile //
