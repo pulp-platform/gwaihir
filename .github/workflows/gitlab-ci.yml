@@ -7,10 +7,7 @@
 name: gitlab-ci
 
 on:
-  pull_request:
   push:
-    branches:
-      - main
 
 jobs:
   check:
@@ -18,14 +15,13 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - uses: pulp-platform/pulp-actions/gitlab-ci@v2.4.5
-          # Skip on forks or pull requests from forks due to missing secrets.
-          if: >
-            github.repository == 'pulp-platform/picobello' &&
-            (github.event_name != 'pull_request' ||
-            github.event.pull_request.head.repo.full_name == github.repository)
+          # Only run for pushes from members of the pulp-platform org (i.e. with
+          # write access to the repo). Forks cannot push to pulp-platform/gwaihir,
+          # so checking the repository name is sufficient.
+          if: github.repository == 'pulp-platform/gwaihir'
           with:
             domain: iis-git.ee.ethz.ch
-            repo: github-mirror/picobello
+            repo: github-mirror/gwaihir
             token: ${{ secrets.GITLAB_TOKEN }}
             # Poll every minute for 3 hours
             poll-period: 60

@@ -1,8 +1,8 @@
-# picobello 👌🏻
+# gwaihir 🦅
 
-*picobello* is an open-source research platform focusing on AI and Machine Learning acceleration.
+*gwaihir* is an open-source research platform focusing on AI and Machine Learning acceleration.
 
-*picobello* is developed as part of the [PULP (Parallel Ultra-Low Power) project](https://pulp-platform.org/), a joint effort between ETH Zurich and the University of Bologna. *picobello* is also supported by the [EUPilot project](https://eupilot.eu), under the name MLS.
+*gwaihir* is developed as part of the [PULP (Parallel Ultra-Low Power) project](https://pulp-platform.org/), a joint effort between ETH Zurich and the University of Bologna. *gwaihir* is also supported by the [EUPilot project](https://eupilot.eu), under the name MLS.
 
 ## ⚡ Getting started
 
