@@ -8,7 +8,7 @@
 from functools import cache
 import math
 from pathlib import Path
-import picobello as pb
+import gwaihir as pb
 import snitch.util.experiments.experiment_utils as eu
 from snitch.util.experiments.SimResults import SimRegion
 
