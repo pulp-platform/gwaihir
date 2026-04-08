@@ -5,8 +5,8 @@
 # Luca Colagrande <colluca@iis.ee.ethz.ch>
 
 APP              := summa_gemm
-$(APP)_BUILD_DIR ?= $(PB_SNITCH_SW_DIR)/apps/$(APP)/build
-SRC_DIR          := $(PB_SNITCH_SW_DIR)/apps/$(APP)/src
+$(APP)_BUILD_DIR ?= $(GW_SNITCH_SW_DIR)/apps/$(APP)/build
+SRC_DIR          := $(GW_SNITCH_SW_DIR)/apps/$(APP)/src
 SRCS             := $(SRC_DIR)/summa_gemm.c
 $(APP)_INCDIRS   := $(SN_ROOT)/sw/kernels/blas $(SN_ROOT)/sw/kernels/blas/gemm/src
 

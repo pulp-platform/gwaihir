@@ -7,11 +7,11 @@
 #include "snrt.h"
 
 #ifndef N_ROWS
-#define N_ROWS (pb_cluster_num_in_col())
+#define N_ROWS (gw_cluster_num_in_col())
 #endif
 
 #ifndef N_COLS
-#define N_COLS (pb_cluster_num_in_row())
+#define N_COLS (gw_cluster_num_in_row())
 #endif
 
 typedef enum {
@@ -94,7 +94,7 @@ int main (void) {
 
     // Create communicator for submesh
     snrt_comm_t comm;
-    pb_create_mesh_comm(&comm, N_ROWS, N_COLS);
+    gw_create_mesh_comm(&comm, N_ROWS, N_COLS);
 
     if (snrt_is_dm_core() && comm->is_participant) {
         // Execute barrier in submesh

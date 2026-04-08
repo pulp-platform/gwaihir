@@ -9,18 +9,18 @@
 
 module spm_tile
   import floo_pkg::*;
-  import floo_picobello_noc_pkg::*;
-  import picobello_pkg::*;
+  import floo_gwaihir_noc_pkg::*;
+  import gwaihir_pkg::*;
   import obi_pkg::*;
 #(
   // Axi to memory interface types
-  parameter type axi_aw_chan_t    = floo_picobello_noc_pkg::axi_narrow_out_aw_chan_t,
-  parameter type axi_w_chan_t     = floo_picobello_noc_pkg::axi_narrow_out_w_chan_t,
-  parameter type axi_b_chan_t     = floo_picobello_noc_pkg::axi_narrow_out_b_chan_t,
-  parameter type axi_ar_chan_t    = floo_picobello_noc_pkg::axi_narrow_out_ar_chan_t,
-  parameter type axi_r_chan_t     = floo_picobello_noc_pkg::axi_narrow_out_r_chan_t,
-  parameter type axi_to_mem_req_t = floo_picobello_noc_pkg::axi_narrow_out_req_t,
-  parameter type axi_to_mem_rsp_t = floo_picobello_noc_pkg::axi_narrow_out_rsp_t,
+  parameter type axi_aw_chan_t    = floo_gwaihir_noc_pkg::axi_narrow_out_aw_chan_t,
+  parameter type axi_w_chan_t     = floo_gwaihir_noc_pkg::axi_narrow_out_w_chan_t,
+  parameter type axi_b_chan_t     = floo_gwaihir_noc_pkg::axi_narrow_out_b_chan_t,
+  parameter type axi_ar_chan_t    = floo_gwaihir_noc_pkg::axi_narrow_out_ar_chan_t,
+  parameter type axi_r_chan_t     = floo_gwaihir_noc_pkg::axi_narrow_out_r_chan_t,
+  parameter type axi_to_mem_req_t = floo_gwaihir_noc_pkg::axi_narrow_out_req_t,
+  parameter type axi_to_mem_rsp_t = floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t,
 
   /* Axi interface parameters */
   /// AXI ID width
@@ -136,10 +136,10 @@ module spm_tile
   // Chimney //
   /////////////
 
-  floo_picobello_noc_pkg::axi_narrow_out_req_t axi_narrow_req;
-  floo_picobello_noc_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
-  floo_picobello_noc_pkg::axi_wide_out_req_t   axi_wide_req;
-  floo_picobello_noc_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
 
   axi_to_mem_req_t axi_from_chimney_req, axi_req, axi_req_cut;
   axi_to_mem_rsp_t axi_to_chimney_rsp, axi_rsp, axi_rsp_cut;

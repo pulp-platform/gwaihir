@@ -14,9 +14,9 @@
 module cheshire_tile
   import cheshire_pkg::*;
   import floo_pkg::*;
-  import floo_picobello_noc_pkg::*;
-  import picobello_pkg::*;
-  import pb_soc_regs_pkg::*;
+  import floo_gwaihir_noc_pkg::*;
+  import gwaihir_pkg::*;
+  import gw_soc_regs_pkg::*;
 (
   input logic clk_i,
   input logic rst_ni,
@@ -447,7 +447,7 @@ module cheshire_tile
 
   apb_req_t                           csh_apb_req;
   apb_resp_t                          csh_apb_rsp;
-  pb_soc_regs_pkg::pb_soc_regs__out_t control_reg;
+  gw_soc_regs_pkg::gw_soc_regs__out_t control_reg;
 
   reg_to_apb #(
     .reg_req_t(csh_reg_req_t),
@@ -463,10 +463,10 @@ module cheshire_tile
     .apb_rsp_i(csh_apb_rsp)
   );
 
-  pb_soc_regs i_pb_soc_regs (
+  gw_soc_regs i_gw_soc_regs (
     .clk          (clk_i),
     .arst_n       (rst_ni),
-    .s_apb_paddr  (csh_apb_req.paddr[PB_SOC_REGS_MIN_ADDR_WIDTH-1:0]),
+    .s_apb_paddr  (csh_apb_req.paddr[GW_SOC_REGS_MIN_ADDR_WIDTH-1:0]),
     .s_apb_penable(csh_apb_req.penable),
     .s_apb_psel   (csh_apb_req.psel),
     .s_apb_pwrite (csh_apb_req.pwrite),

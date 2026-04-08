@@ -52,12 +52,12 @@ static inline void dma_multicast_sequential(uintptr_t l1_buffer,
     uintptr_t src;
     if (snrt_cluster_idx() == 0) {
         src = l3_buffer;
-    } else if (pb_cluster_in_row(0)) {
+    } else if (gw_cluster_in_row(0)) {
         src = (uintptr_t)snrt_remote_l1_ptr((void *)l1_buffer,
-            snrt_cluster_idx(), pb_cluster_west_neighbour());
+            snrt_cluster_idx(), gw_cluster_west_neighbour());
     } else {
         src = (uintptr_t)snrt_remote_l1_ptr((void *)l1_buffer,
-            snrt_cluster_idx(), pb_cluster_south_neighbour());
+            snrt_cluster_idx(), gw_cluster_south_neighbour());
     }
 
     // Prepare for inter-cluster barrier in advance, preventing instruction
@@ -70,14 +70,14 @@ static inline void dma_multicast_sequential(uintptr_t l1_buffer,
     asm volatile ("" : "+r"(user) ::);
 
     // Iterations to cover all transfers in a row
-    uint32_t n_iters = N_BATCHES - 1 + pb_cluster_num_in_row();
+    uint32_t n_iters = N_BATCHES - 1 + gw_cluster_num_in_row();
     for (uint32_t i = 0; i < n_iters; i++) {
 
         // Every cluster is active for N_BATCHES iterations
         // starting from the iteration with i == snrt_cluster_idx()
-        char cluster_active = i >= pb_cluster_col_idx();
-        cluster_active &= i < (pb_cluster_col_idx() + N_BATCHES);
-        cluster_active &= pb_cluster_in_row(0);
+        char cluster_active = i >= gw_cluster_col_idx();
+        cluster_active &= i < (gw_cluster_col_idx() + N_BATCHES);
+        cluster_active &= gw_cluster_in_row(0);
 
         // Every active cluster copies data from the left tile
         if (cluster_active) {
@@ -110,10 +110,10 @@ static inline void dma_multicast_sequential(uintptr_t l1_buffer,
     for (uint32_t i = 0; i < n_iters; i++) {
 
         // Every cluster is active for N_BATCHES iterations
-        // starting from the iteration with (i + 1) == pb_cluster_row_idx()
-        char cluster_active = (i + 1) >= pb_cluster_row_idx();
-        cluster_active &= (i + 1) < (pb_cluster_row_idx() + N_BATCHES);
-        cluster_active &= !pb_cluster_in_row(0);
+        // starting from the iteration with (i + 1) == gw_cluster_row_idx()
+        char cluster_active = (i + 1) >= gw_cluster_row_idx();
+        cluster_active &= (i + 1) < (gw_cluster_row_idx() + N_BATCHES);
+        cluster_active &= !gw_cluster_in_row(0);
 
         // Every active cluster copies data from the bottom tile
         if (cluster_active) {
@@ -166,23 +166,23 @@ static inline void dma_multicast_tree(uintptr_t l1_buffer,
     }
 
     // Iterations to cover all transfers in a row
-    uint32_t n_levels_in_row = pb_log2_cluster_num_in_row();
+    uint32_t n_levels_in_row = gw_log2_cluster_num_in_row();
     for (uint32_t i = 0; i < n_levels_in_row; i++) {
 
         // Determine which clusters are senders at every level of the tree
-        char cluster_idx_inv = pb_cluster_num_in_row() - pb_cluster_col_idx();
+        char cluster_idx_inv = gw_cluster_num_in_row() - gw_cluster_col_idx();
         char num_active_clusters = 1 << i;
-        char sender_stride = pb_cluster_num_in_row() / num_active_clusters;
+        char sender_stride = gw_cluster_num_in_row() / num_active_clusters;
         char is_sender = ((cluster_idx_inv % sender_stride) == 0)
-            && pb_cluster_in_row(0);
+            && gw_cluster_in_row(0);
 
         // Every active cluster sends the data to a cluster on the right
         if (is_sender) {
 
             // Calculate destination
             char receiver_offset = sender_stride / 2;
-            uintptr_t dst_cluster = pb_calculate_cluster_idx(0,
-                pb_cluster_col_idx() + receiver_offset);
+            uintptr_t dst_cluster = gw_calculate_cluster_idx(0,
+                gw_cluster_col_idx() + receiver_offset);
             uintptr_t dst = (uintptr_t)snrt_remote_l1_ptr((void *)l1_buffer,
                 snrt_cluster_idx(), dst_cluster);
 
@@ -209,7 +209,7 @@ static inline void dma_multicast_tree(uintptr_t l1_buffer,
     for (uint32_t i = 0; i < n_levels_in_col; i++) {
 
         // Determine which clusters are senders at every level of the tree
-        char row_idx_inv = N_ROWS - pb_cluster_row_idx();
+        char row_idx_inv = N_ROWS - gw_cluster_row_idx();
         char num_active_rows = 1 << i;
         char sender_stride = N_ROWS / num_active_rows;
         char is_sender = (row_idx_inv % sender_stride) == 0;
@@ -219,8 +219,8 @@ static inline void dma_multicast_tree(uintptr_t l1_buffer,
 
             // Calculate destination 
             char receiver_offset = sender_stride / 2;
-            uintptr_t dst_cluster = pb_calculate_cluster_idx(
-                pb_cluster_row_idx() + receiver_offset, pb_cluster_col_idx());
+            uintptr_t dst_cluster = gw_calculate_cluster_idx(
+                gw_cluster_row_idx() + receiver_offset, gw_cluster_col_idx());
             uintptr_t dst = (uintptr_t)snrt_remote_l1_ptr((void *)l1_buffer,
                 snrt_cluster_idx(), dst_cluster);
 
@@ -270,9 +270,9 @@ static inline void dma_multicast(uintptr_t l1_buffer, uintptr_t l3_buffer,
 }
 
 // Global variables for verification script
-uint32_t output[N_ELEMS * N_ROWS * pb_cluster_num_in_row()];
-extern const uint32_t n_clusters = N_ROWS * pb_cluster_num_in_row();
-extern const uint32_t length = N_ELEMS * N_ROWS * pb_cluster_num_in_row();
+uint32_t output[N_ELEMS * N_ROWS * gw_cluster_num_in_row()];
+extern const uint32_t n_clusters = N_ROWS * gw_cluster_num_in_row();
+extern const uint32_t length = N_ELEMS * N_ROWS * gw_cluster_num_in_row();
 
 int main() {
 
@@ -291,7 +291,7 @@ int main() {
 
     // TODO(colluca): is this needed?
     // Every cluster in row 0 initializes its destination buffer
-    if (snrt_is_dm_core() && pb_cluster_in_row(0)) {
+    if (snrt_is_dm_core() && gw_cluster_in_row(0)) {
         snrt_dma_start_1d(
             (uintptr_t)buffer, (uintptr_t)(snrt_cluster()->zeromem.mem), SIZE);
         snrt_dma_wait_all();
@@ -299,7 +299,7 @@ int main() {
 
     // Create communicator for first N rows (all other clusters are inactive)
     snrt_comm_t comm;
-    pb_create_mesh_comm(&comm, N_ROWS, pb_cluster_num_in_row());
+    gw_create_mesh_comm(&comm, N_ROWS, gw_cluster_num_in_row());
 
     // Only DMA cores of clusters in the first N rows continue from here
     if (!snrt_is_dm_core() || !comm->is_participant) return 0;
@@ -316,9 +316,9 @@ int main() {
     }
 
     // Writeback to L3
-    if (snrt_is_dm_core() && (pb_cluster_row_idx() < N_ROWS)) {
-        uint32_t cluster_idx = pb_cluster_col_idx() +
-            pb_cluster_row_idx() * pb_cluster_num_in_row();
+    if (snrt_is_dm_core() && (gw_cluster_row_idx() < N_ROWS)) {
+        uint32_t cluster_idx = gw_cluster_col_idx() +
+            gw_cluster_row_idx() * gw_cluster_num_in_row();
         uint32_t offset = cluster_idx * SIZE;
         snrt_dma_start_1d(
             (uintptr_t)output + offset, (uintptr_t)buffer, SIZE);

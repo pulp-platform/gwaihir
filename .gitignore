@@ -48,3 +48,6 @@ modelsim.ini
 transcript
 logs
 **/*.log
+
+# dvt files
+.dvt

@@ -35,7 +35,7 @@ source .venv/bin/activate
 
 #### Toolchains
 
-Picobello requires two different toolchains at the moment:
+Gwaihir requires two different toolchains at the moment:
 
 * Snitch software tests require the Clang compiler extended with Snitch-specific instructions. There are some precompiled releases available on the [PULP Platform LLVM Project](https://github.com/pulp-platform/llvm-project/releases/download/0.12.0/riscv32-pulp-llvm-ubuntu2004-0.12.0.tar.gz) fork that are ready to be downloaded and unzipped.
 * Cheshire requires a 64-bit GCC toolchain that can be installed from the [riscv-gnu-toolchain](https://github.com/riscv-collab/riscv-gnu-toolchain) git following the *Installation (Newlib)* instructions.
@@ -87,7 +87,7 @@ make sn-tests
 ```
 
 ### Platform simulation
-The Picobello simulation flow currently only supports Questasim.
+The Gwaihir simulation flow currently only supports Questasim.
 To build the RTL code, do:
 
 ```bash
@@ -95,7 +95,7 @@ make vsim-compile
 ```
 
 Tests can be executed by setting all the required command-line variable for Cheshire, see the [Cheshire Docs](https://pulp-platform.github.io/cheshire/gs/) for more details.
-To run a simple Chehire helloworld in Picobello, do the following:
+To run a simple Chehire helloworld in Gwaihir, do the following:
 
 ```bash
 make vsim-run CHS_BINARY=sw/cheshire/tests/helloworld.spm.elf

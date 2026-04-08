@@ -11,8 +11,8 @@
 #pragma clang diagnostic pop
 
 // Cluster indices
-#define C0 pb_calculate_cluster_idx(0, 0)  // row 0, col 0 — netlist under test
-#define C4 pb_calculate_cluster_idx(0, 1)  // row 0, col 1 — helper cluster
+#define C0 gw_calculate_cluster_idx(0, 0)  // row 0, col 0 — netlist under test
+#define C4 gw_calculate_cluster_idx(0, 1)  // row 0, col 1 — helper cluster
 
 // Run an experiment function twice. The first run warms up the state; the
 // second run is the one used for power measurement (identified by the pair of
@@ -182,7 +182,7 @@ int main() {
     // Create a communicator for clusters 0 and 4 only (1 row × 2 cols).
     // All 16 clusters must call this because it contains a world barrier.
     snrt_comm_t comm;
-    pb_create_mesh_comm(&comm, 1, 2, 0, 0);
+    gw_create_mesh_comm(&comm, 1, 2, 0, 0);
 
     // Park all clusters that are not part of this benchmark.
     if (!comm->is_participant) return 0;

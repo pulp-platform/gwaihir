@@ -2,8 +2,8 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-name: picobello
-description: "picobello NoC configuration"
+name: gwaihir
+description: "gwaihir NoC configuration"
 network_type: "narrow-wide"
 
 routing:

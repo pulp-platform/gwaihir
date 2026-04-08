@@ -2,10 +2,10 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 
-`ifndef __PB_SOC_REGS_RDL__
-`define __PB_SOC_REGS_RDL__
+`ifndef __GW_SOC_REGS_RDL__
+`define __GW_SOC_REGS_RDL__
 
-addrmap pb_soc_regs #(
+addrmap gw_soc_regs #(
     longint unsigned Num_Clusters = 16,
     longint unsigned Num_Mem_Tiles = 8
 ) {
@@ -41,4 +41,4 @@ addrmap pb_soc_regs #(
     rst_control #(.NumResets(Num_Mem_Tiles) )       mem_tile_rsts;
 };
 
-`endif // __PB_SOC_REGS_RDL__
+`endif // __GW_SOC_REGS_RDL__

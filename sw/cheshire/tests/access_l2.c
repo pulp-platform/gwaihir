@@ -8,12 +8,12 @@
 // It will read the first uint32 data from each memory bank.
 
 #include <stdint.h>
-#include "pb_addrmap.h"
+#include "gw_addrmap.h"
 
 #define WIDE_WORD_WIDTH 512
 #define NARROW_WORD_WIDTH (sizeof(uint32_t) * 8)
 #define NUM_L2_MEM_TILES 8
-#define L2_MEM_TILE_SIZE sizeof(picobello_addrmap__l2_spm_t) // 1 MiB
+#define L2_MEM_TILE_SIZE sizeof(gwaihir_addrmap__l2_spm_t) // 1 MiB
 #define L2_SRAM_DATA_WIDTH 128
 #define L2_SRAM_NUM_WORDS 1024
 #define L2_BANKS_PER_WORD (WIDE_WORD_WIDTH / L2_SRAM_DATA_WIDTH) // 4 banks per 512-bit word
@@ -21,11 +21,11 @@
 
 typedef uint32_t l2_mem_t[NUM_L2_MEM_TILES][L2_BANK_ROWS][L2_SRAM_NUM_WORDS][L2_BANKS_PER_WORD][L2_SRAM_DATA_WIDTH / NARROW_WORD_WIDTH];
 
-static_assert((sizeof(l2_mem_t)/NUM_L2_MEM_TILES) == sizeof(picobello_addrmap__l2_spm_t), "Packing error");
+static_assert((sizeof(l2_mem_t)/NUM_L2_MEM_TILES) == sizeof(gwaihir_addrmap__l2_spm_t), "Packing error");
 
 int main() {
 
-  volatile l2_mem_t *l2_mem = (volatile l2_mem_t *)&picobello_addrmap.l2_spm;
+  volatile l2_mem_t *l2_mem = (volatile l2_mem_t *)&gwaihir_addrmap.l2_spm;
 
   uint32_t n_errors = NUM_L2_MEM_TILES * L2_BANK_ROWS * L2_BANKS_PER_WORD * 4; // Total number of writes
 

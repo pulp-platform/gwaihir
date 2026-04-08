@@ -8,8 +8,8 @@
 
 module dummy_tile
   import floo_pkg::*;
-  import floo_picobello_noc_pkg::*;
-  import picobello_pkg::*;
+  import floo_gwaihir_noc_pkg::*;
+  import gwaihir_pkg::*;
 (
   input  logic                    clk_i,
   input  logic                    rst_ni,

@@ -4,8 +4,8 @@
 //
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
 
-#define PB_CLUSTER_PER_ROW 4
-#define PB_CLUSTER_PER_COL 4
+#define GW_CLUSTER_PER_ROW 4
+#define GW_CLUSTER_PER_COL 4
 // TODO(colluca): derive from previous or viceversa
-#define PB_LOG2_CLUSTER_PER_ROW 2
-#define PB_LOG2_CLUSTER_PER_COL 2
+#define GW_LOG2_CLUSTER_PER_ROW 2
+#define GW_LOG2_CLUSTER_PER_COL 2

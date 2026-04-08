@@ -6,10 +6,10 @@
 
 `include "cheshire/typedef.svh"
 
-package picobello_pkg;
+package gwaihir_pkg;
 
   import floo_pkg::*;
-  import floo_picobello_noc_pkg::*;
+  import floo_gwaihir_noc_pkg::*;
   import cheshire_pkg::*;
   import snitch_cluster_pkg::*;
 
@@ -165,7 +165,7 @@ package picobello_pkg;
   endfunction
 
   // To support multicast, the X and Y coordinates of the first tile in a multicast
-  // group must be powers of two. For this reason, in the Picobello system, the second
+  // group must be powers of two. For this reason, in the gwaihir system, the second
   // column begins with an offset to associate X = 4 with Cluster 0.
   //
   // This offset introduces empty columns in the System Address Map (SAM). Therefore,
@@ -174,7 +174,7 @@ package picobello_pkg;
   // correctly within the adjusted coordinate space.
   localparam bit [MaxId.x:0] EmptyCols = get_empty_cols(MeshMap);
   localparam sam_rule_t [SamNumRules-1:0] SamPhysical = align_x_coordinate(
-      floo_picobello_noc_pkg::Sam, EmptyCols
+      floo_gwaihir_noc_pkg::Sam, EmptyCols
   );
 
   // Dummy tiles X, Y coordinates
@@ -243,7 +243,7 @@ package picobello_pkg;
   /////////////////////
 
   function automatic floo_pkg::route_cfg_t gen_nomcast_route_cfg();
-    floo_pkg::route_cfg_t ret = floo_picobello_noc_pkg::RouteCfg;
+    floo_pkg::route_cfg_t ret = floo_gwaihir_noc_pkg::RouteCfg;
     // Disable multicast for non-cluster tiles
     ret.CollectiveCfg = CollectiveDefaultCfg;
     return ret;

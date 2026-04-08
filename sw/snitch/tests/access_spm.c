@@ -10,14 +10,14 @@
 // The narrow SPM will be accessed by core 0, while teh wide SPM by teh DMA core.
 
 #include <stdint.h>
-#include "pb_addrmap.h"
+#include "gw_addrmap.h"
 #include "snrt.h"
 
 // Narrow SPM parameters definitions
 #define NARROW_WORD_WIDTH 64
 #define NARROW_WORD_SIZE (sizeof(uint32_t) * 8)
 
-#define SPM_MEM_TILE_SIZE sizeof(picobello_addrmap__top_spm_narrow_t) // 256 kiB
+#define SPM_MEM_TILE_SIZE sizeof(gwaihir_addrmap__top_spm_narrow_t) // 256 kiB
 #define SPM_SRAM_DATA_WIDTH 64
 #define SPM_SRAM_NUM_WORDS 2048
 #define SPM_BANKS_PER_WORD (NARROW_WORD_WIDTH / SPM_SRAM_DATA_WIDTH) // 1 banks per 64-bit word
@@ -36,13 +36,13 @@ typedef uint32_t spm_mem_t[SPM_BANK_ROWS][SPM_SRAM_NUM_WORDS][SPM_BANKS_PER_WORD
 
 typedef uint32_t spm_wide_mem_t[SPM_BANK_WIDE_ROWS][SPM_SRAM_WIDE_NUM_WORDS][SPM_BANKS_PER_WIDE_WORD][SPM_SRAM_WIDE_DATA_WIDTH / NARROW_WORD_SIZE];
 
-static_assert((sizeof(spm_mem_t)) == sizeof(picobello_addrmap__top_spm_narrow_t), "Packing error");
-static_assert((sizeof(spm_wide_mem_t)) == sizeof(picobello_addrmap__top_spm_wide_t), "Packing error");
+static_assert((sizeof(spm_mem_t)) == sizeof(gwaihir_addrmap__top_spm_narrow_t), "Packing error");
+static_assert((sizeof(spm_wide_mem_t)) == sizeof(gwaihir_addrmap__top_spm_wide_t), "Packing error");
 
 
 // Test accessability to the NARROW SPM Tile
 uint32_t test_narrow_spm (){
-  volatile spm_mem_t *spm_mem = (volatile spm_mem_t *)&picobello_addrmap.top_spm_narrow;
+  volatile spm_mem_t *spm_mem = (volatile spm_mem_t *)&gwaihir_addrmap.top_spm_narrow;
   uint32_t n_errors = SPM_BANK_ROWS * SPM_BANKS_PER_WORD * 4; // Total number of writes
 
   for (uint32_t j = 0; j < SPM_BANK_ROWS; j++) {
@@ -71,7 +71,7 @@ uint32_t test_narrow_spm (){
 // Performs two write operations directed to the first and second word
 // of each physical bank, and then reads them back to check if the values are correct.
 uint32_t test_wide_spm (){
-  volatile spm_wide_mem_t *spm_wide_mem = (volatile spm_wide_mem_t *)&picobello_addrmap.top_spm_wide;
+  volatile spm_wide_mem_t *spm_wide_mem = (volatile spm_wide_mem_t *)&gwaihir_addrmap.top_spm_wide;
   uint32_t* buf_src     = (uint32_t*) snrt_l1_alloc_cluster_local(WIDE_TRANSFER_LENGTH * sizeof(uint32_t), sizeof(uint32_t));
   uint32_t* buf_res_al  = (uint32_t*) snrt_l1_alloc_cluster_local(WIDE_TRANSFER_LENGTH * sizeof(uint32_t), sizeof(uint32_t));
   uint32_t* buf_res_nal = (uint32_t*) snrt_l1_alloc_cluster_local(WIDE_TRANSFER_LENGTH * sizeof(uint32_t), sizeof(uint32_t));

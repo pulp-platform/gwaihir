@@ -42,7 +42,7 @@ static inline void snrt_dma_load_2d_tile_mcast_sw(
     asm volatile ("" : "+r"(user) ::);
 
     // Iteration 0: cluster in row 0 fetches data from memory tile
-    if (pb_cluster_row_idx() == 0) {
+    if (gw_cluster_row_idx() == 0) {
         snrt_dma_load_2d_tile(
             dst, src, tile_x1_idx, tile_x0_idx,
             tile_x1_size, tile_x0_size, full_x0_size,
@@ -51,14 +51,14 @@ static inline void snrt_dma_load_2d_tile_mcast_sw(
     }
 
     // Iterations to cover all transfers in each column
-    uint32_t n_levels_in_col = PB_LOG2_CLUSTER_PER_COL;
+    uint32_t n_levels_in_col = GW_LOG2_CLUSTER_PER_COL;
     uint32_t size = tile_x1_size * tile_x0_size * prec;
     for (uint32_t i = 0; i < n_levels_in_col; i++) {
 
         // Determine which clusters are senders at every level of the tree
-        char row_idx_inv = pb_cluster_num_in_col() - pb_cluster_row_idx();
+        char row_idx_inv = gw_cluster_num_in_col() - gw_cluster_row_idx();
         char num_active_rows = 1 << i;
-        char sender_stride = pb_cluster_num_in_col() / num_active_rows;
+        char sender_stride = gw_cluster_num_in_col() / num_active_rows;
         char is_sender = (row_idx_inv % sender_stride) == 0;
 
         // Every active cluster sends the data to a cluster above it
@@ -66,8 +66,8 @@ static inline void snrt_dma_load_2d_tile_mcast_sw(
 
             // Calculate destination 
             char receiver_offset = sender_stride / 2;
-            uintptr_t dst_cluster = pb_calculate_cluster_idx(
-                pb_cluster_row_idx() + receiver_offset, pb_cluster_col_idx());
+            uintptr_t dst_cluster = gw_calculate_cluster_idx(
+                gw_cluster_row_idx() + receiver_offset, gw_cluster_col_idx());
             void *remote_dst = snrt_remote_l1_ptr((void *)dst,
                 snrt_cluster_idx(), dst_cluster);
 
@@ -110,7 +110,7 @@ static inline void snrt_dma_load_2d_tile_mcast_sw(
  *    - Performs the tile computation using the `sc_st_gemm` function.
  *    - Writes the result back to global memory.
  */
-static inline int gemm_picobello(const gemm_args_t *args) {
+static inline int gemm_gwaihir(const gemm_args_t *args) {
 #ifndef JOB_ARGS_PRELOADED
     // Copy the arguments to local memory
     gemm_args_t *largs = (gemm_args_t *)snrt_l1_alloc_cluster_local(
@@ -125,9 +125,9 @@ static inline int gemm_picobello(const gemm_args_t *args) {
 #endif
 
     // Create a communicator for each column to share the B tiles
-    snrt_comm_t col_comm[pb_cluster_num_in_row()];
-	for (uint32_t c = 0; c < pb_cluster_num_in_row(); c++)
-		pb_create_mesh_comm(&col_comm[c], pb_cluster_num_in_col(), 1,
+    snrt_comm_t col_comm[gw_cluster_num_in_row()];
+	for (uint32_t c = 0; c < gw_cluster_num_in_row(); c++)
+		gw_create_mesh_comm(&col_comm[c], gw_cluster_num_in_col(), 1,
 			0, c);
 
     // Calculate tile sizes
@@ -190,8 +190,8 @@ static inline int gemm_picobello(const gemm_args_t *args) {
     // - K tiling not supported.
 
     // Distribute m tiles to cluster rows and n tiles to cluster columns
-    uint32_t cluster_m_tiles = largs->m_tiles / pb_cluster_num_in_col();
-    uint32_t cluster_n_tiles = largs->n_tiles / pb_cluster_num_in_row();
+    uint32_t cluster_m_tiles = largs->m_tiles / gw_cluster_num_in_col();
+    uint32_t cluster_n_tiles = largs->n_tiles / gw_cluster_num_in_row();
     uint32_t cluster_k_tiles = 1;
 
     // Calculate number of iterations
@@ -222,12 +222,12 @@ static inline int gemm_picobello(const gemm_args_t *args) {
         int dma_out_m = dma_out_mn / cluster_n_tiles;
 
         // Calculate the absolute m, n and k indices for each cluster
-        int dma_in_m_abs = dma_in_m + pb_cluster_row_idx() * cluster_m_tiles;
-        int comp_m_abs = comp_m + pb_cluster_row_idx() * cluster_m_tiles;
-        int dma_out_m_abs = dma_out_m + pb_cluster_row_idx() * cluster_m_tiles;
-        int dma_in_n_abs = dma_in_n + pb_cluster_col_idx() * cluster_n_tiles;
-        int comp_n_abs = comp_n + pb_cluster_col_idx() * cluster_n_tiles;
-        int dma_out_n_abs = dma_out_n + pb_cluster_col_idx() * cluster_n_tiles;
+        int dma_in_m_abs = dma_in_m + gw_cluster_row_idx() * cluster_m_tiles;
+        int comp_m_abs = comp_m + gw_cluster_row_idx() * cluster_m_tiles;
+        int dma_out_m_abs = dma_out_m + gw_cluster_row_idx() * cluster_m_tiles;
+        int dma_in_n_abs = dma_in_n + gw_cluster_col_idx() * cluster_n_tiles;
+        int comp_n_abs = comp_n + gw_cluster_col_idx() * cluster_n_tiles;
+        int dma_out_n_abs = dma_out_n + gw_cluster_col_idx() * cluster_n_tiles;
         int dma_in_k_abs = dma_in_k;
         int comp_k_abs = comp_k;
         int dma_out_k_abs = dma_out_k;
@@ -314,19 +314,19 @@ static inline int gemm_picobello(const gemm_args_t *args) {
                             // modes, the clusters in row 0 multicast the B
                             // tile to all clusters in the same column.
                             if (MODE == HW) {
-                                if (pb_cluster_row_idx() == 0) {
+                                if (gw_cluster_row_idx() == 0) {
                                     snrt_dma_load_2d_tile_mcast(
                                         lb[b_buff_idx], largs->b, dma_in_k_abs,
                                         dma_in_n_abs, tile_k, tile_n,
                                         largs->ldb, largs->prec,
-                                        col_comm[pb_cluster_col_idx()]);
+                                        col_comm[gw_cluster_col_idx()]);
                                 }
                             } else if (MODE == SW_TREE) {
                                 snrt_dma_load_2d_tile_mcast_sw(
                                     lb[b_buff_idx], largs->b, dma_in_k_abs,
                                     dma_in_n_abs, tile_k, tile_n,
                                     largs->ldb, largs->prec,
-                                    col_comm[pb_cluster_col_idx()]);                            
+                                    col_comm[gw_cluster_col_idx()]);                            
                             } else {
                                 snrt_dma_load_2d_tile(
                                     lb[b_buff_idx], largs->b, dma_in_k_abs,
@@ -457,6 +457,6 @@ static inline int gemm_picobello(const gemm_args_t *args) {
 
 
 int main () {
-    gemm_picobello(&args);
+    gemm_gwaihir(&args);
     return 0;
 }

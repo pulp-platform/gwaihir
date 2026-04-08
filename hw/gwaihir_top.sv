@@ -4,12 +4,12 @@
 //
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
-module picobello_top
-  import picobello_pkg::*;
+module gwaihir_top
+  import gwaihir_pkg::*;
   import cheshire_pkg::*;
   import floo_pkg::*;
   import snitch_cluster_pkg::*;
-  import floo_picobello_noc_pkg::*;
+  import floo_gwaihir_noc_pkg::*;
 (
   input  logic                                                             clk_i,
   input  logic                                                             rst_ni,
@@ -91,7 +91,7 @@ module picobello_top
 
     localparam int ClusterSamIdx = c + ClusterX0Y0SamIdx;
     localparam id_t ClusterId = CollectiveSam[ClusterSamIdx].idx.id;
-    localparam id_t ClusterPhysicalId = picobello_pkg::SamPhysical[ClusterSamIdx].idx;
+    localparam id_t ClusterPhysicalId = gwaihir_pkg::SamPhysical[ClusterSamIdx].idx;
     localparam int X = int'(ClusterPhysicalId.x);
     localparam int Y = int'(ClusterPhysicalId.y);
     localparam int unsigned HartBaseId = c * NrCores + 1;  // Cheshire is hart 0
@@ -254,13 +254,13 @@ module picobello_top
   localparam int SpmNarrowTileY = int'(SpmNarrowTilePhysicalId.y);
 
   spm_tile #(
-    .axi_aw_chan_t     (floo_picobello_noc_pkg::axi_narrow_out_aw_chan_t),
-    .axi_w_chan_t      (floo_picobello_noc_pkg::axi_narrow_out_w_chan_t),
-    .axi_b_chan_t      (floo_picobello_noc_pkg::axi_narrow_out_b_chan_t),
-    .axi_ar_chan_t     (floo_picobello_noc_pkg::axi_narrow_out_ar_chan_t),
-    .axi_r_chan_t      (floo_picobello_noc_pkg::axi_narrow_out_r_chan_t),
-    .axi_to_mem_req_t  (floo_picobello_noc_pkg::axi_narrow_out_req_t),
-    .axi_to_mem_rsp_t  (floo_picobello_noc_pkg::axi_narrow_out_rsp_t),
+    .axi_aw_chan_t     (floo_gwaihir_noc_pkg::axi_narrow_out_aw_chan_t),
+    .axi_w_chan_t      (floo_gwaihir_noc_pkg::axi_narrow_out_w_chan_t),
+    .axi_b_chan_t      (floo_gwaihir_noc_pkg::axi_narrow_out_b_chan_t),
+    .axi_ar_chan_t     (floo_gwaihir_noc_pkg::axi_narrow_out_ar_chan_t),
+    .axi_r_chan_t      (floo_gwaihir_noc_pkg::axi_narrow_out_r_chan_t),
+    .axi_to_mem_req_t  (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
+    .axi_to_mem_rsp_t  (floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t),
     .AxiIdWidth        (AxiCfgN.InIdWidth),
     .AxiDataWidth      (AxiCfgN.DataWidth),
     .SpmTileSize       (SpmNarrowTileSize),
@@ -290,13 +290,13 @@ module picobello_top
   localparam int SpmWideTileY = int'(SpmWideTilePhysicalId.y);
 
   spm_tile #(
-    .axi_aw_chan_t     (floo_picobello_noc_pkg::axi_wide_out_aw_chan_t),
-    .axi_w_chan_t      (floo_picobello_noc_pkg::axi_wide_out_w_chan_t),
-    .axi_b_chan_t      (floo_picobello_noc_pkg::axi_wide_out_b_chan_t),
-    .axi_ar_chan_t     (floo_picobello_noc_pkg::axi_wide_out_ar_chan_t),
-    .axi_r_chan_t      (floo_picobello_noc_pkg::axi_wide_out_r_chan_t),
-    .axi_to_mem_req_t  (floo_picobello_noc_pkg::axi_wide_out_req_t),
-    .axi_to_mem_rsp_t  (floo_picobello_noc_pkg::axi_wide_out_rsp_t),
+    .axi_aw_chan_t     (floo_gwaihir_noc_pkg::axi_wide_out_aw_chan_t),
+    .axi_w_chan_t      (floo_gwaihir_noc_pkg::axi_wide_out_w_chan_t),
+    .axi_b_chan_t      (floo_gwaihir_noc_pkg::axi_wide_out_b_chan_t),
+    .axi_ar_chan_t     (floo_gwaihir_noc_pkg::axi_wide_out_ar_chan_t),
+    .axi_r_chan_t      (floo_gwaihir_noc_pkg::axi_wide_out_r_chan_t),
+    .axi_to_mem_req_t  (floo_gwaihir_noc_pkg::axi_wide_out_req_t),
+    .axi_to_mem_rsp_t  (floo_gwaihir_noc_pkg::axi_wide_out_rsp_t),
     .AxiIdWidth        (AxiCfgW.InIdWidth),
     .AxiDataWidth      (AxiCfgW.DataWidth),
     .SpmTileSize       (SpmWideTileSize),

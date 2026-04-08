@@ -4,7 +4,7 @@
 #
 # Author: Luca Colagrande <colluca@iis.ee.ethz.ch>
 
-SIM_DIR = $(PB_ROOT)
+SIM_DIR = $(GW_ROOT)
 LOGS_DIR = $(SIM_DIR)/logs
 SN_SIM_DIR = $(SIM_DIR)
 include $(SN_ROOT)/make/traces.mk

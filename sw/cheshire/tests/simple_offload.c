@@ -5,7 +5,7 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 #include <stdint.h>
-#include "pb_addrmap.h"
+#include "gw_addrmap.h"
 
 #include "snitch_cluster_cfg.h"
 
@@ -18,15 +18,15 @@ int main() {
   // and return code address to scratch register 0
   // Initalize return address loaction before offloading.
   for (int i = 0; i < SNRT_CLUSTER_NUM; i++) {
-    *(volatile uint64_t *)&(picobello_addrmap.cluster[i].peripheral_reg.scratch[1].w) = (uintptr_t)&picobello_addrmap.l2_spm;
-    *(volatile uint64_t *)&(picobello_addrmap.cluster[i].peripheral_reg.scratch[0].w) = (uintptr_t)&return_code_array[i];
+    *(volatile uint64_t *)&(gwaihir_addrmap.cluster[i].peripheral_reg.scratch[1].w) = (uintptr_t)&gwaihir_addrmap.l2_spm;
+    *(volatile uint64_t *)&(gwaihir_addrmap.cluster[i].peripheral_reg.scratch[0].w) = (uintptr_t)&return_code_array[i];
     for (int j = 0; j < CFG_CLUSTER_NR_CORES; j++) {
       return_code_array[i][j] = 0;
     }
   }
 
   // Start all cores in Cluster 0, which will wake up all other clusters
-  *(volatile uint64_t *)&(picobello_addrmap.cluster[0].peripheral_reg.cl_clint_set.w) = (1 << CFG_CLUSTER_NR_CORES) - 1;
+  *(volatile uint64_t *)&(gwaihir_addrmap.cluster[0].peripheral_reg.cl_clint_set.w) = (1 << CFG_CLUSTER_NR_CORES) - 1;
 
   // Wait until all cores have finished
   int all_finished = 0;

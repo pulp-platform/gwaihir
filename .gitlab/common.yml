@@ -37,7 +37,7 @@ variables:
     - .cache-deps
     - .init-env
   script:
-    - make picobello-hw-all
+    - make gwaihir-hw-all
   artifacts:
     paths:
       - .bender

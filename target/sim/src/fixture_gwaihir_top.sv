@@ -4,12 +4,12 @@
 //
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
-module fixture_picobello_top;
+module fixture_gwaihir_top;
 
   `include "cheshire/typedef.svh"
 
   import cheshire_pkg::*;
-  import picobello_pkg::*;
+  import gwaihir_pkg::*;
 
   `CHESHIRE_TYPEDEF_ALL(, CheshireCfg)
 
@@ -63,7 +63,7 @@ module fixture_picobello_top;
   assign  clk_rst_bypass = 1'b0;
   // verilog_format: on
 
-  picobello_top dut (
+  gwaihir_top dut (
     .clk_i               (clk),
     .rst_ni              (rst_n),
     .test_mode_i         (test_mode),
