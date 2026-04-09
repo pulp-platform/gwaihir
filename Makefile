@@ -8,6 +8,13 @@ GW_ROOT ?= $(shell pwd)
 GW_GEN_DIR = $(GW_ROOT)/.generated
 BENDER_ROOT ?= $(GW_ROOT)/.bender
 
+# Executables — must be defined before dependency paths that call $(BENDER)
+BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
+FLOO_GEN         ?= floogen
+VERIBLE_FMT      ?= verible-verilog-format
+VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
+PEAKRDL          ?= peakrdl
+
 # Configuration files
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
 SN_CFG	  ?= $(GW_ROOT)/cfg/snitch_cluster.json
@@ -18,13 +25,6 @@ SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
-
-# Executables
-BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
-FLOO_GEN         ?= floogen
-VERIBLE_FMT      ?= verible-verilog-format
-VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
-PEAKRDL          ?= peakrdl
 
 # Tiles configuration
 SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.cluster.num 2>/dev/null)
@@ -40,9 +40,6 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 
 COMMON_TARGS += -t rtl -t cva6 -t cv64a6_imafdchsclic_sv39_wb -t snitch_cluster -t gw_gen_rtl
 SIM_TARGS += -t simulation -t test -t idma_test
-
-# Get rid of non-existing PD path dependency warnings
-BENDER += --suppress W22
 
 #############
 # systemRDL #
@@ -146,8 +143,8 @@ floo-clean: gw-addrmap-clean
 # Physical Design #
 ###################
 
-PD_REMOTE ?= git@iis-git.ee.ethz.ch:picobello/picobello-pd.git
-PD_COMMIT ?= main
+PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
+PD_COMMIT ?= lleone/initial-gw
 PD_DIR = $(GW_ROOT)/pd
 .PHONY: init-pd clean-pd
 

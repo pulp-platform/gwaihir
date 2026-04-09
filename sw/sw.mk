@@ -16,8 +16,6 @@ GW_CHS_SW_DIR = $(GW_SW_DIR)/cheshire
 GW_SNITCH_SW_DIR = $(GW_SW_DIR)/snitch
 
 GW_INCDIR = $(GW_SW_DIR)/include
-#TODO(lleone): remove if not necessary to redefine
-GW_GEN_DIR = $(GW_ROOT)/.generated
 
 -include $(PD_DIR)/sw/sw.mk
 
