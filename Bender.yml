@@ -25,7 +25,7 @@ dependencies:
   datamover:          { git: "https://github.com/pulp-platform/datamover.git",          rev: "5df9c9bd9e10ad020763c4291c571adf35ef4ae2" } # branch: transpose
   apb_fll_if:         { git: "https://github.com/pulp-platform/apb_fll_if.git",         rev: "structs"                                  }
   axi_obi:            { path: "hw/axi_obi"                                                                                              }
-  picobello-pd:       { path: "./pd"                                                                                                    }
+  gwaihir-pd:       { path: "./pd"                                                                                                    }
 
 workspace:
   package_links:

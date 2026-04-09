@@ -4,7 +4,7 @@
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PD_COMMIT: "4828594842a7955a8d3a3077ac6454443565da27"
+  PD_COMMIT: "lleone/initial-gw"
 
 # Check the cache for bender and python dependencies
 .cache-deps:
