@@ -196,7 +196,17 @@ include $(GW_ROOT)/target/sim/traces.mk
 # Snitch cluster #
 ##################
 
+# Skip the expensive dep tracking (make -pq via list-dependent-make-targets) for
+# hw-only and informational goals. For unknown targets (e.g. app names), still run it.
+# %-all / %-clean cover all hw-all/hw-clean variants; vsim-% / gw-% cover sim/rdl targets.
+# Clean targets never need dep tracking regardless of subsystem.
+_GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist verible-fmt \
+                     init-pd clean-pd python-venv% %-all %-clean vsim-% gw-%
+ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
+# All requested goals are hw-only/informational — skip dep tracking.
+else
 $(call sn_include_deps)
+endif
 
 ########
 # Misc #
