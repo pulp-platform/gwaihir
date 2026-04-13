@@ -133,7 +133,7 @@ sim-exps:
   script:
     - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j
   artifacts:
-    expire_in: 7 days
+    expire_in: 1 days
 
 ###################
 # Physical Design #
