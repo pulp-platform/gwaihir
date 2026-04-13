@@ -164,3 +164,25 @@ connections:
     dst: "router_right"
     dst_idx: [1, 1]
     dst_dir: "Eject"
+  # router_left (x=0) ↔ router_center West boundary (x=4)
+  - src: "router_left"
+    dst: "router_center"
+    src_range:
+      - [0, 0]
+      - [0, 3]
+    dst_range:
+      - [0, 0]
+      - [0, 3]
+    src_dir: "East"
+    dst_dir: "West"
+  # router_center East boundary (x=7) ↔ router_right (x=8)
+  - src: "router_center"
+    dst: "router_right"
+    src_range:
+      - [3, 3]
+      - [0, 3]
+    dst_range:
+      - [0, 0]
+      - [0, 3]
+    src_dir: "East"
+    dst_dir: "West"
