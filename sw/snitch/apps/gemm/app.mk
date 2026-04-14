@@ -5,8 +5,8 @@
 # Luca Colagrande <colluca@iis.ee.ethz.ch>
 
 APP              := gemm
-$(APP)_BUILD_DIR ?= $(PB_SNITCH_SW_DIR)/apps/$(APP)/build
-$(APP)_DATA_CFG  := $(PB_SNITCH_SW_DIR)/apps/$(APP)/data/params.json
+$(APP)_BUILD_DIR ?= $(GW_SNITCH_SW_DIR)/apps/$(APP)/build
+$(APP)_DATA_CFG  := $(GW_SNITCH_SW_DIR)/apps/$(APP)/data/params.json
 SRC_DIR          := $(SN_ROOT)/sw/kernels/blas/$(APP)/src
 SRCS             := $(SRC_DIR)/main.c
 $(APP)_INCDIRS   := $(SN_ROOT)/sw/kernels/blas

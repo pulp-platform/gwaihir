@@ -11,8 +11,8 @@
 
 module mem_tile
   import floo_pkg::*;
-  import floo_picobello_noc_pkg::*;
-  import picobello_pkg::*;
+  import floo_gwaihir_noc_pkg::*;
+  import gwaihir_pkg::*;
   import obi_pkg::*;
 #(
   parameter bit          AxiUserAtop    = 1'b1,
@@ -100,10 +100,10 @@ module mem_tile
   // Chimney //
   /////////////
 
-  floo_picobello_noc_pkg::axi_narrow_out_req_t axi_narrow_req;
-  floo_picobello_noc_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
-  floo_picobello_noc_pkg::axi_wide_out_req_t   axi_wide_req;
-  floo_picobello_noc_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
 
   floo_nw_chimney #(
     .AxiCfgN             (AxiCfgN),

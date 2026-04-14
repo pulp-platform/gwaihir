@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: SHL-0.51
 
 package:
-  name: picobello
+  name: gwaihir
   authors:
     - "Tim Fischer <fischeti@iis.ee.ethz.ch>"
+    - "Lorenzo Leone <lleone@iis.ee.ethz.ch>"
 
 remotes:
   pulp: "https://github.com/pulp-platform"
@@ -24,8 +25,7 @@ dependencies:
   datamover:          { git: "https://github.com/pulp-platform/datamover.git",          rev: "5df9c9bd9e10ad020763c4291c571adf35ef4ae2" } # branch: transpose
   apb_fll_if:         { git: "https://github.com/pulp-platform/apb_fll_if.git",         rev: "structs"                                  }
   axi_obi:            { path: "hw/axi_obi"                                                                                              }
-  picobello-pd:       { path: "./pd"                                                                                                    }
-  fhg_spu_cluster:    { path: "./.deps/fhg_spu_cluster"                                                                                 }
+  gwaihir-pd:       { path: "./pd"                                                                                                    }
 
 workspace:
   package_links:
@@ -37,18 +37,18 @@ sources:
   # package. Files in level 1 only depend on files in level 0, files in level 2 on files in
   # levels 1 and 0, etc. Files within a level are ordered alphabetically.
   # Level 0
-  - target: pb_gen_rtl
+  - target: gw_gen_rtl
     files:
       # Level 0.0
-      - .generated/floo_picobello_noc_pkg.sv
+      - .generated/floo_gwaihir_noc_pkg.sv
       - .generated/snitch_cluster_pkg.sv
-      - .generated/pb_soc_regs_pkg.sv
+      - .generated/gw_soc_regs_pkg.sv
       # Level 0.1
-      - .generated/pb_soc_regs.sv
+      - .generated/gw_soc_regs.sv
       - .generated/snitch_cluster_wrapper.sv
 
   # Level 1
-  - hw/picobello_pkg.sv
+  - hw/gwaihir_pkg.sv
   - hw/snitch_hwpe_subsystem.sv
   - hw/snitch_tcdm_aligner.sv
   # Level 2
@@ -58,29 +58,21 @@ sources:
   - hw/spm_tile.sv
   - hw/dummy_tile.sv
 
-  - target: not(all(fhg_spu, asic))
-    files:
-    - hw/fhg_spu_tile.sv
-
-  - target: all(fhg_spu, asic)
-    files:
-    - .deps/fhg_spu_cluster/hw/fhg_spu_tile.sv
-
   # Level 3
-  - hw/picobello_top.sv
+  - hw/gwaihir_top.sv
 
   - target: any(simulation, test)
     include_dirs:
       - .generated
       - target/sim/include
     files:
-      - target/sim/src/fixture_picobello_top.sv
-      - target/sim/src/tb_picobello_top.sv
+      - target/sim/src/fixture_gwaihir_top.sv
+      - target/sim/src/tb_gwaihir_top.sv
 
 
   - target: asic
     files:
-    - pd/hw/picobello_chip.sv
+    - pd/hw/gwaihir_chip.sv
 
   - target: all(any(simulation, test), asic)
     include_dirs:
@@ -88,6 +80,6 @@ sources:
       - pd/target/sim/include
       - target/sim/include
     files:
-      - pd/target/sim/src/fixture_picobello_chip.sv
-      - pd/target/sim/src/tb_picobello_chip.sv
-      - pd/target/sim/src/tb_picobello_chip_config.sv
+      - pd/target/sim/src/fixture_gwaihir_chip.sv
+      - pd/target/sim/src/tb_gwaihir_chip.sv
+      - pd/target/sim/src/tb_gwaihir_chip_config.sv

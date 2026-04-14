@@ -4,88 +4,86 @@
 #
 # Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
-PB_ROOT ?= $(shell pwd)
-PB_GEN_DIR = $(PB_ROOT)/.generated
-BENDER_ROOT ?= $(PB_ROOT)/.bender
+GW_ROOT ?= $(shell pwd)
+GW_GEN_DIR = $(GW_ROOT)/.generated
+BENDER_ROOT ?= $(GW_ROOT)/.bender
+
+# Executables — must be defined before dependency paths that call $(BENDER)
+BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
+FLOO_GEN         ?= floogen
+VERIBLE_FMT      ?= verible-verilog-format
+VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
+PEAKRDL          ?= peakrdl
 
 # Configuration files
-FLOO_CFG  ?= $(PB_ROOT)/cfg/picobello_noc.yml
-SN_CFG	  ?= $(PB_ROOT)/cfg/snitch_cluster.json
-PLIC_CFG  ?= $(PB_ROOT)/cfg/rv_plic.cfg.hjson
-SLINK_CFG ?= $(PB_ROOT)/cfg/serial_link.hjson
+FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
+SN_CFG	  ?= $(GW_ROOT)/cfg/snitch_cluster.json
+PLIC_CFG  ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
+SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 
 # Root directories of dependencies
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
 
-# Executables
-BENDER           ?= bender --suppress W22 -d $(PB_ROOT)
-FLOO_GEN         ?= floogen
-VERIBLE_FMT      ?= verible-verilog-format
-VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
-PEAKRDL          ?= peakrdl
-
 # Tiles configuration
 SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.cluster.num 2>/dev/null)
 L2_TILES = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.l2_spm.num 2>/dev/null)
 
 # Bender prerequisites
-BENDER_YML = $(PB_ROOT)/Bender.yml
-BENDER_LOCK = $(PB_ROOT)/Bender.lock
+BENDER_YML = $(GW_ROOT)/Bender.yml
+BENDER_LOCK = $(GW_ROOT)/Bender.lock
 
 ################
 # Bender flags #
 ################
 
-COMMON_TARGS += -t rtl -t cva6 -t cv64a6_imafdchsclic_sv39_wb -t snitch_cluster -t pb_gen_rtl
+COMMON_TARGS += -t rtl -t cva6 -t cv64a6_imafdchsclic_sv39_wb -t snitch_cluster -t gw_gen_rtl
 SIM_TARGS += -t simulation -t test -t idma_test
-
-# Get rid of non-existing PD path dependency warnings
-BENDER += --suppress W22
 
 #############
 # systemRDL #
 #############
 
-PB_RDL_ALL += $(PB_GEN_DIR)/picobello_addrmap.rdl
-PB_RDL_ALL += $(PB_GEN_DIR)/fll.rdl $(PB_GEN_DIR)/pb_chip_regs.rdl
-PB_RDL_ALL += $(PB_GEN_DIR)/snitch_cluster.rdl
-PB_RDL_ALL += $(wildcard $(PB_ROOT)/cfg/rdl/*.rdl)
+GW_RDL_ALL += $(GW_GEN_DIR)/gwaihir_addrmap.rdl
+GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
+GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
+GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
-PEAKRDL_INCLUDES += -I $(PB_ROOT)/cfg/rdl
+PEAKRDL_INCLUDES += -I $(GW_ROOT)/cfg/rdl
 PEAKRDL_INCLUDES += -I $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster_peripheral
-PEAKRDL_INCLUDES += -I $(PB_GEN_DIR)
+PEAKRDL_INCLUDES += -I $(GW_GEN_DIR)
 
-$(PB_GEN_DIR)/pb_soc_regs.sv: $(PB_GEN_DIR)/pb_soc_regs_pkg.sv
-$(PB_GEN_DIR)/pb_soc_regs_pkg.sv: $(PB_ROOT)/cfg/rdl/pb_soc_regs.rdl
-	$(PEAKRDL) regblock $< -o $(PB_GEN_DIR) --cpuif apb4-flat --default-reset arst_n -P Num_Clusters=$(SN_CLUSTERS) -P Num_Mem_Tiles=$(L2_TILES)
+$(GW_GEN_DIR)/gw_soc_regs.sv: $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
+$(GW_GEN_DIR)/gw_soc_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_soc_regs.rdl
+	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n -P Num_Clusters=$(SN_CLUSTERS) -P Num_Mem_Tiles=$(L2_TILES)
 
-$(PB_GEN_DIR)/picobello_addrmap.rdl: $(FLOO_CFG)
-	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(PB_GEN_DIR) --as-mem --memwidth=32
+$(GW_GEN_DIR)/gwaihir_addrmap.rdl: $(FLOO_CFG)
+	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
 
 # Those are dummy RDL files, for generation without access to the PD repository.
-$(PB_GEN_DIR)/fll.rdl $(PB_GEN_DIR)/pb_chip_regs.rdl: | $(PB_GEN_DIR)
+$(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl: | $(GW_GEN_DIR)
 	@touch $@
 
-$(PB_GEN_DIR)/pb_addrmap.h: $(PB_GEN_DIR)/picobello_addrmap.rdl $(PB_RDL_ALL)
+$(GW_GEN_DIR)/gw_addrmap.h: $(GW_GEN_DIR)/gwaihir_addrmap.rdl $(GW_RDL_ALL)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
 
-$(PB_GEN_DIR)/pb_addrmap.svh: $(PB_RDL_ALL)
+$(GW_GEN_DIR)/gw_addrmap.svh: $(GW_RDL_ALL)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
 
-PB_RDL_HW_ALL += $(PB_GEN_DIR)/pb_soc_regs.sv
-PB_RDL_HW_ALL += $(PB_GEN_DIR)/pb_soc_regs_pkg.sv
-PB_RDL_HW_ALL += $(PB_GEN_DIR)/pb_addrmap.svh
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_soc_regs.sv
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap.svh
 
-.PHONY: pb-soc-regs pb-soc-regs-clean
-pb-soc-regs: $(PB_GEN_DIR)/pb_soc_regs.sv $(PB_GEN_DIR)/pb_soc_regs_pkg.sv
+.PHONY: gw-soc-regs gw-soc-regs-clean
+gw-soc-regs: $(GW_GEN_DIR)/gw_soc_regs.sv $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
 
-pb-soc-regs-clean:
-	rm -rf $(PB_GEN_DIR)/pb_soc_regs.sv $(PB_GEN_DIR)/pb_soc_regs_pkg.sv
+gw-soc-regs-clean:
+	rm -rf $(GW_GEN_DIR)/gw_soc_regs.sv $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
 
-.PHONY: pb-addrmap
-pb-addrmap: $(PB_GEN_DIR)/pb_addrmap.h $(PB_GEN_DIR)/pb_addrmap.svh
+# TODO (lleone): remove phony, they are never used
+.PHONY: gw-addrmap gw-addrmap-clean
+gw-addrmap: $(GW_GEN_DIR)/gw_addrmap.h $(GW_GEN_DIR)/gw_addrmap.svh
 
 ############
 # Cheshire #
@@ -106,7 +104,7 @@ $(CHS_SLINK_DIR)/.generated2:	$(SLINK_CFG)
 # Snitch Cluster #
 ##################
 
-SN_GEN_DIR = $(PB_GEN_DIR)
+SN_GEN_DIR = $(GW_GEN_DIR)
 include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/rtl.mk
 
@@ -131,40 +129,31 @@ ifeq ($(shell $(VERIBLE_FMT) --version >/dev/null 2>&1 && echo OK),OK)
 	FLOO_GEN_FLAGS = --verible-fmt-bin="$(VERIBLE_FMT)" --verible-fmt-args="$(VERIBLE_FMT_ARGS)"
 endif
 
-floo-hw-all: $(PB_GEN_DIR)/floo_picobello_noc_pkg.sv
-$(PB_GEN_DIR)/floo_picobello_noc_pkg.sv: $(FLOO_CFG)
-	$(FLOO_GEN) pkg -c $(FLOO_CFG) -o $(PB_GEN_DIR) $(FLOO_GEN_FLAGS)
+floo-hw-all: $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv
+$(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv: $(FLOO_CFG)
+	$(FLOO_GEN) pkg -c $(FLOO_CFG) -o $(GW_GEN_DIR) $(FLOO_GEN_FLAGS)
 
 
-floo-clean:
-	rm -f $(PB_GEN_DIR)/floo_picobello_noc_pkg.sv
-	rm -f $(PB_GEN_DIR)/picobello_addrmap.rdl
+floo-clean: gw-addrmap-clean
+	rm -f $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv
+	rm -f $(GW_GEN_DIR)/gwaihir_addrmap.rdl
 
 ###################
 # Physical Design #
 ###################
 
-PD_REMOTE ?= git@iis-git.ee.ethz.ch:picobello/picobello-pd.git
+PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
 PD_COMMIT ?= main
-PD_DIR = $(PB_ROOT)/pd
-SPU_REMOTE ?= git@iis-git.ee.ethz.ch:picobello/fhg_spu_cluster.git
-SPU_COMMIT ?= main
-SPU_DIR = $(PB_ROOT)/.deps/fhg_spu_cluster
-
+PD_DIR = $(GW_ROOT)/pd
 .PHONY: init-pd clean-pd
 
-init-pd: $(PD_DIR) $(SPU_DIR)
+init-pd: $(PD_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
 
-$(SPU_DIR):
-	-git clone $(SPU_REMOTE) $(SPU_DIR)
-	-cd $(SPU_DIR) && git checkout $(SPU_COMMIT)
-
 clean-pd:
 	rm -rf $(PD_DIR)
-	rm -rf $(SPU_DIR)
 
 -include $(PD_DIR)/pd.mk
 
@@ -173,41 +162,51 @@ clean-pd:
 # General Phony targets #
 #########################
 
-PB_HW_ALL += $(CHS_HW_ALL)
-PB_HW_ALL += $(CHS_SIM_ALL)
-PB_HW_ALL += $(PB_RDL_HW_ALL)
+GW_HW_ALL += $(CHS_HW_ALL)
+GW_HW_ALL += $(CHS_SIM_ALL)
+GW_HW_ALL += $(GW_RDL_HW_ALL)
 
-.PHONY: picobello-hw-all picobello-hw-clean clean
+.PHONY: gwaihir-hw-all gwaihir-hw-clean clean
 
-picobello-hw-all all: $(PB_HW_ALL) sn-hw-all floo-hw-all
+gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
 
-picobello-hw-clean: sn-hw-clean floo-clean
-	rm -rf $(PB_HW_ALL)
+gwaihir-hw-clean: sn-hw-clean floo-clean
+	rm -rf $(GW_HW_ALL)
 
-clean: picobello-hw-clean
+clean: gwaihir-hw-clean
 	rm -rf $(BENDER_ROOT)
 
 ############
 # Software #
 ############
 
-include $(PB_ROOT)/sw/sw.mk
+include $(GW_ROOT)/sw/sw.mk
 
 ##############
 # Simulation #
 ##############
 
-TB_DUT = tb_picobello_top
-SIM_DIR = $(PB_ROOT)
+TB_DUT = tb_gwaihir_top
+SIM_DIR = $(GW_ROOT)
 
-include $(PB_ROOT)/target/sim/vsim/vsim.mk
-include $(PB_ROOT)/target/sim/traces.mk
+include $(GW_ROOT)/target/sim/vsim/vsim.mk
+include $(GW_ROOT)/target/sim/traces.mk
 
 ##################
 # Snitch cluster #
 ##################
 
+# Skip the expensive dep tracking (make -pq via list-dependent-make-targets) for
+# hw-only and informational goals. For unknown targets (e.g. app names), still run it.
+# %-all / %-clean cover all hw-all/hw-clean variants; vsim-% / gw-% cover sim/rdl targets.
+# Clean targets never need dep tracking regardless of subsystem.
+_GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist verible-fmt \
+                     init-pd clean-pd python-venv% %-all %-clean vsim-% gw-%
+ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
+# All requested goals are hw-only/informational — skip dep tracking.
+else
 $(call sn_include_deps)
+endif
 
 ########
 # Misc #
@@ -231,18 +230,18 @@ verible-fmt:
 Black=\033[0m
 Green=\033[1;32m
 help:
-	@echo -e "Makefile ${Green}targets${Black} for picobello"
+	@echo -e "Makefile ${Green}targets${Black} for gwaihir"
 	@echo -e "Use 'make <target>' where <target> is one of:"
 	@echo -e ""
 	@echo -e "${Green}help           	     ${Black}Show an overview of all Makefile targets."
 	@echo -e ""
 	@echo -e "General targets:"
-	@echo -e "${Green}all                  ${Black}Alias for picobello-hw-all."
-	@echo -e "${Green}clean                ${Black}Alias for picobello-hw-clean."
+	@echo -e "${Green}all                  ${Black}Alias for gwaihir-hw-all."
+	@echo -e "${Green}clean                ${Black}Alias for gwaihir-hw-clean."
 	@echo -e ""
 	@echo -e "Source generation targets:"
-	@echo -e "${Green}picobello-hw-all     ${Black}Build all RTL."
-	@echo -e "${Green}picobello-hw-clean   ${Black}Clean everything."
+	@echo -e "${Green}gwaihir-hw-all     ${Black}Build all RTL."
+	@echo -e "${Green}gwaihir-hw-clean   ${Black}Clean everything."
 	@echo -e "${Green}floo-hw-all          ${Black}Generate FlooNoC RTL."
 	@echo -e "${Green}floo-clean           ${Black}Clean FlooNoC RTL."
 	@echo -e "${Green}sn-hw-all            ${Black}Generate Snitch Cluster wrapper RTL."

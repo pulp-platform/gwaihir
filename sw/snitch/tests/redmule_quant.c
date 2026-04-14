@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#include "pb_addrmap.h"
+#include "gw_addrmap.h"
 
 #include "snrt.h"
 #include "data/redmule_tensors_quant.h"

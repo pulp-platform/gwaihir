@@ -4,8 +4,7 @@
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PD_COMMIT: "4828594842a7955a8d3a3077ac6454443565da27"
-  SPU_COMMIT: "c2e8815487bd713624d74ef3e3e0465196b6d67f"
+  PD_COMMIT: "382280d504f92b710ff16e188bfa62d3be1b45ec"
 
 # Check the cache for bender and python dependencies
 .cache-deps:
@@ -38,7 +37,7 @@ variables:
     - .cache-deps
     - .init-env
   script:
-    - make picobello-hw-all
+    - make gwaihir-hw-all
   artifacts:
     paths:
       - .bender

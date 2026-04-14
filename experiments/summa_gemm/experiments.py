@@ -6,7 +6,7 @@
 # Luca Colagrande <colluca@iis.ee.ethz.ch>
 
 from pathlib import Path
-import picobello as pb
+import gwaihir as pb
 from summa_gemm import model
 import snitch.util.experiments.experiment_utils as eu
 

@@ -79,12 +79,12 @@ static inline void dma_reduction_hw_simple(uintptr_t src, uintptr_t dst,
     // Create a communicator per row
     snrt_comm_t row_comm[N_ROWS];
     for (int i = 0; i < N_ROWS; i++)
-        pb_create_mesh_comm(&row_comm[i], 1, pb_cluster_num_in_row(), i, 0,
+        gw_create_mesh_comm(&row_comm[i], 1, gw_cluster_num_in_row(), i, 0,
             comm);
 
     // Create a communicator for the first column
     snrt_comm_t col_comm;
-    pb_create_mesh_comm(&col_comm, N_ROWS, 1, 0, 0, comm);
+    gw_create_mesh_comm(&col_comm, N_ROWS, 1, 0, 0, comm);
 
     if (snrt_is_dm_core() && comm->is_participant) {
         uint32_t remote_cluster;
@@ -93,11 +93,11 @@ static inline void dma_reduction_hw_simple(uintptr_t src, uintptr_t dst,
 
         // Reduction across rows (destination: first cluster in row)
         snrt_mcycle();
-        remote_cluster = pb_calculate_cluster_idx(pb_cluster_row_idx(), 0);
+        remote_cluster = gw_calculate_cluster_idx(gw_cluster_row_idx(), 0);
         remote_dst = (uintptr_t)snrt_remote_l1_ptr(
             (void *)dst, snrt_cluster_idx(), remote_cluster);
         snrt_dma_start_1d_reduction(
-            remote_dst, src, SIZE, row_comm[pb_cluster_row_idx()], op);
+            remote_dst, src, SIZE, row_comm[gw_cluster_row_idx()], op);
         snrt_dma_wait_all();
         snrt_mcycle();
 
@@ -122,9 +122,9 @@ static inline void dma_reduction_seq_normal(uintptr_t a, uintptr_t b, uintptr_t 
     uintptr_t d, snrt_comm_t comm) {
     if (!comm->is_participant) return;
 
-    uint32_t col_idx = pb_cluster_col_idx();
-    uint32_t row_idx = pb_cluster_row_idx();
-    uintptr_t is_northernmost = pb_cluster_in_row(N_ROWS - 1);
+    uint32_t col_idx = gw_cluster_col_idx();
+    uint32_t row_idx = gw_cluster_row_idx();
+    uintptr_t is_northernmost = gw_cluster_in_row(N_ROWS - 1);
 
     // Group to simplify rotating buffers
     uintptr_t dst[2] = {b, d};
@@ -141,7 +141,7 @@ static inline void dma_reduction_seq_normal(uintptr_t a, uintptr_t b, uintptr_t 
     // south neighbour, all other clusters send the data they reduced in the
     // previous step (in `a`).
     uintptr_t dma_src, dma_dst;
-    if (pb_cluster_is_easternmost() || (col_idx == 0 && !is_northernmost)) {
+    if (gw_cluster_is_easternmost() || (col_idx == 0 && !is_northernmost)) {
         dma_src = a;
     } else {
         dma_src = c;
@@ -149,8 +149,8 @@ static inline void dma_reduction_seq_normal(uintptr_t a, uintptr_t b, uintptr_t 
     // Clusters in col > 0, participating in row reduction, send to west
     // neighbours. Clusters in col == 0, participating in column reduction,
     // send to south neighbours.
-    uint32_t dst_cluster = col_idx > 0 ? pb_cluster_west_neighbour() :
-        pb_cluster_south_neighbour();
+    uint32_t dst_cluster = col_idx > 0 ? gw_cluster_west_neighbour() :
+        gw_cluster_south_neighbour();
     dma_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst[0],
         snrt_cluster_idx(), dst_cluster);
 
@@ -170,22 +170,22 @@ static inline void dma_reduction_seq_normal(uintptr_t a, uintptr_t b, uintptr_t 
     asm volatile ("" : "+r"(user) ::);
 
     // Iterations to cover all reductions in a row
-    uint32_t n_iters = 1 + 2 * (pb_cluster_num_in_row() - 2) + N_BATCHES;
+    uint32_t n_iters = 1 + 2 * (gw_cluster_num_in_row() - 2) + N_BATCHES;
     for (uint32_t i = 0; i < n_iters; i++) {
 
         uint32_t col_idx_inv, base_iter;
         char dma_active, compute_active;
 
         // Determine which clusters need to send data at every iteration
-        col_idx_inv = pb_cluster_num_in_row() - col_idx - 1;
+        col_idx_inv = gw_cluster_num_in_row() - col_idx - 1;
         base_iter = 2 * col_idx_inv;
         dma_active = (i >= base_iter) && (i < (base_iter + N_BATCHES));
-        dma_active &= !pb_cluster_in_col(0);
+        dma_active &= !gw_cluster_in_col(0);
 
         // Determine which clusters need to reduce data at every iteration
         base_iter = 1 + 2 * (col_idx_inv - 1);
         compute_active = (i >= base_iter) && (i < (base_iter + N_BATCHES));
-        compute_active &= !pb_cluster_is_easternmost();
+        compute_active &= !gw_cluster_is_easternmost();
 
         if (compute_active && snrt_is_compute_core()) {
             snrt_mcycle();
@@ -209,7 +209,7 @@ static inline void dma_reduction_seq_normal(uintptr_t a, uintptr_t b, uintptr_t 
             dma_src += BATCH;
             swap_buffers(&dst[0], &dst[1]);
             dma_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst[0],
-                snrt_cluster_idx(), pb_cluster_west_neighbour());
+                snrt_cluster_idx(), gw_cluster_west_neighbour());
             asm volatile ("" : "+r"(dma_src), "+r"(dma_dst) ::);
 
             // Wait for DMA to complete
@@ -240,13 +240,13 @@ static inline void dma_reduction_seq_normal(uintptr_t a, uintptr_t b, uintptr_t 
             row_idx_inv = N_ROWS - row_idx - 1;
             base_iter = 2 * row_idx_inv;
             dma_active = (i >= base_iter) && (i < (base_iter + N_BATCHES));
-            dma_active &= pb_cluster_in_col(0);
+            dma_active &= gw_cluster_in_col(0);
             dma_active &= snrt_cluster_idx() != 0;
 
             // Determine which clusters need to reduce data at every iteration
             base_iter = 1 + 2 * (row_idx_inv - 1);
             compute_active = (i >= base_iter) && (i < (base_iter + N_BATCHES));
-            compute_active &= pb_cluster_in_col(0);
+            compute_active &= gw_cluster_in_col(0);
             compute_active &= !is_northernmost;
 
             if (compute_active && snrt_is_compute_core()) {
@@ -270,7 +270,7 @@ static inline void dma_reduction_seq_normal(uintptr_t a, uintptr_t b, uintptr_t 
                 dma_src += BATCH;
                 swap_buffers(&dst[0], &dst[1]);
                 dma_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst[0],
-                    snrt_cluster_idx(), pb_cluster_south_neighbour());
+                    snrt_cluster_idx(), gw_cluster_south_neighbour());
                 asm volatile ("" : "+r"(dma_src), "+r"(dma_dst) ::);
 
                 // Wait for DMA to complete
@@ -292,9 +292,9 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
                                  snrt_comm_t comm) {
     if (!comm->is_participant) return;
 
-    uint32_t col_idx = pb_cluster_col_idx();
-    uint32_t row_idx = pb_cluster_row_idx();
-    uintptr_t is_northernmost = pb_cluster_in_row(N_ROWS - 1);
+    uint32_t col_idx = gw_cluster_col_idx();
+    uint32_t row_idx = gw_cluster_row_idx();
+    uintptr_t is_northernmost = gw_cluster_in_row(N_ROWS - 1);
 
     // Group to simplify rotating buffers
     uintptr_t dst[2] = {b, d};
@@ -313,7 +313,7 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
     // south neighbour, all other clusters send the data they reduced in the
     // previous step (in `a`).
     uintptr_t dma_src, dma_dst;
-    if (pb_cluster_is_easternmost() || (col_idx == 0 && !is_northernmost)) {
+    if (gw_cluster_is_easternmost() || (col_idx == 0 && !is_northernmost)) {
         dma_src = a_ptr[0];
     } else {
         dma_src = c_ptr[0];
@@ -321,8 +321,8 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
     // Clusters in col > 0, participating in row reduction, send to west
     // neighbours. Clusters in col == 0, participating in column reduction,
     // send to south neighbours.
-    uint32_t dst_cluster = col_idx > 0 ? pb_cluster_west_neighbour() :
-        pb_cluster_south_neighbour();
+    uint32_t dst_cluster = col_idx > 0 ? gw_cluster_west_neighbour() :
+        gw_cluster_south_neighbour();
     dma_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst[0],
         snrt_cluster_idx(), dst_cluster);
 
@@ -342,22 +342,22 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
     asm volatile ("" : "+r"(user) ::);
 
     // Iterations to cover all reductions in a row
-    uint32_t n_iters = 1 + 2 * (pb_cluster_num_in_row() - 2) + N_BATCHES;
+    uint32_t n_iters = 1 + 2 * (gw_cluster_num_in_row() - 2) + N_BATCHES;
     for (uint32_t i = 0; i < n_iters; i++) {
 
         uint32_t col_idx_inv, base_iter;
         char dma_active, compute_active;
 
         // Determine which clusters need to send data at every iteration
-        col_idx_inv = pb_cluster_num_in_row() - col_idx - 1;
+        col_idx_inv = gw_cluster_num_in_row() - col_idx - 1;
         base_iter = 2 * col_idx_inv;
         dma_active = (i >= base_iter) && (i < (base_iter + N_BATCHES));
-        dma_active &= !pb_cluster_in_col(0);
+        dma_active &= !gw_cluster_in_col(0);
 
         // Determine which clusters need to reduce data at every iteration
         base_iter = 1 + 2 * (col_idx_inv - 1);
         compute_active = (i >= base_iter) && (i < (base_iter + N_BATCHES));
-        compute_active &= !pb_cluster_is_easternmost();
+        compute_active &= !gw_cluster_is_easternmost();
 
         if (compute_active && snrt_is_compute_core()) {
             snrt_mcycle();
@@ -389,7 +389,7 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
             // Update pointers for next iteration while transfer completes,
             // preventing instructions from being reordered after the DMA wait
             // dma_src += BATCH;
-            if (pb_cluster_is_easternmost() || (col_idx == 0 && !is_northernmost)) {
+            if (gw_cluster_is_easternmost() || (col_idx == 0 && !is_northernmost)) {
                 a_ptr[0] += BATCH;
                 swap_buffers(&a_ptr[0], &a_ptr[1]);
                 dma_src = a_ptr[0];
@@ -401,7 +401,7 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
             
             swap_buffers(&dst[0], &dst[1]);
             dma_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst[0],
-                snrt_cluster_idx(), pb_cluster_west_neighbour());
+                snrt_cluster_idx(), gw_cluster_west_neighbour());
             asm volatile ("" : "+r"(dma_src), "+r"(dma_dst) ::);
 
             // Wait for DMA to complete
@@ -437,13 +437,13 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
             row_idx_inv = N_ROWS - row_idx - 1;
             base_iter = 2 * row_idx_inv;
             dma_active = (i >= base_iter) && (i < (base_iter + N_BATCHES));
-            dma_active &= pb_cluster_in_col(0);
+            dma_active &= gw_cluster_in_col(0);
             dma_active &= snrt_cluster_idx() != 0;
 
             // Determine which clusters need to reduce data at every iteration
             base_iter = 1 + 2 * (row_idx_inv - 1);
             compute_active = (i >= base_iter) && (i < (base_iter + N_BATCHES));
-            compute_active &= pb_cluster_in_col(0);
+            compute_active &= gw_cluster_in_col(0);
             compute_active &= !is_northernmost;
 
             if (compute_active && snrt_is_compute_core()) {
@@ -485,7 +485,7 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
 
                 swap_buffers(&dst[0], &dst[1]);
                 dma_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst[0],
-                    snrt_cluster_idx(), pb_cluster_south_neighbour());
+                    snrt_cluster_idx(), gw_cluster_south_neighbour());
                 asm volatile ("" : "+r"(dma_src), "+r"(dma_dst) ::);
 
                 // Wait for DMA to complete
@@ -505,8 +505,8 @@ static inline void dma_reduction_tree_transfer_left_phase(char is_sender, char d
     if (is_sender && snrt_is_dm_core()) {
 
         // Calculate destination
-        uintptr_t dst_cluster = pb_calculate_cluster_idx(
-            pb_cluster_row_idx(), pb_cluster_col_idx() - dist);
+        uintptr_t dst_cluster = gw_calculate_cluster_idx(
+            gw_cluster_row_idx(), gw_cluster_col_idx() - dist);
         uintptr_t remote_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst,
             snrt_cluster_idx(), dst_cluster);
 
@@ -528,8 +528,8 @@ static inline void dma_reduction_tree_transfer_south_phase(char is_sender, char 
     if (is_sender && snrt_is_dm_core()) {
 
         // Calculate destination
-        uintptr_t dst_cluster = pb_calculate_cluster_idx(
-            pb_cluster_row_idx() - dist, pb_cluster_col_idx());
+        uintptr_t dst_cluster = gw_calculate_cluster_idx(
+            gw_cluster_row_idx() - dist, gw_cluster_col_idx());
         uintptr_t remote_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst,
             snrt_cluster_idx(), dst_cluster);
 
@@ -579,14 +579,14 @@ static inline void dma_reduction_tree(uintptr_t a, uintptr_t b, uintptr_t c,
     uintptr_t result = c;
 
     // Iterations to cover all reductions in a row
-    uint32_t n_levels_in_row = pb_log2_cluster_num_in_row();
+    uint32_t n_levels_in_row = gw_log2_cluster_num_in_row();
     for (uint32_t i = 0; i < n_levels_in_row; i++) {
 
         // Determine which clusters are senders and receivers at every level
         // of the tree
         char dist = 1 << i;  // Distance between clusters in a pair
-        char is_sender = (pb_cluster_col_idx() % (2*dist)) == dist;
-        char is_receiver = (pb_cluster_col_idx() % (2*dist)) == 0;
+        char is_sender = (gw_cluster_col_idx() % (2*dist)) == dist;
+        char is_receiver = (gw_cluster_col_idx() % (2*dist)) == 0;
 
         // Transfer phase for first batch
         dma_reduction_tree_transfer_left_phase(is_sender, dist, src, dst[0]);
@@ -626,8 +626,8 @@ static inline void dma_reduction_tree(uintptr_t a, uintptr_t b, uintptr_t c,
 
         // Determine which clusters are senders at every level of the tree
         char dist = 1 << i;  // Distance between clusters in a pair
-        char is_sender = (pb_cluster_row_idx() % (2*dist)) == dist && pb_cluster_in_col(0);
-        char is_receiver = (pb_cluster_row_idx() % (2*dist)) == 0 && pb_cluster_in_col(0);
+        char is_sender = (gw_cluster_row_idx() % (2*dist)) == dist && gw_cluster_in_col(0);
+        char is_receiver = (gw_cluster_row_idx() % (2*dist)) == 0 && gw_cluster_in_col(0);
 
         // Transfer phase for first batch
         dma_reduction_tree_transfer_south_phase(is_sender, dist, src, dst[0]);
@@ -686,7 +686,7 @@ static inline void dma_reduction(uintptr_t a0, uintptr_t a1,
 
 // Global variables for verification script
 double output[N_ELEMS];
-extern const uint32_t n_clusters = N_ROWS * pb_cluster_num_in_row();
+extern const uint32_t n_clusters = N_ROWS * gw_cluster_num_in_row();
 extern const uint32_t length = N_ELEMS;
 
 int main (void){
@@ -713,7 +713,7 @@ int main (void){
 
     // Create communicator for first N rows (all other clusters are inactive)
     snrt_comm_t comm;
-    pb_create_mesh_comm(&comm, N_ROWS, pb_cluster_num_in_row());
+    gw_create_mesh_comm(&comm, N_ROWS, gw_cluster_num_in_row());
 
     // Only clusters in the first N rows continue from here
     if (!comm->is_participant) return 0;
@@ -724,8 +724,8 @@ int main (void){
         // Initialize source buffer
         if (snrt_is_dm_core()) {
             for (uint32_t i = 0; i < N_ELEMS; i++) {
-                uint32_t row_major_cluster_idx = pb_cluster_col_idx() +
-                    pb_cluster_row_idx() * pb_cluster_num_in_row();
+                uint32_t row_major_cluster_idx = gw_cluster_col_idx() +
+                    gw_cluster_row_idx() * gw_cluster_num_in_row();
                 if (SNRT_TCDM_HYPERBANK_NUM!=1 && SIZE != BATCH && (IMPL == SEQ || IMPL == TREE)){
                     uint32_t batch_id = i / (BATCH / sizeof(double));
                     uint32_t buffer_idx = batch_id % 2;
@@ -750,7 +750,7 @@ int main (void){
 
     // Writeback to L3
     uintptr_t result_buffer = c_buffer[0];
-    uint32_t total_tree_levels = pb_log2_cluster_num_in_row() + LOG2_N_ROWS;
+    uint32_t total_tree_levels = gw_log2_cluster_num_in_row() + LOG2_N_ROWS;
     if ((IMPL == HW_SIMPLE && N_ROWS > 1) ||
         (IMPL == SEQ && N_ROWS > 1) ||
         (IMPL == TREE && (total_tree_levels % 2) == 0))

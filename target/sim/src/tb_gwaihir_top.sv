@@ -4,15 +4,15 @@
 //
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
-module tb_picobello_top;
+module tb_gwaihir_top;
 
   `define L2_SRAM_PATH fix.dut.gen_memtile[i].i_mem_tile.\
                        gen_sram_banks[j].gen_sram_macros[k].i_mem.sram
 
-  `include "tb_picobello_tasks.svh"
+  `include "tb_gwaihir_tasks.svh"
 
   // Instantiate the fixture
-  fixture_picobello_top fix ();
+  fixture_gwaihir_top fix ();
 
   string        preload_elf;
   string        boot_hex;

@@ -6,27 +6,21 @@
 
 name: gitlab-ci
 
-on:
-  pull_request:
-  push:
-    branches:
-      - main
+on: [ push, pull_request, workflow_dispatch ]
 
 jobs:
-  check:
-      name: Mirror and check
-      runs-on: ubuntu-latest
-      steps:
-        - uses: pulp-platform/pulp-actions/gitlab-ci@v2.4.5
-          # Skip on forks or pull requests from forks due to missing secrets.
-          if: >
-            github.repository == 'pulp-platform/picobello' &&
-            (github.event_name != 'pull_request' ||
-            github.event.pull_request.head.repo.full_name == github.repository)
-          with:
-            domain: iis-git.ee.ethz.ch
-            repo: github-mirror/picobello
-            token: ${{ secrets.GITLAB_TOKEN }}
-            # Poll every minute for 3 hours
-            poll-period: 60
-            poll-count: 180
+  gitlab-ci:
+    name: Mirror and check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Gitlab CI
+        uses: pulp-platform/pulp-actions/gitlab-ci@v2.5.0 # update version as needed, not autoupdated
+        # Skip on forks or pull requests from forks due to missing secrets.
+        if: github.repository == 'pulp-platform/gwaihir' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        with:
+          domain: iis-git.ee.ethz.ch
+          repo: github-mirror/gwaihir
+          token: ${{ secrets.GITLAB_TOKEN }}
+          # Poll every minute for 3 hours
+          poll-period: 60
+          poll-count: 180

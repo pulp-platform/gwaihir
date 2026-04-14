@@ -55,7 +55,7 @@ def sw_callback(target=None, build_dir=None, defines=None, data_cfg=None, dry_ru
 
 def hw_callback(work_dir=None, hw_cfg=None, dry_run=False,
                 sync=False, **kwargs):
-    shutil.copy2(hw_cfg, root / '.generated/floo_picobello_noc_pkg.sv')
+    shutil.copy2(hw_cfg, root / '.generated/floo_gwaihir_noc_pkg.sv')
     work_dir.mkdir(exist_ok=True, parents=True)
     vars = {
         'VSIM_DIR': work_dir,

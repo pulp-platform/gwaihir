@@ -200,12 +200,6 @@ packages:
       Git: https://github.com/pulp-platform/dram_rtl_sim.git
     dependencies:
     - axi
-  fhg_spu_cluster:
-    revision: null
-    version: null
-    source:
-      Path: .deps/fhg_spu_cluster
-    dependencies: []
   floo_noc:
     revision: 959fb172670a7910fcee94c2d82e460c07c0a24c
     version: 0.8.0
@@ -325,7 +319,7 @@ packages:
     - common_cells
     - register_interface
     - tech_cells_generic
-  picobello-pd:
+  gwaihir-pd:
     revision: null
     version: null
     source:

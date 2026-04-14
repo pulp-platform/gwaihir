@@ -22,5 +22,5 @@
 #include "sync.c"
 #include "team.c"
 
-#include "pb_team.c"
-#include "pb_sync.c"
+#include "gw_team.c"
+#include "gw_sync.c"

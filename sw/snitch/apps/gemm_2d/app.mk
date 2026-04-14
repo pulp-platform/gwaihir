@@ -5,8 +5,8 @@
 # Lorenzo Leone <lleone@iis.ee.ethz.ch>
 
 APP              := gemm_2d
-$(APP)_BUILD_DIR ?= $(PB_SNITCH_SW_DIR)/apps/$(APP)/build
-SRC_DIR          := $(PB_SNITCH_SW_DIR)/apps/$(APP)/src
+$(APP)_BUILD_DIR ?= $(GW_SNITCH_SW_DIR)/apps/$(APP)/build
+SRC_DIR          := $(GW_SNITCH_SW_DIR)/apps/$(APP)/src
 SRCS             := $(SRC_DIR)/gemm_2d.c
 $(APP)_INCDIRS   := $(SN_ROOT)/sw/kernels/blas $(SN_ROOT)/sw/kernels/blas/gemm/src
 

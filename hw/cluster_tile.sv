@@ -10,9 +10,9 @@
 
 module cluster_tile
   import floo_pkg::*;
-  import floo_picobello_noc_pkg::*;
+  import floo_gwaihir_noc_pkg::*;
   import snitch_cluster_pkg::*;
-  import picobello_pkg::*;
+  import gwaihir_pkg::*;
 (
   input  logic                                    clk_i,
   input  logic                                    rst_ni,
@@ -97,7 +97,7 @@ module cluster_tile
   red_wide_rsp_t offload_wide_rsp;
 
   // Parse the Wide request from the reouter to the one from the snitch cluster!
-  // TODO(raroth): possible to remove this decode from the picobello repo and move it inside the
+  // TODO(raroth): possible to remove this decode from the gwaihir repo and move it inside the
   //       FlooNoC repo. Currently the Decode used for the ALU is directly inside the floo_alu.sv
   //       file. Maybe do the same for the FPU
   if (en_wide_reduction(RouteCfg.CollectiveCfg.OpCfg)) begin : gen_wide_offload_reduction
@@ -394,22 +394,22 @@ module cluster_tile
   /////////////
 
   floo_nw_chimney #(
-    .AxiCfgN             (floo_picobello_noc_pkg::AxiCfgN),
-    .AxiCfgW             (floo_picobello_noc_pkg::AxiCfgW),
+    .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
+    .AxiCfgW             (floo_gwaihir_noc_pkg::AxiCfgW),
     .ChimneyCfgN         (floo_pkg::ChimneyDefaultCfg),
     .ChimneyCfgW         (floo_pkg::ChimneyDefaultCfg),
-    .RouteCfg            (floo_picobello_noc_pkg::RouteCfg),
+    .RouteCfg            (floo_gwaihir_noc_pkg::RouteCfg),
     .AtopSupport         (1'b1),
-    .WideRwDecouple      (floo_picobello_noc_pkg::WideRwDecouple),
+    .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (3),
-    .Sam                 (floo_picobello_noc_pkg::CollectiveSam),
-    .id_t                (floo_picobello_noc_pkg::id_t),
-    .rob_idx_t           (floo_picobello_noc_pkg::rob_idx_t),
-    .hdr_t               (floo_picobello_noc_pkg::hdr_t),
-    .sam_rule_t          (floo_picobello_noc_pkg::collective_sam_rule_t),
-    .sam_idx_t           (floo_picobello_noc_pkg::collective_idx_t),
-    .mask_sel_t          (floo_picobello_noc_pkg::collective_mask_sel_t),
+    .Sam                 (floo_gwaihir_noc_pkg::CollectiveSam),
+    .id_t                (floo_gwaihir_noc_pkg::id_t),
+    .rob_idx_t           (floo_gwaihir_noc_pkg::rob_idx_t),
+    .hdr_t               (floo_gwaihir_noc_pkg::hdr_t),
+    .sam_rule_t          (floo_gwaihir_noc_pkg::collective_sam_rule_t),
+    .sam_idx_t           (floo_gwaihir_noc_pkg::collective_idx_t),
+    .mask_sel_t          (floo_gwaihir_noc_pkg::collective_mask_sel_t),
     .axi_narrow_in_req_t (snitch_cluster_pkg::narrow_out_req_t),
     .axi_narrow_in_rsp_t (snitch_cluster_pkg::narrow_out_resp_t),
     .axi_narrow_out_req_t(snitch_cluster_pkg::narrow_in_req_t),
@@ -418,12 +418,12 @@ module cluster_tile
     .axi_wide_in_rsp_t   (snitch_cluster_pkg::wide_out_resp_t),
     .axi_wide_out_req_t  (snitch_cluster_pkg::wide_in_req_t),
     .axi_wide_out_rsp_t  (snitch_cluster_pkg::wide_in_resp_t),
-    .floo_req_t          (floo_picobello_noc_pkg::floo_req_t),
-    .floo_rsp_t          (floo_picobello_noc_pkg::floo_rsp_t),
-    .floo_wide_t         (floo_picobello_noc_pkg::floo_wide_t),
+    .floo_req_t          (floo_gwaihir_noc_pkg::floo_req_t),
+    .floo_rsp_t          (floo_gwaihir_noc_pkg::floo_rsp_t),
+    .floo_wide_t         (floo_gwaihir_noc_pkg::floo_wide_t),
     .sram_cfg_t          (snitch_cluster_pkg::sram_cfg_t),
-    .user_narrow_struct_t(floo_picobello_noc_pkg::collective_axi_narrow_in_user_t),
-    .user_wide_struct_t  (floo_picobello_noc_pkg::collective_axi_wide_in_user_t)
+    .user_narrow_struct_t(floo_gwaihir_noc_pkg::collective_axi_narrow_in_user_t),
+    .user_wide_struct_t  (floo_gwaihir_noc_pkg::collective_axi_wide_in_user_t)
   ) i_chimney (
     .clk_i               (tile_clk),
     .rst_ni              (tile_rst_n),
