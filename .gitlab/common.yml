@@ -4,7 +4,7 @@
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PD_COMMIT: "382280d504f92b710ff16e188bfa62d3be1b45ec"
+  PD_COMMIT: "64b7d5f3df0a4a8c6bd35cf56987d759ba7fe2bf"
 
 # Check the cache for bender and python dependencies
 .cache-deps:
