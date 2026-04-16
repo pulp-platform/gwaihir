@@ -60,12 +60,7 @@ module gwaihir_top
   input  logic         [              SlinkNumChan-1:0]                    slink_rcv_clk_i,
   output logic         [              SlinkNumChan-1:0]                    slink_rcv_clk_o,
   input  logic         [              SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
-  output logic         [              SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
-  // DRAM Serial link interface
-  input  logic         [              SlinkNumChan-1:0]                    dram_slink_rcv_clk_i,
-  output logic         [              SlinkNumChan-1:0]                    dram_slink_rcv_clk_o,
-  input  logic         [              SlinkNumChan-1:0][SlinkNumLanes-1:0] dram_slink_i,
-  output logic         [              SlinkNumChan-1:0][SlinkNumLanes-1:0] dram_slink_o
+  output logic         [              SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o
 );
 
   floo_req_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_req_in, floo_req_out;
@@ -179,10 +174,6 @@ module gwaihir_top
     .slink_rcv_clk_o,
     .slink_i,
     .slink_o,
-    .dram_slink_rcv_clk_i,
-    .dram_slink_rcv_clk_o,
-    .dram_slink_i,
-    .dram_slink_o,
     .id_i             (CheshireId),
     .cluster_clk_en_o (cluster_clk_en),
     .cluster_rst_no   (cluster_rst_n),
