@@ -6,7 +6,6 @@
 `define __CHESHIRE_TILE_RDL__
 
 // `include "cheshire.rdl"
-// `include "serial_link_single_channel.rdl"
 `include "gw_soc_regs.rdl"
 `include "fll.rdl"
 `include "gw_chip_regs.rdl"
@@ -17,7 +16,6 @@ addrmap cheshire_tile {
     //     .SlinkNumBits (16)
     // )                               cheshire          @0x0000_0000;
 
-    // serial_link_single_channel_reg  dram_serial_link  @0x1800_0000;
 `ifdef GW_CHIP_RDL
     fll          fll           @0x1800_1000;
     gw_chip_regs gw_chip_regs  @0x1800_2000;

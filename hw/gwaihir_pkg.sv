@@ -257,11 +257,10 @@ package gwaihir_pkg;
   ////////////////
 
   typedef enum bit [MaxExtRegSlvWidth-1:0] {
-    CshRegExtDramSerialLink = 0,  // Serial link to DRAM
-    CshRegExtFLL            = 1,  // FLL registers
-    CshRegExtChipCtrl       = 2,  // Chip-level registers
-    CshRegExtClkGatingRst   = 3,  // Tile-specific clock gating and reset control
-    CshRegExtNumSlv         = 4   // Number of external register slaves
+    CshRegExtFLL          = 0,  // FLL registers
+    CshRegExtChipCtrl     = 1,  // Chip-level registers
+    CshRegExtClkGatingRst = 2,  // Tile-specific clock gating and reset control
+    CshRegExtNumSlv       = 3   // Number of external register slaves
   } cheshire_reg_ext_e;
 
   // Define function to derive configuration from Cheshire defaults.
@@ -276,18 +275,15 @@ package gwaihir_pkg;
     ret.AxiExtRegionIdx[0]   = 0;
     ret.AxiExtRegionStart[0] = 'h2000_0000;
     ret.AxiExtRegionEnd[0]   = 'h8000_0000;
-    ret.RegExtRegionIdx[0]   = CshRegExtDramSerialLink;
-    ret.RegExtRegionStart[0] = 'h1800_0000;
-    ret.RegExtRegionEnd[0]   = 'h1800_1000;
-    ret.RegExtRegionIdx[1]   = CshRegExtFLL;
-    ret.RegExtRegionStart[1] = 'h1800_1000;
-    ret.RegExtRegionEnd[1]   = 'h1800_2000;
-    ret.RegExtRegionIdx[2]   = CshRegExtChipCtrl;
-    ret.RegExtRegionStart[2] = 'h1800_2000;
-    ret.RegExtRegionEnd[2]   = 'h1800_3000;
-    ret.RegExtRegionIdx[3]   = CshRegExtClkGatingRst;
-    ret.RegExtRegionStart[3] = 'h1800_3000;
-    ret.RegExtRegionEnd[3]   = 'h1800_4000;
+    ret.RegExtRegionIdx[0]   = CshRegExtFLL;
+    ret.RegExtRegionStart[0] = 'h1800_1000;
+    ret.RegExtRegionEnd[0]   = 'h1800_2000;
+    ret.RegExtRegionIdx[1]   = CshRegExtChipCtrl;
+    ret.RegExtRegionStart[1] = 'h1800_2000;
+    ret.RegExtRegionEnd[1]   = 'h1800_3000;
+    ret.RegExtRegionIdx[2]   = CshRegExtClkGatingRst;
+    ret.RegExtRegionStart[2] = 'h1800_3000;
+    ret.RegExtRegionEnd[2]   = 'h1800_4000;
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
     ret.Cva6ExtCieOnTop      = 0;

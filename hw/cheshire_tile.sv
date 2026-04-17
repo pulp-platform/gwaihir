@@ -71,11 +71,6 @@ module cheshire_tile
   output logic [SlinkNumChan-1:0] slink_rcv_clk_o,
   input logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
   output logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
-  // DRAM Serial link interface
-  input logic [SlinkNumChan-1:0] dram_slink_rcv_clk_i,
-  output logic [SlinkNumChan-1:0] dram_slink_rcv_clk_o,
-  input logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] dram_slink_i,
-  output logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] dram_slink_o,
   // Chimney ports
   input id_t id_i,
   // Router ports
@@ -380,49 +375,7 @@ module cheshire_tile
   assign reg_req_o                                   = reg_ext_req[CshRegExtChipCtrl:CshRegExtFLL];
   assign reg_ext_rsp[CshRegExtChipCtrl:CshRegExtFLL] = reg_rsp_i;
 
-  // Serial Link to connect to DRAM on an FPGA
-  csh_axi_llc_req_t dram_slink_err_req;
-  csh_axi_llc_rsp_t dram_slink_err_rsp;
-
-  serial_link #(
-    .axi_req_t  (csh_axi_llc_req_t),
-    .axi_rsp_t  (csh_axi_llc_rsp_t),
-    .cfg_req_t  (csh_reg_req_t),
-    .cfg_rsp_t  (csh_reg_rsp_t),
-    .aw_chan_t  (csh_axi_llc_aw_chan_t),
-    .ar_chan_t  (csh_axi_llc_ar_chan_t),
-    .r_chan_t   (csh_axi_llc_r_chan_t),
-    .w_chan_t   (csh_axi_llc_w_chan_t),
-    .b_chan_t   (csh_axi_llc_b_chan_t),
-    .hw2reg_t   (serial_link_single_channel_reg_pkg::serial_link_single_channel_hw2reg_t),
-    .reg2hw_t   (serial_link_single_channel_reg_pkg::serial_link_single_channel_reg2hw_t),
-    .NumChannels(SlinkNumChan),
-    .NumLanes   (SlinkNumLanes),
-    .MaxClkDiv  (SlinkMaxClkDiv)
-  ) i_dram_serial_link (
-    .clk_i,
-    .rst_ni,
-    .clk_sl_i     (clk_i),
-    .rst_sl_ni    (rst_ni),
-    .clk_reg_i    (clk_i),
-    .rst_reg_ni   (rst_ni),
-    .testmode_i   (test_mode_i),
-    .axi_in_req_i (axi_llc_req),
-    .axi_in_rsp_o (axi_llc_rsp),
-    .axi_out_req_o(dram_slink_err_req),
-    .axi_out_rsp_i(dram_slink_err_rsp),
-    .cfg_req_i    (reg_ext_req[CshRegExtDramSerialLink]),
-    .cfg_rsp_o    (reg_ext_rsp[CshRegExtDramSerialLink]),
-    .ddr_rcv_clk_i(dram_slink_rcv_clk_i),
-    .ddr_rcv_clk_o(dram_slink_rcv_clk_o),
-    .ddr_i        (dram_slink_i),
-    .ddr_o        (dram_slink_o),
-    .isolated_i   ('0),
-    .isolate_o    (),
-    .clk_ena_o    (),
-    .reset_no     ()
-  );
-
+  // LLC master port tied to an error slave (no external DRAM via serial link)
   axi_err_slv #(
     .AxiIdWidth(CheshireCfg.AxiMstIdWidth + $clog2(
         csh_axi__AxiIn.num_in
@@ -434,12 +387,12 @@ module cheshire_tile
     .RespData(64'hCA11AB1EBADCAB1E),
     .ATOPs(1'b1),
     .MaxTrans(4)  // TODO maybe tune, but this block should never be used.
-  ) i_dram_slink_err (
+  ) i_llc_err_slv (
     .clk_i,
     .rst_ni,
     .test_i    (test_mode_i),
-    .slv_req_i (dram_slink_err_req),
-    .slv_resp_o(dram_slink_err_rsp)
+    .slv_req_i (axi_llc_req),
+    .slv_resp_o(axi_llc_rsp)
   );
 
   // to apb bus (declare type for req and resp)
