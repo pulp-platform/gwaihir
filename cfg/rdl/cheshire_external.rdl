@@ -5,11 +5,16 @@
 `ifndef __CHESHIRE_EXTERNAL_RDL__
 `define __CHESHIRE_EXTERNAL_RDL__
 
+// Include cheshire internal to inherit the executable property only
+`include "cheshire.rdl"
+
 addrmap cheshire_external {
+    // DRAM; 8 MiB minimum (Linux requirement), read+write+exec
+    // Reuse the executable property already defined in cheshire_internal.rdl
     external mem {
-        mementries = 1;
-        memwidth = 64;
-    } dummy;
+        mementries = 2097152; memwidth = 32;
+        sw = rw; executable = true;
+    } dram @0x0;
 
 };
 

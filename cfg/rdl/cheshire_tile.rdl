@@ -5,23 +5,23 @@
 `ifndef __CHESHIRE_TILE_RDL__
 `define __CHESHIRE_TILE_RDL__
 
-// `include "cheshire.rdl"
+// `include "serial_link_single_channel.rdl"
+`include "cheshire.rdl"
 `include "gw_soc_regs.rdl"
 `include "fll.rdl"
 `include "gw_chip_regs.rdl"
 
-addrmap cheshire_tile {
+addrmap cheshire_tile #(
+    longint unsigned SlinkNumLanes = 8
+) {
 
-    // cheshire #(
-    //     .SlinkNumBits (16)
-    // )                               cheshire          @0x0000_0000;
+    cheshire #(.SlinkNumLanes (SlinkNumLanes)) cheshire @0x0000_0000;
 
 `ifdef GW_CHIP_RDL
     fll          fll           @0x1800_1000;
     gw_chip_regs gw_chip_regs  @0x1800_2000;
 `endif
     gw_soc_regs  gw_soc_regs   @0x1800_3000;
-
 };
 
 `endif // __CHESHIRE_TILE_RDL__

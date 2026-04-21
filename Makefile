@@ -44,6 +44,8 @@ SIM_TARGS += -t simulation -t test -t idma_test
 #############
 # systemRDL #
 #############
+SLINK_NUM_LANES ?= 8
+PEAKRDL_PARAMS   += -P SlinkNumLanes=$(SLINK_NUM_LANES)
 
 GW_RDL_ALL += $(GW_GEN_DIR)/gwaihir_addrmap.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
@@ -52,6 +54,9 @@ GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
 PEAKRDL_INCLUDES += -I $(GW_ROOT)/cfg/rdl
 PEAKRDL_INCLUDES += -I $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster_peripheral
+PEAKRDL_INCLUDES += -I $(CHS_ROOT)/hw
+PEAKRDL_INCLUDES += $(CHS_PEAKRDL_INCLUDES)
+
 PEAKRDL_INCLUDES += -I $(GW_GEN_DIR)
 
 $(GW_GEN_DIR)/gw_soc_regs.sv: $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
@@ -70,6 +75,9 @@ $(GW_GEN_DIR)/gw_addrmap.h: $(GW_GEN_DIR)/gwaihir_addrmap.rdl $(GW_RDL_ALL)
 
 $(GW_GEN_DIR)/gw_addrmap.svh: $(GW_RDL_ALL)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
+
+$(GW_GEN_DIR)/gw_raw_addrmap.h: $(GW_RDL_ALL)
+	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --base_name $(notdir $(basename $@)) --format c
 
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_soc_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_soc_regs_pkg.sv

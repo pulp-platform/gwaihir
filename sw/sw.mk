@@ -52,9 +52,6 @@ SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 
 include $(SN_ROOT)/make/sw.mk
 
-$(GW_GEN_DIR)/gw_raw_addrmap.h: $(GW_RDL_ALL)
-	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --base_name $(notdir $(basename $@)) --format c
-
 ##############
 ## Cheshire ##
 ##############

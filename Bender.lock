@@ -88,11 +88,12 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: da7babeeb96aa4778a37d0131b28b3b004222ab1
+    revision: d9fb66864cf44c57d0415715728d3d5d0f4ab6d1
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
     dependencies:
+    - apb
     - apb_uart
     - axi
     - axi_llc
@@ -217,7 +218,7 @@ packages:
     revision: null
     version: null
     source:
-      Path: .bender/git/checkouts/floo_noc-051cdbf4a4876727/./pd
+      Path: .bender/git/checkouts/floo_noc-e85a4cce70333e4d/pd
     dependencies: []
   fpnew:
     revision: e5aa6a01b5bbe1675c3aa8872e1203413ded83d1
@@ -234,6 +235,12 @@ packages:
       Git: https://github.com/pulp-platform/fpu_div_sqrt_mvp.git
     dependencies:
     - common_cells
+  gwaihir-pd:
+    revision: null
+    version: null
+    source:
+      Path: pd
+    dependencies: []
   hci:
     revision: fa625bdb824209bc2c0faaa6d99ec15ff981473f
     version: null
@@ -319,12 +326,6 @@ packages:
     - common_cells
     - register_interface
     - tech_cells_generic
-  gwaihir-pd:
-    revision: null
-    version: null
-    source:
-      Path: pd
-    dependencies: []
   redmule:
     revision: 6fb7c175a784e1161a6762ab91d9b296697a66f1
     version: null
@@ -376,14 +377,15 @@ packages:
     dependencies:
     - tech_cells_generic
   serial_link:
-    revision: c55df03a1da06b00e567cf968b1b1a5f40c9f802
-    version: 1.1.2
+    revision: d4e513aebd368d77808c5e6629a1e2729c16eba0
+    version: 2.0.0
     source:
       Git: https://github.com/pulp-platform/serial_link.git
     dependencies:
+    - apb
     - axi
+    - axi_stream
     - common_cells
-    - register_interface
   snitch_cluster:
     revision: c26a8cd67e1a4621fe2bd789543c9b3a486b4f81
     version: null
