@@ -88,10 +88,10 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 49c8f2187925a40ce33181a075c7bb8d59ef754f
+    revision: d9fb66864cf44c57d0415715728d3d5d0f4ab6d1
     version: null
     source:
-      Git: git@github.com:pulp-platform/cheshire.git
+      Git: https://github.com/pulp-platform/cheshire.git
     dependencies:
     - apb
     - apb_uart
@@ -202,10 +202,10 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: 97306733f33acbb646c7e403c03a674fc1404b44
-    version: null
+    revision: 959fb172670a7910fcee94c2d82e460c07c0a24c
+    version: 0.8.0
     source:
-      Git: git@github.com:pulp-platform/FlooNoC.git
+      Git: https://github.com/pulp-platform/FlooNoC.git
     dependencies:
     - axi
     - axi_riscv_atomics
