@@ -4,7 +4,7 @@
 #
 # Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
-GW_ROOT ?= $(shell pwd)
+GW_ROOT ?= $(shell pwd -P)
 GW_GEN_DIR = $(GW_ROOT)/.generated
 BENDER_ROOT ?= $(GW_ROOT)/.bender
 
