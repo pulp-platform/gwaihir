@@ -43,7 +43,7 @@ $(eval $(call add_vcs_flag,PRELMODE))
 .PHONY: vcs-compile vcs-compile-batch vcs-clean vcs-run vcs-run-batch
 
 vcs-clean:
-	rm -rf $(VCS_BUILD)
+	rm -rf $(VCS_BUILD) vc_hdrs.h
 
 $(VCS_BUILD):
 	mkdir -p $@

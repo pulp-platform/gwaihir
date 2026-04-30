@@ -7,7 +7,7 @@ packages:
     dependencies:
     - common_cells
   apb_fll_if:
-    revision: ccf381321420ed1c9c442c9fca2b602d54f83a32
+    revision: 0df7013404af000ca360e6206506f423758c7597
     version: null
     source:
       Git: https://github.com/pulp-platform/apb_fll_if.git
@@ -54,8 +54,8 @@ packages:
     - common_cells
     - obi
   axi_riscv_atomics:
-    revision: 0ac3a78fe342c5a5b9b10bff49d58897f773059e
-    version: 0.8.2
+    revision: 97a1dd2ac643c276880420a0cf8eea697f228aa9
+    version: 0.8.3
     source:
       Git: https://github.com/pulp-platform/axi_riscv_atomics.git
     dependencies:
@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 442155e3e7f0c855c5d6d52cae1d74ddc761041f
+    revision: 703de67b50d2fc53fe833eb18a9269058b39dd46
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -114,8 +114,8 @@ packages:
     - serial_link
     - unbent
   clic:
-    revision: 8ed76ffc779a435d0ed034f3068e4c3334fe2ecf
-    version: 2.0.0
+    revision: 6515a71eb4ae3b143ab912d265e79832b3179a76
+    version: 3.0.0
     source:
       Git: https://github.com/pulp-platform/clic.git
     dependencies:
@@ -139,13 +139,6 @@ packages:
     - common_cells
     - scm
     - tech_cells_generic
-  cluster_interconnect:
-    revision: 1284def6c0b7f7e9355eb093d00883ad9dead1b7
-    version: null
-    source:
-      Git: https://github.com/pulp-platform/cluster_interconnect.git
-    dependencies:
-    - common_cells
   common_cells:
     revision: ca9d577f2fbc45ec557ab4e0905bbfc154441540
     version: null
@@ -170,18 +163,9 @@ packages:
     - common_cells
     - fpnew
     - tech_cells_generic
-  datamover:
-    revision: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
-    version: null
-    source:
-      Git: https://github.com/pulp-platform/datamover
-    dependencies:
-    - hci
-    - hwpe-ctrl
-    - hwpe-stream
   dram_rtl_sim:
-    revision: 2cac4a9e12a60537567276b539ab6c919c87b5dc
-    version: 0.1.1
+    revision: a764d5200a19cdd72a5237cbfb16985515a3058d
+    version: 0.1.2
     source:
       Git: https://github.com/pulp-platform/dram_rtl_sim.git
     dependencies:
@@ -226,6 +210,7 @@ packages:
     source:
       Path: pd
     dependencies: []
+<<<<<<< HEAD
   hci:
     revision: fa625bdb824209bc2c0faaa6d99ec15ff981473f
     version: null
@@ -259,6 +244,42 @@ packages:
       Git: https://github.com/pulp-platform/ibex.git
     dependencies:
     - tech_cells_generic
+||||||| parent of 187cb17 (Remove redmule, hci and datamover from Bender)
+  hci:
+    revision: fa625bdb824209bc2c0faaa6d99ec15ff981473f
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/hci
+    dependencies:
+    - cluster_interconnect
+    - common_cells
+    - hwpe-stream
+    - l2_tcdm_hybrid_interco
+    - redundancy_cells
+    - register_interface
+  hwpe-ctrl:
+    revision: 3690a3c648f120546d8de2bc583d5170c36d2f20
+    version: 2.0.0
+    source:
+      Git: https://github.com/pulp-platform/hwpe-ctrl.git
+    dependencies:
+    - tech_cells_generic
+  hwpe-stream:
+    revision: 7eb50a7cb37dc2a970e0cfee10aff5d961e41340
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/hwpe-stream.git
+    dependencies:
+    - tech_cells_generic
+  ibex:
+    revision: b18f7ef178ed07f5085051f96042c670a919fd5c
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/ibex.git
+    dependencies:
+    - tech_cells_generic
+=======
+>>>>>>> 187cb17 (Remove redmule, hci and datamover from Bender)
   idma:
     revision: 28a36e5e07705549e59fc33db96ab681bc1ca88e
     version: 0.6.5
@@ -280,12 +301,6 @@ packages:
     - axi
     - common_cells
     - register_interface
-  l2_tcdm_hybrid_interco:
-    revision: fa55e72859dcfb117a2788a77352193bef94ff2b
-    version: 1.0.0
-    source:
-      Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
-    dependencies: []
   obi:
     revision: acfcd0f80c7539aa8da7821a66d9acf2074a5b4e
     version: null
@@ -311,29 +326,6 @@ packages:
     - common_cells
     - register_interface
     - tech_cells_generic
-  redmule:
-    revision: 6fb7c175a784e1161a6762ab91d9b296697a66f1
-    version: null
-    source:
-      Git: https://github.com/pulp-platform/redmule
-    dependencies:
-    - common_cells
-    - fpnew
-    - hci
-    - hwpe-ctrl
-    - hwpe-stream
-    - ibex
-    - tech_cells_generic
-  redundancy_cells:
-    revision: c37bdb47339bf70e8323de8df14ea8bbeafb6583
-    version: null
-    source:
-      Git: https://github.com/pulp-platform/redundancy_cells.git
-    dependencies:
-    - common_cells
-    - common_verification
-    - register_interface
-    - tech_cells_generic
   register_interface:
     revision: 5daa85d164cf6b54ad061ea1e4c6f3624556e467
     version: 0.4.5
@@ -353,8 +345,8 @@ packages:
     - common_cells
     - tech_cells_generic
   scm:
-    revision: 472f99affe44ff7b282b519c047a3cfeb35b16c6
-    version: 1.2.0
+    revision: 1976c7efb4979271eee2abe262fde0f9a20e2557
+    version: 1.2.1
     source:
       Git: https://github.com/pulp-platform/scm.git
     dependencies:
@@ -370,7 +362,7 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: c26a8cd67e1a4621fe2bd789543c9b3a486b4f81
+    revision: 06426b0632814cd0acdba5e0eef3dd342bf42c71
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git
