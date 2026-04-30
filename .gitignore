@@ -28,6 +28,7 @@ pd
 # Simulation files
 work
 target/sim/vsim/compile.tcl
+target/sim/vcs/build/
 modelsim.ini
 *.wlf
 .rtlbinary

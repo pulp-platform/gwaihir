@@ -198,6 +198,7 @@ TB_DUT = tb_gwaihir_top
 SIM_DIR = $(GW_ROOT)
 
 include $(GW_ROOT)/target/sim/vsim/vsim.mk
+include $(GW_ROOT)/target/sim/vcs/vcs.mk
 include $(GW_ROOT)/target/sim/traces.mk
 
 ##################

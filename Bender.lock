@@ -160,21 +160,6 @@ packages:
     source:
       Git: https://github.com/pulp-platform/common_verification.git
     dependencies: []
-  cv32e40p:
-    revision: 800a09d97a1e9418e127e8bbf1763c1d1097c92f
-    version: null
-    source:
-      Git: https://github.com/pulp-platform/cv32e40p.git
-    dependencies:
-    - common_cells
-    - fpnew
-    - tech_cells_generic
-  cv32e40x:
-    revision: baba1eeb3b845306c45be714f677ff786753f136
-    version: null
-    source:
-      Git: https://github.com/pulp-platform/cv32e40x.git
-    dependencies: []
   cva6:
     revision: 4c02b24fe7c04690f626776a92274da24f80d1da
     version: null
@@ -202,10 +187,10 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: 959fb172670a7910fcee94c2d82e460c07c0a24c
-    version: 0.8.0
+    revision: 63c5706462935f76dce9c8d9489c3c1da7c6e3bc
+    version: null
     source:
-      Git: https://github.com/pulp-platform/FlooNoC.git
+      Git: git@github.com:pulp-platform/FlooNoC.git
     dependencies:
     - axi
     - axi_riscv_atomics
@@ -333,8 +318,6 @@ packages:
       Git: https://github.com/pulp-platform/redmule
     dependencies:
     - common_cells
-    - cv32e40p
-    - cv32e40x
     - fpnew
     - hci
     - hwpe-ctrl
