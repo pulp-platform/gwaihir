@@ -40,7 +40,7 @@ $(eval $(call add_vcs_flag,SN_BINARY))
 $(eval $(call add_vcs_flag,BOOTMODE))
 $(eval $(call add_vcs_flag,PRELMODE))
 
-.PHONY: vcs-compile vcs-clean vcs-run
+.PHONY: vcs-compile vcs-compile-batch vcs-clean vcs-run vcs-run-batch
 
 vcs-clean:
 	rm -rf $(VCS_BUILD)
@@ -63,8 +63,7 @@ vcs-compile: $(VCS_BUILD)/gwaihir_top.vcs
 vcs-run: $(VCS_BUILD)/gwaihir_top.vcs
 	$(VCS_SEPP) $(VCS_BUILD)/gwaihir_top.vcs -verdi $(VCS_FLAGS)
 
-.PHONY: vcs-compile-batch vcs-run-batch
-# Compilation + Run for no gui
+# Compilation + Run for batch mode (no debug overhead)
 $(VCS_BUILD)/gwaihir_top_batch.vcs: $(VCS_BUILD)/compile.sh $(GW_HW_ALL)
 	cd $(VCS_BUILD) && $< | tee compile.log
 	cd $(VCS_BUILD) && $(VCS) -Mlib=$(VCS_BUILD) -Mdir=$(VCS_BUILD) -o $@ -cpp $(CXX) \
