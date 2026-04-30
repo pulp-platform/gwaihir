@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: d9fb66864cf44c57d0415715728d3d5d0f4ab6d1
+    revision: 442155e3e7f0c855c5d6d52cae1d74ddc761041f
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -245,7 +245,7 @@ packages:
     revision: fa625bdb824209bc2c0faaa6d99ec15ff981473f
     version: null
     source:
-      Git: https://github.com/pulp-platform/hci
+      Git: https://github.com/pulp-platform/hci.git
     dependencies:
     - cluster_interconnect
     - common_cells
