@@ -141,7 +141,7 @@ sim-vcs:
     - vcs-compile
   script:
     # Run the simulation
-    - make vcs-run-batch 2>&1 | tee target/sim/vcs/build/vcs.log
+    - make vcs-run-batch-verify 2>&1 | tee target/sim/vcs/build/vcs.log
     # Check either success or failure for non-zero exit codes
     - 'if [ -z "${NZ_EXIT_CODE}" ]; then grep "] SUCCESS" target/sim/vcs/build/vcs.log || (exit 1); else grep "] FAILED: return code ${NZ_EXIT_CODE}" target/sim/vcs/build/vcs.log || (exit 1); fi'
     # Check for UART output

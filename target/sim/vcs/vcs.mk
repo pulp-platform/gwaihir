@@ -73,3 +73,8 @@ vcs-compile-batch: $(VCS_BUILD)/gwaihir_top_batch.vcs
 
 vcs-run-batch: $(VCS_BUILD)/gwaihir_top_batch.vcs
 	$(VCS_SEPP) $(VCS_BUILD)/gwaihir_top_batch.vcs $(VCS_FLAGS)
+
+vcs-run-batch-verify: vcs-run-batch
+ifdef VERIFY_PY
+	cd $(SIM_DIR) && $(VERIFY_PY) placeholder $(SN_BINARY) --no-ipc --memdump l2mem.bin --memaddr 0x70000000
+endif
