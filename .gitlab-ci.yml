@@ -78,7 +78,7 @@ vsim-compile:
   artifacts:
     paths:
       - target/sim/vsim/work
-    expire_in: 1 day
+    expire_in: 2 day
 
 vcs-compile:
   stage: build
@@ -93,7 +93,7 @@ vcs-compile:
   artifacts:
     paths:
       - target/sim/vcs/build
-    expire_in: 1 day
+    expire_in: 2 day
 
 ###################
 # Run simulations #
@@ -145,7 +145,7 @@ sim-vcs:
     # Check either success or failure for non-zero exit codes
     - 'if [ -z "${NZ_EXIT_CODE}" ]; then grep "] SUCCESS" target/sim/vcs/build/vcs.log || (exit 1); else grep "] FAILED: return code ${NZ_EXIT_CODE}" target/sim/vcs/build/vcs.log || (exit 1); fi'
     # Check for UART output
-    - 'if [ ! -z "${USTR}" ]; then (grep " \[UART\] ${USTR}" target/sim/vcs/build/vcs.log); fi'
+    - 'if [ ! -z "${USTR}" ]; then (grep "\[UART\] ${USTR}" target/sim/vcs/build/vcs.log); fi'
     # Check for any fatal errors
     - 'if grep "Fatal:" target/sim/vcs/build/vcs.log; then exit 1; fi'
     # Check for any non-fatal errors
@@ -175,7 +175,7 @@ sim-exps:
   script:
     - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j
   artifacts:
-    expire_in: 1 days
+    expire_in: 2 days
 
 ###################
 # Physical Design #
