@@ -198,6 +198,7 @@ TB_DUT = tb_gwaihir_top
 SIM_DIR = $(GW_ROOT)
 
 include $(GW_ROOT)/target/sim/vsim/vsim.mk
+include $(GW_ROOT)/target/sim/vcs/vcs.mk
 include $(GW_ROOT)/target/sim/traces.mk
 
 ##################
@@ -264,11 +265,18 @@ help:
 	@echo -e "${Green}sn-tests             ${Black}Compile Snitch software tests."
 	@echo -e "${Green}sn-clean-tests       ${Black}Clean Snitch software tests."
 	@echo -e ""
-	@echo -e "Simulation targets:"
-	@echo -e "${Green}vsim-compile         ${Black}Compile with Questasim."
+	@echo -e "Simulation targets (QuestaSim):"
+	@echo -e "${Green}vsim-compile         ${Black}Compile with QuestaSim."
 	@echo -e "${Green}vsim-run             ${Black}Run QuestaSim simulation in GUI mode w/o optimization."
 	@echo -e "${Green}vsim-run-batch       ${Black}Run QuestaSim simulation in batch mode w/ optimization."
 	@echo -e "${Green}vsim-clean           ${Black}Clean QuestaSim simulation files."
+	@echo -e ""
+	@echo -e "Simulation targets (VCS):"
+	@echo -e "${Green}vcs-compile          ${Black}Compile with VCS (with full debug access for Verdi GUI)."
+	@echo -e "${Green}vcs-compile-batch    ${Black}Compile with VCS in batch mode (no debug overhead)."
+	@echo -e "${Green}vcs-run              ${Black}Run VCS simulation in Verdi GUI mode."
+	@echo -e "${Green}vcs-run-batch        ${Black}Run VCS simulation in batch mode."
+	@echo -e "${Green}vcs-clean            ${Black}Clean VCS simulation files."
 	@echo -e ""
 	@echo -e "Additional miscellaneous targets:"
 	@echo -e "${Green}traces               ${Black}Generate the better readable traces in .logs/trace_hart_<hart_id>.txt."

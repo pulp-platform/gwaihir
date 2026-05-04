@@ -78,7 +78,22 @@ vsim-compile:
   artifacts:
     paths:
       - target/sim/vsim/work
-    expire_in: 1 day
+    expire_in: 2 day
+
+vcs-compile:
+  stage: build
+  extends:
+    - .cache-deps
+    - .init-env
+  needs:
+    - generate-rtl
+  script:
+    - make vcs-compile-batch | tee compile.log 2>&1
+    - '! grep "Error-\[" compile.log'
+  artifacts:
+    paths:
+      - target/sim/vcs/build
+    expire_in: 2 day
 
 ###################
 # Run simulations #
@@ -112,6 +127,33 @@ sim-vsim:
     paths:
       - transcript
 
+sim-vcs:
+  stage: run
+  extends:
+    - .cache-deps
+    - .init-env
+    - .sw-tests
+  variables:
+    LOG_FILE: target/sim/vcs/build/vcs.log
+  needs:
+    - chs-sw
+    - sn-sw
+    - vcs-compile
+  script:
+    # Run the simulation
+    - make vcs-run-batch-verify 2>&1 | tee target/sim/vcs/build/vcs.log
+    # Check either success or failure for non-zero exit codes
+    - 'if [ -z "${NZ_EXIT_CODE}" ]; then grep "] SUCCESS" target/sim/vcs/build/vcs.log || (exit 1); else grep "] FAILED: return code ${NZ_EXIT_CODE}" target/sim/vcs/build/vcs.log || (exit 1); fi'
+    # Check for UART output
+    - 'if [ ! -z "${USTR}" ]; then (grep "\[UART\] ${USTR}" target/sim/vcs/build/vcs.log); fi'
+    # Check for any fatal errors
+    - 'if grep "Fatal:" target/sim/vcs/build/vcs.log; then exit 1; fi'
+    # Check for any non-fatal errors
+    - 'if [ -z "${VERIFY_PY}" ]; then if [ ! -z "${NZ_EXIT_CODE}" ]; then count=$(grep -c "Error:" target/sim/vcs/build/vcs.log); if [ "$count" -ne 1 ]; then exit 1; fi; else if grep -q "Error:" target/sim/vcs/build/vcs.log; then exit 1; fi; fi; fi'
+  artifacts:
+    paths:
+      - target/sim/vcs/build/vcs.log
+
 #####################
 # Run Experiments   #
 #####################
@@ -133,7 +175,7 @@ sim-exps:
   script:
     - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j
   artifacts:
-    expire_in: 1 days
+    expire_in: 2 days
 
 ###################
 # Physical Design #

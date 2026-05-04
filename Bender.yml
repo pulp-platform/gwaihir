@@ -14,16 +14,13 @@ remotes:
 dependencies:
   register_interface: "0.4.5"
   axi: "0.39.9"
-  floo_noc: { version: "0.8.0", upstream_name: "FlooNoC" }
+  apb_fll_if: "0.3.0"
+  floo_noc: { version: "0.8.1", upstream_name: "FlooNoC" }
   apb: "0.2.4"
   common_cells: "1.39.0"
   snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main"                                     }
   cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "main"                                     }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "acfcd0f80c7539aa8da7821a66d9acf2074a5b4e" }
-  redmule:            { git: "https://github.com/pulp-platform/redmule.git",            rev: "picobello"                                }
-  hci:                { git: "https://github.com/pulp-platform/hci.git",                rev: "06fcba671e060f2e1b03b7ebe2d3e719f1557099" }
-  datamover:          { git: "https://github.com/pulp-platform/datamover.git",          rev: "5df9c9bd9e10ad020763c4291c571adf35ef4ae2" } # branch: transpose
-  apb_fll_if:         { git: "https://github.com/pulp-platform/apb_fll_if.git",         rev: "structs"                                  }
   axi_obi:            { path: "hw/axi_obi"                                                                                              }
   gwaihir-pd:       { path: "./pd"                                                                                                    }
 
@@ -49,8 +46,6 @@ sources:
 
   # Level 1
   - hw/gwaihir_pkg.sv
-  - hw/snitch_hwpe_subsystem.sv
-  - hw/snitch_tcdm_aligner.sv
   # Level 2
   - hw/cluster_tile.sv
   - hw/cheshire_tile.sv

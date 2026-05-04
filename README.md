@@ -86,37 +86,64 @@ make chs-sw-tests
 make sn-tests
 ```
 
-### Platform simulation
-The Gwaihir simulation flow currently only supports Questasim.
-To build the RTL code, do:
+### Simulation
+
+Gwaihir supports two simulation flows: **QuestaSim** and **Synopsys VCS**.
+Tests can be executed by setting the required command-line variables for Cheshire — see the [Cheshire Docs](https://pulp-platform.github.io/cheshire/gs/) for more details.
+
+Use the `PRELMODE=3` flag to enable fast preload of the Snitch binary and speed up simulation.
+
+#### QuestaSim
+
+To compile the RTL:
 
 ```bash
 make vsim-compile
 ```
 
-Tests can be executed by setting all the required command-line variable for Cheshire, see the [Cheshire Docs](https://pulp-platform.github.io/cheshire/gs/) for more details.
-To run a simple Chehire helloworld in Gwaihir, do the following:
+To run a simple Cheshire helloworld in Gwaihir:
 
 ```bash
 make vsim-run CHS_BINARY=sw/cheshire/tests/helloworld.spm.elf
 ```
-To run an offloading example test for Snitch, do:
+
+To run an offloading example test for Snitch:
 
 ```bash
 make vsim-run CHS_BINARY=sw/cheshire/tests/simple_offload.spm.elf SN_BINARY=sw/snitch/tests/build/simple.elf
 ```
 
-Use the `vsim-run-batch` command to run tests in batch mode with RTL optimizations to reduce the Questasim runtime.
+Use `vsim-run-batch` to run in batch mode with RTL optimizations to reduce runtime.
 
-Use the `PRELMODE=3` flag to enable fast preload of the Snitch binary, and speed up the simulation.
+Some applications produce a lot of output data that is time-consuming to check in simulation. These applications usually come with a Python verification script that checks results from a memory dump at the end of simulation. For example, to run and verify the GEMM kernel:
 
-Some applications produce a lot of output data, which would be time-consuming to check in simulation.
-Said applications usually come with a Python verification script that can check the results from a dump of the memory contents at the end of the simulation.
-For example, a verification script for the GEMM kernel can be found under `$(bender path snitch_cluster)/sw/blas/gemm/scripts/verify.py`
-To run an application on Snitch and verify its results, do:
 ```bash
 make vsim-run-batch-verify VERIFY_PY=$(bender path snitch_cluster)/sw/blas/gemm/scripts/verify.py PRELMODE=3 CHS_BINARY=sw/cheshire/tests/simple_offload.spm.elf SN_BINARY=sw/snitch/apps/blas/gemm/build/gemm.elf
 ```
+
+#### VCS
+
+Gwaihir provides two VCS run modes: **batch** (no debug overhead, faster) and **GUI** (full signal visibility for Verdi). Compilation is handled automatically by the run targets.
+
+To run in batch mode:
+
+```bash
+make vcs-run-batch CHS_BINARY=sw/cheshire/tests/helloworld.spm.elf
+```
+
+To run an offloading example test for Snitch:
+
+```bash
+make vcs-run-batch CHS_BINARY=sw/cheshire/tests/simple_offload.spm.elf SN_BINARY=sw/snitch/tests/build/simple.elf
+```
+
+To open the simulation in the Verdi GUI (compiled with full debug access):
+
+```bash
+make vcs-run CHS_BINARY=sw/cheshire/tests/helloworld.spm.elf
+```
+
+Use `vcs-clean` to remove all VCS build artifacts and force a full recompilation.
 
 ### Additional help
 

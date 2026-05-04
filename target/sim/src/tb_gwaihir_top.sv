@@ -14,6 +14,15 @@ module tb_gwaihir_top;
   // Instantiate the fixture
   fixture_gwaihir_top fix ();
 
+  // VCS evaluates always_ff at time 0 before Cheshire's clk_rst_gen (3 port-
+  // hops away) has driven rst_n low, leaving it X and causing spurious SVA
+  // failures. Disable assertions until rst_n deasserts, then re-enable.
+  initial begin
+    $assertoff(0, fix);
+    @(posedge fix.rst_n);
+    $asserton(0, fix);
+  end
+
   string        preload_elf;
   string        boot_hex;
   logic  [ 1:0] boot_mode;
