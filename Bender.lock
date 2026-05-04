@@ -7,8 +7,8 @@ packages:
     dependencies:
     - common_cells
   apb_fll_if:
-    revision: 0df7013404af000ca360e6206506f423758c7597
-    version: null
+    revision: 9a5f18241079d6915b948b71ef2252c990bea399
+    version: 0.3.0
     source:
       Git: https://github.com/pulp-platform/apb_fll_if.git
     dependencies:

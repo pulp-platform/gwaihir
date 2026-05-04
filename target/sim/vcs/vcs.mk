@@ -17,15 +17,6 @@ VLOGAN_ARGS += -kdb
 VLOGAN_ARGS += -assert svaext
 VLOGAN_ARGS += -timescale=1ns/1ps
 VLOGAN_ARGS += -nc
-VLOGAN_ARGS += +incdir+$$VCS_HOME/etc/uvm-ieee
-
-#TODO(lleone): delete if not necessary
-# VCS_FLAGS = -work $(VCS_WORK)
-# VCS_FLAGS += -suppress 3009
-# VCS_FLAGS += -suppress 8386
-# VCS_FLAGS += -suppress 13314
-# VCS_FLAGS += -quiet
-# VCS_FLAGS += -64
 
 VCS_FLAGS_GUI  = -debug_access+all
 

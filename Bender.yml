@@ -14,13 +14,13 @@ remotes:
 dependencies:
   register_interface: "0.4.5"
   axi: "0.39.9"
+  apb_fll_if: "0.3.0"
   floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git", rev: "main"}
   apb: "0.2.4"
   common_cells: "1.39.0"
   snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main"                                     }
   cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "main"                                     }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "acfcd0f80c7539aa8da7821a66d9acf2074a5b4e" }
-  apb_fll_if:         { git: "https://github.com/pulp-platform/apb_fll_if.git",         rev: "structs"                                  }
   axi_obi:            { path: "hw/axi_obi"                                                                                              }
   gwaihir-pd:       { path: "./pd"                                                                                                    }
 
