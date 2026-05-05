@@ -26,7 +26,6 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/multicast_benchmark.elf }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/multi_mcast.elf }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/row_col_mcast.elf }
-      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/access_spm.elf }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/gemm_2d/build/gemm_2d.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/gemm/scripts/verify.py, PRELMODE: 3 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/fused_concat_linear/build/fused_concat_linear.elf, VERIFY_PY: $SN_ROOT/sw/kernels/dnn/fused_concat_linear/scripts/verify.py, PRELMODE: 3 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/mha/build/mha.elf, VERIFY_PY: $SN_ROOT/sw/kernels/dnn/mha/scripts/verify.py, PRELMODE: 3 }

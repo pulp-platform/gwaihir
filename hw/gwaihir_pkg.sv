@@ -180,36 +180,64 @@ package gwaihir_pkg;
   // Dummy tiles X, Y coordinates
   typedef id_t [NumDummyTiles-1:0] dummy_idx_t;
 
-  // This function is used to identify
-  function automatic dummy_idx_t get_dummy_idx(mesh_map_t MeshMap, int Dim_x, int Dim_y);
+  // For each (col, row) in MeshMap: if the column is not fully empty (has at least one
+  // occupied tile) but this specific position is unoccupied, insert a dummy tile there.
+  // The returned indices are in SAM-space coordinates (matching MeshMap).
+  function automatic dummy_idx_t get_dummy_idx(mesh_map_t MeshMap);
     dummy_idx_t  dummy_idx;
-    int unsigned empty_tile = 0;
-    int unsigned found_tiles = 0;
+    int unsigned found_tiles;
+    bit [MaxId.x:0] empty_cols;
 
-    // Count the number of columns that have at least one tile
+    found_tiles = 0;
+    empty_cols  = get_empty_cols(MeshMap);
+
     for (int col = 0; col <= MaxId.x; col++) begin
-      // Clear counter for the next column
-      empty_tile = 0;
-      for (int row = 0; row <= MaxId.y; row++) begin
-        if (MeshMap[row][col] == 1'b1) begin
-        end else if (empty_tile <= MaxId.y) begin
-          // If the tile is empty, we can add it to the dummy index
-          dummy_idx[found_tiles] = '{x : col, y : row, port_id: 0};
-          found_tiles++;
-          empty_tile++;
-        end else begin
-          // If the full column is empty, we don't need to insert dummy tiles
-          found_tiles -= empty_tile;
-          break;
+      if (!empty_cols[col]) begin
+        for (int row = 0; row <= MaxId.y; row++) begin
+          if (MeshMap[row][col] == 1'b0) begin
+            dummy_idx[found_tiles] = '{x: col, y: row, port_id: 0};
+            found_tiles++;
+          end
         end
       end
     end
     return dummy_idx;
   endfunction
 
-  // localparam dummy_idx_t DummyIdx = get_dummy_idx(MeshMap, MeshDim.x, MeshDim.y);
-  localparam dummy_idx_t DummyIdx = '{'{x: 9, y: 0, port_id: 0}};
-  localparam dummy_idx_t DummyPhysicalIdx = '{'{x: 6, y: 0, port_id: 0}};
+  // For each SAM-space dummy index, subtract the number of fully-empty columns that lie
+  // to its left. This gives the physical array index used to connect floo_req/rsp signals,
+  // mirroring the same transformation applied to SamPhysical via align_x_coordinate.
+  function automatic dummy_idx_t get_dummy_physical_idx(dummy_idx_t dummy_idx);
+    dummy_idx_t  ret;
+    int unsigned left_empty_cols;
+    int unsigned current_x;
+
+    for (int d = 0; d < NumDummyTiles; d++) begin
+      current_x       = int'(dummy_idx[d].x);
+      left_empty_cols = 0;
+      for (int col = 0; col < current_x; col++) begin
+        if (EmptyCols[col] == 1'b1) left_empty_cols++;
+      end
+      ret[d].x       = dummy_idx[d].x - left_empty_cols;
+      ret[d].y       = dummy_idx[d].y;
+      ret[d].port_id = dummy_idx[d].port_id;
+    end
+    return ret;
+  endfunction
+
+  localparam dummy_idx_t DummyIdx         = get_dummy_idx(MeshMap);
+  localparam dummy_idx_t DummyPhysicalIdx = get_dummy_physical_idx(DummyIdx);
+  // TODO(lleone): Find an automatic way to generate this mapping. For the moment is manual.;
+  // localparam dummy_idx_t DummyIdx = '{
+  //   '{x: 9, y: 2, port_id: 0},
+  //   '{x: 9, y: 1, port_id: 0},
+  //   '{x: 9, y: 0, port_id: 0}
+  // };
+  // localparam dummy_idx_t DummyPhysicalIdx = '{
+  //   '{x: 6, y: 2, port_id: 0},
+  //   '{x: 6, y: 1, port_id: 0},
+  //   '{x: 6, y: 0, port_id: 0}
+  // };
 
 
   // Whether the connection is a tie-off or a valid neighbor
@@ -344,69 +372,6 @@ package gwaihir_pkg;
   localparam int unsigned SramBankSelOffset = SramByteOffsetWidth;
   localparam int unsigned SramAddrWidthOffset = SramBankSelOffset + SramBankSelWidth;
   localparam int unsigned SramMacroSelOffset = SramAddrWidthOffset + SramAddrWidth;
-
-  ////////////////////////
-  //  SPM Narrow Tiles  //
-  ////////////////////////
-
-  // Narrow SPM tile size
-  localparam int unsigned SpmNarrowTileSize = ep_addr_size(TopSpmNarrowSamIdx);
-  // Narrow SPM number words per bank
-  localparam int unsigned SpmNarrowWordsPerBank = 2048;  // in #words
-  // Narrow SPM dataWidth
-  localparam int unsigned SpmNarrowDataWidth = 64;  // in bits
-
-  // Narrow SPM number of banks per word
-  localparam int unsigned SpmNarrowNumBanksPerWord = AxiCfgN.DataWidth / SpmNarrowDataWidth;
-  // Narrow SPM number of bank rows
-  localparam int unsigned SpmNarrowNumBankRows = (SpmNarrowTileSize / (AxiCfgN.DataWidth / 8)
-                                                 / SpmNarrowWordsPerBank);
-
-  // The number of LSBs to address the bytes in an SRAM word
-  localparam int unsigned SpmNarrowByteOffsetWidth = $clog2(SpmNarrowDataWidth / 8);
-  // The number of bits required to select the subbank for a Narrow word
-  localparam int unsigned SpmNarrowBankSelWidth = $clog2(SpmNarrowNumBanksPerWord);
-  // The number of bits for the SpmNarrow address
-  localparam int unsigned SpmNarrowAddrWidth = $clog2(SpmNarrowWordsPerBank);
-  // The number of bits to index the SpmNarrow macro
-  localparam int unsigned SpmNarrowMacroSelWidth = $clog2(SpmNarrowNumBankRows);
-
-  // Various offsets for the SpmNarrow address
-  localparam int unsigned SpmNarrowBankSelOffset = SpmNarrowByteOffsetWidth;
-  localparam int unsigned SpmNarrowAddrWidthOffset = SpmNarrowBankSelOffset + SpmNarrowBankSelWidth;
-  localparam int unsigned SpmNarrowMacroSelOffset = SpmNarrowAddrWidthOffset + SpmNarrowAddrWidth;
-
-
-  //////////////////////
-  //  SPM Wide Tiles  //
-  //////////////////////
-
-  // Wide SPM tile
-  localparam int unsigned SpmWideTileSize = ep_addr_size(TopSpmWideSamIdx);
-  // Wide SPM number words per bank
-  localparam int unsigned SpmWideWordsPerBank = 1024;  // in #words
-  // Wide SPM dataWidth
-  localparam int unsigned SpmWideDataWidth = 128;  // in bits
-
-  // Wide SPM number of banks per word
-  localparam int unsigned SpmWideNumBanksPerWord = AxiCfgW.DataWidth / SpmWideDataWidth;
-  // Wide SPM number of bank rows
-  localparam int unsigned SpmWideNumBankRows = (SpmWideTileSize / (AxiCfgW.DataWidth / 8)
-                                               / SpmWideWordsPerBank);
-
-  // The number of LSBs to address the bytes in an SRAM word
-  localparam int unsigned SpmWideByteOffsetWidth = $clog2(SpmWideDataWidth / 8);
-  // The number of bits required to select the subbank for a wide word
-  localparam int unsigned SpmWideBankSelWidth = $clog2(SpmWideNumBanksPerWord);
-  // The number of bits for the SpmWide address
-  localparam int unsigned SpmWideAddrWidth = $clog2(SpmWideWordsPerBank);
-  // The number of bits to index the SpmWide macro
-  localparam int unsigned SpmWideMacroSelWidth = $clog2(SpmWideNumBankRows);
-
-  // Various offsets for the SpmWide address
-  localparam int unsigned SpmWideBankSelOffset = SpmWideByteOffsetWidth;
-  localparam int unsigned SpmWideAddrWidthOffset = SpmWideBankSelOffset + SpmWideBankSelWidth;
-  localparam int unsigned SpmWideMacroSelOffset = SpmWideAddrWidthOffset + SpmWideAddrWidth;
 
 
 endpackage
