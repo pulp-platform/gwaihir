@@ -6,11 +6,17 @@
 
 #include <stdint.h>
 #include "gw_addrmap.h"
+#include "gw_raw_addrmap.h"
 
 #include "snitch_cluster_cfg.h"
 
+// Return code array placed at the last 4K page of the L2 SPM region.
+// This address scales automatically with the number and size of memory tiles.
+#define RETURN_CODE_ADDR \
+  (GWAIHIR_ADDRMAP_L2_SPM_BASE_ADDR(0) + GWAIHIR_ADDRMAP_L2_SPM_TOTAL_SIZE - 0x1000)
+
 // This needs to be in a region which is not cached
-volatile uint32_t (*return_code_array)[CFG_CLUSTER_NR_CORES] = (uint32_t (*)[CFG_CLUSTER_NR_CORES])0x707FF000;
+volatile uint32_t (*return_code_array)[CFG_CLUSTER_NR_CORES] = (uint32_t (*)[CFG_CLUSTER_NR_CORES])RETURN_CODE_ADDR;
 
 int main() {
 
