@@ -227,18 +227,6 @@ package gwaihir_pkg;
 
   localparam dummy_idx_t DummyIdx         = get_dummy_idx(MeshMap);
   localparam dummy_idx_t DummyPhysicalIdx = get_dummy_physical_idx(DummyIdx);
-  // TODO(lleone): Find an automatic way to generate this mapping. For the moment is manual.;
-  // localparam dummy_idx_t DummyIdx = '{
-  //   '{x: 9, y: 2, port_id: 0},
-  //   '{x: 9, y: 1, port_id: 0},
-  //   '{x: 9, y: 0, port_id: 0}
-  // };
-  // localparam dummy_idx_t DummyPhysicalIdx = '{
-  //   '{x: 6, y: 2, port_id: 0},
-  //   '{x: 6, y: 1, port_id: 0},
-  //   '{x: 6, y: 0, port_id: 0}
-  // };
-
 
   // Whether the connection is a tie-off or a valid neighbor
   function automatic bit is_tie_off(int x, int y, route_direction_e dir);
