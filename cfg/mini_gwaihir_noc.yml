@@ -9,7 +9,15 @@ network_type: "narrow-wide"
 routing:
   route_algo: "XY"
   use_id_table: true
-  en_multicast: true
+  collective:
+    en_narrow_multicast: true
+    en_wide_multicast: true
+    en_barrier: true
+    en_wide_reduction:       # selective FP ops, default hw config
+      rd_pipeline_depth: 5
+      cut_offload_intf: true
+  decouple_rw: Phys
+  vc_impl: naive
 
 protocols:
   - name: "narrow_in"
@@ -18,28 +26,38 @@ protocols:
     data_width: 64
     addr_width: 48
     id_width: 5
-    user_width: 3
+    user_width:
+      collective_mask: 48
+      collective_op: 4
+      user: 5
   - name: "narrow_out"
     type: "narrow"
     protocol: "AXI4"
     data_width: 64
     addr_width: 48
     id_width: 2
-    user_width: 3
+    user_width:
+      collective_mask: 48
+      collective_op: 4
+      user: 5
   - name: "wide_in"
     type: "wide"
     protocol: "AXI4"
     data_width: 512
     addr_width: 48
     id_width: 3
-    user_width: 1
+    user_width:
+      collective_mask: 48
+      collective_op: 4
   - name: "wide_out"
     type: "wide"
     protocol: "AXI4"
     data_width: 512
     addr_width: 48
     id_width: 1
-    user_width: 1
+    user_width:
+      collective_mask: 48
+      collective_op: 4
 
 endpoints:
   - name: "cluster"
@@ -47,7 +65,8 @@ endpoints:
     addr_range:
       base: 0x2000_0000
       size: 0x0004_0000
-      rdl_name: "snitch_tile"
+      rdl_name: "snitch_cluster"
+      en_collective: true
     mgr_port_protocol:
       - "narrow_in"
       - "wide_in"
@@ -70,7 +89,7 @@ endpoints:
       - "narrow_out"
       - "wide_out"
   - name: "l2_spm"
-    array: [1]
+    array: [2]
     addr_range:
       base: 0x7000_0000
       size: 0x0010_0000
@@ -80,7 +99,7 @@ endpoints:
 
 routers:
   - name: "router"
-    array: [3, 2]
+    array: [4, 2]
     degree: 5
 
 connections:
@@ -95,11 +114,13 @@ connections:
     dst_dir: "Eject"
   - src: "cheshire"
     dst: "router"
-    dst_idx: [2, 0]
+    dst_idx: [3, 1]
     dst_dir: "Eject"
   - src: "l2_spm"
     dst: "router"
     src_range:
-      - [0, 0]
-    dst_idx: [2, 1]
+      - [0, 1]
+    dst_range:
+      - [2, 2]
+      - [0, 1]
     dst_dir: "Eject"
