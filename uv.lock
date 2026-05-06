@@ -621,6 +621,8 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "mako" },
+    { name = "pyyaml" },
     { name = "reuse" },
 ]
 
@@ -634,7 +636,11 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "reuse", specifier = ">=6.2.0" }]
+dev = [
+    { name = "mako", specifier = ">=1.3.10" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "reuse", specifier = ">=6.2.0" },
+]
 
 [[package]]
 name = "hjson"

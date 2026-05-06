@@ -52,6 +52,9 @@ SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 
 include $(SN_ROOT)/make/sw.mk
 
+$(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h: $(FLOO_CFG)
+	$(UTIL)/mako_render.py -t $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl -y $(FLOO_CFG) -o $@
+
 ##############
 ## Cheshire ##
 ##############
