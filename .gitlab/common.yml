@@ -69,3 +69,15 @@ variables:
     paths:
       - sw/cheshire/tests/*.elf
     expire_in: 1 day
+
+.check-simulation:
+  script:
+    # Check either success or failure for non-zero exit codes
+    - 'if [ -z "${NZ_EXIT_CODE}" ]; then grep "] SUCCESS" "${LOG_FILE}" || (exit 1); else grep "] FAILED: return code ${NZ_EXIT_CODE}" "${LOG_FILE}" || (exit 1); fi'
+    # Check for UART output
+    - 'if [ ! -z "${USTR}" ]; then (grep " \[UART\] ${USTR}" "${LOG_FILE}"); fi'
+    # Check for any fatal errors
+    - 'if grep "Fatal:" "${LOG_FILE}"; then exit 1; fi'
+    # Check for any non-fatal errors. One and only one error is expected with a non-zero exit code.
+    # Ignore all errors when using a separate verification script.
+    - 'if [ -z "${VERIFY_PY}" ]; then if [ ! -z "${NZ_EXIT_CODE}" ]; then count=$(grep -c "Error:" "${LOG_FILE}"); if [ "$count" -ne 1 ]; then exit 1; fi; else if grep -q "Error:" "${LOG_FILE}"; then exit 1; fi; fi; fi'

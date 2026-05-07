@@ -106,26 +106,17 @@ sim-vsim:
     - .init-env
     - .sw-tests
   variables:
-    LOG_FILE: target/sim/vsim/transcript
+    LOG_FILE: transcript
   needs:
     - chs-sw
     - sn-sw
     - vsim-compile
   script:
-    # Run the simulation
     - make vsim-run-batch-verify
-    # Check either success or failure for non-zero exit codes
-    - 'if [ -z "${NZ_EXIT_CODE}" ]; then grep "] SUCCESS" transcript || (exit 1); else grep "] FAILED: return code ${NZ_EXIT_CODE}" transcript || (exit 1); fi'
-    # Check for UART output
-    - 'if [ ! -z "${USTR}" ]; then (grep " \[UART\] ${USTR}" transcript); fi'
-    # Check for any fatal errors
-    - 'if grep "Fatal:" transcript; then exit 1; fi'
-    # Check for any non-fatal errors. One and only one error is expected with a non-zero exit code.
-    # Ignore all errors when using a separate verification script.
-    - 'if [ -z "${VERIFY_PY}" ]; then if [ ! -z "${NZ_EXIT_CODE}" ]; then count=$(grep -c "Error:" transcript); if [ "$count" -ne 1 ]; then exit 1; fi; else if grep -q "Error:" transcript; then exit 1; fi; fi; fi'
+    - !reference [.check-simulation, script]
   artifacts:
     paths:
-      - transcript
+      - ${LOG_FILE}
 
 sim-vcs:
   stage: run
@@ -133,7 +124,7 @@ sim-vcs:
     - .cache-deps
     - .init-env
   variables:
-    LOG_FILE: target/sim/vcs/build/vcs.log
+    LOG_FILE: transcript
     CHS_BINARY: sw/cheshire/tests/simple_offload.spm.elf
     SN_BINARY: sw/snitch/apps/mha/build/mha.elf
     VERIFY_PY: .deps/snitch_cluster/sw/kernels/dnn/mha/scripts/verify.py
@@ -143,15 +134,12 @@ sim-vcs:
     - sn-sw
     - vcs-compile
   script:
-    # Run the simulation
-    - make vcs-run-batch-verify 2>&1 | tee target/sim/vcs/build/vcs.log
-    # Check for any fatal errors
-    - 'if grep "Fatal:" target/sim/vcs/build/vcs.log; then exit 1; fi'
-    # Check for any non-fatal errors
-    - 'if [ -z "${VERIFY_PY}" ]; then if [ ! -z "${NZ_EXIT_CODE}" ]; then count=$(grep -c "Error:" target/sim/vcs/build/vcs.log); if [ "$count" -ne 1 ]; then exit 1; fi; else if grep -q "Error:" target/sim/vcs/build/vcs.log; then exit 1; fi; fi; fi'
+    # Run the VCS simulation and capture the console output into a log file
+    - make vcs-run-batch-verify 2>&1 | tee ${LOG_FILE}
+    - !reference [.check-simulation, script]
   artifacts:
     paths:
-      - target/sim/vcs/build/vcs.log
+      - ${LOG_FILE}
 
 #####################
 # Run Experiments   #
