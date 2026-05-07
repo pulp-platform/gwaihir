@@ -184,9 +184,9 @@ package gwaihir_pkg;
   // occupied tile) but this specific position is unoccupied, insert a dummy tile there.
   // The returned indices are in SAM-space coordinates (matching MeshMap).
   function automatic dummy_idx_t get_dummy_idx(mesh_map_t MeshMap);
-    dummy_idx_t  dummy_idx;
-    int unsigned found_tiles;
-    bit [MaxId.x:0] empty_cols;
+    dummy_idx_t              dummy_idx;
+    int unsigned             found_tiles;
+    bit          [MaxId.x:0] empty_cols;
 
     found_tiles = 0;
     empty_cols  = get_empty_cols(MeshMap);
@@ -225,7 +225,7 @@ package gwaihir_pkg;
     return ret;
   endfunction
 
-  localparam dummy_idx_t DummyIdx         = get_dummy_idx(MeshMap);
+  localparam dummy_idx_t DummyIdx = get_dummy_idx(MeshMap);
   localparam dummy_idx_t DummyPhysicalIdx = get_dummy_physical_idx(DummyIdx);
 
   // Whether the connection is a tie-off or a valid neighbor
