@@ -6,9 +6,9 @@ extern inline uintptr_t gw_l2_tile_address(uint32_t tile_idx);
 
 extern inline uintptr_t gw_l2_tile_offset(uintptr_t src_addr);
 
-extern inline uint32_t gw_log2_cluster_num_in_col();
+extern inline constexpr uint32_t gw_log2_cluster_num_in_col();
 
-extern inline uint32_t gw_log2_cluster_num_in_row();
+extern inline constexpr uint32_t gw_log2_cluster_num_in_row();
 
 extern inline constexpr uint32_t gw_cluster_num_in_row();
 
@@ -39,7 +39,7 @@ extern inline uint32_t gw_cluster_east_neighbour();
 extern inline uint32_t gw_cluster_south_neighbour();
 
 extern inline uint32_t gw_cluster_west_neighbour();
-    
+
 extern inline uint32_t gw_closest_mem_tile(uint32_t cluster_idx);
 
 extern inline uint32_t gw_closest_mem_tile();

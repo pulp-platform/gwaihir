@@ -7,7 +7,7 @@
 GW_ROOT ?= $(shell pwd -P)
 GW_GEN_DIR = $(GW_ROOT)/.generated
 BENDER_ROOT ?= $(GW_ROOT)/.bender
-UTIL = $(GW_ROOT)/util
+UTIL_DIR = $(GW_ROOT)/util
 
 # Executables — must be defined before dependency paths that call $(BENDER)
 BENDER           ?= bender --suppress W22 -d $(GW_ROOT)

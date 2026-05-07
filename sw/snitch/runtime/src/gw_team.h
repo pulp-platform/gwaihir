@@ -32,14 +32,14 @@ inline uintptr_t gw_l2_tile_offset(uintptr_t src_addr) {
 /**
  * @brief Get the log2 of the number of clusters in a row
  */
- inline uint32_t gw_log2_cluster_num_in_row() {
+ inline constexpr uint32_t gw_log2_cluster_num_in_row() {
     return GW_LOG2_CLUSTER_PER_ROW;
 }
 
 /**
  * @brief Get the log2 of the number of clusters in a column
  */
-inline uint32_t gw_log2_cluster_num_in_col() {
+inline constexpr uint32_t gw_log2_cluster_num_in_col() {
     return GW_LOG2_CLUSTER_PER_COL;
 }
 
