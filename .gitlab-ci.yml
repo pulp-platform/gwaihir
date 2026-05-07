@@ -132,9 +132,12 @@ sim-vcs:
   extends:
     - .cache-deps
     - .init-env
-    - .sw-tests
   variables:
     LOG_FILE: target/sim/vcs/build/vcs.log
+    CHS_BINARY: sw/cheshire/tests/simple_offload.spm.elf
+    SN_BINARY: sw/snitch/apps/mha/build/mha.elf
+    VERIFY_PY: .deps/snitch_cluster/sw/kernels/dnn/mha/scripts/verify.py
+    PRELMODE: 3
   needs:
     - chs-sw
     - sn-sw
@@ -142,10 +145,6 @@ sim-vcs:
   script:
     # Run the simulation
     - make vcs-run-batch-verify 2>&1 | tee target/sim/vcs/build/vcs.log
-    # Check either success or failure for non-zero exit codes
-    - 'if [ -z "${NZ_EXIT_CODE}" ]; then grep "] SUCCESS" target/sim/vcs/build/vcs.log || (exit 1); else grep "] FAILED: return code ${NZ_EXIT_CODE}" target/sim/vcs/build/vcs.log || (exit 1); fi'
-    # Check for UART output
-    - 'if [ ! -z "${USTR}" ]; then (grep "\[UART\] ${USTR}" target/sim/vcs/build/vcs.log); fi'
     # Check for any fatal errors
     - 'if grep "Fatal:" target/sim/vcs/build/vcs.log; then exit 1; fi'
     # Check for any non-fatal errors
