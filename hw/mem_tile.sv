@@ -41,7 +41,8 @@ module mem_tile
   typedef enum int unsigned {
     Mem           = 'd0,
     TileCfg       = 'd1,
-    NumDemuxPorts = 'd2
+    Dma           = 'd2,
+    NumDemuxPorts = 'd3
   } axi_demux_sel_e;
 
   typedef logic [AxiCfgN.AddrWidth-1:0] addr_t;
@@ -54,15 +55,20 @@ module mem_tile
   // NOTE(fischeti): This is approximate since it does not include the
   // actual address range for this exact tile, but it is sufficient since
   // the NoC will take care of routing the request to the correct tile.
-  // The end address covers all NumL2Spm config entries; each config SAM
-  // entry is interleaved with its SRAM entry so the last config index is
-  // L2SpmConfig0SamIdx + (NumL2Spm-1)*2.
-  localparam int unsigned NumTileAddrMapRules = 1;
+  localparam int unsigned NumTileAddrMapRules = 2;
   addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
       '{
           idx: TileCfg,
           start_addr: Sam[L2SpmConfig0SamIdx].start_addr,
-          end_addr: Sam[L2SpmConfig0SamIdx+(NumL2Spm-1)*2].end_addr
+          end_addr: Sam[L2SpmConfig1SamIdx].end_addr
+      },
+      // TODO: Assign the actual address range for the iDMA memory-mapped
+      //       registers (register address range still TBD). Placeholder '0..'0
+      //       routes nothing to the DMA until this is resolved.
+      '{
+          idx: Dma,
+          start_addr: '0,
+          end_addr: '0
       }
   };
   localparam int unsigned NumTileApbAddrMapRules = 1;
@@ -74,8 +80,8 @@ module mem_tile
 
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t       chimney_narrow_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t       chimney_narrow_out_rsp;
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [1:0] axi_demux_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [1:0] axi_demux_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [2:0] axi_demux_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [2:0] axi_demux_out_rsp;
 
   gw_tile_regs_pkg::gw_tile_regs__out_t            hwif_out;
 
@@ -146,8 +152,12 @@ module mem_tile
   // Chimney //
   /////////////
 
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t axi_wide_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t    axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t    axi_wide_rsp;
+
+  // DMA req/resp, supposed to access LPDDR tile, we also keep the option to access other tiles
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t     axi_dma_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t     axi_dma_rsp;
 
   floo_nw_chimney #(
     .AxiCfgN             (AxiCfgN),
@@ -186,8 +196,9 @@ module mem_tile
     .axi_narrow_in_rsp_o (),
     .axi_narrow_out_req_o(chimney_narrow_out_req),
     .axi_narrow_out_rsp_i(chimney_narrow_out_rsp),
-    .axi_wide_in_req_i   ('0),
-    .axi_wide_in_rsp_o   (),
+    // Receive transfer requests from DMA
+    .axi_wide_in_req_i   (axi_dma_req),
+    .axi_wide_in_rsp_o   (axi_dma_rsp),
     .axi_wide_out_req_o  (axi_wide_req),
     .axi_wide_out_rsp_i  (axi_wide_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
@@ -334,6 +345,39 @@ module mem_tile
     .s_apb_pready (tile_cfg_apb_rsp.pready),
     .s_apb_pslverr(tile_cfg_apb_rsp.pslverr),
     .hwif_out     (hwif_out)
+  );
+
+  /////////
+  // DMA //
+  /////////
+
+  mem_tile_dma_wrap #(
+    .AxiNarrowAddrWidth ($bits(floo_gwaihir_noc_pkg::axi_narrow_out_addr_t) ),
+    .AxiNarrowDataWidth ($bits(floo_gwaihir_noc_pkg::axi_narrow_out_data_t) ),
+    .AxiNarrowIdWidth   ($bits(floo_gwaihir_noc_pkg::axi_narrow_out_id_t)   ),
+    .AxiNarrowUserWidth ($bits(floo_gwaihir_noc_pkg::axi_narrow_out_user_t) ),
+    .AxiAddrWidth       ($bits(floo_gwaihir_noc_pkg::axi_wide_in_addr_t)    ),
+    .AxiDataWidth       ($bits(floo_gwaihir_noc_pkg::axi_wide_in_data_t)    ),
+    .AxiIdWidth         ($bits(floo_gwaihir_noc_pkg::axi_wide_in_id_t)      ),
+    .AxiUserWidth       ($bits(floo_gwaihir_noc_pkg::axi_wide_in_user_t)    ),
+    // TODO: Undrestand all these parameters: NumAxInFlight, MemSysDepth, JobFifoDepth, RAWCouplingAvail, IsTwoD
+    .NumAxInFlight      (gwaihir_pkg::DmaNumAxInFlight                      ),
+    .MemSysDepth        (gwaihir_pkg::DmaMemSysDepth                        ),
+    .JobFifoDepth       (gwaihir_pkg::DmaJobFifoDepth                       ),
+    .RAWCouplingAvail   (gwaihir_pkg::DmaRAWCouplingAvail                   ),
+    .IsTwoD             (gwaihir_pkg::DmaConfEnableTwoD                     ),
+    .axi_mst_req_t      (floo_gwaihir_noc_pkg::axi_wide_in_req_t            ),
+    .axi_mst_rsp_t      (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t            ),
+    .axi_slv_req_t      (floo_gwaihir_noc_pkg::axi_narrow_out_req_t         ),
+    .axi_slv_rsp_t      (floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t         )
+  ) i_mem_tile_dma (
+    .clk_i          (tile_clk                   ),
+    .rst_ni         (tile_rst_n                 ),
+    .testmode_i     (test_enable_i              ),
+    .axi_mst_req_o  (axi_dma_req                ),
+    .axi_mst_rsp_i  (axi_dma_rsp                ),
+    .axi_slv_req_i  (axi_demux_out_req[Dma]     ),
+    .axi_slv_rsp_o  (axi_demux_out_rsp[Dma]     )
   );
 
   /////////////
