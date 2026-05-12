@@ -171,20 +171,24 @@ module mem_tile
   // TODO: We need to determine the address range of the memory and DMA registers 
   //       in each tile and send the requests to corresponding masters.
 
-  logic [4:0] mem_tile_idx;
+  logic [5:0] mem_tile_idx;
 
   // TODO: [ATTENTION] This part is related to the actual memory tile position, and the corresponding
   //                   address map, now the memory tile is at [x,y] = [{0,8},{0,1,2,3}]
   always_comb begin
-    // This is a obvioudlt invalid index
-    mem_tile_idx = '1;
-    // For Memory tile on (0,{0,1,2,3})
-    if (id_i.x == 0) begin
-      mem_tile_idx = int'(floo_gwaihir_noc_pkg::L2Spm0SamIdx) + id_i.y;
-    // For Memory tile on (8,{0,1,2,3})
-    end else if (id_i.x == 8) begin
-      mem_tile_idx = int'(floo_gwaihir_noc_pkg::L2Spm0SamIdx) + id_i.y + 4;
-    end
+    // Default to an invalid SAM index; the MemTileXValid assertion (if present)
+    // guards against id_i.x / id_i.y combinations that would land here.
+    unique case ({id_i.x, id_i.y})
+      {4'd0, 2'd0}: mem_tile_idx = floo_gwaihir_noc_pkg::L2Spm0SamIdx;
+      {4'd0, 2'd1}: mem_tile_idx = floo_gwaihir_noc_pkg::L2Spm1SamIdx;
+      {4'd0, 2'd2}: mem_tile_idx = floo_gwaihir_noc_pkg::L2Spm2SamIdx;
+      {4'd0, 2'd3}: mem_tile_idx = floo_gwaihir_noc_pkg::L2Spm3SamIdx;
+      {4'd8, 2'd0}: mem_tile_idx = floo_gwaihir_noc_pkg::L2Spm4SamIdx;
+      {4'd8, 2'd1}: mem_tile_idx = floo_gwaihir_noc_pkg::L2Spm5SamIdx;
+      {4'd8, 2'd2}: mem_tile_idx = floo_gwaihir_noc_pkg::L2Spm6SamIdx;
+      {4'd8, 2'd3}: mem_tile_idx = floo_gwaihir_noc_pkg::L2Spm7SamIdx;
+      default     : mem_tile_idx = '1;
+    endcase
   end
 
   typedef struct packed {
@@ -194,13 +198,23 @@ module mem_tile
     floo_gwaihir_noc_pkg::axi_narrow_out_addr_t end_addr;
   } rule_t;
 
+  // Offset from an L2Spm SAM index to its matching DMA-reg SAM index.
+  // Computed from the generated enum so it survives YAML / regeneration changes.
+  // With the current SAM layout, L2SpmDma{i}SamIdx = L2Spm{i}SamIdx - 1, so the
+  // offset is -1; declared as `int` (signed) to allow that.
+  localparam int DmaIdxOffset =
+      int'(floo_gwaihir_noc_pkg::L2SpmDma0SamIdx) -
+      int'(floo_gwaihir_noc_pkg::L2Spm0SamIdx);
+
   // Generate address map for narrow_axi_demux
   rule_t [1:0] routing_rules;
   assign routing_rules = '{
-    '{idx: MEM, start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx].start_addr, end_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx].end_addr},
-    // TODO: Add address of DMA registers in `floo_gwaihir_noc_pkg`, now the DMA register address is fixed at
-    //       0 temporarily, which is not correctly
-    '{idx: DMA, start_addr: '0, end_addr: '0}
+    '{idx: MEM,
+      start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx].start_addr,
+      end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx].end_addr},
+    '{idx: DMA,
+      start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx + DmaIdxOffset].start_addr,
+      end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx + DmaIdxOffset].end_addr}
   };
 
   // Configure AXI Xbar
