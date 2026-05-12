@@ -52,25 +52,51 @@ module mem_tile
     addr_t       end_addr;
   } addr_rule_t;
 
-  // NOTE(fischeti): This is approximate since it does not include the
-  // actual address range for this exact tile, but it is sufficient since
-  // the NoC will take care of routing the request to the correct tile.
+  // Compute this tile's SAM index from its NoC coordinates. Used to look up the
+  // tile-specific iDMA register address range below.
+  // TODO: [ATTENTION] This depends on the actual memory-tile placement; the mem
+  //       tiles are currently at [x,y] = [{0,8},{0,1,2,3}].
+  logic [5:0] mem_tile_idx;
+  always_comb begin
+    unique case ({id_i.x, id_i.y})
+      {4'd0, 2'd0}: mem_tile_idx = L2Spm0SamIdx;
+      {4'd0, 2'd1}: mem_tile_idx = L2Spm1SamIdx;
+      {4'd0, 2'd2}: mem_tile_idx = L2Spm2SamIdx;
+      {4'd0, 2'd3}: mem_tile_idx = L2Spm3SamIdx;
+      {4'd8, 2'd0}: mem_tile_idx = L2Spm4SamIdx;
+      {4'd8, 2'd1}: mem_tile_idx = L2Spm5SamIdx;
+      {4'd8, 2'd2}: mem_tile_idx = L2Spm6SamIdx;
+      {4'd8, 2'd3}: mem_tile_idx = L2Spm7SamIdx;
+      default     : mem_tile_idx = '1;
+    endcase
+  end
+
+  // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
+  // from the generated enum so it survives YAML / regeneration changes. With the
+  // current SAM layout L2SpmDma{i}SamIdx = L2Spm{i}SamIdx - 1, so the offset is
+  // -1; declared as signed `int` to allow that.
+  localparam int DmaIdxOffset = int'(L2SpmDma0SamIdx) - int'(L2Spm0SamIdx);
+
+  // NOTE(fischeti): The TileCfg range is approximate since it does not include
+  // the actual address range for this exact tile, but it is sufficient since the
+  // NoC will take care of routing the request to the correct tile. The Dma range
+  // is the tile-specific iDMA register window derived from the SAM.
   localparam int unsigned NumTileAddrMapRules = 2;
-  addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
-      '{
-          idx: TileCfg,
-          start_addr: Sam[L2SpmConfig0SamIdx].start_addr,
-          end_addr: Sam[L2SpmConfig1SamIdx].end_addr
-      },
-      // TODO: Assign the actual address range for the iDMA memory-mapped
-      //       registers (register address range still TBD). Placeholder '0..'0
-      //       routes nothing to the DMA until this is resolved.
-      '{
-          idx: Dma,
-          start_addr: '0,
-          end_addr: '0
-      }
-  };
+  addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap;
+  always_comb begin
+    TileAddrMap = '{
+        '{
+            idx: TileCfg,
+            start_addr: Sam[L2SpmConfig0SamIdx].start_addr,
+            end_addr: Sam[L2SpmConfig1SamIdx].end_addr
+        },
+        '{
+            idx: Dma,
+            start_addr: Sam[mem_tile_idx + DmaIdxOffset].start_addr,
+            end_addr: Sam[mem_tile_idx + DmaIdxOffset].end_addr
+        }
+    };
+  end
   localparam int unsigned NumTileApbAddrMapRules = 1;
   addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
       '{idx: 0, start_addr: '0, end_addr: '1}

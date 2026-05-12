@@ -101,6 +101,9 @@ endpoints:
         size: 0x0000_1000
         desc: "config"
         rdl_name: "gw_tile_regs"
+      - base: 0x7080_0000
+        size: 0x100
+        desc: "dma"
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
