@@ -137,7 +137,7 @@ module mem_tile_dma_wrap #(
   axi_to_reg_v2 #(
     .AxiAddrWidth ( AxiNarrowAddrWidth  ),
     .AxiDataWidth ( AxiNarrowDataWidth  ),
-    .AxiIdWidth   ( AxiNarrowSlvIdWidth ),
+    .AxiIdWidth   ( AxiNarrowIdWidth    ),
     .AxiUserWidth ( AxiNarrowUserWidth  ),
     .RegDataWidth ( 32 ),
     .CutMemReqs   ( 1 ),
@@ -175,7 +175,7 @@ module mem_tile_dma_wrap #(
       .next_id_i      ( next_id ),
       .stream_idx_o   ( ),
       .done_id_i      ( done_id ),
-      .busy_i         ( idma_busy ),
+      .busy_i         ( busy ),
       .midend_busy_i  ( 1'b0 )
     );
 
