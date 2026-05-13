@@ -2,7 +2,8 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 //
-// Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
+// Author: Hong Pang <hopang@iis.ee.ethz.ch>
+//         Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 `include "common_cells/registers.svh"
 `include "axi/typedef.svh"
@@ -140,7 +141,9 @@ module mem_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    // TODO: Set this to 1'b1 after adding a separate path for iDMA access to local memory tile
+    .NoLoopback    (1'b0)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -188,8 +191,8 @@ module mem_tile
   floo_nw_chimney #(
     .AxiCfgN             (AxiCfgN),
     .AxiCfgW             (AxiCfgW),
-    .ChimneyCfgN         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b0)),
-    .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b0)),
+    .ChimneyCfgN         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b1)),
+    .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b1)),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
     .WideRwDecouple      (WideRwDecouple),

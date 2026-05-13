@@ -2,7 +2,12 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 //
-// Author: Hong Pang <tbenz@iis.ee.ethz.ch>
+// Author:
+// Thomas Benz <tbenz@iis.ee.ethz.ch>
+// Andreas Kuster <kustera@ethz.ch>
+// Paul Scheffler <paulsc@iis.ee.ethz.ch>
+// Chaoqun Liang <chaoqun.liang@unibo.it>
+// Hong Pang <hopang@iis.ee.ethz.ch>
 
 // Description: DMA core wrapper for the integration into memory tile.
 

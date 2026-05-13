@@ -196,7 +196,7 @@ module gwaihir_top
 
   for (genvar m = 0; m < NumMemTiles; m++) begin : gen_memtile
 
-    localparam int MemTileSamIdx = 2 * m + L2Spm0SamIdx;
+    localparam int MemTileSamIdx = 2 * m + L2Spm0SamIdx; // Each L2 memory tile spans two idx: idma and memory
     localparam id_t MemTileId = CollectiveSam[MemTileSamIdx].idx.id;
     localparam id_t MemTilePhysicalId = SamPhysical[MemTileSamIdx].idx;
     localparam int MemTileX = int'(MemTilePhysicalId.x);
