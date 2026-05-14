@@ -91,99 +91,99 @@ int main(void) {
         }
     }
 
-    // // -----------------------------------------------------------------------
-    // // Phase 2: 1D unaligned, 128 B
-    // //   Copy src[0..31] -> dst[56..87] (bytes 224..351 of Tile 1). dst
-    // //   byte 224 = row 3, byte 32 -> payload spans the second half of
-    // //   row 3, all of row 4, and the first half of row 5. 64-B-unaligned
-    // //   at both ends; stresses the iDMA HardwareLegalizer and W-strobes.
-    // //   After DMA, dst[56+i] should equal src[i] = i.
-    // // -----------------------------------------------------------------------
-    // {
-    //     const uint32_t dst_word_off = 56;       // 224 B / 4 = 56 words
-    //     const uint32_t n_words      = 32;       // 128 B / 4
+    // -----------------------------------------------------------------------
+    // Phase 2: 1D unaligned, 128 B
+    //   Copy src[0..31] -> dst[56..87] (bytes 224..351 of Tile 1). dst
+    //   byte 224 = row 3, byte 32 -> payload spans the second half of
+    //   row 3, all of row 4, and the first half of row 5. 64-B-unaligned
+    //   at both ends; stresses the iDMA HardwareLegalizer and W-strobes.
+    //   After DMA, dst[56+i] should equal src[i] = i.
+    // -----------------------------------------------------------------------
+    {
+        const uint32_t dst_word_off = 56;       // 224 B / 4 = 56 words
+        const uint32_t n_words      = 32;       // 128 B / 4
 
-    //     for (uint32_t i = 0; i < n_words; i++) {
-    //         dst[dst_word_off + i] = ~i;
-    //     }
+        for (uint32_t i = 0; i < n_words; i++) {
+            dst[dst_word_off + i] = ~i;
+        }
 
-    //     memtile1_dma_blk_memcpy(
-    //         /*dst=*/  (uint64_t)(uintptr_t)&dst[dst_word_off],
-    //         /*src=*/  (uint64_t)(uintptr_t)&src[0],
-    //         /*size=*/ 128u,
-    //         /*conf=*/ 0u);
+        memtile1_dma_blk_memcpy(
+            /*dst=*/  (uint64_t)(uintptr_t)&dst[dst_word_off],
+            /*src=*/  (uint64_t)(uintptr_t)&src[0],
+            /*size=*/ 128u,
+            /*conf=*/ 0u);
 
-    //     for (uint32_t i = 0; i < n_words; i++) {
-    //         if (dst[dst_word_off + i] != i) {
-    //             n_errors++;
-    //         }
-    //     }
-    // }
+        for (uint32_t i = 0; i < n_words; i++) {
+            if (dst[dst_word_off + i] != i) {
+                n_errors++;
+            }
+        }
+    }
 
-    // // -----------------------------------------------------------------------
-    // // Phase 3: 2D strided, 256 B total
-    // //   length       = 128 B  (per inner iter)
-    // //   reps_2       = 2
-    // //   src_stride_2 = 256 B
-    // //     -> iter 0 src = src[0..31] (words 0..31),
-    // //        iter 1 src = src[64..95] (words 64..95)
-    // //   dst_stride_2 = 192 B
-    // //     -> iter 0 dst = dst[64..95]   (bytes 256..383)
-    // //        iter 1 dst = dst[112..143] (bytes 448..575)
-    // //   Expected values (since src is a ramp src[i] = i):
-    // //     iter 0 dst[64+i] should equal src[0 +i]  = i
-    // //     iter 1 dst[112+i] should equal src[64+i] = 64 + i
-    // //   The 64-B gap between the two dst windows (bytes 384..447 of
-    // //   Tile 1) is poisoned and verified to remain untouched.
-    // // -----------------------------------------------------------------------
-    // {
-    //     const uint32_t dst_word_off_0 = 64;     // byte 256 -> row 4
-    //     const uint32_t dst_word_off_1 = 112;    // byte 448 -> row 7 (112 = 64 + 192 / 4)
-    //     const uint32_t n_words        = 32;     // 128 B / 4
-    //     const uint32_t src_word_off_0 = 0;      // byte 0
-    //     const uint32_t src_word_off_1 = 64;     // byte 256
+    // -----------------------------------------------------------------------
+    // Phase 3: 2D strided, 256 B total
+    //   length       = 128 B  (per inner iter)
+    //   reps_2       = 2
+    //   src_stride_2 = 256 B
+    //     -> iter 0 src = src[0..31] (words 0..31),
+    //        iter 1 src = src[64..95] (words 64..95)
+    //   dst_stride_2 = 192 B
+    //     -> iter 0 dst = dst[64..95]   (bytes 256..383)
+    //        iter 1 dst = dst[112..143] (bytes 448..575)
+    //   Expected values (since src is a ramp src[i] = i):
+    //     iter 0 dst[64+i] should equal src[0 +i]  = i
+    //     iter 1 dst[112+i] should equal src[64+i] = 64 + i
+    //   The 64-B gap between the two dst windows (bytes 384..447 of
+    //   Tile 1) is poisoned and verified to remain untouched.
+    // -----------------------------------------------------------------------
+    {
+        const uint32_t dst_word_off_0 = 64;     // byte 256 -> row 4
+        const uint32_t dst_word_off_1 = 112;    // byte 448 -> row 7 (112 = 64 + 192 / 4)
+        const uint32_t n_words        = 32;     // 128 B / 4
+        const uint32_t src_word_off_0 = 0;      // byte 0
+        const uint32_t src_word_off_1 = 64;     // byte 256
 
-    //     // Poison both destination windows.
-    //     for (uint32_t i = 0; i < n_words; i++) {
-    //         dst[dst_word_off_0 + i] = ~(src_word_off_0 + i);
-    //     }
-    //     for (uint32_t i = 0; i < n_words; i++) {
-    //         dst[dst_word_off_1 + i] = ~(src_word_off_1 + i);
-    //     }
-    //     // Poison the 64-B gap (16 words = bytes 384..447 of Tile 1) so we
-    //     // can verify the DMA does NOT touch it.
-    //     for (uint32_t i = 0; i < 16; i++) {
-    //         dst[dst_word_off_0 + n_words + i] = 0xDEADBEEFu;
-    //     }
+        // Poison both destination windows.
+        for (uint32_t i = 0; i < n_words; i++) {
+            dst[dst_word_off_0 + i] = ~(src_word_off_0 + i);
+        }
+        for (uint32_t i = 0; i < n_words; i++) {
+            dst[dst_word_off_1 + i] = ~(src_word_off_1 + i);
+        }
+        // Poison the 64-B gap (16 words = bytes 384..447 of Tile 1) so we
+        // can verify the DMA does NOT touch it.
+        for (uint32_t i = 0; i < 16; i++) {
+            dst[dst_word_off_0 + n_words + i] = 0xDEADBEEFu;
+        }
 
-    //     memtile1_dma_2d_blk_memcpy(
-    //         /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_word_off_0],
-    //         /*src=*/        (uint64_t)(uintptr_t)&src[src_word_off_0],
-    //         /*size=*/       128u,
-    //         /*dst_stride=*/ 192u,
-    //         /*src_stride=*/ 256u,
-    //         /*num_reps=*/   2u,
-    //         /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D_CONF_ENABLE_ND_BIT));
+        memtile1_dma_2d_blk_memcpy(
+            /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_word_off_0],
+            /*src=*/        (uint64_t)(uintptr_t)&src[src_word_off_0],
+            /*size=*/       128u,
+            /*dst_stride=*/ 192u,
+            /*src_stride=*/ 256u,
+            /*num_reps=*/   2u,
+            /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D_CONF_ENABLE_ND_BIT));
 
-    //     // Verify iter-0 destination window: dst[64+i] == src[0+i] = i.
-    //     for (uint32_t i = 0; i < n_words; i++) {
-    //         if (dst[dst_word_off_0 + i] != (src_word_off_0 + i)) {
-    //             n_errors++;
-    //         }
-    //     }
-    //     // Verify the 64-B gap is still poisoned.
-    //     for (uint32_t i = 0; i < 16; i++) {
-    //         if (dst[dst_word_off_0 + n_words + i] != 0xDEADBEEFu) {
-    //             n_errors++;
-    //         }
-    //     }
-    //     // Verify iter-1 destination window: dst[112+i] == src[64+i] = 64+i.
-    //     for (uint32_t i = 0; i < n_words; i++) {
-    //         if (dst[dst_word_off_1 + i] != (src_word_off_1 + i)) {
-    //             n_errors++;
-    //         }
-    //     }
-    // }
+        // Verify iter-0 destination window: dst[64+i] == src[0+i] = i.
+        for (uint32_t i = 0; i < n_words; i++) {
+            if (dst[dst_word_off_0 + i] != (src_word_off_0 + i)) {
+                n_errors++;
+            }
+        }
+        // Verify the 64-B gap is still poisoned.
+        for (uint32_t i = 0; i < 16; i++) {
+            if (dst[dst_word_off_0 + n_words + i] != 0xDEADBEEFu) {
+                n_errors++;
+            }
+        }
+        // Verify iter-1 destination window: dst[112+i] == src[64+i] = 64+i.
+        for (uint32_t i = 0; i < n_words; i++) {
+            if (dst[dst_word_off_1 + i] != (src_word_off_1 + i)) {
+                n_errors++;
+            }
+        }
+    }
 
     return (int)n_errors;
 }
