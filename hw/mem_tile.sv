@@ -142,7 +142,6 @@ module mem_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
-    // TODO: Set this to 1'b1 after adding a separate path for iDMA access to local memory tile
     .NoLoopback    (1'b1)
   ) i_router (
     .clk_i,
@@ -430,6 +429,7 @@ module mem_tile
     '{idx: LOCAL,
       start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx].start_addr,
       end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx].end_addr},
+    // The address range for EXTERNAL is not the actual address range, all the unmapped requests will go to EXTERNAL
     '{idx: EXTERNAL,
       start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx + DmaIdxOffset].start_addr,
       end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx + DmaIdxOffset].end_addr}
