@@ -47,10 +47,24 @@ sources:
 
   # Level 1
   - hw/gwaihir_pkg.sv
+
+  # Level 1.5 — viDMA (OTF) datapath, selected by mem_tile_dma_wrap's UseViDMA param.
+  # Packages first, then OTF compute units, then ALCU, then transport/legalizer/backend.
+  - hw/vidma/vidma_alcu_pkg.sv
+  - hw/vidma/vidma_otf_pkg.sv
+  - hw/vidma/idma_otf_alu.sv
+  - hw/vidma/idma_otf_fpcast.sv
+  - hw/vidma/idma_otf_mxquant.sv
+  - hw/vidma/idma_otf_mxdequant.sv
+  - hw/vidma/idma_alcu.sv
+  - hw/vidma/vidma_transport_layer_rw_axi.sv
+  - hw/vidma/vidma_legalizer_rw_axi.sv
+  - hw/vidma/vidma_backend_rw_axi.sv
+  - hw/mem_tile_dma_wrap.sv
+
   # Level 2
   - hw/cluster_tile.sv
   - hw/cheshire_tile.sv
-  - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
   - hw/dummy_tile.sv
 

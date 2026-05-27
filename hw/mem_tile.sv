@@ -19,7 +19,13 @@ module mem_tile
   parameter bit          AxiUserAtop    = 1'b1,
   parameter int unsigned AxiUserAtopMsb = 3,
   parameter int unsigned AxiUserAtopLsb = 0,
-  parameter int unsigned MemTileId      = 0
+  parameter int unsigned MemTileId      = 0,
+  // viDMA (OTF) configuration — defaults to the gwaihir_pkg global knobs
+  parameter bit          UseViDMA           = gwaihir_pkg::UseViDMA,
+  parameter bit          EnableOtfTransform = gwaihir_pkg::EnableOtfTransform,
+  parameter int unsigned NumSimdLanes       = gwaihir_pkg::NumSimdLanes,
+  parameter bit          EnableMultiply     = gwaihir_pkg::EnableMultiply,
+  parameter bit          EnableFpCast       = gwaihir_pkg::EnableFpCast
 ) (
   input  logic                    clk_i,
   input  logic                    rst_ni,
@@ -64,7 +70,6 @@ module mem_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
-    // TODO: Set this to 1'b1 after adding a separate path for iDMA access to local memory tile
     .NoLoopback    (1'b1)
   ) i_router (
     .clk_i,
@@ -331,6 +336,7 @@ module mem_tile
     '{idx: LOCAL,
       start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx].start_addr,
       end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx].end_addr},
+    // The address range for EXTERNAL is not the actual address range, all the unmapped requests will go to EXTERNAL
     '{idx: EXTERNAL,
       start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx + DmaIdxOffset].start_addr,
       end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx + DmaIdxOffset].end_addr}
@@ -388,6 +394,11 @@ module mem_tile
     .JobFifoDepth       (gwaihir_pkg::DmaJobFifoDepth                       ),
     .RAWCouplingAvail   (gwaihir_pkg::DmaRAWCouplingAvail                   ),
     .IsTwoD             (gwaihir_pkg::DmaConfEnableTwoD                     ),
+    .UseViDMA           (UseViDMA                                          ),
+    .EnableOtfTransform (EnableOtfTransform                                ),
+    .NumSimdLanes       (NumSimdLanes                                      ),
+    .EnableMultiply     (EnableMultiply                                    ),
+    .EnableFpCast       (EnableFpCast                                      ),
     .axi_mst_req_t      (floo_gwaihir_noc_pkg::axi_wide_in_req_t            ),
     .axi_mst_rsp_t      (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t            ),
     .axi_slv_req_t      (floo_gwaihir_noc_pkg::axi_narrow_out_req_t         ),

@@ -28,6 +28,12 @@ module mem_tile_dma_wrap #(
   parameter int unsigned JobFifoDepth     = 0,
   parameter bit          RAWCouplingAvail = 0,
   parameter bit          IsTwoD           = 0,
+  // viDMA selection + OTF compute configuration
+  parameter bit          UseViDMA           = 1'b0,
+  parameter bit          EnableOtfTransform = 1'b1,
+  parameter int unsigned NumSimdLanes       = 1,
+  parameter bit          EnableMultiply     = 1'b0,
+  parameter bit          EnableFpCast       = 1'b0,
   // iDMA transfer req/resp type
   parameter type         axi_mst_req_t    = logic,
   parameter type         axi_mst_rsp_t    = logic,
@@ -100,6 +106,9 @@ module mem_tile_dma_wrap #(
 
   dma_regs_req_t dma_reg_req;
   dma_regs_rsp_t dma_reg_rsp;
+  dma_regs_req_t dma_reg_req_fe;   // to iDMA reg64 frontend (after opcode demux)
+  dma_regs_rsp_t dma_reg_rsp_fe;
+  logic [7:0]    otf_opcode;       // OTF opcode -> viDMA backend (reset 0x08 passthrough)
 
   // 1D FE signals
   idma_req_t    burst_req_d;
@@ -160,6 +169,60 @@ module mem_tile_dma_wrap #(
     .busy_o     ( )
    );
 
+  // ---------------------------------------------------------------------------
+  // OTF opcode register (only present when viDMA is selected)
+  // Splits the DMA reg bus by addr[8]: 0x000-0x0FF -> iDMA frontend,
+  // 0x100 -> 8-bit OTF opcode holding register (reset 0x08 = passthrough).
+  // When UseViDMA=0 the reg path is identical to the original design.
+  // ---------------------------------------------------------------------------
+  if (UseViDMA) begin : gen_otf_opcode_reg
+    dma_regs_req_t [1:0] reg_out_req;
+    dma_regs_rsp_t [1:0] reg_out_rsp;
+    logic                otf_sel;
+    logic [7:0]          otf_opcode_q;
+
+    // 0x000-0x0FF -> frontend (port 0), 0x100-0x1FF -> opcode reg (port 1)
+    assign otf_sel = dma_reg_req.addr[8];
+
+    reg_demux #(
+      .NoPorts ( 32'd2          ),
+      .req_t   ( dma_regs_req_t ),
+      .rsp_t   ( dma_regs_rsp_t )
+    ) i_otf_reg_demux (
+      .clk_i,
+      .rst_ni,
+      .in_select_i ( otf_sel     ),
+      .in_req_i    ( dma_reg_req ),
+      .in_rsp_o    ( dma_reg_rsp ),
+      .out_req_o   ( reg_out_req ),
+      .out_rsp_i   ( reg_out_rsp )
+    );
+
+    // Port 0 -> iDMA reg64 frontend
+    assign dma_reg_req_fe = reg_out_req[0];
+    assign reg_out_rsp[0] = dma_reg_rsp_fe;
+
+    // Port 1 -> 8-bit OTF opcode holding register
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        otf_opcode_q <= 8'h08;
+      end else if (reg_out_req[1].valid && reg_out_req[1].write) begin
+        otf_opcode_q <= reg_out_req[1].wdata[7:0];
+      end
+    end
+    assign reg_out_rsp[1].ready = 1'b1;
+    assign reg_out_rsp[1].rdata = {{(AxiNarrowDataWidth-8){1'b0}}, otf_opcode_q};
+    assign reg_out_rsp[1].error = 1'b0;
+
+    assign otf_opcode = otf_opcode_q;
+
+  end else begin : gen_no_otf_opcode_reg
+    // Bypass: reg path identical to the original design
+    assign dma_reg_req_fe = dma_reg_req;
+    assign dma_reg_rsp    = dma_reg_rsp_fe;
+    assign otf_opcode     = 8'h08; // passthrough (unused by stock backend)
+  end
+
   if (!IsTwoD) begin : gen_1d
 
     idma_reg64_1d #(
@@ -172,8 +235,8 @@ module mem_tile_dma_wrap #(
     ) i_dma_frontend_1d (
       .clk_i,
       .rst_ni,
-      .dma_ctrl_req_i ( dma_reg_req ),
-      .dma_ctrl_rsp_o ( dma_reg_rsp ),
+      .dma_ctrl_req_i ( dma_reg_req_fe ),
+      .dma_ctrl_rsp_o ( dma_reg_rsp_fe ),
       .dma_req_o      ( burst_req_d ),
       .req_valid_o    ( be_valid_d  ),
       .req_ready_i    ( be_ready_d  ),
@@ -228,8 +291,8 @@ module mem_tile_dma_wrap #(
     ) idma_frontend_2d (
       .clk_i,
       .rst_ni,
-      .dma_ctrl_req_i ( dma_reg_req   ),
-      .dma_ctrl_rsp_o ( dma_reg_rsp   ),
+      .dma_ctrl_req_i ( dma_reg_req_fe ),
+      .dma_ctrl_rsp_o ( dma_reg_rsp_fe ),
       .dma_req_o      ( idma_nd_req_d ),
       .req_valid_o    ( idma_nd_req_valid_d ),
       .req_ready_i    ( idma_nd_req_ready_d ),
@@ -300,49 +363,100 @@ module mem_tile_dma_wrap #(
 
   end
 
-  idma_backend_rw_axi #(
-    .CombinedShifter      ( 1'b0 ),
-    .DataWidth            ( AxiDataWidth ),
-    .AddrWidth            ( AxiAddrWidth ),
-    .AxiIdWidth           ( AxiIdWidth   ),
-    .UserWidth            ( AxiUserWidth ),
-    .TFLenWidth           ( TfLenWidth ),
-    .MaskInvalidData      ( 1 ),
-    .BufferDepth          ( 3 ),
-    .RAWCouplingAvail     ( RAWCouplingAvail),
-    .HardwareLegalizer    ( 1 ),
-    .RejectZeroTransfers  ( 1 ),
-    .ErrorCap             ( idma_pkg::NO_ERROR_HANDLING ),
-    .PrintFifoInfo        ( 0 ),
-    .NumAxInFlight        ( NumAxInFlight ),
-    .MemSysDepth          ( MemSysDepth ),
-    .idma_req_t           ( idma_req_t  ),
-    .idma_rsp_t           ( idma_rsp_t  ),
-    .idma_eh_req_t        ( idma_pkg::idma_eh_req_t ),
-    .idma_busy_t          ( idma_pkg::idma_busy_t   ),
-    .axi_req_t            ( axi_mst_req_t ),
-    .axi_rsp_t            ( axi_mst_rsp_t ),
-    .write_meta_channel_t ( write_meta_channel_t ),
-    .read_meta_channel_t  ( read_meta_channel_t  )
-  ) i_idma_backend  (
-    .clk_i,
-    .rst_ni,
-    .testmode_i,
-    .idma_req_i       ( burst_req ),
-    .req_valid_i      ( be_valid  ),
-    .req_ready_o      ( be_ready  ),
-    .idma_rsp_o       ( idma_rsp       ),
-    .rsp_valid_o      ( idma_rsp_valid ),
-    .rsp_ready_i      ( idma_rsp_ready ),
-    .idma_eh_req_i    ( '0 ),
-    .eh_req_valid_i   ( '0 ),
-    .eh_req_ready_o   ( ),
-    .axi_read_req_o   ( axi_read_req ),
-    .axi_read_rsp_i   ( axi_read_rsp ),
-    .axi_write_req_o  ( axi_write_req ),
-    .axi_write_rsp_i  ( axi_write_rsp ),
-    .busy_o           ( busy )
-  );
+  if (UseViDMA) begin : gen_vidma_be
+    vidma_backend_rw_axi #(
+      .CombinedShifter      ( 1'b0 ),
+      .DataWidth            ( AxiDataWidth ),
+      .AddrWidth            ( AxiAddrWidth ),
+      .AxiIdWidth           ( AxiIdWidth   ),
+      .UserWidth            ( AxiUserWidth ),
+      .TFLenWidth           ( TfLenWidth ),
+      .MaskInvalidData      ( 1 ),
+      .BufferDepth          ( 3 ),
+      .RAWCouplingAvail     ( RAWCouplingAvail),
+      .HardwareLegalizer    ( 1 ),
+      .RejectZeroTransfers  ( 1 ),
+      .EnableOtfTransform   ( EnableOtfTransform ),
+      .NumSimdLanes         ( NumSimdLanes ),
+      .EnableMultiply       ( EnableMultiply ),
+      .EnableFpCast         ( EnableFpCast ),
+      .ErrorCap             ( idma_pkg::NO_ERROR_HANDLING ),
+      .PrintFifoInfo        ( 0 ),
+      .NumAxInFlight        ( NumAxInFlight ),
+      .MemSysDepth          ( MemSysDepth ),
+      .idma_req_t           ( idma_req_t  ),
+      .idma_rsp_t           ( idma_rsp_t  ),
+      .idma_eh_req_t        ( idma_pkg::idma_eh_req_t ),
+      .idma_busy_t          ( idma_pkg::idma_busy_t   ),
+      .axi_req_t            ( axi_mst_req_t ),
+      .axi_rsp_t            ( axi_mst_rsp_t ),
+      .write_meta_channel_t ( write_meta_channel_t ),
+      .read_meta_channel_t  ( read_meta_channel_t  )
+    ) i_vidma_backend (
+      .clk_i,
+      .rst_ni,
+      .testmode_i,
+      .otf_opcode_i     ( otf_opcode ),
+      .idma_req_i       ( burst_req ),
+      .req_valid_i      ( be_valid  ),
+      .req_ready_o      ( be_ready  ),
+      .idma_rsp_o       ( idma_rsp       ),
+      .rsp_valid_o      ( idma_rsp_valid ),
+      .rsp_ready_i      ( idma_rsp_ready ),
+      .idma_eh_req_i    ( '0 ),
+      .eh_req_valid_i   ( '0 ),
+      .eh_req_ready_o   ( ),
+      .axi_read_req_o   ( axi_read_req ),
+      .axi_read_rsp_i   ( axi_read_rsp ),
+      .axi_write_req_o  ( axi_write_req ),
+      .axi_write_rsp_i  ( axi_write_rsp ),
+      .busy_o           ( busy )
+    );
+  end else begin : gen_idma_be
+    idma_backend_rw_axi #(
+      .CombinedShifter      ( 1'b0 ),
+      .DataWidth            ( AxiDataWidth ),
+      .AddrWidth            ( AxiAddrWidth ),
+      .AxiIdWidth           ( AxiIdWidth   ),
+      .UserWidth            ( AxiUserWidth ),
+      .TFLenWidth           ( TfLenWidth ),
+      .MaskInvalidData      ( 1 ),
+      .BufferDepth          ( 3 ),
+      .RAWCouplingAvail     ( RAWCouplingAvail),
+      .HardwareLegalizer    ( 1 ),
+      .RejectZeroTransfers  ( 1 ),
+      .ErrorCap             ( idma_pkg::NO_ERROR_HANDLING ),
+      .PrintFifoInfo        ( 0 ),
+      .NumAxInFlight        ( NumAxInFlight ),
+      .MemSysDepth          ( MemSysDepth ),
+      .idma_req_t           ( idma_req_t  ),
+      .idma_rsp_t           ( idma_rsp_t  ),
+      .idma_eh_req_t        ( idma_pkg::idma_eh_req_t ),
+      .idma_busy_t          ( idma_pkg::idma_busy_t   ),
+      .axi_req_t            ( axi_mst_req_t ),
+      .axi_rsp_t            ( axi_mst_rsp_t ),
+      .write_meta_channel_t ( write_meta_channel_t ),
+      .read_meta_channel_t  ( read_meta_channel_t  )
+    ) i_idma_backend (
+      .clk_i,
+      .rst_ni,
+      .testmode_i,
+      .idma_req_i       ( burst_req ),
+      .req_valid_i      ( be_valid  ),
+      .req_ready_o      ( be_ready  ),
+      .idma_rsp_o       ( idma_rsp       ),
+      .rsp_valid_o      ( idma_rsp_valid ),
+      .rsp_ready_i      ( idma_rsp_ready ),
+      .idma_eh_req_i    ( '0 ),
+      .eh_req_valid_i   ( '0 ),
+      .eh_req_ready_o   ( ),
+      .axi_read_req_o   ( axi_read_req ),
+      .axi_read_rsp_i   ( axi_read_rsp ),
+      .axi_write_req_o  ( axi_write_req ),
+      .axi_write_rsp_i  ( axi_write_rsp ),
+      .busy_o           ( busy )
+    );
+  end
 
   axi_rw_join #(
    .axi_req_t   ( axi_mst_req_t ),
