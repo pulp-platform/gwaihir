@@ -29,7 +29,7 @@ protocols:
     user_width:
       collective_mask: 48
       collective_op: 4
-      user: 5
+      user: 6
   - name: "narrow_out"
     type: "narrow"
     protocol: "AXI4"
@@ -39,7 +39,7 @@ protocols:
     user_width:
       collective_mask: 48
       collective_op: 4
-      user: 5
+      user: 6
   - name: "wide_in"
     type: "wide"
     protocol: "AXI4"
