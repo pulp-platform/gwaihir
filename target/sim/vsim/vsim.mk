@@ -21,7 +21,10 @@ VSIM_FLAGS += -suppress 13314
 VSIM_FLAGS += -quiet
 VSIM_FLAGS += -64
 
-VSIM_FLAGS_GUI = -voptargs=+acc
+VSIM_FLAGS_GUI   = -voptargs=+acc
+# `hpdcache_flush` is excluded from default O4 optimization due to
+# it causing errors in vopt for questa-2023.4
+VSIM_FLAGS_BATCH = -voptargs='+acc+hpdcache_flush'
 
 define add_vsim_flag
 ifdef $(1)
@@ -52,7 +55,7 @@ vsim-run:
 	cd $(SIM_DIR) && $(VSIM) $(VSIM_FLAGS) $(VSIM_FLAGS_GUI) $(TB_DUT) -do "log -r /*"
 
 vsim-run-batch:
-	cd $(SIM_DIR) && $(VSIM) -c $(VSIM_FLAGS) $(TB_DUT) -do "run -all; quit"
+	cd $(SIM_DIR) && $(VSIM) -c $(VSIM_FLAGS) $(VSIM_FLAGS_BATCH) $(TB_DUT) -do "run -all; quit"
 
 vsim-run-batch-verify: vsim-run-batch
 ifdef VERIFY_PY
