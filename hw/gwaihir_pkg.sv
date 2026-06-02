@@ -318,6 +318,20 @@ package gwaihir_pkg;
     ret.LlcOutRegionEnd      = 'h12_0000_0000;
     ret.SlinkRegionStart     = 'h100_0000_0000;
     ret.SlinkRegionEnd       = 'h200_0000_0000;
+    // RT features
+    ret.Cva6InstrTlbEntries  = 16;
+    ret.Cva6DataTlbEntries   = 16;  // TODO: can be increased to 32.
+    ret.Cva6TlbColoring      = 1;
+    ret.Cva6NumTlbColors     = 16;
+    ret.Cva6LockableTlbWays  = 8;
+    ret.Cva6UseSharedTlb     = 0;
+    ret.AxiRt                = 1;
+    ret.Clic                 = 1;
+    ret.ClicVsclic           = 1;
+    ret.ClicVsprio           = 1;
+    ret.ClicNumVsctxts       = 4;
+    ret.ClicPrioWidth        = 1;
+    ret.LlcCachePartition    = 1;
     return ret;
   endfunction
 

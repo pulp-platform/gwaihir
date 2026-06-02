@@ -34,8 +34,8 @@ packages:
     - common_verification
     - tech_cells_generic
   axi_llc:
-    revision: 59bb8a681347e1133f11a82190fbf4bc11900d9e
-    version: 0.2.2
+    revision: e4a855c416cb8ecc1476f669462e30b6633d824d
+    version: null
     source:
       Git: https://github.com/pulp-platform/axi_llc.git
     dependencies:
@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 703de67b50d2fc53fe833eb18a9269058b39dd46
+    revision: 112b036efe3067461a92ee069b89dbd61192460e
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -112,6 +112,7 @@ packages:
     - register_interface
     - riscv-dbg
     - serial_link
+    - tagger
     - unbent
   clic:
     revision: 6515a71eb4ae3b143ab912d265e79832b3179a76
@@ -154,14 +155,17 @@ packages:
       Git: https://github.com/pulp-platform/common_verification.git
     dependencies: []
   cva6:
-    revision: 4c02b24fe7c04690f626776a92274da24f80d1da
+    revision: 737c5837830d88dbe9a9493633ed8a01e6e681bd
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
     dependencies:
     - axi
+    - axi_riscv_atomics
+    - clic
     - common_cells
-    - fpnew
+    - common_verification
+    - register_interface
     - tech_cells_generic
   dram_rtl_sim:
     revision: a764d5200a19cdd72a5237cbfb16985515a3058d
@@ -305,6 +309,17 @@ packages:
     - fpnew
     - idma
     - riscv-dbg
+    - tech_cells_generic
+  tagger:
+    revision: 496981122823557c40d71611afbac9a8183ede09
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/transaction-tagger.git
+    dependencies:
+    - axi
+    - common_cells
+    - common_verification
+    - register_interface
     - tech_cells_generic
   tech_cells_generic:
     revision: 7968dd6e6180df2c644636bc6d2908a49f2190cf

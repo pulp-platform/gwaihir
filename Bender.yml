@@ -19,7 +19,7 @@ dependencies:
   apb: "0.2.4"
   common_cells: "1.39.0"
   snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main"                                     }
-  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "main"                                     }
+  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir"                                  }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "acfcd0f80c7539aa8da7821a66d9acf2074a5b4e" }
   axi_obi:            { path: "hw/axi_obi"                                                                                              }
   gwaihir-pd:       { path: "./pd"                                                                                                    }
