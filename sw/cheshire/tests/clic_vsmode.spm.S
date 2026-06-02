@@ -1,0 +1,1 @@
+../../../.deps/cheshire/sw/tests/clic_vsmode.spm.S
