@@ -17,6 +17,14 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.spm.elf, USTR: "Hello World!" }
       - { CHS_BINARY: $CHS_BUILD_DIR/access_l2.spm.elf, PRELMODE: 1}
       - { CHS_BINARY: $CHS_BUILD_DIR/access_clk_gating_rst_ctrl_reg.spm.elf, PRELMODE: 1}
+      - { CHS_BINARY: $CHS_BUILD_DIR/cva6_dcache_spm_1.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/cva6_dcache_spm_2.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/cva6_icache_spm_1.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/cva6_icache_spm_2.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/clic_basic.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/clic_multiple.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/clic_smode.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/clic_vsmode.spm.elf, PRELMODE: 0 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 0 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 1 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 3 }
