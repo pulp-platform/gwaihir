@@ -1,0 +1,46 @@
+# Copyright 2026 ETH Zurich and University of Bologna.
+# Solderpad Hardware License, Version 0.51, see LICENSE for details.
+# SPDX-License-Identifier: SHL-0.51
+#
+name: slang
+
+on: [ push, pull_request, workflow_dispatch ]
+
+jobs:
+  slang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Install bender
+        uses: pulp-platform/pulp-actions/bender-install@v2.5.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+
+      # Some dependencies (e.g. snitch_cluster) register git submodules via SSH
+      # URLs, which fail on the runner as it has no SSH key. Rewrite them to
+      # HTTPS; all referenced repos are public.
+      - name: Use HTTPS instead of SSH for GitHub
+        run: |
+          git config --global --add url."https://github.com/".insteadOf "git@github.com:"
+          git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/"
+
+      - name: Generate sources
+        run: |
+          bender checkout
+          uv run make all
+
+      - name: Generate bender file list
+        run: make slang-flist
+
+      - name: Slang lint
+        uses: pulp-platform/pulp-actions/slang@fix_slang # TODO: pin to a specific version once it has been released
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          slang-flags: >-
+            -f sources.flist --top gwaihir_top
+            --ignore-unknown-modules
+            --timescale 1ns/1ps
+            -Wno-finish-num
+            --suppress-warnings .bender
