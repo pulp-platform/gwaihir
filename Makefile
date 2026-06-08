@@ -56,11 +56,9 @@ PEAKRDL_INCLUDES += $(CHS_PEAKRDL_INCLUDES)
 
 PEAKRDL_INCLUDES += -I $(GW_GEN_DIR)
 
-$(GW_GEN_DIR)/gw_soc_regs.sv: $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
-$(GW_GEN_DIR)/gw_soc_regs_pkg.sv: SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.cluster.num 2>/dev/null)
-$(GW_GEN_DIR)/gw_soc_regs_pkg.sv: L2_TILES = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.l2_spm.num 2>/dev/null)
-$(GW_GEN_DIR)/gw_soc_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_soc_regs.rdl
-	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n -P Num_Clusters=$(SN_CLUSTERS) -P Num_Mem_Tiles=$(L2_TILES)
+$(GW_GEN_DIR)/gw_tile_regs.sv: $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
+$(GW_GEN_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
+	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n
 
 $(GW_GEN_DIR)/gwaihir_addrmap.rdl: $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
@@ -78,15 +76,9 @@ $(GW_GEN_DIR)/gw_addrmap.svh: $(GW_RDL_ALL)
 $(GW_GEN_DIR)/gw_raw_addrmap.h: $(GW_RDL_ALL)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --base_name $(notdir $(basename $@)) --format c
 
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_soc_regs.sv
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap.svh
-
-.PHONY: gw-soc-regs gw-soc-regs-clean
-gw-soc-regs: $(GW_GEN_DIR)/gw_soc_regs.sv $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
-
-gw-soc-regs-clean:
-	rm -rf $(GW_GEN_DIR)/gw_soc_regs.sv $(GW_GEN_DIR)/gw_soc_regs_pkg.sv
 
 # TODO (lleone): remove phony, they are never used
 .PHONY: gw-addrmap gw-addrmap-clean

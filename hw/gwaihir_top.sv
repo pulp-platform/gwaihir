@@ -67,9 +67,6 @@ module gwaihir_top
   floo_rsp_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_rsp_in, floo_rsp_out;
   floo_wide_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_wide_in, floo_wide_out;
 
-  logic [NumClusters-1:0] cluster_clk_en, cluster_rst_n;
-  logic [NumMemTiles-1:0] mem_tile_clk_en, mem_tile_rst_n;
-
   ///////////////////
   // Cluster tiles //
   ///////////////////
@@ -84,7 +81,7 @@ module gwaihir_top
 
   for (genvar c = 0; c < NumClusters; c++) begin : gen_clusters
 
-    localparam int ClusterSamIdx = c + ClusterX0Y0SamIdx;
+    localparam int ClusterSamIdx = 2 * c + ClusterX0Y0SamIdx;
     localparam id_t ClusterId = CollectiveSam[ClusterSamIdx].idx.id;
     localparam id_t ClusterPhysicalId = gwaihir_pkg::SamPhysical[ClusterSamIdx].idx;
     localparam int X = int'(ClusterPhysicalId.x);
@@ -97,8 +94,6 @@ module gwaihir_top
       .clk_i,
       .rst_ni,
       .test_enable_i        (test_mode_i),
-      .tile_clk_en_i        (cluster_clk_en[c]),
-      .tile_rst_ni          (cluster_rst_n[c]),
       .clk_rst_bypass_i     (clk_rst_bypass_i),
       .debug_req_i          (debug_req[c]),
       .meip_i               (meip[c]),
@@ -175,10 +170,6 @@ module gwaihir_top
     .slink_i,
     .slink_o,
     .id_i             (CheshireId),
-    .cluster_clk_en_o (cluster_clk_en),
-    .cluster_rst_no   (cluster_rst_n),
-    .mem_tile_clk_en_o(mem_tile_clk_en),
-    .mem_tile_rst_no  (mem_tile_rst_n),
     .floo_req_west_o  (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
     .floo_rsp_west_i  (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
     .floo_wide_west_o (floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
@@ -205,7 +196,7 @@ module gwaihir_top
 
   for (genvar m = 0; m < NumMemTiles; m++) begin : gen_memtile
 
-    localparam int MemTileSamIdx = m + L2Spm0SamIdx;
+    localparam int MemTileSamIdx = 2 * m + L2Spm0SamIdx;
     localparam id_t MemTileId = CollectiveSam[MemTileSamIdx].idx.id;
     localparam id_t MemTilePhysicalId = SamPhysical[MemTileSamIdx].idx;
     localparam int MemTileX = int'(MemTilePhysicalId.x);
@@ -219,8 +210,6 @@ module gwaihir_top
       .clk_i,
       .rst_ni,
       .test_enable_i   (test_mode_i),
-      .tile_clk_en_i   (mem_tile_clk_en[m]),
-      .tile_rst_ni     (mem_tile_rst_n[m]),
       .clk_rst_bypass_i(clk_rst_bypass_i),
       .id_i            (MemTileId),
       .floo_req_o      (floo_req_out[MemTileX][MemTileY]),
@@ -230,7 +219,6 @@ module gwaihir_top
       .floo_rsp_o      (floo_rsp_out[MemTileX][MemTileY]),
       .floo_wide_i     (floo_wide_in[MemTileX][MemTileY])
     );
-
   end
 
   ////////////////

@@ -63,10 +63,14 @@ endpoints:
   - name: "cluster"
     array: [4, 4]
     addr_range:
-      base: 0x2000_0000
-      size: 0x0004_0000
-      rdl_name: "snitch_cluster"
-      en_collective: true
+      - base: 0x2000_0000
+        size: 0x0004_0000
+        rdl_name: "snitch_cluster"
+        en_collective: true
+      - base: 0x6000_0000
+        size: 0x0000_1000
+        desc: "config"
+        rdl_name: "gw_tile_regs"
     mgr_port_protocol:
       - "narrow_in"
       - "wide_in"
@@ -91,8 +95,12 @@ endpoints:
   - name: "l2_spm"
     array: [2]
     addr_range:
-      base: 0x7000_0000
-      size: 0x0010_0000
+      - base: 0x7000_0000
+        size: 0x0010_0000
+      - base: 0x6001_0000
+        size: 0x0000_1000
+        desc: "config"
+        rdl_name: "gw_tile_regs"
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"

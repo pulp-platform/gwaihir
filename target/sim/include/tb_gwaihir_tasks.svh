@@ -17,32 +17,36 @@ import gwaihir_pkg::*;
 `CHESHIRE_TYPEDEF_ALL(, fix.vip.DutCfg)
 
 task automatic jtag_enable_tiles();
-  localparam logic [31:0] ClusterMask = (32'h1 << NumClusters) - 32'h1;
-  localparam logic [31:0] MemTileMask = (32'h1 << NumMemTiles) - 32'h1;
   $display("Resetting tiles and enabling clock...");
   fix.vip.jtag_init();
-  fix.vip.jtag_write_reg32(`CHESHIRE_INTERNAL_GW_SOC_REGS_CLUSTER_RSTS_BASE_ADDR, ClusterMask, 1'b1);
-  fix.vip.jtag_write_reg32(`CHESHIRE_INTERNAL_GW_SOC_REGS_MEM_TILE_RSTS_BASE_ADDR, MemTileMask, 1'b1);
-  fix.vip.jtag_write_reg32(`CHESHIRE_INTERNAL_GW_SOC_REGS_CLUSTER_RSTS_BASE_ADDR, 32'h00000000, 1'b1);
-  fix.vip.jtag_write_reg32(`CHESHIRE_INTERNAL_GW_SOC_REGS_MEM_TILE_RSTS_BASE_ADDR, 32'h00000000, 1'b1);
-  fix.vip.jtag_write_reg32(`CHESHIRE_INTERNAL_GW_SOC_REGS_CLUSTER_RSTS_BASE_ADDR, ClusterMask, 1'b1);
-  fix.vip.jtag_write_reg32(`CHESHIRE_INTERNAL_GW_SOC_REGS_MEM_TILE_RSTS_BASE_ADDR, MemTileMask, 1'b1);
-  fix.vip.jtag_write_reg32(`CHESHIRE_INTERNAL_GW_SOC_REGS_CLUSTER_CLK_ENABLES_BASE_ADDR, ClusterMask, 1'b1);
-  fix.vip.jtag_write_reg32(`CHESHIRE_INTERNAL_GW_SOC_REGS_MEM_TILE_CLK_ENABLES_BASE_ADDR, MemTileMask, 1'b1);
+  for (int i = 0; i < NumClusters; i++) begin
+    fix.vip.jtag_write_reg32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b0, 1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_CONFIG_CLK_BASE_ADDR(i), 1'b1, 1'b0);
+  end
+  for (int i = 0; i < NumMemTiles; i++) begin
+    fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
+    fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b0, 1'b0);
+    fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
+    fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_CLK_BASE_ADDR(i), 1'b1, 1'b0);
+  end
 endtask
 
 task automatic slink_enable_tiles();
-  localparam logic [31:0] ClusterMask = (32'h1 << NumClusters) - 32'h1;
-  localparam logic [31:0] MemTileMask = (32'h1 << NumMemTiles) - 32'h1;
   $display("[SLINK] Resetting tiles and enabling clock...");
-  fix.vip.slink_write_32(`CHESHIRE_INTERNAL_GW_SOC_REGS_CLUSTER_RSTS_BASE_ADDR, ClusterMask);
-  fix.vip.slink_write_32(`CHESHIRE_INTERNAL_GW_SOC_REGS_MEM_TILE_RSTS_BASE_ADDR, MemTileMask);
-  fix.vip.slink_write_32(`CHESHIRE_INTERNAL_GW_SOC_REGS_CLUSTER_RSTS_BASE_ADDR, 32'h00000000);
-  fix.vip.slink_write_32(`CHESHIRE_INTERNAL_GW_SOC_REGS_MEM_TILE_RSTS_BASE_ADDR, 32'h00000000);
-  fix.vip.slink_write_32(`CHESHIRE_INTERNAL_GW_SOC_REGS_CLUSTER_RSTS_BASE_ADDR, ClusterMask);
-  fix.vip.slink_write_32(`CHESHIRE_INTERNAL_GW_SOC_REGS_MEM_TILE_RSTS_BASE_ADDR, MemTileMask);
-  fix.vip.slink_write_32(`CHESHIRE_INTERNAL_GW_SOC_REGS_CLUSTER_CLK_ENABLES_BASE_ADDR, ClusterMask);
-  fix.vip.slink_write_32(`CHESHIRE_INTERNAL_GW_SOC_REGS_MEM_TILE_CLK_ENABLES_BASE_ADDR, MemTileMask);
+  for (int i = 0; i < NumClusters; i++) begin
+    fix.vip.slink_write_32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b1);
+    fix.vip.slink_write_32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b0);
+    fix.vip.slink_write_32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b1);
+    fix.vip.slink_write_32(`CLUSTER_CONFIG_CLK_BASE_ADDR(i), 1'b1);
+  end
+  for (int i = 0; i < NumMemTiles; i++) begin
+    fix.vip.slink_write_32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1);
+    fix.vip.slink_write_32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b0);
+    fix.vip.slink_write_32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1);
+    fix.vip.slink_write_32(`L2_SPM_CONFIG_CLK_BASE_ADDR(i), 1'b1);
+  end
 endtask
 
 // FAST_PRELOAD mode trick with virtual class to write directly to L2 sram module inside various for generate

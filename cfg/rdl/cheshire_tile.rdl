@@ -7,7 +7,6 @@
 
 // `include "serial_link_single_channel.rdl"
 `include "cheshire.rdl"
-`include "gw_soc_regs.rdl"
 `include "fll.rdl"
 `include "gw_chip_regs.rdl"
 
@@ -21,7 +20,6 @@ addrmap cheshire_tile #(
     fll          fll           @0x1800_1000;
     gw_chip_regs gw_chip_regs  @0x1800_2000;
 `endif
-    gw_soc_regs  gw_soc_regs   @0x1800_3000;
 };
 
 `endif // __CHESHIRE_TILE_RDL__

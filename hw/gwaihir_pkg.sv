@@ -5,6 +5,9 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 `include "cheshire/typedef.svh"
+`include "axi/typedef.svh"
+`include "apb/typedef.svh"
+`include "tcdm_interface/typedef.svh"
 
 package gwaihir_pkg;
 
@@ -334,10 +337,9 @@ package gwaihir_pkg;
   ////////////////
 
   typedef enum bit [MaxExtRegSlvWidth-1:0] {
-    CshRegExtFLL          = 0,  // FLL registers
-    CshRegExtChipCtrl     = 1,  // Chip-level registers
-    CshRegExtClkGatingRst = 2,  // Tile-specific clock gating and reset control
-    CshRegExtNumSlv       = 3   // Number of external register slaves
+    CshRegExtFLL      = 0,  // FLL registers
+    CshRegExtChipCtrl = 1,  // Chip-level registers
+    CshRegExtNumSlv   = 2   // Number of external register slaves
   } cheshire_reg_ext_e;
 
   // Define function to derive configuration from Cheshire defaults.
@@ -358,9 +360,6 @@ package gwaihir_pkg;
     ret.RegExtRegionIdx[1]   = CshRegExtChipCtrl;
     ret.RegExtRegionStart[1] = 'h1800_2000;
     ret.RegExtRegionEnd[1]   = 'h1800_3000;
-    ret.RegExtRegionIdx[2]   = CshRegExtClkGatingRst;
-    ret.RegExtRegionStart[2] = 'h1800_3000;
-    ret.RegExtRegionEnd[2]   = 'h1800_4000;
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
     ret.Cva6ExtCieOnTop      = 0;
@@ -405,6 +404,25 @@ package gwaihir_pkg;
   ////////////////////
 
   localparam bit UseHWPE = 1'b0;
+
+  typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH-1:0] tile_cfg_reg_data_t;
+  typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH/8-1:0] tile_cfg_reg_strb_t;
+
+  `AXI_LITE_TYPEDEF_ALL(tile_cfg_axi_lite, addr_t, axi_narrow_out_data_t, axi_narrow_out_strb_t)
+  `AXI_LITE_TYPEDEF_ALL(tile_cfg_axi_lite_32, addr_t, tile_cfg_reg_data_t, tile_cfg_reg_strb_t)
+  `APB_TYPEDEF_ALL(tile_cfg_apb, addr_t, tile_cfg_reg_data_t, tile_cfg_reg_strb_t)
+
+  localparam int unsigned HWPECtrlAddrWidth = 32;
+  localparam int unsigned HWPECtrlDataWidth = 32;
+  typedef logic [HWPECtrlAddrWidth-1:0] addr_hwpe_ctrl_t;
+  typedef logic [HWPECtrlDataWidth-1:0] data_hwpe_ctrl_t;
+  typedef logic [3:0] strb_hwpe_ctrl_t;
+
+  `AXI_TYPEDEF_ALL(cluster_narrow_out_dw_conv, snitch_cluster_pkg::addr_t,
+                   snitch_cluster_pkg::narrow_out_id_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t,
+                   snitch_cluster_pkg::user_narrow_t)
+
+  `TCDM_TYPEDEF_ALL(hwpectrl, addr_hwpe_ctrl_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t, logic)
 
   ////////////////
   //  Mem Tile  //

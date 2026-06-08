@@ -13,7 +13,6 @@ module mem_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
-  import obi_pkg::*;
 #(
   parameter bit          AxiUserAtop    = 1'b1,
   parameter int unsigned AxiUserAtopMsb = 3,
@@ -23,8 +22,6 @@ module mem_tile
   input  logic                    clk_i,
   input  logic                    rst_ni,
   input  logic                    test_enable_i,
-  input  logic                    tile_clk_en_i,
-  input  logic                    tile_rst_ni,
   input  logic                    clk_rst_bypass_i,
   // Chimney ports
   input  id_t                     id_i,
@@ -37,8 +34,50 @@ module mem_tile
   input  floo_wide_t [West:North] floo_wide_i
 );
 
+  // Tile-specific reset and clock signals
   logic tile_clk;
   logic tile_rst_n;
+
+  typedef enum int unsigned {
+    Mem           = 'd0,
+    TileCfg       = 'd1,
+    NumDemuxPorts = 'd2
+  } axi_demux_sel_e;
+
+  typedef logic [AxiCfgN.AddrWidth-1:0] addr_t;
+  typedef struct packed {
+    int unsigned idx;
+    addr_t       start_addr;
+    addr_t       end_addr;
+  } addr_rule_t;
+
+  // NOTE(fischeti): This is approximate since it does not include the
+  // actual address range for this exact tile, but it is sufficient since
+  // the NoC will take care of routing the request to the correct tile.
+  localparam int unsigned NumTileAddrMapRules = 1;
+  addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
+      '{
+          idx: TileCfg,
+          start_addr: Sam[L2SpmConfig0SamIdx].start_addr,
+          end_addr: Sam[L2SpmConfig7SamIdx].end_addr
+      }
+  };
+
+  logic aw_select, ar_select;
+
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t       chimney_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t       chimney_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [1:0] axi_demux_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [1:0] axi_demux_out_rsp;
+
+  gw_tile_regs_pkg::gw_tile_regs__out_t            hwif_out;
+
+  tile_cfg_axi_lite_req_t                          tile_cfg_axi_lite_req;
+  tile_cfg_axi_lite_resp_t                         tile_cfg_axi_lite_rsp;
+  tile_cfg_axi_lite_32_req_t                       tile_cfg_reg_lite_req;
+  tile_cfg_axi_lite_32_resp_t                      tile_cfg_reg_lite_rsp;
+  tile_cfg_apb_req_t                               tile_cfg_apb_req;
+  tile_cfg_apb_resp_t                              tile_cfg_apb_rsp;
 
   ////////////
   // Router //
@@ -100,10 +139,8 @@ module mem_tile
   // Chimney //
   /////////////
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t axi_wide_rsp;
 
   floo_nw_chimney #(
     .AxiCfgN             (AxiCfgN),
@@ -132,16 +169,16 @@ module mem_tile
     .floo_rsp_t          (floo_rsp_t),
     .floo_wide_t         (floo_wide_t)
   ) i_chimney (
-    .clk_i               (tile_clk),
-    .rst_ni              (tile_rst_n),
+    .clk_i               (clk_i),
+    .rst_ni              (rst_ni),
     .test_enable_i,
     .id_i,
     .route_table_i       ('0),
     .sram_cfg_i          ('0),
     .axi_narrow_in_req_i ('0),
     .axi_narrow_in_rsp_o (),
-    .axi_narrow_out_req_o(axi_narrow_req),
-    .axi_narrow_out_rsp_i(axi_narrow_rsp),
+    .axi_narrow_out_req_o(chimney_narrow_out_req),
+    .axi_narrow_out_rsp_i(chimney_narrow_out_rsp),
     .axi_wide_in_req_i   ('0),
     .axi_wide_in_rsp_o   (),
     .axi_wide_out_req_o  (axi_wide_req),
@@ -152,6 +189,144 @@ module mem_tile
     .floo_req_i          (router_floo_req_out[Eject]),
     .floo_rsp_i          (router_floo_rsp_out[Eject]),
     .floo_wide_i         (router_floo_wide_out[Eject])
+  );
+
+  addr_decode #(
+    .NoIndices(NumDemuxPorts),
+    .NoRules  (NumTileAddrMapRules),
+    .addr_t   (addr_t),
+    .rule_t   (addr_rule_t)
+  ) i_addr_decode_aw (
+    .addr_i          (chimney_narrow_out_req.aw.addr),
+    .addr_map_i      (TileAddrMap),
+    .idx_o           (aw_select),
+    .dec_valid_o     (),
+    .dec_error_o     (),
+    .en_default_idx_i(1'b1),
+    .default_idx_i   ('0)
+  );
+
+  addr_decode #(
+    .NoIndices(NumDemuxPorts),
+    .NoRules  (NumTileAddrMapRules),
+    .addr_t   (addr_t),
+    .rule_t   (addr_rule_t)
+  ) i_addr_decode_ar (
+    .addr_i          (chimney_narrow_out_req.ar.addr),
+    .addr_map_i      (TileAddrMap),
+    .idx_o           (ar_select),
+    .dec_valid_o     (),
+    .dec_error_o     (),
+    .en_default_idx_i(1'b1),
+    .default_idx_i   ('0)
+  );
+
+  axi_demux #(
+    .AxiIdWidth (AxiCfgN.OutIdWidth),
+    .AtopSupport(1'b1),
+    .aw_chan_t  (floo_gwaihir_noc_pkg::axi_narrow_out_aw_chan_t),
+    .w_chan_t   (floo_gwaihir_noc_pkg::axi_narrow_out_w_chan_t),
+    .b_chan_t   (floo_gwaihir_noc_pkg::axi_narrow_out_b_chan_t),
+    .ar_chan_t  (floo_gwaihir_noc_pkg::axi_narrow_out_ar_chan_t),
+    .r_chan_t   (floo_gwaihir_noc_pkg::axi_narrow_out_r_chan_t),
+    .axi_req_t  (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
+    .axi_resp_t (floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t),
+    .NoMstPorts (NumDemuxPorts),
+    .MaxTrans   (floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .AxiLookBits(AxiCfgN.OutIdWidth),
+    .SpillAr    (1'b0),
+    .SpillAw    (1'b0)
+  ) i_axi_demux (
+    .clk_i          (clk_i),
+    .rst_ni         (rst_ni),
+    .test_i         (test_enable_i),
+    .slv_aw_select_i(aw_select),
+    .slv_ar_select_i(ar_select),
+    .slv_req_i      (chimney_narrow_out_req),
+    .slv_resp_o     (chimney_narrow_out_rsp),
+    .mst_reqs_o     (axi_demux_out_req),
+    .mst_resps_i    (axi_demux_out_rsp)
+  );
+
+  axi_to_axi_lite #(
+    .AxiAddrWidth   (AxiCfgN.AddrWidth),
+    .AxiDataWidth   (AxiCfgN.DataWidth),
+    .AxiIdWidth     (AxiCfgN.OutIdWidth),
+    .AxiUserWidth   (AxiCfgN.UserWidth),
+    .AxiMaxWriteTxns(floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .AxiMaxReadTxns (floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .full_req_t     (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
+    .full_resp_t    (floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t),
+    .lite_req_t     (tile_cfg_axi_lite_req_t),
+    .lite_resp_t    (tile_cfg_axi_lite_resp_t)
+  ) i_axi_to_axi_lite_tile_cfg (
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
+    .test_i    (test_enable_i),
+    .slv_req_i (axi_demux_out_req[TileCfg]),
+    .slv_resp_o(axi_demux_out_rsp[TileCfg]),
+    .mst_req_o (tile_cfg_axi_lite_req),
+    .mst_resp_i(tile_cfg_axi_lite_rsp)
+  );
+
+  axi_lite_dw_converter #(
+    .AxiAddrWidth       (AxiCfgN.AddrWidth),
+    .AxiSlvPortDataWidth(AxiCfgN.DataWidth),
+    .AxiMstPortDataWidth(gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
+    .axi_lite_aw_t      (tile_cfg_axi_lite_aw_chan_t),
+    .axi_lite_slv_w_t   (tile_cfg_axi_lite_w_chan_t),
+    .axi_lite_mst_w_t   (tile_cfg_axi_lite_32_w_chan_t),
+    .axi_lite_b_t       (tile_cfg_axi_lite_b_chan_t),
+    .axi_lite_ar_t      (tile_cfg_axi_lite_ar_chan_t),
+    .axi_lite_slv_r_t   (tile_cfg_axi_lite_r_chan_t),
+    .axi_lite_mst_r_t   (tile_cfg_axi_lite_32_r_chan_t),
+    .axi_lite_slv_req_t (tile_cfg_axi_lite_req_t),
+    .axi_lite_slv_res_t (tile_cfg_axi_lite_resp_t),
+    .axi_lite_mst_req_t (tile_cfg_axi_lite_32_req_t),
+    .axi_lite_mst_res_t (tile_cfg_axi_lite_32_resp_t)
+  ) i_axi_lite_dw_converter_tile_cfg (
+    .clk_i    (clk_i),
+    .rst_ni   (rst_ni),
+    .slv_req_i(tile_cfg_axi_lite_req),
+    .slv_res_o(tile_cfg_axi_lite_rsp),
+    .mst_req_o(tile_cfg_reg_lite_req),
+    .mst_res_i(tile_cfg_reg_lite_rsp)
+  );
+
+  axi_lite_to_apb #(
+    .NoApbSlaves    (1),
+    .NoRules        (1),
+    .AddrWidth      (AxiCfgN.AddrWidth),
+    .DataWidth      (gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
+    .axi_lite_req_t (tile_cfg_axi_lite_32_req_t),
+    .axi_lite_resp_t(tile_cfg_axi_lite_32_resp_t),
+    .apb_req_t      (tile_cfg_apb_req_t),
+    .apb_resp_t     (tile_cfg_apb_resp_t),
+    .rule_t         (addr_rule_t)
+  ) i_axi_lite_to_apb_tile_cfg (
+    .clk_i          (clk_i),
+    .rst_ni         (rst_ni),
+    .axi_lite_req_i (tile_cfg_reg_lite_req),
+    .axi_lite_resp_o(tile_cfg_reg_lite_rsp),
+    .apb_req_o      (tile_cfg_apb_req),
+    .apb_resp_i     (tile_cfg_apb_rsp),
+    .addr_map_i     ('{'{idx: 0, start_addr: '0, end_addr: '1}})  // There is only one port
+  );
+
+  gw_tile_regs i_gw_tile_regs (
+    .clk          (clk_i),
+    .arst_n       (rst_ni),
+    .s_apb_paddr  (tile_cfg_apb_req.paddr[gw_tile_regs_pkg::GW_TILE_REGS_MIN_ADDR_WIDTH-1:0]),
+    .s_apb_penable(tile_cfg_apb_req.penable),
+    .s_apb_psel   (tile_cfg_apb_req.psel),
+    .s_apb_pwrite (tile_cfg_apb_req.pwrite),
+    .s_apb_pprot  (tile_cfg_apb_req.pprot),
+    .s_apb_pwdata (tile_cfg_apb_req.pwdata),
+    .s_apb_pstrb  (tile_cfg_apb_req.pstrb),
+    .s_apb_prdata (tile_cfg_apb_rsp.prdata),
+    .s_apb_pready (tile_cfg_apb_rsp.pready),
+    .s_apb_pslverr(tile_cfg_apb_rsp.pslverr),
+    .hwif_out     (hwif_out)
   );
 
   /////////////
@@ -185,8 +360,8 @@ module mem_tile
     .clk_i           (tile_clk),
     .rst_ni          (tile_rst_n),
     .test_enable_i   (test_enable_i),
-    .axi_narrow_req_i(axi_narrow_req),
-    .axi_narrow_rsp_o(axi_narrow_rsp),
+    .axi_narrow_req_i(axi_demux_out_req[Mem]),
+    .axi_narrow_rsp_o(axi_demux_out_rsp[Mem]),
     .axi_wide_req_i  (axi_wide_req),
     .axi_wide_rsp_o  (axi_wide_rsp),
     .axi_req_o       (axi_req),
@@ -441,7 +616,7 @@ module mem_tile
     assign sram_addr[i]      = mem_addr[SramAddrWidthOffset+:SramAddrWidth];
     assign sram_macro_sel[i] = mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
     // Register the macro selection to select the correct macro for the next cycle
-    `FFL(sram_macro_sel_q[i], sram_macro_sel[i], mem_req & ~mem_we, '0);
+    `FFL(sram_macro_sel_q[i], sram_macro_sel[i], mem_req & ~mem_we, '0)
     // Assign the data
     assign sram_wdata[i]                             = mem_wdata[i*SramDataWidth+:SramDataWidth];
     assign sram_be[i]                                = mem_be[i*SramDataWidth/8+:SramDataWidth/8];
@@ -472,9 +647,9 @@ module mem_tile
   // Clock Gating & Reset //
   //////////////////////////
 
-  tc_clk_gating i_tc_clk_gating_mem_tile (
+  tc_clk_gating i_tc_clk_gating_cluster (
     .clk_i,
-    .en_i     (tile_clk_en_i),
+    .en_i     (hwif_out.clk.en.value),
     .test_en_i(clk_rst_bypass_i),
     .clk_o    (tile_clk)
   );
@@ -484,7 +659,7 @@ module mem_tile
   assign tile_rst_n = (clk_rst_bypass_i) ? rst_ni : tile_rst_ni;
 `else
   tc_clk_mux2 i_tc_reset_mux (
-    .clk0_i   (tile_rst_ni),
+    .clk0_i   (hwif_out.rst.n.value),
     .clk1_i   (rst_ni),
     .clk_sel_i(clk_rst_bypass_i),
     .clk_o    (tile_rst_n)
