@@ -1,0 +1,10 @@
+{
+  "build": "sources.flist",
+  "flags": "-f sources.flist --top tb_gwaihir_top --timescale 1ns/1ps",
+  "index": [
+    {
+      "dirs": ["hw", "target", ".bender/git/checkouts", ".generated"],
+      "excludeDirs": ["pulp-platform"]
+    }
+  ]
+}
