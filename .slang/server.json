@@ -1,0 +1,4 @@
+{
+  "build": "sources.flist",
+  "flags": "-f sources.flist --top gwaihir_top --timescale 1ns/1ps"
+}

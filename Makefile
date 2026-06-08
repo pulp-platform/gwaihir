@@ -210,7 +210,7 @@ include $(GW_ROOT)/target/sim/traces.mk
 # hw-only and informational goals. For unknown targets (e.g. app names), still run it.
 # %-all / %-clean cover all hw-all/hw-clean variants; vsim-% / gw-% cover sim/rdl targets.
 # Clean targets never need dep tracking regardless of subsystem.
-_GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist verible-fmt \
+_GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist slang-flist verible-fmt \
                      init-pd clean-pd python-venv% %-all %-clean vsim-% gw-%
 ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
 # All requested goals are hw-only/informational — skip dep tracking.
@@ -223,10 +223,22 @@ endif
 ########
 
 
-.PHONY: dvt-flist verible-fmt
+.PHONY: dvt-flist dvt-flist-clean verible-fmt slang-flist slang-flist-clean
 
-dvt-flist:
-	$(BENDER) script flist-plus $(COMMON_TARGS) $(SIM_TARGS) > .dvt/default.build
+DVT_FLIST   ?= $(GW_ROOT)/.dvt/default.build
+SLANG_FLIST ?= $(GW_ROOT)/sources.flist
+
+dvt-flist: $(DVT_FLIST)
+slang-flist: $(SLANG_FLIST)
+
+$(DVT_FLIST) $(SLANG_FLIST): $(BENDER_YML) $(BENDER_LOCK)
+	@mkdir -p $(@D)
+	$(BENDER) script flist-plus $(COMMON_TARGS) $(SIM_TARGS) --suppress E31 > $@
+
+dvt-flist-clean:
+	rm -f $(DVT_FLIST)
+slang-flist-clean:
+	rm -f $(SLANG_FLIST)
 
 verible-fmt:
 	$(VERIBLE_FMT) $(VERIBLE_FMT_ARGS) $(shell $(BENDER) script flist $(SIM_TARGS) --no-deps)
@@ -283,6 +295,7 @@ help:
 	@echo -e "${Green}traces               ${Black}Generate the better readable traces in .logs/trace_hart_<hart_id>.txt."
 	@echo -e "${Green}annotate             ${Black}Annotate the better readable traces in .logs/trace_hart_<hart_id>.s with the source code related with the retired instructions."
 	@echo -e "${Green}dvt-flist            ${Black}Generate a file list for the VSCode DVT plugin."
+	@echo -e "${Green}slang-flist          ${Black}Generate a file list for the slang LSP."
 	@echo -e "${Green}python-venv          ${Black}Create a Python virtual environment and install the required packages."
 	@echo -e "${Green}python-venv-clean    ${Black}Remove the Python virtual environment."
 	@echo -e "${Green}verible-fmt          ${Black}Format SystemVerilog files using Verible."

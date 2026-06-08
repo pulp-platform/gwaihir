@@ -50,6 +50,8 @@ modelsim.ini
 transcript
 logs
 **/*.log
+gmon.out
 
-# dvt files
+# LSP files
 .dvt
+sources.flist
