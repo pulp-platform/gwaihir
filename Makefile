@@ -10,7 +10,10 @@ BENDER_ROOT ?= $(GW_ROOT)/.bender
 UTIL_DIR = $(GW_ROOT)/util
 
 # Executables — must be defined before dependency paths that call $(BENDER)
-BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
+BENDER           ?= bender
+ifeq ($(MAKELEVEL),0)
+BENDER           += --suppress W22 -d $(GW_ROOT)
+endif
 FLOO_GEN         ?= floogen
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose

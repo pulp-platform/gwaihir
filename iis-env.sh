@@ -3,6 +3,10 @@
 # Solderpad Hardware License, Version 0.51, see LICENSE for details.
 # SPDX-License-Identifier: SHL-0.51
 
+# TODO(fischeti): Unpin once cva6 is updated
+# see https://github.com/pulp-platform/cva6/issues/71
+export BENDER=bender-0.31.0
+
 export CXX=g++-9.2.0
 
 export VSIM_SEPP="questa-2023.4"
