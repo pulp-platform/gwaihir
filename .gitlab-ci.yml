@@ -17,10 +17,15 @@ stages:
 # Sources the environment variables for the IIS environment
 .init-env:
   before_script:
-    # Hard link cached python packages since the UV cache directory
-    # is configured to be on the same filesystem as the build directory in the CI.
-    - export UV_CACHE_DIR=$CI_BUILDS_DIR/../cache/uv
-    - export UV_LINK_MODE=hardlink
+    # Persist the uv and bender caches across pipelines. The shared runners
+    # expose a per-runner cache via $CACHEDIR; the gwaihir-pd runner does not,
+    # so fall back to a per-runner dir next to the builds dir (as we did before).
+    - export CACHEDIR="${CACHEDIR:-$CI_BUILDS_DIR/../cache}"
+    # uv: the cache may live on a different filesystem than the build dir, so copy.
+    - export UV_CACHE_DIR="$CACHEDIR/uv"
+    - export UV_LINK_MODE=copy
+    # bender: keep per-project checkouts under ./.bender, share only the git db.
+    - export BENDER_DB_DIR="$CACHEDIR/bender"
     - source iis-env.sh
 
 ##################
@@ -31,7 +36,12 @@ init-deps:
   stage: init
   extends:
     - .init-env
-    - .init-deps-tpl
+  # Initialize the PD repository (provides pd/ci.yml for the subpipe trigger)
+  script:
+    - make init-pd
+  # the bender checkout in the before_script sometimes fails,
+  # due to rate limiting of github
+  retry: 1
   artifacts:
     paths:
       - pd/ci.yml
@@ -57,7 +67,6 @@ chs-sw:
 vsim-compile:
   stage: build
   extends:
-    - .cache-deps
     - .init-env
   script:
     - make gwaihir-hw-all
@@ -71,7 +80,6 @@ vsim-compile:
 vcs-compile:
   stage: build
   extends:
-    - .cache-deps
     - .init-env
   script:
     - make gwaihir-hw-all
@@ -89,7 +97,6 @@ vcs-compile:
 sim-vsim:
   stage: run
   extends:
-    - .cache-deps
     - .init-env
     - .sw-tests
   variables:
@@ -108,7 +115,6 @@ sim-vsim:
 sim-vcs:
   stage: run
   extends:
-    - .cache-deps
     - .init-env
   variables:
     LOG_FILE: transcript
@@ -135,7 +141,6 @@ sim-vcs:
 sim-exps:
   stage: run
   extends:
-    - .cache-deps
     - .init-env
   needs:
     - chs-sw
