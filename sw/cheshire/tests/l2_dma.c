@@ -6,14 +6,16 @@
 //
 // L2-to-L2 DMA burst test (viDMA in passthrough == iDMA).
 //
-// Tile-1's DMA copies data from Tile-0's L2 SPM into Tile-1's L2 SPM in four
-// phases. Each phase has its own size knobs so transfers can be scaled up to
-// force multi-burst / page-split DMA traffic ("super large" vectors/matrices):
+// Tile-1's DMA copies data from Tile-0's L2 SPM into Tile-1's L2 SPM in up to
+// five phases, each individually enabled via the ENABLE_PHASE_* switches below.
+// Each phase has its own size knobs so transfers can be scaled up to force
+// multi-burst / page-split DMA traffic ("super large" vectors/matrices):
 //   Phase 1 — 1D aligned vector
 //   Phase 2 — 1D vector, UNALIGNED at both ends (src and dst)
 //   Phase 3 — 2D aligned, strided matrix (gaps between rows; gaps verified
 //             untouched). Asymmetric src/dst strides preserved.
 //   Phase 4 — 2D UNALIGNED, contiguous matrix (rows x cols, stride == row)
+//   Phase 5 — concurrent row-arbiter test (local DMA read vs CVA6 read)
 //
 // Source pattern is a ramp src[i] = i. After each phase CVA6 reads back the
 // destination and tallies mismatches. Verification is fail-fast: the first
@@ -39,7 +41,7 @@
 // owns neither buffer (then both the read and the write traverse the NoC).
 #define SRC_TILE     0
 #define DST_TILE     1
-#define DRIVER_TILE  0
+#define DRIVER_TILE  1
 
 // Select the driver tile's DMA helpers from DRIVER_TILE. Token paste needs a
 // bare integer (hence no 'u' suffix on the tile indices). Resolves e.g.
@@ -49,9 +51,24 @@
 #define DMA_BLK_MEMCPY            MEMTILE_CONCAT(DRIVER_TILE, _dma_blk_memcpy)
 #define DMA_2D_BLK_MEMCPY         MEMTILE_CONCAT(DRIVER_TILE, _dma_2d_blk_memcpy)
 
+// Phase 5 (concurrent-arbiter) deliberately drives the SOURCE tile's DMA, so
+// its reads hit the source tile's own banks via the LOCAL path, regardless of
+// DRIVER_TILE above. Non-blocking issue helper (returns tf_id immediately).
+#define SRC_DMA_2D_MEMCPY         MEMTILE_CONCAT(SRC_TILE, _dma_2d_memcpy)
+
 // ---- Debug: encode "which stage + where it first broke" into the exit code -
 #define NO_BAD                0xFFFFFFFFu
 #define BAD_CODE(stage, idx)  ((int)((uint32_t)(stage) * 1000000u + (uint32_t)(idx)))
+
+// ---- Phase enable switches (1 = run, 0 = skip) -----------------------------
+// Phases are independent (each inits/poisons its own buffers), so any subset
+// may be enabled; disabled phases compile to nothing. Fail-fast still applies
+// across the enabled phases (the first failing one returns immediately).
+#define ENABLE_PHASE_1   1   // 1D aligned vector
+#define ENABLE_PHASE_2   1   // 1D unaligned (both ends)
+#define ENABLE_PHASE_3   1   // 2D aligned, strided (gap-checked)
+#define ENABLE_PHASE_4   1   // 2D unaligned, contiguous (ND)
+#define ENABLE_PHASE_5   1   // concurrent row-arbiter
 
 // ---- Geometry --------------------------------------------------------------
 #define WORD_BYTES   4             // sizeof(uint32_t)
@@ -90,12 +107,26 @@
 #define P4_DST_OFF     96          // unaligned dst base
 #define P4_STRIDE      (P4_ROW_BYTES)   // contiguous
 
+// Phase 5 — concurrent arbiter test. Tile-SRC's own DMA reads tile-SRC's L2
+// (LOCAL path -> payload_dma) while CVA6 reads the SAME region (NoC path ->
+// payload_ext); both collide at tile-SRC's per-row rr_arb_tree. The window is
+// placed at the base of a chosen macro row (rows are addr[19:16] = 64 KiB each)
+// so the contention lands on that row's arbiter.
+#define P5_LEN_BYTES          8192               // 8 KiB window (<= one 64 KiB row)
+#define P5_SRC_ROW            3                  // macro row to contend on (0..15)
+#define P5_SRC_OFF            (P5_SRC_ROW * 0x10000)  // row base; 64 KiB per macro row, dependent on the bank size
+#define P5_SWEEP_STRIDE_WORDS 10                 // 1 = densest collisions; raise to speed sim
+
 // ---- Derived: source ramp init span (union of all phase reads) -------------
 #define MAX2(a, b)     ((a) > (b) ? (a) : (b))
 #define P1_SRC_END     (P1_LEN_BYTES)
 #define P2_SRC_END     (P2_SRC_OFF + P2_LEN_BYTES)
 #define P3_SRC_END     ((P3_NUM_ROWS - 1) * P3_SRC_STRIDE + P3_ROW_BYTES)
 #define P4_SRC_END     (P4_SRC_OFF + P4_NUM_ROWS * P4_ROW_BYTES)
+// Phase 5 self-inits its own (row-P5_SRC_ROW) source window, so it is
+// intentionally NOT part of the global ramp span; P5_SRC_END is the ceiling
+// check only.
+#define P5_SRC_END     (P5_SRC_OFF + P5_LEN_BYTES)
 #define SRC_SPAN_BYTES MAX2(MAX2(P1_SRC_END, P2_SRC_END), MAX2(P3_SRC_END, P4_SRC_END))
 #define SRC_INIT_WORDS (SRC_SPAN_BYTES / WORD_BYTES)
 
@@ -104,6 +135,7 @@
 #define P2_DST_END (P2_DST_OFF + P2_LEN_BYTES)
 #define P3_DST_END ((P3_NUM_ROWS - 1) * P3_DST_STRIDE + P3_ROW_BYTES)
 #define P4_DST_END (P4_DST_OFF + P4_NUM_ROWS * P4_ROW_BYTES)
+#define P5_DST_END (P5_LEN_BYTES)
 
 // ---- Compile-time invariants -----------------------------------------------
 // Tile indices in range (memtile<N>_* helpers exist for N in 0..NUM-1).
@@ -123,10 +155,15 @@ static_assert(P2_SRC_OFF % BEAT_BYTES != 0 && P2_DST_OFF % BEAT_BYTES != 0,
               "P2 must be unaligned at both ends");
 static_assert(P4_SRC_OFF % BEAT_BYTES != 0 && P4_DST_OFF % BEAT_BYTES != 0,
               "P4 base must be unaligned");
+static_assert(P5_LEN_BYTES % WORD_BYTES == 0 && P5_LEN_BYTES % BEAT_BYTES == 0 &&
+              P5_SRC_OFF % BEAT_BYTES == 0,
+              "P5 length/offset must be 64-B aligned");
 // 1-MiB-per-tile ceiling (src in SRC_TILE, dst in DST_TILE).
 static_assert(SRC_SPAN_BYTES <= TILE_BYTES, "source span exceeds 1 MiB tile");
+static_assert(P5_SRC_END <= TILE_BYTES, "P5 source window exceeds 1 MiB tile");
 static_assert(P1_DST_END <= TILE_BYTES && P2_DST_END <= TILE_BYTES &&
-              P3_DST_END <= TILE_BYTES && P4_DST_END <= TILE_BYTES,
+              P3_DST_END <= TILE_BYTES && P4_DST_END <= TILE_BYTES &&
+              P5_DST_END <= TILE_BYTES,
               "a destination span exceeds 1 MiB tile");
 
 // ---- Main ------------------------------------------------------------------
@@ -160,6 +197,7 @@ int main(void) {
     // Phase 1: 1D aligned vector (P1_LEN_BYTES).
     //   dst[i] should equal src[i] = i. Aligned at both ends.
     // -----------------------------------------------------------------------
+#if ENABLE_PHASE_1
     {
         const uint32_t n_words = P1_LEN_BYTES / WORD_BYTES;
         const uint32_t dst_w   = 0;
@@ -186,6 +224,7 @@ int main(void) {
             return BAD_CODE(1, first_bad);          // skip Phases 2-4
         }
     }
+#endif
 
     // -----------------------------------------------------------------------
     // Phase 2: 1D vector, UNALIGNED at both ends (P2_SRC_OFF / P2_DST_OFF are
@@ -194,6 +233,7 @@ int main(void) {
     //   write strobes on both read and write sides.
     //   dst[dst_w + i] should equal src[src_w + i] = src_w + i.
     // -----------------------------------------------------------------------
+#if ENABLE_PHASE_2
     {
         const uint32_t n_words = P2_LEN_BYTES / WORD_BYTES;
         const uint32_t dst_w   = P2_DST_OFF / WORD_BYTES;
@@ -220,6 +260,7 @@ int main(void) {
             return BAD_CODE(2, first_bad);          // skip Phases 3-4
         }
     }
+#endif
 
     // -----------------------------------------------------------------------
     // Phase 3: 2D aligned, strided matrix. P3_NUM_ROWS rows of P3_ROW_BYTES,
@@ -229,6 +270,7 @@ int main(void) {
     //     row r: src = src_base + r*P3_SRC_STRIDE, dst = dst_base + r*P3_DST_STRIDE
     //     dst[row r][i] should equal src[row r][i] = r*(P3_SRC_STRIDE/4) + i
     // -----------------------------------------------------------------------
+#if ENABLE_PHASE_3
     {
         const uint32_t n_words   = P3_ROW_BYTES   / WORD_BYTES;   // per row
         const uint32_t src_str_w = P3_SRC_STRIDE  / WORD_BYTES;
@@ -284,6 +326,7 @@ int main(void) {
             return BAD_CODE(3, first_bad);          // skip Phase 4
         }
     }
+#endif
 
     // -----------------------------------------------------------------------
     // Phase 4: 2D UNALIGNED, contiguous matrix. stride == row length (no gap),
@@ -292,6 +335,7 @@ int main(void) {
     //   length. Exercises ND + unaligned + partial-beat handling together.
     //     dst[dst_w + k] should equal src[src_w + k] = src_w + k.
     // -----------------------------------------------------------------------
+#if ENABLE_PHASE_4
     {
         const uint32_t row_w   = P4_ROW_BYTES / WORD_BYTES;
         const uint32_t total_w = P4_NUM_ROWS * row_w;
@@ -322,6 +366,71 @@ int main(void) {
             return BAD_CODE(4, first_bad);
         }
     }
+#endif
+
+    // -----------------------------------------------------------------------
+    // Phase 5: CONCURRENT row-arbiter test. Driver DMA = SRC_TILE.
+    //   - DMA read of the source hits SRC_TILE's own banks via the LOCAL path
+    //     (mem_tile.sv routing_rules_dma LOCAL -> payload_dma).
+    //   - DMA write of the destination leaves the tile (EXTERNAL -> NoC -> DST).
+    //   - CVA6 concurrently reads the SAME SRC_TILE region, arriving as an
+    //     external request (chimney -> narrow MEM demux -> payload_ext).
+    //   Both clients walk the same window at src[P5_SRC_OFF..], which lies in a
+    //   single macro row (addr[19:16] = P5_SRC_ROW), so they collide at that
+    //   row's rr_arb_tree (ext wins ties; the DMA read's gnt deasserts and
+    //   obi_sram_shim retries). We keep CVA6 hammering until the DMA reports
+    //   done, so the overlap spans the transfer.
+    //     dst[i] should equal src[src_w+i] = src_w+i; CVA6 reads must match too.
+    // -----------------------------------------------------------------------
+#if ENABLE_PHASE_5
+    {
+        const uint32_t n_words = P5_LEN_BYTES / WORD_BYTES;
+        const uint32_t src_w   = P5_SRC_OFF / WORD_BYTES;  // base in macro row P5_SRC_ROW
+        const uint32_t dst_w   = 0;                        // DST_TILE base
+
+        // The row-P5_SRC_ROW source window is outside the global ramp span, so
+        // initialize it here (keeping the src[j] = j ramp), then poison the dst.
+        for (uint32_t i = 0; i < n_words; i++) {
+            src[src_w + i] = src_w + i;
+            dst[dst_w + i] = ~(src_w + i);
+        }
+
+        // Non-blocking 1D issue (conf=0 => ND off => reps ignored). Reading
+        // NEXT_ID_0 inside the helper both launches the transfer and returns id.
+        uint64_t tf_id = SRC_DMA_2D_MEMCPY(
+            /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_w],
+            /*src=*/        (uint64_t)(uintptr_t)&src[src_w],
+            /*size=*/       P5_LEN_BYTES,
+            /*dst_stride=*/ 0,
+            /*src_stride=*/ 0,
+            /*num_reps=*/   1,
+            /*conf=*/       0);
+
+        // Concurrent CVA6 traffic onto SRC_TILE's row-P5_SRC_ROW banks until the
+        // DMA is done. src is volatile, so each load is issued (generates
+        // payload_ext); the value is consumed by the check, so it is not elided.
+        const uintptr_t done_reg =
+            MEMTILE_IDMA_BASE(SRC_TILE) + IDMA_REG64_2D_DONE_ID_0_REG_OFFSET;
+        uint32_t cva6_errs = 0;
+        do {
+            for (uint32_t i = 0; i < n_words; i += P5_SWEEP_STRIDE_WORDS) {
+                uint32_t v = src[src_w + i];               // ext read of SRC_TILE
+            }
+        } while (*(volatile uint64_t *)done_reg != tf_id);
+
+        // Verify the DMA result (DST_TILE) and the concurrent reads (SRC_TILE).
+        first_bad = NO_BAD;
+        for (uint32_t i = 0; i < n_words; i++) {
+            if (dst[dst_w + i] != (src_w + i)) {
+                n_errors++;
+                if (first_bad == NO_BAD) first_bad = dst_w + i;
+            }
+        }
+        if (n_errors != 0) {
+            return BAD_CODE(6, first_bad);                 // STAGE 6 = concurrent
+        }
+    }
+#endif
 
     return 0;
 }
