@@ -164,37 +164,91 @@ package gwaihir_pkg;
     return ret_sam;
   endfunction
 
+  // Mirrors align_x_coordinate for the Y axis: shifts each tile's Y coordinate down
+  // by the number of empty rows below it, collapsing any row gaps introduced by
+  // xy_id_offset in the NoC configuration.
+  function automatic sam_rule_t [SamNumRules-1:0] align_y_coordinate(
+      sam_rule_t [SamNumRules-1:0] sam_to_convert, bit [MaxId.y:0] empty_rows);
+
+    sam_rule_t   [SamNumRules-1:0] ret_sam;
+    int unsigned                   bottom_empty_rows;
+    int unsigned                   current_y;
+
+    for (int rule = 0; rule < SamNumRules; rule++) begin
+      current_y         = int'(sam_to_convert[rule].idx.y);
+      bottom_empty_rows = 0;
+
+      // Count how many empty rows are below the current tile
+      for (int row = 0; row < current_y; row++) begin
+        if (empty_rows[row] == 1'b1) begin
+          bottom_empty_rows++;
+        end
+      end
+
+      // Shift the Y coordinate if there are empty rows below
+      if (bottom_empty_rows > 0) begin
+        ret_sam[rule].idx.y = sam_to_convert[rule].idx.y - bottom_empty_rows;
+      end else begin
+        ret_sam[rule].idx.y = sam_to_convert[rule].idx.y;
+      end
+
+      // Copy the remaining fields of the rule
+      ret_sam[rule].idx.x       = sam_to_convert[rule].idx.x;
+      ret_sam[rule].idx.port_id = sam_to_convert[rule].idx.port_id;
+      ret_sam[rule].start_addr  = sam_to_convert[rule].start_addr;
+      ret_sam[rule].end_addr    = sam_to_convert[rule].end_addr;
+    end
+    return ret_sam;
+  endfunction
+
+  // Applies both X and Y coordinate alignment, collapsing all gaps introduced by
+  // xy_id_offset in both dimensions.
+  function automatic sam_rule_t [SamNumRules-1:0] align_coordinate(
+      sam_rule_t [SamNumRules-1:0] sam_to_convert,
+      bit [MaxId.x:0] empty_cols,
+      bit [MaxId.y:0] empty_rows);
+    sam_rule_t [SamNumRules-1:0] ret_sam;
+    ret_sam = align_x_coordinate(sam_to_convert, empty_cols);
+    ret_sam = align_y_coordinate(ret_sam, empty_rows);
+    return ret_sam;
+  endfunction
+
   // To support multicast, the X and Y coordinates of the first tile in a multicast
   // group must be powers of two. For this reason, in the gwaihir system, the second
   // column begins with an offset to associate X = 4 with Cluster 0.
   //
-  // This offset introduces empty columns in the System Address Map (SAM). Therefore,
-  // to properly connect all the tiles, we need to regenerate the SAM to reflect the
-  // physical topology (i.e., 7×4), ensuring that the tiles are aligned and connected
-  // correctly within the adjusted coordinate space.
+  // This offset introduces empty columns in the System Address Map (SAM). Similarly,
+  // xy_id_offset on the Y axis may introduce empty rows. Therefore, to properly connect
+  // all tiles, we regenerate the SAM to reflect the physical topology, ensuring tiles
+  // are aligned and connected correctly within the adjusted coordinate space.
   localparam bit [MaxId.x:0] EmptyCols = get_empty_cols(MeshMap);
-  localparam sam_rule_t [SamNumRules-1:0] SamPhysical = align_x_coordinate(
-      floo_gwaihir_noc_pkg::Sam, EmptyCols
+  localparam bit [MaxId.y:0] EmptyRows = get_empty_rows(MeshMap);
+  localparam sam_rule_t [SamNumRules-1:0] SamPhysical = align_coordinate(
+      floo_gwaihir_noc_pkg::Sam, EmptyCols, EmptyRows
   );
 
   // Dummy tiles X, Y coordinates
   typedef id_t [NumDummyTiles-1:0] dummy_idx_t;
 
   // For each (col, row) in MeshMap: if the column is not fully empty (has at least one
-  // occupied tile) but this specific position is unoccupied, insert a dummy tile there.
+  // occupied tile), the row is not fully empty, but this specific position is unoccupied,
+  // insert a dummy tile there. Empty rows are skipped because they do not exist in the
+  // physical mesh and are not counted in NumDummyTiles.
   // The returned indices are in SAM-space coordinates (matching MeshMap).
   function automatic dummy_idx_t get_dummy_idx(mesh_map_t MeshMap);
     dummy_idx_t              dummy_idx;
     int unsigned             found_tiles;
     bit          [MaxId.x:0] empty_cols;
+    bit          [MaxId.y:0] empty_rows;
 
     found_tiles = 0;
     empty_cols  = get_empty_cols(MeshMap);
+    empty_rows  = get_empty_rows(MeshMap);
 
     for (int col = 0; col <= MaxId.x; col++) begin
       if (!empty_cols[col]) begin
         for (int row = 0; row <= MaxId.y; row++) begin
-          if (MeshMap[row][col] == 1'b0) begin
+          if (!empty_rows[row] && MeshMap[row][col] == 1'b0) begin
             dummy_idx[found_tiles] = '{x: col, y: row, port_id: 0};
             found_tiles++;
           end
@@ -204,22 +258,29 @@ package gwaihir_pkg;
     return dummy_idx;
   endfunction
 
-  // For each SAM-space dummy index, subtract the number of fully-empty columns that lie
-  // to its left. This gives the physical array index used to connect floo_req/rsp signals,
-  // mirroring the same transformation applied to SamPhysical via align_x_coordinate.
+  // For each SAM-space dummy index, subtract the number of fully-empty columns to its
+  // left and fully-empty rows below it. This gives the physical array index used to
+  // connect floo_req/rsp signals, mirroring the transformation applied by align_coordinate.
   function automatic dummy_idx_t get_dummy_physical_idx(dummy_idx_t dummy_idx);
     dummy_idx_t  ret;
     int unsigned left_empty_cols;
+    int unsigned bottom_empty_rows;
     int unsigned current_x;
+    int unsigned current_y;
 
     for (int d = 0; d < NumDummyTiles; d++) begin
-      current_x       = int'(dummy_idx[d].x);
-      left_empty_cols = 0;
+      current_x         = int'(dummy_idx[d].x);
+      current_y         = int'(dummy_idx[d].y);
+      left_empty_cols   = 0;
+      bottom_empty_rows = 0;
       for (int col = 0; col < current_x; col++) begin
         if (EmptyCols[col] == 1'b1) left_empty_cols++;
       end
+      for (int row = 0; row < current_y; row++) begin
+        if (EmptyRows[row] == 1'b1) bottom_empty_rows++;
+      end
       ret[d].x       = dummy_idx[d].x - left_empty_cols;
-      ret[d].y       = dummy_idx[d].y;
+      ret[d].y       = dummy_idx[d].y - bottom_empty_rows;
       ret[d].port_id = dummy_idx[d].port_id;
     end
     return ret;
