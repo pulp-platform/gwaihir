@@ -68,7 +68,8 @@ module mem_tile
       {4'd8, 2'd1}: mem_tile_idx = L2Spm5SamIdx;
       {4'd8, 2'd2}: mem_tile_idx = L2Spm6SamIdx;
       {4'd8, 2'd3}: mem_tile_idx = L2Spm7SamIdx;
-      default     : mem_tile_idx = '1;
+      // Fix default map to a valid tile (SPM0) instead of an unexisting SAM index.
+      default     : mem_tile_idx = L2Spm0SamIdx;
     endcase
   end
 
@@ -93,8 +94,8 @@ module mem_tile
         },
         '{
             idx: Dma,
-            start_addr: Sam[mem_tile_idx + DmaIdxOffset].start_addr,
-            end_addr: Sam[mem_tile_idx + DmaIdxOffset].end_addr
+            start_addr: Sam[int'(mem_tile_idx) + DmaIdxOffset].start_addr,
+            end_addr: Sam[int'(mem_tile_idx) + DmaIdxOffset].end_addr
         }
     };
   end
@@ -431,8 +432,8 @@ module mem_tile
       end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx].end_addr},
     // The address range for EXTERNAL is not the actual address range, all the unmapped requests will go to EXTERNAL
     '{idx: EXTERNAL,
-      start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx + DmaIdxOffset].start_addr,
-      end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx + DmaIdxOffset].end_addr}
+      start_addr: floo_gwaihir_noc_pkg::Sam[int'(mem_tile_idx) + DmaIdxOffset].start_addr,
+      end_addr  : floo_gwaihir_noc_pkg::Sam[int'(mem_tile_idx) + DmaIdxOffset].end_addr}
   };
 
   axi_xbar #(
