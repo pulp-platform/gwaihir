@@ -51,6 +51,7 @@ sources:
   - hw/cheshire_tile.sv
   - hw/mem_tile.sv
   - hw/dummy_tile.sv
+  - hw/ucie_tile.sv
 
   # Level 3
   - hw/gwaihir_top.sv

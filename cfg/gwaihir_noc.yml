@@ -96,6 +96,18 @@ endpoints:
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
+  - name: "ucie"
+    array: [2]
+    addr_range:
+      base: 0x200_0000_0000
+      size: 0x100_0000_0000
+      rdl_name: "ucie"
+    mgr_port_protocol:
+      - "narrow_in"
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
 
 routers:
   - name: "router_top"
@@ -135,6 +147,20 @@ connections:
     dst_range:
       - [1, 2]
       - [0, 0]
+    dst_dir: "Eject"
+  # bottom left UCIe (ucie[0] → router_bottom[0,0])
+  - src: "ucie"
+    dst: "router_bottom"
+    src_range:
+      - [0, 0]
+    dst_idx: [0, 0]
+    dst_dir: "Eject"
+  # bottom right UCIe (ucie[1] → router_bottom[3,0])
+  - src: "ucie"
+    dst: "router_bottom"
+    src_range:
+      - [1, 1]
+    dst_idx: [3, 0]
     dst_dir: "Eject"
   # router_bottom (y=0) ↔ router_center south boundary (y=1)
   - src: "router_bottom"

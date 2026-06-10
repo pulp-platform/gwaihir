@@ -35,7 +35,9 @@ package floo_gwaihir_noc_pkg;
     Cheshire     = 16,
     L2Spm0       = 17,
     L2Spm1       = 18,
-    NumEndpoints = 19
+    Ucie0        = 19,
+    Ucie1        = 20,
+    NumEndpoints = 21
   } ep_id_e;
 
 
@@ -60,7 +62,9 @@ package floo_gwaihir_noc_pkg;
     CheshireExternalSamIdx = 16,
     CheshireInternalSamIdx = 17,
     L2Spm0SamIdx           = 18,
-    L2Spm1SamIdx           = 19
+    L2Spm1SamIdx           = 19,
+    Ucie0SamIdx            = 20,
+    Ucie1SamIdx            = 21
   } sam_idx_e;
 
 
@@ -78,7 +82,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic route_t;
 
 
-  localparam int unsigned SamNumRules = 20;
+  localparam int unsigned SamNumRules = 22;
 
   typedef struct packed {
     id_t         idx;
@@ -87,6 +91,16 @@ package floo_gwaihir_noc_pkg;
   } sam_rule_t;
 
   localparam sam_rule_t [SamNumRules-1:0] Sam = '{
+      '{
+          idx: '{x: 3, y: 0, port_id: 0},
+          start_addr: 48'h030000000000,
+          end_addr: 48'h040000000000
+      },  // Ucie1
+      '{
+          idx: '{x: 0, y: 0, port_id: 0},
+          start_addr: 48'h020000000000,
+          end_addr: 48'h030000000000
+      },  // Ucie0
       '{
           idx: '{x: 2, y: 0, port_id: 0},
           start_addr: 48'h000070100000,
@@ -190,7 +204,7 @@ package floo_gwaihir_noc_pkg;
 
   };
 
-  localparam int unsigned CollectiveSamNumRules = 20;
+  localparam int unsigned CollectiveSamNumRules = 22;
 
   typedef struct packed {
     int unsigned offset;
@@ -211,6 +225,24 @@ package floo_gwaihir_noc_pkg;
   } collective_sam_rule_t;
 
   localparam collective_sam_rule_t [CollectiveSamNumRules-1:0] CollectiveSam = '{
+      '{
+          idx: '{
+              id: '{x: 3, y: 0, port_id: 0},
+              mask_x: '{default: '0},
+              mask_y: '{default: '0}
+          },
+          start_addr: 48'h030000000000,
+          end_addr: 48'h040000000000
+      },  // Ucie1
+      '{
+          idx: '{
+              id: '{x: 0, y: 0, port_id: 0},
+              mask_x: '{default: '0},
+              mask_y: '{default: '0}
+          },
+          start_addr: 48'h020000000000,
+          end_addr: 48'h030000000000
+      },  // Ucie0
       '{
           idx: '{
               id: '{x: 2, y: 0, port_id: 0},
@@ -399,10 +431,10 @@ package floo_gwaihir_noc_pkg;
   localparam route_cfg_t RouteCfg = '{
       RouteAlgo: XYRouting,
       UseIdTable: 1'b1,
-      XYAddrOffsetX: 41,
-      XYAddrOffsetY: 43,
+      XYAddrOffsetX: 42,
+      XYAddrOffsetY: 44,
       IdAddrOffset: 0,
-      NumSamRules: 20,
+      NumSamRules: 22,
       NumRoutes: 0,
       CollectiveCfg: '{
           OpCfg: '{

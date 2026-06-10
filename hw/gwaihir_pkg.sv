@@ -85,7 +85,8 @@ package gwaihir_pkg;
   localparam mesh_dim_t MeshDim = get_mesh_dim();
   localparam int unsigned NumTiles = MeshDim.x * MeshDim.y;
   localparam int unsigned NumClusters = Cheshire - ClusterX0Y0;
-  localparam int unsigned NumMemTiles = NumEndpoints - L2Spm0;
+  localparam int unsigned NumMemTiles = Ucie0 - L2Spm0;
+  localparam int unsigned NumUcieTiles = NumEndpoints - Ucie0;
 
   localparam int unsigned NumDummyTiles = NumTiles - $countones(MeshMap);
 
@@ -204,8 +205,7 @@ package gwaihir_pkg;
   // Applies both X and Y coordinate alignment, collapsing all gaps introduced by
   // xy_id_offset in both dimensions.
   function automatic sam_rule_t [SamNumRules-1:0] align_coordinate(
-      sam_rule_t [SamNumRules-1:0] sam_to_convert,
-      bit [MaxId.x:0] empty_cols,
+      sam_rule_t [SamNumRules-1:0] sam_to_convert, bit [MaxId.x:0] empty_cols,
       bit [MaxId.y:0] empty_rows);
     sam_rule_t [SamNumRules-1:0] ret_sam;
     ret_sam = align_x_coordinate(sam_to_convert, empty_cols);
