@@ -39,7 +39,6 @@ variables:
     - make gwaihir-hw-all
   artifacts:
     paths:
-      - .bender
       - .generated
     expire_in: 1 day
 
