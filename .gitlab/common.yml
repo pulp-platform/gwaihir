@@ -30,19 +30,6 @@ variables:
   # due to rate limiting of github
   retry: 1
 
-# Generate the RTL sources
-.generate-rtl-tpl:
-  extends:
-    - .cache-deps
-    - .init-env
-  script:
-    - make gwaihir-hw-all
-  artifacts:
-    paths:
-      - .bender
-      - .generated
-    expire_in: 1 day
-
 # Compile the snitch software tests
 .sn-sw-tpl:
   stage: build
