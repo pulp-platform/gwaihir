@@ -20,7 +20,7 @@ export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-snitch-llvm-a
 
 export UV=/usr/local/uv/uv
 
-bender checkout
+/home/fischeti/new-bender checkout
 
 $UV sync --locked
 source .venv/bin/activate

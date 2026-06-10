@@ -10,7 +10,7 @@ BENDER_ROOT ?= $(GW_ROOT)/.bender
 UTIL_DIR = $(GW_ROOT)/util
 
 # Executables — must be defined before dependency paths that call $(BENDER)
-BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
+BENDER           ?= /home/fischeti/.local/bin/bender-shared-locks --suppress W22 -d $(GW_ROOT)
 FLOO_GEN         ?= floogen
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
