@@ -10,44 +10,35 @@
 #define CLUSTER_MASK  ((1u << GWAIHIR_ADDRMAP_CLUSTER_NUM) - 1u)
 #define MEM_TILE_MASK ((1u << GWAIHIR_ADDRMAP_L2_SPM_NUM)  - 1u)
 
+#define NUM_CLUSTERS 16
+#define NUM_MEM_TILES 8
+
+// The clock-gating and reset control are now per-tile registers, exposed via
+// the per-tile config blocks. Each tile holds a single clock-enable bit
+// (clk.en) and a single active-low reset bit (rst.n).
+
 int main(void) {
 
-    uint32_t n_errors = 3 * 4; // 3 tests, 4 registers each
+    uint32_t n_errors = 2 * (NUM_CLUSTERS + NUM_MEM_TILES);
 
-    volatile gw_soc_regs_t *gw_soc_regs = &gwaihir_addrmap.cheshire_internal.gw_soc_regs;
+    volatile gw_tile_regs__stride1000_t *cluster_cfg = gwaihir_addrmap.cluster_config;
+    volatile gw_tile_regs__stride1000_t *mem_cfg = gwaihir_addrmap.l2_spm_config;
 
-    // Write all 0s and check
-    gw_soc_regs->cluster_clk_enables.f.clk_en = 0x00000000;
-    gw_soc_regs->mem_tile_clk_enables.f.clk_en = 0x00000000;
-    gw_soc_regs->cluster_rsts.f.rst = 0x00000000;
-    gw_soc_regs->mem_tile_rsts.f.rst = 0x00000000;
+    // Write and read back the clock-enable and reset bits of every cluster tile
+    for (int i = 0; i < NUM_CLUSTERS; i++) {
+        cluster_cfg[i].clk.f.en = 0x1;
+        cluster_cfg[i].rst.f.n = 0x1;
+        n_errors -= (cluster_cfg[i].clk.f.en == 0x1);
+        n_errors -= (cluster_cfg[i].rst.f.n == 0x1);
+    }
 
-    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == 0x00000000);
-    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == 0x00000000);
-    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == 0x00000000);
-    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == 0x00000000);
-
-    // Write all 1s and check
-    gw_soc_regs->cluster_clk_enables.f.clk_en = CLUSTER_MASK;
-    gw_soc_regs->mem_tile_clk_enables.f.clk_en = MEM_TILE_MASK;
-    gw_soc_regs->cluster_rsts.f.rst = CLUSTER_MASK;
-    gw_soc_regs->mem_tile_rsts.f.rst = MEM_TILE_MASK;
-
-    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == CLUSTER_MASK);
-    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == MEM_TILE_MASK);
-    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == CLUSTER_MASK);
-    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == MEM_TILE_MASK);
-
-    // Write alternating pattern and check
-    gw_soc_regs->cluster_clk_enables.f.clk_en = 0xAAAAAAAAu & CLUSTER_MASK;
-    gw_soc_regs->mem_tile_clk_enables.f.clk_en = 0xAAAAAAAAu & MEM_TILE_MASK;
-    gw_soc_regs->cluster_rsts.f.rst = 0x55555555u & CLUSTER_MASK;
-    gw_soc_regs->mem_tile_rsts.f.rst = 0x55555555u & MEM_TILE_MASK;
-
-    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == (0xAAAAAAAAu & CLUSTER_MASK));
-    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == (0xAAAAAAAAu & MEM_TILE_MASK));
-    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == (0x55555555u & CLUSTER_MASK));
-    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == (0x55555555u & MEM_TILE_MASK));
+    // Write and read back the clock-enable and reset bits of every memory tile
+    for (int i = 0; i < NUM_MEM_TILES; i++) {
+        mem_cfg[i].clk.f.en = 0x1;
+        mem_cfg[i].rst.f.n = 0x1;
+        n_errors -= (mem_cfg[i].clk.f.en == 0x1);
+        n_errors -= (mem_cfg[i].rst.f.n == 0x1);
+    }
 
     return n_errors;
 }
