@@ -51,7 +51,7 @@ $(VCS_BUILD)/gwaihir_top.vcs: $(VCS_BUILD)/compile.sh $(GW_HW_ALL)
 
 vcs-compile: $(VCS_BUILD)/gwaihir_top.vcs
 
-vcs-run: $(VCS_BUILD)/gwaihir_top.vcs
+vcs-run:
 	$(VCS_SEPP) $(VCS_BUILD)/gwaihir_top.vcs -verdi $(VCS_FLAGS)
 
 # Compilation + Run for batch mode (no debug overhead)
@@ -62,7 +62,7 @@ $(VCS_BUILD)/gwaihir_top_batch.vcs: $(VCS_BUILD)/compile.sh $(GW_HW_ALL)
 
 vcs-compile-batch: $(VCS_BUILD)/gwaihir_top_batch.vcs
 
-vcs-run-batch: $(VCS_BUILD)/gwaihir_top_batch.vcs
+vcs-run-batch:
 	$(VCS_SEPP) $(VCS_BUILD)/gwaihir_top_batch.vcs $(VCS_FLAGS)
 
 vcs-run-batch-verify: vcs-run-batch
