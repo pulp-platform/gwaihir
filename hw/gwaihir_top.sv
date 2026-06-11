@@ -248,14 +248,14 @@ module gwaihir_top
     ucie_tile i_ucie_tile (
       .clk_i,
       .rst_ni,
-      .test_enable_i (test_mode_i),
-      .id_i          (UcieId),
-      .floo_req_o    (floo_req_out[UcieX][UcieY]),
-      .floo_rsp_i    (floo_rsp_in[UcieX][UcieY]),
-      .floo_wide_o   (floo_wide_out[UcieX][UcieY]),
-      .floo_req_i    (floo_req_in[UcieX][UcieY]),
-      .floo_rsp_o    (floo_rsp_out[UcieX][UcieY]),
-      .floo_wide_i   (floo_wide_in[UcieX][UcieY])
+      .test_enable_i(test_mode_i),
+      .id_i         (UcieId),
+      .floo_req_o   (floo_req_out[UcieX][UcieY]),
+      .floo_rsp_i   (floo_rsp_in[UcieX][UcieY]),
+      .floo_wide_o  (floo_wide_out[UcieX][UcieY]),
+      .floo_req_i   (floo_req_in[UcieX][UcieY]),
+      .floo_rsp_o   (floo_rsp_out[UcieX][UcieY]),
+      .floo_wide_i  (floo_wide_in[UcieX][UcieY])
     );
 
   end
