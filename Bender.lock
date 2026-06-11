@@ -175,8 +175,8 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: c61284906a0c4d5a4955f35e693e8cc6c93689a0
-    version: 0.8.1
+    revision: 292f67698b3848e358896ab58024cc24135b2c9d
+    version: 0.8.2
     source:
       Git: https://github.com/pulp-platform/FlooNoC.git
     dependencies:
@@ -191,7 +191,7 @@ packages:
     revision: null
     version: null
     source:
-      Path: .bender/git/checkouts/floo_noc-e85a4cce70333e4d/pd
+      Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/./pd
     dependencies: []
   fpnew:
     revision: e5aa6a01b5bbe1675c3aa8872e1203413ded83d1
