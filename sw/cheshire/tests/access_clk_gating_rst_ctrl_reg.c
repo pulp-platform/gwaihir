@@ -5,6 +5,10 @@
 // Cyrill Durrer <cdurrer@iis.ee.ethz.ch>
 
 #include "gw_addrmap.h"
+#include "gw_raw_addrmap.h"
+
+#define CLUSTER_MASK  ((1u << GWAIHIR_ADDRMAP_CLUSTER_NUM) - 1u)
+#define MEM_TILE_MASK ((1u << GWAIHIR_ADDRMAP_L2_SPM_NUM)  - 1u)
 
 int main(void) {
 
@@ -23,27 +27,27 @@ int main(void) {
     n_errors -= (gw_soc_regs->cluster_rsts.f.rst == 0x00000000);
     n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == 0x00000000);
 
-    // Write all 1s and check again
-    gw_soc_regs->cluster_clk_enables.f.clk_en = 0x0000FFFF;
-    gw_soc_regs->mem_tile_clk_enables.f.clk_en = 0x000000FF;
-    gw_soc_regs->cluster_rsts.f.rst = 0x0000FFFF;
-    gw_soc_regs->mem_tile_rsts.f.rst = 0x000000FF;
+    // Write all 1s and check
+    gw_soc_regs->cluster_clk_enables.f.clk_en = CLUSTER_MASK;
+    gw_soc_regs->mem_tile_clk_enables.f.clk_en = MEM_TILE_MASK;
+    gw_soc_regs->cluster_rsts.f.rst = CLUSTER_MASK;
+    gw_soc_regs->mem_tile_rsts.f.rst = MEM_TILE_MASK;
 
-    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == 0x0000FFFF);
-    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == 0x000000FF);
-    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == 0x0000FFFF);
-    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == 0x000000FF);
+    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == CLUSTER_MASK);
+    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == MEM_TILE_MASK);
+    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == CLUSTER_MASK);
+    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == MEM_TILE_MASK);
 
-    // Write all 1s and check again
-    gw_soc_regs->cluster_clk_enables.f.clk_en = 0x0000AAAA;
-    gw_soc_regs->mem_tile_clk_enables.f.clk_en = 0x000000AA;
-    gw_soc_regs->cluster_rsts.f.rst = 0x00005555;
-    gw_soc_regs->mem_tile_rsts.f.rst = 0x00000055;
+    // Write alternating pattern and check
+    gw_soc_regs->cluster_clk_enables.f.clk_en = 0xAAAAAAAAu & CLUSTER_MASK;
+    gw_soc_regs->mem_tile_clk_enables.f.clk_en = 0xAAAAAAAAu & MEM_TILE_MASK;
+    gw_soc_regs->cluster_rsts.f.rst = 0x55555555u & CLUSTER_MASK;
+    gw_soc_regs->mem_tile_rsts.f.rst = 0x55555555u & MEM_TILE_MASK;
 
-    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == 0x0000AAAA);
-    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == 0x000000AA);
-    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == 0x00005555);
-    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == 0x00000055);
+    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == (0xAAAAAAAAu & CLUSTER_MASK));
+    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == (0xAAAAAAAAu & MEM_TILE_MASK));
+    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == (0x55555555u & CLUSTER_MASK));
+    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == (0x55555555u & MEM_TILE_MASK));
 
     return n_errors;
 }

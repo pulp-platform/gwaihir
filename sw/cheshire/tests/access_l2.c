@@ -9,19 +9,21 @@
 
 #include <stdint.h>
 #include "gw_addrmap.h"
+#include "gw_raw_addrmap.h"
 
 #define WIDE_WORD_WIDTH 512
 #define NARROW_WORD_WIDTH (sizeof(uint32_t) * 8)
-#define NUM_L2_MEM_TILES 8
-#define L2_MEM_TILE_SIZE sizeof(gwaihir_addrmap__l2_spm_t) // 1 MiB
+#define NUM_L2_MEM_TILES GWAIHIR_ADDRMAP_L2_SPM_NUM
+#define L2_MEM_TILE_SIZE GWAIHIR_ADDRMAP_L2_SPM_SIZE
 #define L2_SRAM_DATA_WIDTH 128
 #define L2_SRAM_NUM_WORDS 1024
-#define L2_BANKS_PER_WORD (WIDE_WORD_WIDTH / L2_SRAM_DATA_WIDTH) // 4 banks per 512-bit word
-#define L2_BANK_ROWS (L2_MEM_TILE_SIZE / (WIDE_WORD_WIDTH / 8)) / L2_SRAM_NUM_WORDS
+#define L2_BANKS_PER_WORD (WIDE_WORD_WIDTH / L2_SRAM_DATA_WIDTH)
+#define L2_BANK_ROWS ((L2_MEM_TILE_SIZE / (WIDE_WORD_WIDTH / 8)) / L2_SRAM_NUM_WORDS)
 
 typedef uint32_t l2_mem_t[NUM_L2_MEM_TILES][L2_BANK_ROWS][L2_SRAM_NUM_WORDS][L2_BANKS_PER_WORD][L2_SRAM_DATA_WIDTH / NARROW_WORD_WIDTH];
 
-static_assert((sizeof(l2_mem_t)/NUM_L2_MEM_TILES) == sizeof(gwaihir_addrmap__l2_spm_t), "Packing error");
+static_assert((sizeof(l2_mem_t)/NUM_L2_MEM_TILES) == L2_MEM_TILE_SIZE, "Packing error");
+static_assert(sizeof(gwaihir_addrmap__l2_spm_t) == L2_MEM_TILE_SIZE, "L2 tile size mismatch");
 
 int main() {
 

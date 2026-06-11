@@ -34,6 +34,7 @@ modelsim.ini
 *.wlf
 .rtlbinary
 .chsbinary
+*.do
 
 # Software build files
 *.bin
