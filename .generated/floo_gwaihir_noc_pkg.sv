@@ -82,6 +82,12 @@ package floo_gwaihir_noc_pkg;
   typedef logic route_t;
 
 
+  typedef struct packed {
+    id_t idx;
+    id_t start_addr;
+    id_t end_addr;
+  } route_map_rule_t;
+
   localparam int unsigned SamNumRules = 22;
 
   typedef struct packed {
@@ -93,13 +99,13 @@ package floo_gwaihir_noc_pkg;
   localparam sam_rule_t [SamNumRules-1:0] Sam = '{
       '{
           idx: '{x: 3, y: 0, port_id: 0},
-          start_addr: 48'h030000000000,
-          end_addr: 48'h040000000000
+          start_addr: 48'h000200000000,
+          end_addr: 48'h000300000000
       },  // Ucie1
       '{
           idx: '{x: 0, y: 0, port_id: 0},
-          start_addr: 48'h020000000000,
-          end_addr: 48'h030000000000
+          start_addr: 48'h000100000000,
+          end_addr: 48'h000200000000
       },  // Ucie0
       '{
           idx: '{x: 2, y: 0, port_id: 0},
@@ -119,7 +125,7 @@ package floo_gwaihir_noc_pkg;
       '{
           idx: '{x: 3, y: 8, port_id: 0},
           start_addr: 48'h000080000000,
-          end_addr: 48'h020000000000
+          end_addr: 48'h000100000000
       },  // CheshireExternal
       '{
           idx: '{x: 3, y: 7, port_id: 0},
@@ -231,8 +237,8 @@ package floo_gwaihir_noc_pkg;
               mask_x: '{default: '0},
               mask_y: '{default: '0}
           },
-          start_addr: 48'h030000000000,
-          end_addr: 48'h040000000000
+          start_addr: 48'h000200000000,
+          end_addr: 48'h000300000000
       },  // Ucie1
       '{
           idx: '{
@@ -240,8 +246,8 @@ package floo_gwaihir_noc_pkg;
               mask_x: '{default: '0},
               mask_y: '{default: '0}
           },
-          start_addr: 48'h020000000000,
-          end_addr: 48'h030000000000
+          start_addr: 48'h000100000000,
+          end_addr: 48'h000200000000
       },  // Ucie0
       '{
           idx: '{
@@ -277,7 +283,7 @@ package floo_gwaihir_noc_pkg;
               mask_y: '{default: '0}
           },
           start_addr: 48'h000080000000,
-          end_addr: 48'h020000000000
+          end_addr: 48'h000100000000
       },  // CheshireExternal
       '{
           idx: '{
@@ -431,8 +437,8 @@ package floo_gwaihir_noc_pkg;
   localparam route_cfg_t RouteCfg = '{
       RouteAlgo: XYRouting,
       UseIdTable: 1'b1,
-      XYAddrOffsetX: 42,
-      XYAddrOffsetY: 44,
+      XYAddrOffsetX: 34,
+      XYAddrOffsetY: 36,
       IdAddrOffset: 0,
       NumSamRules: 22,
       NumRoutes: 0,
@@ -468,7 +474,7 @@ package floo_gwaihir_noc_pkg;
   typedef struct packed {
     logic [47:0] collective_mask;
     logic [3:0]  collective_op;
-    logic [4:0]  user;
+    logic [5:0]  user;
   } collective_axi_narrow_in_user_t;
 
   `AXI_TYPEDEF_ALL_CT(collective_axi_narrow_in, collective_axi_narrow_in_req_t,
@@ -481,7 +487,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [63:0] axi_narrow_in_data_t;
   typedef logic [7:0] axi_narrow_in_strb_t;
   typedef logic [4:0] axi_narrow_in_id_t;
-  typedef struct packed {logic [4:0] user;} axi_narrow_in_user_t;
+  typedef struct packed {logic [5:0] user;} axi_narrow_in_user_t;
 
   `AXI_TYPEDEF_ALL_CT(axi_narrow_in, axi_narrow_in_req_t, axi_narrow_in_rsp_t, axi_narrow_in_addr_t,
                       axi_narrow_in_id_t, axi_narrow_in_data_t, axi_narrow_in_strb_t,
@@ -495,7 +501,7 @@ package floo_gwaihir_noc_pkg;
   typedef struct packed {
     logic [47:0] collective_mask;
     logic [3:0]  collective_op;
-    logic [4:0]  user;
+    logic [5:0]  user;
   } collective_axi_narrow_out_user_t;
 
   `AXI_TYPEDEF_ALL_CT(collective_axi_narrow_out, collective_axi_narrow_out_req_t,
@@ -508,7 +514,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [63:0] axi_narrow_out_data_t;
   typedef logic [7:0] axi_narrow_out_strb_t;
   typedef logic [1:0] axi_narrow_out_id_t;
-  typedef struct packed {logic [4:0] user;} axi_narrow_out_user_t;
+  typedef struct packed {logic [5:0] user;} axi_narrow_out_user_t;
 
   `AXI_TYPEDEF_ALL_CT(axi_narrow_out, axi_narrow_out_req_t, axi_narrow_out_rsp_t,
                       axi_narrow_out_addr_t, axi_narrow_out_id_t, axi_narrow_out_data_t,
@@ -571,7 +577,7 @@ package floo_gwaihir_noc_pkg;
       DataWidth: 64,
       InIdWidth: 5,
       OutIdWidth: 2,
-      UserWidth: 5
+      UserWidth: 6
   };
   localparam axi_cfg_t AxiCfgW = '{
       AddrWidth: 48,
