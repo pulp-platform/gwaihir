@@ -15,7 +15,6 @@ __pycache__
 
 # Generated source files
 .generated/*
-!.generated/floo_gwaihir_noc_pkg.sv
 
 # Workspace symlinks
 .deps

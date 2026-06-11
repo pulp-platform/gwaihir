@@ -37,7 +37,7 @@ sources:
   - target: gw_gen_rtl
     files:
       # Level 0.0
-      - .generated/floo_gwaihir_noc_pkg.sv
+      - ./floo_gwaihir_noc_pkg.sv
       - .generated/snitch_cluster_pkg.sv
       - .generated/gw_soc_regs_pkg.sv
       # Level 0.1
