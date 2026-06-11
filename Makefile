@@ -153,12 +153,15 @@ floo-clean: gw-addrmap-clean
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
 PD_COMMIT ?= 6d379f056fc2493a513d550db77fe0a659aca680
 PD_DIR = $(GW_ROOT)/pd
-.PHONY: init-pd clean-pd
+.PHONY: init-pd clean-pd update-pd-commit
 
 init-pd: $(PD_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
+
+update-pd-commit:
+	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
 	rm -rf $(PD_DIR)
@@ -210,7 +213,7 @@ include $(GW_ROOT)/target/sim/traces.mk
 # %-all / %-clean cover all hw-all/hw-clean variants; vsim-% / gw-% cover sim/rdl targets.
 # Clean targets never need dep tracking regardless of subsystem.
 _GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist slang-flist verible-fmt \
-                     init-pd clean-pd python-venv% %-all %-clean vsim-% gw-%
+                     init-pd clean-pd update-pd-commit python-venv% %-all %-clean vsim-% gw-%
 ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
 # All requested goals are hw-only/informational — skip dep tracking.
 else
