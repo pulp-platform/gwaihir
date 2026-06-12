@@ -16,6 +16,9 @@ __pycache__
 # Generated source files
 .generated/*
 
+# Bender
+Bender.local
+
 # Workspace symlinks
 .deps
 
@@ -55,4 +58,5 @@ gmon.out
 
 # LSP files
 .dvt
+.vscode
 sources.flist
