@@ -84,9 +84,9 @@ package gwaihir_pkg;
 
   localparam mesh_dim_t MeshDim = get_mesh_dim();
   localparam int unsigned NumTiles = MeshDim.x * MeshDim.y;
-  localparam int unsigned NumClusters = Cheshire - ClusterX0Y0;
-  localparam int unsigned NumMemTiles = Ucie0 - L2Spm0;
-  localparam int unsigned NumUcieTiles = NumEndpoints - Ucie0;
+  localparam int unsigned NumClusters = NumClusterX * NumClusterY;
+  localparam int unsigned NumMemTiles = NumL2Spm;
+  localparam int unsigned NumUcieTiles = NumUcie;
 
   localparam int unsigned NumDummyTiles = NumTiles - $countones(MeshMap);
 
