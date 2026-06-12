@@ -1,0 +1,168 @@
+# Copyright 2025 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: gwaihir
+description: "gwaihir NoC configuration"
+network_type: "narrow-wide"
+
+routing:
+  route_algo: "XY"
+  use_id_table: true
+  collective:
+    en_narrow_multicast: true
+    en_wide_multicast: true
+    en_barrier: true
+    en_wide_reduction:       # selective FP ops, default hw config
+      rd_pipeline_depth: 5
+      cut_offload_intf: true
+  decouple_rw: Phys
+  vc_impl: naive
+
+protocols:
+  - name: "narrow_in"
+    type: "narrow"
+    protocol: "AXI4"
+    data_width: 64
+    addr_width: 48
+    id_width: 5
+    user_width:
+      collective_mask: 48
+      collective_op: 4
+      user: 6
+  - name: "narrow_out"
+    type: "narrow"
+    protocol: "AXI4"
+    data_width: 64
+    addr_width: 48
+    id_width: 2
+    user_width:
+      collective_mask: 48
+      collective_op: 4
+      user: 6
+  - name: "wide_in"
+    type: "wide"
+    protocol: "AXI4"
+    data_width: 512
+    addr_width: 48
+    id_width: 3
+    user_width:
+      collective_mask: 48
+      collective_op: 4
+  - name: "wide_out"
+    type: "wide"
+    protocol: "AXI4"
+    data_width: 512
+    addr_width: 48
+    id_width: 1
+    user_width:
+      collective_mask: 48
+      collective_op: 4
+
+endpoints:
+  - name: "cluster"
+    array: [4, 4]
+    addr_range:
+      base: 0x2000_0000
+      size: 0x0004_0000
+      rdl_name: "snitch_cluster"
+      en_collective: true
+    mgr_port_protocol:
+      - "narrow_in"
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "cheshire"
+    addr_range:
+      - start: 0x0000_0000
+        end: 0x2000_0000
+        desc: "internal"
+        rdl_name: "cheshire_tile"
+      - start: 0x8000_0000
+        end: 0x200_0000_0000
+        desc: "external"
+        rdl_name: "cheshire_external"
+    mgr_port_protocol:
+      - "narrow_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "l2_spm"
+    array: [8]
+    addr_range:
+      base: 0x7000_0000
+      size: 0x0010_0000
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+
+routers:
+  - name: "router_left"
+    array: [1, 4]
+    degree: 5
+  - name: "router_center"
+    array: [4, 4]
+    degree: 5
+    xy_id_offset:
+      y: 0
+      x: 4
+  - name: "router_right"
+    array: [2, 4]
+    degree: 5
+    xy_id_offset:
+      y: 0
+      x: 8
+
+connections:
+  - src: "cluster"
+    dst: "router_center"
+    src_range:
+    - [0, 3]
+    - [0, 3]
+    dst_range:
+    - [0, 3]
+    - [0, 3]
+    dst_dir: "Eject"
+  - src: "cheshire"
+    dst: "router_right"
+    dst_idx: [1, 3]
+    dst_dir: "Eject"
+  - src: "l2_spm"
+    dst: "router_left"
+    src_range:
+      - [0, 3]
+    dst_range:
+      - [0, 0]
+      - [0, 3]
+    dst_dir: "Eject"
+  - src: "l2_spm"
+    dst: "router_right"
+    src_range:
+      - [4, 7]
+    dst_range:
+      - [0, 0]
+      - [0, 3]
+    dst_dir: "Eject"
+  # router_left (x=0) ↔ router_center West boundary (x=4)
+  - src: "router_left"
+    dst: "router_center"
+    src_range:
+      - [0, 0]
+      - [0, 3]
+    dst_range:
+      - [0, 0]
+      - [0, 3]
+    src_dir: "East"
+    dst_dir: "West"
+  # router_center East boundary (x=7) ↔ router_right (x=8)
+  - src: "router_center"
+    dst: "router_right"
+    src_range:
+      - [3, 3]
+      - [0, 3]
+    dst_range:
+      - [0, 0]
+      - [0, 3]
+    src_dir: "East"
+    dst_dir: "West"

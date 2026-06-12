@@ -15,7 +15,7 @@ dependencies:
   register_interface: "0.4.5"
   axi: "0.39.9"
   apb_fll_if: "0.3.0"
-  floo_noc: { version: "0.8.1", upstream_name: "FlooNoC" }
+  floo_noc: { version: "0.8.3", upstream_name: "FlooNoC" }
   apb: "0.2.4"
   common_cells: "1.39.0"
   snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main"                                     }
@@ -37,7 +37,7 @@ sources:
   - target: gw_gen_rtl
     files:
       # Level 0.0
-      - ./floo_gwaihir_noc_pkg.sv
+      - .generated/floo_gwaihir_noc_pkg.sv
       - .generated/snitch_cluster_pkg.sv
       - .generated/gw_soc_regs_pkg.sv
       # Level 0.1

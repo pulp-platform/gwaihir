@@ -488,7 +488,7 @@ wheels = [
 
 [[package]]
 name = "floogen"
-version = "0.8.2"
+version = "0.8.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -498,9 +498,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "ruamel-yaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/80/f9/53235361e8c12b5611b51a8c48bb3e1f809de895f2be74415cf3b4be1a15/floogen-0.8.2.tar.gz", hash = "sha256:7dc44b4081ecd4db7b2a146b638e6ddc150d2b9af66d109b5892b76ba20cce0a", size = 46264, upload-time = "2026-06-08T14:45:12.659Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/51/0eb0a753cc30f4a3013c1c4c4f464ce8d9670bbf510d39b40bd8c3958e90/floogen-0.8.3.tar.gz", hash = "sha256:f55309a4a83fe58c8c9d2434409ead1792345cc8f6bce72b24c8d5e157c1498d", size = 46524, upload-time = "2026-06-12T10:14:21.299Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/b2/5a35d7d1165110149c7fd793d1f0adc696d9ae1775b49328ce4054481d3e/floogen-0.8.2-py3-none-any.whl", hash = "sha256:28e2ea618969002113663aeffd8bb7bfe4c58c4cfb90c8f5ed234ac6fae02606", size = 63980, upload-time = "2026-06-08T14:45:11.47Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/62/0e559904bb8d5610a29075f538a4e04eba1be941c753c197096181506c01/floogen-0.8.3-py3-none-any.whl", hash = "sha256:3ac1c378f583638e0a63e2b9aa73a11f2dbb1bca83e4f4956e61b97d5f901a75", size = 64315, upload-time = "2026-06-12T10:14:22.55Z" },
 ]
 
 [[package]]
