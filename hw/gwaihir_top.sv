@@ -244,6 +244,17 @@ module gwaihir_top
   // UCIe tiles //
   ////////////////
 
+  // AXI narrow channels
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieTiles-1:0] ucie_axi_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumUcieTiles-1:0] ucie_axi_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_req;
+  floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_rsp;
+  // AXI wide channels
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t [NumUcieTiles-1:0] ucie_axi_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t [NumUcieTiles-1:0] ucie_axi_wide_out_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t  [NumUcieTiles-1:0] ucie_axi_wide_in_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
+
   for (genvar u = 0; u < NumUcieTiles; u++) begin : gen_ucietile
 
     localparam int UcieSamIdx = u + Ucie0SamIdx;
@@ -262,9 +273,47 @@ module gwaihir_top
       .floo_wide_o  (floo_wide_out[UcieX][UcieY]),
       .floo_req_i   (floo_req_in[UcieX][UcieY]),
       .floo_rsp_o   (floo_rsp_out[UcieX][UcieY]),
-      .floo_wide_i  (floo_wide_in[UcieX][UcieY])
+      .floo_wide_i  (floo_wide_in[UcieX][UcieY]),
+      // loopback
+      .axi_narrow_out_req_o (ucie_axi_narrow_out_req[u]),
+      .axi_narrow_out_rsp_i (ucie_axi_narrow_out_rsp[u]),
+      .axi_narrow_in_req_i  (ucie_axi_narrow_in_req[u]),
+      .axi_narrow_in_rsp_o  (ucie_axi_narrow_in_rsp[u]),
+
+      .axi_wide_out_req_o   (ucie_axi_wide_out_req[u]),
+      .axi_wide_out_rsp_i   (ucie_axi_wide_out_rsp[u]),
+      .axi_wide_in_req_i    (ucie_axi_wide_in_req[u]),
+      .axi_wide_in_rsp_o    (ucie_axi_wide_in_rsp[u])
     );
 
+  end
+
+  logic [47:0] ucie_addr_mask = ~ (48'h000F00000000);
+
+  // AXI narrow channels
+  always_comb begin
+    ucie_axi_narrow_in_req[0] = ucie_axi_narrow_out_req[1];
+    ucie_axi_narrow_out_rsp[0] = ucie_axi_narrow_in_rsp[1];
+    ucie_axi_narrow_in_req[1] = ucie_axi_narrow_out_req[0];
+    ucie_axi_narrow_out_rsp[1] = ucie_axi_narrow_in_rsp[0];
+
+    ucie_axi_narrow_in_req[0].ar.addr = ucie_axi_narrow_out_req[1].ar.addr & ucie_addr_mask;
+    ucie_axi_narrow_in_req[0].aw.addr = ucie_axi_narrow_out_req[1].aw.addr & ucie_addr_mask;
+    ucie_axi_narrow_in_req[1].ar.addr = ucie_axi_narrow_out_req[0].ar.addr & ucie_addr_mask;
+    ucie_axi_narrow_in_req[1].aw.addr = ucie_axi_narrow_out_req[0].aw.addr & ucie_addr_mask;
+  end
+
+  // AXI wide channels
+  always_comb begin
+    ucie_axi_wide_in_req[0] = ucie_axi_wide_out_req[1];
+    ucie_axi_wide_out_rsp[0] = ucie_axi_wide_in_rsp[1];
+    ucie_axi_wide_in_req[1] = ucie_axi_wide_out_req[0];
+    ucie_axi_wide_out_rsp[1] = ucie_axi_wide_in_rsp[0];
+
+    ucie_axi_wide_in_req[0].ar.addr = ucie_axi_wide_out_req[1].ar.addr & ucie_addr_mask;
+    ucie_axi_wide_in_req[0].aw.addr = ucie_axi_wide_out_req[1].aw.addr & ucie_addr_mask;
+    ucie_axi_wide_in_req[1].ar.addr = ucie_axi_wide_out_req[0].ar.addr & ucie_addr_mask;
+    ucie_axi_wide_in_req[1].aw.addr = ucie_axi_wide_out_req[0].aw.addr & ucie_addr_mask;
   end
 
   ////////////////
