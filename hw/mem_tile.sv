@@ -62,6 +62,10 @@ module mem_tile
           end_addr: Sam[L2SpmConfig1SamIdx].end_addr
       }
   };
+  localparam int unsigned NumTileApbAddrMapRules = 1;
+  addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
+      '{idx: 0, start_addr: '0, end_addr: '1}
+  };
 
   logic aw_select, ar_select;
 
@@ -310,7 +314,7 @@ module mem_tile
     .axi_lite_resp_o(tile_cfg_reg_lite_rsp),
     .apb_req_o      (tile_cfg_apb_req),
     .apb_resp_i     (tile_cfg_apb_rsp),
-    .addr_map_i     ('{'{idx: 0, start_addr: '0, end_addr: '1}})  // There is only one port
+    .addr_map_i     (TileApbAddrMap)
   );
 
   gw_tile_regs i_gw_tile_regs (

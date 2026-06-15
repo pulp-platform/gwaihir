@@ -63,6 +63,10 @@ module cluster_tile
           end_addr: Sam[ClusterConfigX3Y3SamIdx].end_addr
       }
   };
+  localparam int unsigned NumTileApbAddrMapRules = 1;
+  addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
+      '{idx: 0, start_addr: '0, end_addr: '1}
+  };
 
   logic aw_select, ar_select;
 
@@ -590,7 +594,7 @@ module cluster_tile
 
   axi_lite_to_apb #(
     .NoApbSlaves    (1),
-    .NoRules        (1),
+    .NoRules        (NumTileApbAddrMapRules),
     .AddrWidth      (AxiCfgN.AddrWidth),
     .DataWidth      (gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
     .axi_lite_req_t (tile_cfg_axi_lite_32_req_t),
@@ -605,7 +609,7 @@ module cluster_tile
     .axi_lite_resp_o(tile_cfg_axi_lite_32_rsp),
     .apb_req_o      (tile_cfg_apb_req),
     .apb_resp_i     (tile_cfg_apb_rsp),
-    .addr_map_i     ('{'{idx: 0, start_addr: '0, end_addr: '1}})  // There is only one port
+    .addr_map_i     (TileApbAddrMap)
   );
 
   gw_tile_regs i_gw_tile_regs (
