@@ -13,27 +13,25 @@
 
 #define WIDE_WORD_WIDTH 512
 #define NARROW_WORD_WIDTH (sizeof(uint32_t) * 8)
-#define NUM_L2_MEM_TILES GWAIHIR_ADDRMAP_L2_SPM_NUM
-#define L2_MEM_TILE_SIZE GWAIHIR_ADDRMAP_L2_SPM_SIZE
 #define L2_SRAM_DATA_WIDTH 128
 #define L2_SRAM_NUM_WORDS 1024
 #define L2_BANKS_PER_WORD (WIDE_WORD_WIDTH / L2_SRAM_DATA_WIDTH)
-#define L2_BANK_ROWS ((L2_MEM_TILE_SIZE / (WIDE_WORD_WIDTH / 8)) / L2_SRAM_NUM_WORDS)
+#define L2_BANK_ROWS ((GW_L2_SPM_SIZE / (WIDE_WORD_WIDTH / 8)) / L2_SRAM_NUM_WORDS)
 
-typedef uint32_t l2_mem_t[NUM_L2_MEM_TILES][L2_BANK_ROWS][L2_SRAM_NUM_WORDS][L2_BANKS_PER_WORD][L2_SRAM_DATA_WIDTH / NARROW_WORD_WIDTH];
+typedef uint32_t l2_mem_t[GW_L2_SPM_NUM][L2_BANK_ROWS][L2_SRAM_NUM_WORDS][L2_BANKS_PER_WORD][L2_SRAM_DATA_WIDTH / NARROW_WORD_WIDTH];
 
-static_assert((sizeof(l2_mem_t)/NUM_L2_MEM_TILES) == L2_MEM_TILE_SIZE, "Packing error");
-static_assert(sizeof(gwaihir_addrmap__l2_spm_t) == L2_MEM_TILE_SIZE, "L2 tile size mismatch");
+static_assert((sizeof(l2_mem_t)/GW_L2_SPM_NUM) == GW_L2_SPM_SIZE, "Packing error");
+static_assert(sizeof(gwaihir_addrmap__l2_spm_t) == GW_L2_SPM_SIZE, "L2 tile size mismatch");
 
 int main() {
 
   volatile l2_mem_t *l2_mem = (volatile l2_mem_t *)&gwaihir_addrmap.l2_spm;
 
-  uint32_t n_errors = NUM_L2_MEM_TILES * L2_BANK_ROWS * L2_BANKS_PER_WORD * 4; // Total number of writes
+  uint32_t n_errors = GW_L2_SPM_NUM * L2_BANK_ROWS * L2_BANKS_PER_WORD * 4; // Total number of writes
 
   // Write to each physical bank
   // One aligned access, one unaligned access
-  for (uint32_t i = 0; i < NUM_L2_MEM_TILES; i++) {
+  for (uint32_t i = 0; i < GW_L2_SPM_NUM; i++) {
     for (uint32_t j = 0; j < L2_BANK_ROWS; j++) {
         for (uint32_t k = 0; k < L2_BANKS_PER_WORD; k++) {
           (*l2_mem)[i][j][0][k][0] = i * j * k;
@@ -45,7 +43,7 @@ int main() {
   }
 
   // Read from each physical bank and check if the value is correct
-  for (uint32_t i = 0; i < NUM_L2_MEM_TILES; i++) {
+  for (uint32_t i = 0; i < GW_L2_SPM_NUM; i++) {
     for (uint32_t j = 0; j < L2_BANK_ROWS; j++) {
       for (uint32_t k = 0; k < L2_BANKS_PER_WORD; k++) {
           n_errors -= ((*l2_mem)[i][j][0][k][0] == i * j * k);

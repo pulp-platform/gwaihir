@@ -74,7 +74,7 @@ $(GW_GEN_DIR)/gw_addrmap.svh: $(GW_RDL_ALL)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
 
 $(GW_GEN_DIR)/gw_raw_addrmap.h: $(GW_RDL_ALL)
-	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --base_name $(notdir $(basename $@)) --format c
+	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
 
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv

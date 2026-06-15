@@ -17,63 +17,58 @@
  * @return Start addres of memory tile idx
  */
 inline uintptr_t gw_l2_tile_address(uint32_t tile_idx) {
-    return (uintptr_t) (gwaihir_addrmap.l2_spm[tile_idx].mem);
+  return (uintptr_t)(gwaihir_addrmap.l2_spm[tile_idx].mem);
 }
 
 /**
- * @brief Get the address offset of a data respect to the memory tile start address
+ * @brief Get the address offset of a data respect to the memory tile start
+ * address
  * @param src_addr The data absolute address
  * @return Address location offset respect to the tile start address
  */
 inline uintptr_t gw_l2_tile_offset(uintptr_t src_addr) {
-    return (src_addr - GWAIHIR_ADDRMAP_L2_SPM_BASE_ADDR(0)) % GWAIHIR_ADDRMAP_L2_SPM_SIZE;
+  return (src_addr - GW_L2_SPM_BASE_ADDR(0)) % GW_L2_SPM_SIZE;
 }
 
 /**
  * @brief Get the log2 of the number of clusters in a row
  */
- inline constexpr uint32_t gw_log2_cluster_num_in_row() {
-    return GW_LOG2_CLUSTER_PER_ROW;
+inline constexpr uint32_t gw_log2_cluster_num_in_row() {
+  return GW_LOG2_CLUSTER_PER_ROW;
 }
 
 /**
  * @brief Get the log2 of the number of clusters in a column
  */
 inline constexpr uint32_t gw_log2_cluster_num_in_col() {
-    return GW_LOG2_CLUSTER_PER_COL;
+  return GW_LOG2_CLUSTER_PER_COL;
 }
 
 /**
  * @brief Get the number of clusters in a row
  */
-inline constexpr uint32_t gw_cluster_num_in_row() {
-    return GW_CLUSTER_PER_ROW;
-}
+inline constexpr uint32_t gw_cluster_num_in_row() { return GW_CLUSTER_PER_ROW; }
 
 /**
  * @brief Get the number of clusters in a column
  */
-inline constexpr uint32_t gw_cluster_num_in_col() {
-    return GW_CLUSTER_PER_COL;
-}
+inline constexpr uint32_t gw_cluster_num_in_col() { return GW_CLUSTER_PER_COL; }
 
 /**
  * @brief Get the row index of a cluster
  * @param cluster_idx The cluster index
  * @return The row index relative to the first row of cluster tiles
  */
-inline uint32_t gw_cluster_row_idx(uint32_t cluster_idx)
-{
-    return cluster_idx % gw_cluster_num_in_col();
+inline uint32_t gw_cluster_row_idx(uint32_t cluster_idx) {
+  return cluster_idx % gw_cluster_num_in_col();
 }
 
 /**
  * @brief Get the row index of the invoking cluster
  * @return The row index relative to the first row of cluster tiles
  */
-inline uint32_t gw_cluster_row_idx()
-{
-    return gw_cluster_row_idx(snrt_cluster_idx());
+inline uint32_t gw_cluster_row_idx() {
+  return gw_cluster_row_idx(snrt_cluster_idx());
 }
 
 /**
@@ -81,18 +76,16 @@ inline uint32_t gw_cluster_row_idx()
  * @param cluster_idx The cluster index
  * @return The column index relative to the first column of cluster tiles
  */
-inline uint32_t gw_cluster_col_idx(uint32_t cluster_idx)
-{
-    return cluster_idx / gw_cluster_num_in_col();
+inline uint32_t gw_cluster_col_idx(uint32_t cluster_idx) {
+  return cluster_idx / gw_cluster_num_in_col();
 }
 
 /**
  * @brief Get the column index of the invoking cluster
  * @return The column index relative to the first column of cluster tiles
  */
-inline uint32_t gw_cluster_col_idx()
-{
-    return gw_cluster_col_idx(snrt_cluster_idx());
+inline uint32_t gw_cluster_col_idx() {
+  return gw_cluster_col_idx(snrt_cluster_idx());
 }
 
 /**
@@ -101,7 +94,7 @@ inline uint32_t gw_cluster_col_idx()
  * @param col Column index relative to the first column of cluster tiles
  */
 inline uint32_t gw_calculate_cluster_idx(uint32_t row, uint32_t col) {
-    return col * gw_cluster_num_in_col() + row;
+  return col * gw_cluster_num_in_col() + row;
 }
 
 /**
@@ -109,7 +102,7 @@ inline uint32_t gw_calculate_cluster_idx(uint32_t row, uint32_t col) {
  * @param row Row index relative to the first row of cluster tiles
  */
 inline uint32_t gw_cluster_in_row(uint32_t row) {
-    return gw_cluster_row_idx() == row;
+  return gw_cluster_row_idx() == row;
 }
 
 /**
@@ -117,49 +110,45 @@ inline uint32_t gw_cluster_in_row(uint32_t row) {
  * @param col Column index relative to the first column of cluster tiles
  */
 inline uint32_t gw_cluster_in_col(uint32_t col) {
-    return gw_cluster_col_idx() == col;
+  return gw_cluster_col_idx() == col;
 }
 
 /**
  * @brief Test if cluster is in the easternmost column
  */
 inline uint32_t gw_cluster_is_easternmost() {
-    return gw_cluster_in_col(gw_cluster_num_in_row() - 1);
+  return gw_cluster_in_col(gw_cluster_num_in_row() - 1);
 }
 
 /**
  * @brief Test if cluster is in the northernmost row
  */
 inline uint32_t gw_cluster_is_northernmost() {
-    return gw_cluster_in_row(gw_cluster_num_in_col() - 1);
+  return gw_cluster_in_row(gw_cluster_num_in_col() - 1);
 }
 
 /**
  * @brief Get cluster index of north neighbour
  */
-inline uint32_t gw_cluster_north_neighbour() {
-    return snrt_cluster_idx() + 1;
-}
+inline uint32_t gw_cluster_north_neighbour() { return snrt_cluster_idx() + 1; }
 
 /**
  * @brief Get cluster index of east neighbour
  */
 inline uint32_t gw_cluster_east_neighbour() {
-    return snrt_cluster_idx() + gw_cluster_num_in_row();
+  return snrt_cluster_idx() + gw_cluster_num_in_row();
 }
 
 /**
  * @brief Get cluster index of south neighbour
  */
-inline uint32_t gw_cluster_south_neighbour() {
-    return snrt_cluster_idx() - 1;
-}
+inline uint32_t gw_cluster_south_neighbour() { return snrt_cluster_idx() - 1; }
 
 /**
  * @brief Get cluster index of west neighbour
  */
 inline uint32_t gw_cluster_west_neighbour() {
-    return snrt_cluster_idx() - gw_cluster_num_in_row();
+  return snrt_cluster_idx() - gw_cluster_num_in_row();
 }
 
 /**
@@ -168,12 +157,12 @@ inline uint32_t gw_cluster_west_neighbour() {
  * @return Index of the closest memory tile to cluster_idx
  */
 inline uint32_t gw_closest_mem_tile(uint32_t cluster_idx) {
-    uint32_t row = gw_cluster_row_idx(cluster_idx);
-    // e.g. with 4x4 matrix
-    // first 8 clusters -> left column tiles 0..3
-    // clusters >= 8 -> right column tiles 4..7
-    return (cluster_idx < (snrt_cluster_num() / 2)) ?
-        row : (row + GW_CLUSTER_PER_COL);
+  uint32_t row = gw_cluster_row_idx(cluster_idx);
+  // e.g. with 4x4 matrix
+  // first 8 clusters -> left column tiles 0..3
+  // clusters >= 8 -> right column tiles 4..7
+  return (cluster_idx < (snrt_cluster_num() / 2)) ? row
+                                                  : (row + GW_CLUSTER_PER_COL);
 }
 
 /**
@@ -181,5 +170,5 @@ inline uint32_t gw_closest_mem_tile(uint32_t cluster_idx) {
  * This is a convenience overload of gw_closest_mem_tile()
  */
 inline uint32_t gw_closest_mem_tile() {
-    return gw_closest_mem_tile(snrt_cluster_idx());
+  return gw_closest_mem_tile(snrt_cluster_idx());
 }
