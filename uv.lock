@@ -642,7 +642,7 @@ requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
     { name = "floogen", specifier = ">=0.8.1" },
     { name = "peakrdl", specifier = ">=1.5.0" },
-    { name = "peakrdl-rawheader", specifier = ">=0.2.4" },
+    { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
     { name = "snitch", extras = ["kernels"], editable = ".deps/snitch_cluster" },
 ]
 
@@ -1531,15 +1531,15 @@ wheels = [
 
 [[package]]
 name = "peakrdl-rawheader"
-version = "0.2.4"
+version = "0.2.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mako" },
     { name = "systemrdl-compiler" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/89/690014be2a5986918522b4619cd3ed0499d8e6086361dd1bbd0b053b44f2/peakrdl_rawheader-0.2.4.tar.gz", hash = "sha256:c5954a474bfc3f6cfc250853b37472a483802d2bc7d5aacdc04be43e72e9acfb", size = 11233, upload-time = "2026-03-10T21:09:25.305Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/ab/62dd4b4dc50e9d311f2e8bddafedad3dab4492de5042b5bd6c1f06cb3333/peakrdl_rawheader-0.2.5.tar.gz", hash = "sha256:acb3bfa156bace5606bd562ef7d99ca2dd47ed7521b3cbb1cc8a7fa91f28aed0", size = 11353, upload-time = "2026-06-15T19:39:51.538Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/d7/729e1d724fdccec33ebd80f6240c0182a365377596713f2ed8d05973e271/peakrdl_rawheader-0.2.4-py3-none-any.whl", hash = "sha256:2350f36ba057a1179c6fee23c319f12ba929e79ed28c702c6787c1a4de569fea", size = 14422, upload-time = "2026-03-10T21:09:26.126Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/fb/f32dc05418f55b4c1aa6e32ad91586cc865811f8bc8425034196f7d92bd4/peakrdl_rawheader-0.2.5-py3-none-any.whl", hash = "sha256:461c4ba9fc8fb8b4116a09a7ce83d64eb3da9093d2b020e2258e4ab9e91753d7", size = 14527, upload-time = "2026-06-15T19:39:50.674Z" },
 ]
 
 [[package]]
