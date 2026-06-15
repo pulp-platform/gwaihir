@@ -59,7 +59,7 @@ module mem_tile
       '{
           idx: TileCfg,
           start_addr: Sam[L2SpmConfig0SamIdx].start_addr,
-          end_addr: Sam[L2SpmConfig7SamIdx].end_addr
+          end_addr: Sam[L2SpmConfig1SamIdx].end_addr
       }
   };
 
