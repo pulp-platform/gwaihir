@@ -81,7 +81,7 @@ end : gen_fastmode_class_per_l2_tile
 // Write a 32-bit word into an `tc_sram` at a given address
 task automatic fastmode_write_word(input longint addr, input logic [31:0] data);
   import floo_gwaihir_noc_pkg::*;
-  if (addr >= Sam[L2Spm0SamIdx].start_addr && addr < Sam[L2Spm0SamIdx+NumMemTiles-1].end_addr) begin
+  if (addr >= Sam[L2Spm0SamIdx].start_addr && addr < Sam[L2Spm0SamIdx+2*NumMemTiles-2].end_addr) begin
     // Selecting the correct mem_tile, sram bank, sram address and byte offset inside sram word
     int byte_offset  = addr[0                   +: SramByteOffsetWidth ];
     int sel_bank_col = addr[SramBankSelOffset   +: SramBankSelWidth    ];
@@ -89,7 +89,7 @@ task automatic fastmode_write_word(input longint addr, input logic [31:0] data);
     int sel_bank_row = addr[SramMacroSelOffset  +: SramMacroSelWidth   ];
     int sel_mem_tile = (addr - Sam[L2Spm0SamIdx].start_addr) / MemTileSize;
     l2_sram_class_list[sel_mem_tile][sel_bank_col][sel_bank_row].write_word(sram_addr, byte_offset, data);
-  end else if (addr >= Sam[Cheshire+1].start_addr && addr < Sam[Cheshire+1].end_addr) begin
+  end else if (addr >= Sam[CheshireInternalSamIdx].start_addr && addr < Sam[CheshireInternalSamIdx].end_addr) begin
     // TODO(fischeti): Implement Cheshire SPM fast preload
     $fatal(1, "[FAST_PRELOAD] Cheshire memory region not supported yet");
   end else begin
@@ -101,7 +101,7 @@ endtask
 // Read a 32-bit word into an `tc_sram` at a given address
 task automatic fastmode_read_word(input longint addr, output logic [31:0] data);
   import floo_gwaihir_noc_pkg::*;
-  if (addr >= Sam[L2Spm0SamIdx].start_addr && addr < Sam[L2Spm0SamIdx+NumMemTiles-1].end_addr) begin
+  if (addr >= Sam[L2Spm0SamIdx].start_addr && addr < Sam[L2Spm0SamIdx+2*NumMemTiles-2].end_addr) begin
     // Selecting the correct mem_tile, sram bank, sram address and byte offset inside sram word
     int byte_offset  = addr[0                   +: SramByteOffsetWidth ];
     int sel_bank_col = addr[SramBankSelOffset   +: SramBankSelWidth    ];
@@ -109,7 +109,7 @@ task automatic fastmode_read_word(input longint addr, output logic [31:0] data);
     int sel_bank_row = addr[SramMacroSelOffset  +: SramMacroSelWidth   ];
     int sel_mem_tile = (addr - Sam[L2Spm0SamIdx].start_addr) / MemTileSize;
     l2_sram_class_list[sel_mem_tile][sel_bank_col][sel_bank_row].read_word(sram_addr, byte_offset, data);
-  end else if (addr >= Sam[Cheshire+1].start_addr && addr < Sam[Cheshire+1].end_addr) begin
+  end else if (addr >= Sam[CheshireInternalSamIdx].start_addr && addr < Sam[CheshireInternalSamIdx].end_addr) begin
     $fatal(1, "[FAST_READ] Cheshire memory region not supported yet");
   end else begin
     $fatal(1, "[FAST_READ] Address 0x%h not in any supported memory region", addr);
@@ -127,7 +127,7 @@ task automatic fastmode_read();
     $error("[FAST_READ] File could not be open: l2mem.bin");
     return;
   end
-  for (longint w = Sam[L2Spm0SamIdx].start_addr; w < Sam[L2Spm0SamIdx+NumMemTiles-1].end_addr; w+=4) begin
+  for (longint w = Sam[L2Spm0SamIdx].start_addr; w < Sam[L2Spm0SamIdx+2*NumMemTiles-2].end_addr; w+=4) begin
     fastmode_read_word(w, data);
     $fwrite(fp, "%u", data);
   end
