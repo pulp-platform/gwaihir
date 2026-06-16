@@ -196,7 +196,7 @@ module gwaihir_top
 
   for (genvar m = 0; m < NumMemTiles; m++) begin : gen_memtile
 
-    localparam int MemTileSamIdx = 2 * m + L2Spm0SamIdx; // Each L2 memory tile spans two idx: idma and memory
+    localparam logic [$bits(sam_idx_e)-1:0] MemTileSamIdx = 2 * m + L2Spm0SamIdx; // Each L2 memory tile spans two idx: idma and memory
     localparam id_t MemTileId = CollectiveSam[MemTileSamIdx].idx.id;
     localparam id_t MemTilePhysicalId = SamPhysical[MemTileSamIdx].idx;
     localparam int MemTileX = int'(MemTilePhysicalId.x);
@@ -212,6 +212,7 @@ module gwaihir_top
       .test_enable_i   (test_mode_i),
       .clk_rst_bypass_i(clk_rst_bypass_i),
       .id_i            (MemTileId),
+      .samidx_i        (MemTileSamIdx),
       .floo_req_o      (floo_req_out[MemTileX][MemTileY]),
       .floo_rsp_i      (floo_rsp_in[MemTileX][MemTileY]),
       .floo_wide_o     (floo_wide_out[MemTileX][MemTileY]),

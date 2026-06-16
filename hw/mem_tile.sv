@@ -26,6 +26,8 @@ module mem_tile
   input  logic                    clk_rst_bypass_i,
   // Chimney ports
   input  id_t                     id_i,
+  // Sam idx
+  input  logic [$bits(sam_idx_e)-1:0] samidx_i,
   // Router ports
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,
@@ -53,25 +55,11 @@ module mem_tile
     addr_t       end_addr;
   } addr_rule_t;
 
-  // Compute this tile's SAM index from its NoC coordinates. Used to look up the
-  // tile-specific iDMA register address range below.
-  // TODO: [ATTENTION] This depends on the actual memory-tile placement; the mem
-  //       tiles are currently at [x,y] = [{0,8},{0,1,2,3}].
+  // This tile's SAM index, passed in from the parent (gwaihir_top) rather than
+  // derived from the NoC coordinates here. Used to look up the tile-specific
+  // iDMA register address range below.
   logic [5:0] mem_tile_idx;
-  always_comb begin
-    unique case ({id_i.x, id_i.y})
-      {4'd0, 2'd0}: mem_tile_idx = L2Spm0SamIdx;
-      {4'd0, 2'd1}: mem_tile_idx = L2Spm1SamIdx;
-      {4'd0, 2'd2}: mem_tile_idx = L2Spm2SamIdx;
-      {4'd0, 2'd3}: mem_tile_idx = L2Spm3SamIdx;
-      {4'd8, 2'd0}: mem_tile_idx = L2Spm4SamIdx;
-      {4'd8, 2'd1}: mem_tile_idx = L2Spm5SamIdx;
-      {4'd8, 2'd2}: mem_tile_idx = L2Spm6SamIdx;
-      {4'd8, 2'd3}: mem_tile_idx = L2Spm7SamIdx;
-      // Fix default map to a valid tile (SPM0) instead of an unexisting SAM index.
-      default     : mem_tile_idx = L2Spm0SamIdx;
-    endcase
-  end
+  assign mem_tile_idx = samidx_i;
 
   // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
   // from the generated enum so it survives YAML / regeneration changes. With the
@@ -142,8 +130,7 @@ module mem_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl),
-    .NoLoopback    (1'b1)
+    .VcImpl        (VcImpl)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -177,10 +164,13 @@ module mem_tile
   assign router_floo_wide_in[West:North] = floo_wide_i;
   assign floo_wide_o[West:North]         = router_floo_wide_out[West:North];
 
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t [1:0] axi_dma_req_demux;
-  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t [1:0] axi_dma_rsp_demux;
+  axi_wide_in_req_t [1:0] axi_dma_req_demux;
+  axi_wide_in_rsp_t [1:0] axi_dma_rsp_demux;
 
-  typedef enum logic {LOCAL, EXTERNAL} wide_axi_sel_e;
+  typedef enum logic {
+    LOCAL     = 1'b0,
+    EXTERNAL  = 1'b1
+  } wide_axi_sel_e;
 
   /////////////
   // Chimney //
@@ -190,8 +180,8 @@ module mem_tile
   floo_gwaihir_noc_pkg::axi_wide_out_rsp_t    axi_wide_rsp;
 
   // DMA req/resp, supposed to access LPDDR tile, we also keep the option to access other tiles
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t     axi_dma_req;
-  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t     axi_dma_rsp;
+  axi_wide_in_req_t     axi_dma_req;
+  axi_wide_in_rsp_t     axi_dma_rsp;
 
   floo_nw_chimney #(
     .AxiCfgN             (AxiCfgN),
@@ -389,7 +379,7 @@ module mem_tile
   // Without this demux, floo_noc would have loopback.
 
   // Configure AXI Xbar
-  localparam axi_pkg::xbar_cfg_t AxiDMAXbarCfg = '{
+  localparam axi_pkg::xbar_cfg_t AxiWideXbarCfg = '{
     NoSlvPorts:         1,
     NoMstPorts:         2,
     // TODO: Check what the most suitable value are for MaxMstTrans and MaxSlvTrans
@@ -404,12 +394,12 @@ module mem_tile
     //                                    for master and slave side should be the same
     //                                    and `axi_mst_` types and `axi_slv_` types are the
     //                                    same because the userwidth and id width are the same.
-    AxiIdWidthSlvPorts: $bits(floo_gwaihir_noc_pkg::axi_wide_in_id_t),
-    AxiIdUsedSlvPorts:  $bits(floo_gwaihir_noc_pkg::axi_wide_in_id_t),
+    AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
+    AxiIdUsedSlvPorts:  $bits(axi_wide_in_id_t),
     // TODO: Check if we should use UniqueIds
     UniqueIds:          0,
-    AxiAddrWidth:       $bits(floo_gwaihir_noc_pkg::axi_wide_in_addr_t),
-    AxiDataWidth:       $bits(floo_gwaihir_noc_pkg::axi_wide_in_data_t),
+    AxiAddrWidth:       $bits(axi_wide_in_addr_t),
+    AxiDataWidth:       $bits(axi_wide_in_data_t),
     NoAddrRules:        2,
     // Setting a `default` here allows for custom XBars with extended configs outside Cheshire.
     // Importantly, this requires that '0 *disables* any and all such custom extensions.
@@ -418,9 +408,9 @@ module mem_tile
 
   typedef struct packed {
     // Only two regions: MEM and DMA
-    logic [$clog2(AxiDMAXbarCfg.NoMstPorts)-1:0] idx;
-    floo_gwaihir_noc_pkg::axi_wide_in_addr_t     start_addr;
-    floo_gwaihir_noc_pkg::axi_wide_in_addr_t     end_addr;
+    logic [$clog2(AxiWideXbarCfg.NoMstPorts)-1:0] idx;
+    axi_wide_in_addr_t     start_addr;
+    axi_wide_in_addr_t     end_addr;
   } dma_rule_t;
 
   // TODO: The address of EXTERNAL needs to be adapted
@@ -428,16 +418,16 @@ module mem_tile
   dma_rule_t [1:0] routing_rules_dma;
   assign routing_rules_dma = '{
     '{idx: LOCAL,
-      start_addr: floo_gwaihir_noc_pkg::Sam[mem_tile_idx].start_addr,
-      end_addr  : floo_gwaihir_noc_pkg::Sam[mem_tile_idx].end_addr},
+      start_addr: Sam[mem_tile_idx].start_addr,
+      end_addr  : Sam[mem_tile_idx].end_addr},
     // The address range for EXTERNAL is not the actual address range, all the unmapped requests will go to EXTERNAL
     '{idx: EXTERNAL,
-      start_addr: floo_gwaihir_noc_pkg::Sam[int'(mem_tile_idx) + DmaIdxOffset].start_addr,
-      end_addr  : floo_gwaihir_noc_pkg::Sam[int'(mem_tile_idx) + DmaIdxOffset].end_addr}
+      start_addr: Sam[int'(mem_tile_idx) + DmaIdxOffset].start_addr,
+      end_addr  : Sam[int'(mem_tile_idx) + DmaIdxOffset].end_addr}
   };
 
   axi_xbar #(
-    .Cfg            (AxiDMAXbarCfg ),
+    .Cfg            (AxiWideXbarCfg ),
     // TODO: Check if we need to support ATOP, according to the parameter list, this is enabled
     .ATOPs          ('0 ),
     .Connectivity   ('1 ),
@@ -474,24 +464,24 @@ module mem_tile
   /////////
 
   mem_tile_dma_wrap #(
-    .AxiNarrowAddrWidth ($bits(floo_gwaihir_noc_pkg::axi_narrow_out_addr_t) ),
-    .AxiNarrowDataWidth ($bits(floo_gwaihir_noc_pkg::axi_narrow_out_data_t) ),
-    .AxiNarrowIdWidth   ($bits(floo_gwaihir_noc_pkg::axi_narrow_out_id_t)   ),
-    .AxiNarrowUserWidth ($bits(floo_gwaihir_noc_pkg::axi_narrow_out_user_t) ),
-    .AxiAddrWidth       ($bits(floo_gwaihir_noc_pkg::axi_wide_in_addr_t)    ),
-    .AxiDataWidth       ($bits(floo_gwaihir_noc_pkg::axi_wide_in_data_t)    ),
-    .AxiIdWidth         ($bits(floo_gwaihir_noc_pkg::axi_wide_in_id_t)      ),
-    .AxiUserWidth       ($bits(floo_gwaihir_noc_pkg::axi_wide_in_user_t)    ),
+    .AxiNarrowAddrWidth ($bits(axi_narrow_out_addr_t) ),
+    .AxiNarrowDataWidth ($bits(axi_narrow_out_data_t) ),
+    .AxiNarrowIdWidth   ($bits(axi_narrow_out_id_t)   ),
+    .AxiNarrowUserWidth ($bits(axi_narrow_out_user_t) ),
+    .AxiAddrWidth       ($bits(axi_wide_in_addr_t)    ),
+    .AxiDataWidth       ($bits(axi_wide_in_data_t)    ),
+    .AxiIdWidth         ($bits(axi_wide_in_id_t)      ),
+    .AxiUserWidth       ($bits(axi_wide_in_user_t)    ),
     // TODO: Undrestand all these parameters: NumAxInFlight, MemSysDepth, JobFifoDepth, RAWCouplingAvail, IsTwoD
     .NumAxInFlight      (gwaihir_pkg::DmaNumAxInFlight                      ),
     .MemSysDepth        (gwaihir_pkg::DmaMemSysDepth                        ),
     .JobFifoDepth       (gwaihir_pkg::DmaJobFifoDepth                       ),
     .RAWCouplingAvail   (gwaihir_pkg::DmaRAWCouplingAvail                   ),
     .IsTwoD             (gwaihir_pkg::DmaConfEnableTwoD                     ),
-    .axi_mst_req_t      (floo_gwaihir_noc_pkg::axi_wide_in_req_t            ),
-    .axi_mst_rsp_t      (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t            ),
-    .axi_slv_req_t      (floo_gwaihir_noc_pkg::axi_narrow_out_req_t         ),
-    .axi_slv_rsp_t      (floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t         )
+    .axi_mst_req_t      (axi_wide_in_req_t            ),
+    .axi_mst_rsp_t      (axi_wide_in_rsp_t            ),
+    .axi_slv_req_t      (axi_narrow_out_req_t         ),
+    .axi_slv_rsp_t      (axi_narrow_out_rsp_t         )
   ) i_mem_tile_dma (
     .clk_i          (tile_clk                   ),
     .rst_ni         (tile_rst_n                 ),
@@ -593,8 +583,8 @@ module mem_tile
     .LogW      (1'b1),
     .LogB      (1'b1),
     .LogR      (1'b1),
-    .axi_req_t (floo_gwaihir_noc_pkg::axi_wide_in_req_t),
-    .axi_resp_t(floo_gwaihir_noc_pkg::axi_wide_in_rsp_t)
+    .axi_req_t (axi_wide_in_req_t),
+    .axi_resp_t(axi_wide_in_rsp_t)
   ) i_dma_axi_monitor (
     .clk_i,
     .rst_ni,
@@ -614,8 +604,8 @@ module mem_tile
     .AxiIdWidth  (AxiCfgW.InIdWidth),
     .AxiUserWidth(AxiCfgW.UserWidth),
     .MaxTrans    (DMAObiLatency),
-    .axi_req_t   (floo_gwaihir_noc_pkg::axi_wide_in_req_t),
-    .axi_rsp_t   (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t)
+    .axi_req_t   (axi_wide_in_req_t),
+    .axi_rsp_t   (axi_wide_in_rsp_t)
   ) i_dma_axi_to_obi (
     .clk_i     (tile_clk),
     .rst_ni    (tile_rst_n),
