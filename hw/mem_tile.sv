@@ -651,7 +651,7 @@ module mem_tile
   // Clock Gating & Reset //
   //////////////////////////
 
-  tc_clk_gating i_tc_clk_gating_cluster (
+  tc_clk_gating i_tc_clk_mem_tile (
     .clk_i,
     .en_i     (hwif_out.clk.en.value),
     .test_en_i(clk_rst_bypass_i),
