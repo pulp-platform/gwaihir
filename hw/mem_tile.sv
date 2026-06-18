@@ -92,7 +92,7 @@ module mem_tile
       '{idx: 0, start_addr: '0, end_addr: '1}
   };
 
-  logic aw_select, ar_select;
+  logic [cf_math_pkg::idx_width(NumDemuxPorts)-1:0] aw_select, ar_select;
 
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t       chimney_narrow_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t       chimney_narrow_out_rsp;
