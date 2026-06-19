@@ -7,7 +7,7 @@ description: "gwaihir NoC configuration"
 network_type: "narrow-wide"
 
 routing:
-  route_algo: "XY"
+  route_algo: "YX"
   use_id_table: true
   collective:
     en_narrow_multicast: true

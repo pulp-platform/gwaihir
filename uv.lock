@@ -489,7 +489,7 @@ wheels = [
 [[package]]
 name = "floogen"
 version = "0.8.3"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/pulp-platform/FlooNoC.git?branch=main#f7f81e2c65c231a8fab4cf8a6e6cd2aa3efdcdb6" }
 dependencies = [
     { name = "click" },
     { name = "mako" },
@@ -497,10 +497,6 @@ dependencies = [
     { name = "networkx" },
     { name = "pydantic" },
     { name = "ruamel-yaml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cf/51/0eb0a753cc30f4a3013c1c4c4f464ce8d9670bbf510d39b40bd8c3958e90/floogen-0.8.3.tar.gz", hash = "sha256:f55309a4a83fe58c8c9d2434409ead1792345cc8f6bce72b24c8d5e157c1498d", size = 46524, upload-time = "2026-06-12T10:14:21.299Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d0/62/0e559904bb8d5610a29075f538a4e04eba1be941c753c197096181506c01/floogen-0.8.3-py3-none-any.whl", hash = "sha256:3ac1c378f583638e0a63e2b9aa73a11f2dbb1bca83e4f4956e61b97d5f901a75", size = 64315, upload-time = "2026-06-12T10:14:22.55Z" },
 ]
 
 [[package]]
@@ -640,7 +636,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
-    { name = "floogen", specifier = ">=0.8.1" },
+    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?branch=main" },
     { name = "peakrdl", specifier = ">=1.5.0" },
     { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
     { name = "snitch", extras = ["kernels"], editable = ".deps/snitch_cluster" },

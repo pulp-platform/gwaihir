@@ -27,7 +27,7 @@ dev = [
 [tool.uv.workspace]
 members = [
     # To locally edit floogen, run `bender clone floo_noc` and add:
-    #   "working_dir/floo_noc",
+    # "working_dir/floo_noc",
     # Note: .deps/floo_noc cannot be used here because uv_build does not
     # support symlinks as workspace members (https://github.com/astral-sh/uv/issues/15243).
     ".deps/snitch_cluster",
@@ -36,7 +36,8 @@ members = [
 
 [tool.uv.sources]
 # To locally edit floogen, also uncomment:
-#   floogen = { workspace = true, editable = true }
+# floogen = { workspace = true, editable = true }
+floogen = { git = "https://github.com/pulp-platform/FlooNoC.git", branch = "main" }
 snitch = { workspace = true, editable = true }
 cheshire = { workspace = true }
 torch = [{ index = "pytorch-cpu" }]
