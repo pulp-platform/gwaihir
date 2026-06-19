@@ -22,6 +22,7 @@ dependencies:
   cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir"                                  }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "acfcd0f80c7539aa8da7821a66d9acf2074a5b4e" }
   axi_obi:            { path: "hw/axi_obi"                                                                                              }
+  pcie:               { path: ".deps/pcie"                                                                                              }
   gwaihir-pd:         { path: "./pd"                                                                                                    }
 
 workspace:
@@ -63,7 +64,14 @@ sources:
     files:
       - target/sim/src/fixture_gwaihir_top.sv
       - target/sim/src/tb_gwaihir_top.sv
+  
+  - target: not(all(pcie, asic))
+    files:
+      - hw/pcie_tile.sv
 
+  - target: all(pcie, asic)
+    files:
+      - .deps/pcie/hw/pcie_tile.sv
 
   - target: asic
     files:

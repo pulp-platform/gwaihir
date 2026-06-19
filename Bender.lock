@@ -260,6 +260,16 @@ packages:
     - common_cells
     - register_interface
     - tech_cells_generic
+  pcie:
+    revision: null
+    version: null
+    source:
+      Path: .deps/pcie
+    dependencies:
+    - axi
+    - common_cells
+    - register_interface
+    - tech_cells_generic
   register_interface:
     revision: 5daa85d164cf6b54ad061ea1e4c6f3624556e467
     version: 0.4.5

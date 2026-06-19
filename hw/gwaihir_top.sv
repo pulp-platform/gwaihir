@@ -249,6 +249,28 @@ module gwaihir_top
   end
 
   ////////////////
+  // PCIe tile  //
+  ////////////////
+
+  localparam id_t PCIeId = Sam[PcieSamIdx].idx;
+  localparam id_t PCIeTilePhysicalId = SamPhysical[PcieSamIdx].idx;
+  localparam int PCIeTileX = int'(PCIeTilePhysicalId.x);
+  localparam int PCIeTileY = int'(PCIeTilePhysicalId.y);
+
+  pcie_tile i_pcie_tile (
+    .clk_i        (clk_i),
+    .rst_ni       (rst_ni),
+    .test_enable_i(test_mode_i),
+    .id_i         (PCIeId),
+    .floo_req_o   (floo_req_out[PCIeTileX][PCIeTileY]),
+    .floo_rsp_i   (floo_rsp_in[PCIeTileX][PCIeTileY]),
+    .floo_wide_o  (floo_wide_out[PCIeTileX][PCIeTileY]),
+    .floo_req_i   (floo_req_in[PCIeTileX][PCIeTileY]),
+    .floo_rsp_o   (floo_rsp_out[PCIeTileX][PCIeTileY]),
+    .floo_wide_i  (floo_wide_in[PCIeTileX][PCIeTileY])
+  );
+
+  ////////////////
   // Dummy tile //
   ////////////////
 

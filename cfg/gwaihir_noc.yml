@@ -116,6 +116,16 @@ endpoints:
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
+  - name: "pcie"
+    addr_range:
+      - base: 0x3000_0000
+        size: 0x1000_0000
+    mgr_port_protocol:
+      - "narrow_in"
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
 
 routers:
   - name: "router_right"
@@ -178,8 +188,13 @@ connections:
       - [1, 1]
     dst_idx: [0, 0]
     dst_dir: "Eject"
-  # router_left (x=0) ↔ router_center West boundary (x=4)
-  - src: "router_left"
+  # pcie
+  - src: "pcie"
+    dst: "router_left"
+    dst_idx: [0, 0]
+    dst_dir: "Eject"
+  # router_bottom (y=0) ↔ router_center south boundary (y=1)
+  - src: "router_bottom"
     dst: "router_center"
     src_range:
       - [0, 0]
