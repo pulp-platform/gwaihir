@@ -21,7 +21,7 @@ jobs:
     name: Lint SV sources
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
       - uses: chipsalliance/verible-linter-action@main
         with:
           paths: |
@@ -39,7 +39,7 @@ jobs:
     name: Format SV sources
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - uses: chipsalliance/verible-formatter-action@main
@@ -56,6 +56,6 @@ jobs:
     name: Lint License Headers
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.3
       - name: REUSE Compliance Check
         uses: fsfe/reuse-action@v6
