@@ -72,7 +72,6 @@ sources:
   - target: all(any(simulation, test), asic)
     include_dirs:
       - .generated
-      - pd/target/sim/include
       - target/sim/include
     files:
       - pd/target/sim/src/fixture_gwaihir_chip.sv
