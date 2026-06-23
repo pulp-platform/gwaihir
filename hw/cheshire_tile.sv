@@ -62,9 +62,9 @@ module cheshire_tile
   input logic [31:0] gpio_i,
   output logic [31:0] gpio_o,
   output logic [31:0] gpio_en_o,
-  // register interfaces
-  output csh_reg_req_t [CshRegExtChipCtrl:CshRegExtFLL] reg_req_o,
-  input csh_reg_rsp_t [CshRegExtChipCtrl:CshRegExtFLL] reg_rsp_i,
+  // APB configuration interfaces
+  output csh_apb_req_t [CshRegExtNumSlv-1:0] apb_req_o,
+  input  csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
   // Serial link interface
   input logic [SlinkNumChan-1:0] slink_rcv_clk_i,
   output logic [SlinkNumChan-1:0] slink_rcv_clk_o,
@@ -365,9 +365,21 @@ module cheshire_tile
     .usb_dp_oe_o      ()
   );
 
-  // Connect to the chip-level register interfaces
-  assign reg_req_o                                   = reg_ext_req[CshRegExtChipCtrl:CshRegExtFLL];
-  assign reg_ext_rsp[CshRegExtChipCtrl:CshRegExtFLL] = reg_rsp_i;
+  for (genvar i = 0; i < CheshireCfg.RegExtNumSlv; i++) begin : gen_reg_to_apb
+    reg_to_apb #(
+      .reg_req_t(csh_reg_req_t),
+      .reg_rsp_t(csh_reg_rsp_t),
+      .apb_req_t(csh_apb_req_t),
+      .apb_rsp_t(csh_apb_resp_t)
+    ) i_fll_reg_to_apb (
+      .clk_i,
+      .rst_ni,
+      .reg_req_i(reg_ext_req[i]),
+      .reg_rsp_o(reg_ext_rsp[i]),
+      .apb_req_o(apb_req_o[i]),
+      .apb_rsp_i(apb_rsp_i[i])
+    );
+  end
 
   // LLC master port tied to an error slave (no external DRAM via serial link)
   axi_err_slv #(
