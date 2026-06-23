@@ -64,7 +64,7 @@ module cheshire_tile
   output logic [31:0] gpio_en_o,
   // APB configuration interfaces
   output csh_apb_req_t [CshRegExtNumSlv-1:0] apb_req_o,
-  input  csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
+  input csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
   // Serial link interface
   input logic [SlinkNumChan-1:0] slink_rcv_clk_i,
   output logic [SlinkNumChan-1:0] slink_rcv_clk_o,
