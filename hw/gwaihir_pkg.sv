@@ -455,10 +455,10 @@ package gwaihir_pkg;
   localparam int unsigned SramMacroSelOffset = SramAddrWidthOffset + SramAddrWidth;
 
   // DMA-related parameters
-  localparam int unsigned DmaNumAxInFlight    = 16;
-  localparam int unsigned DmaMemSysDepth      = 8;
-  localparam int unsigned DmaJobFifoDepth     = 2;
+  localparam int unsigned DmaNumAxInFlight = 16;
+  localparam int unsigned DmaMemSysDepth = 8;
+  localparam int unsigned DmaJobFifoDepth = 2;
   localparam int unsigned DmaRAWCouplingAvail = 1;
-  localparam int unsigned DmaConfEnableTwoD   = 1;
+  localparam int unsigned DmaConfEnableTwoD = 1;
 
 endpackage

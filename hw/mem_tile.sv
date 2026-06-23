@@ -25,9 +25,9 @@ module mem_tile
   input  logic                    test_enable_i,
   input  logic                    clk_rst_bypass_i,
   // Chimney ports
-  input  id_t                     id_i,
+  input  id_t                               id_i,
   // Sam idx
-  input  logic [$bits(sam_idx_e)-1:0] samidx_i,
+  input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
   // Router ports
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,
@@ -389,9 +389,8 @@ module mem_tile
       PipelineStages: 0,
       // TODO: Check if AxiIdWidthSlvPorts and AxiIdUsedSlvPorts are correctly assigned
       //       Not sure if this is correct: This xbar is actually a demux, so the id width
-      //                                    for master and slave side should be the same
-      //                                    and `axi_mst_` types and `axi_slv_` types are the
-      //                                    same because the userwidth and id width are the same.
+      //       for master and slave side should be the same and `axi_mst_` types and
+      //       `axi_slv_` types are the same because the userwidth and id width are the same.
       AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
       AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
       // TODO: Check if we should use UniqueIds

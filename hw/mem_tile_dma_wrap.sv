@@ -13,37 +13,37 @@
 
 module mem_tile_dma_wrap #(
   // iDMA configuration AXI type (narrow)
-  parameter int unsigned AxiNarrowAddrWidth     = 0,
-  parameter int unsigned AxiNarrowDataWidth     = 0,
-  parameter int unsigned AxiNarrowIdWidth       = 0,
-  parameter int unsigned AxiNarrowUserWidth     = 0,
+  parameter int unsigned AxiNarrowAddrWidth = 0,
+  parameter int unsigned AxiNarrowDataWidth = 0,
+  parameter int unsigned AxiNarrowIdWidth   = 0,
+  parameter int unsigned AxiNarrowUserWidth = 0,
   // iDMA transfer type (wide)
-  parameter int unsigned AxiAddrWidth     = 0,
-  parameter int unsigned AxiDataWidth     = 0,
-  parameter int unsigned AxiIdWidth       = 0,
-  parameter int unsigned AxiUserWidth     = 0,
+  parameter int unsigned AxiAddrWidth       = 0,
+  parameter int unsigned AxiDataWidth       = 0,
+  parameter int unsigned AxiIdWidth         = 0,
+  parameter int unsigned AxiUserWidth       = 0,
   // iDMA parameters
-  parameter int unsigned NumAxInFlight    = 0,
-  parameter int unsigned MemSysDepth      = 0,
-  parameter int unsigned JobFifoDepth     = 0,
-  parameter bit          RAWCouplingAvail = 0,
-  parameter bit          IsTwoD           = 0,
+  parameter int unsigned NumAxInFlight      = 0,
+  parameter int unsigned MemSysDepth        = 0,
+  parameter int unsigned JobFifoDepth       = 0,
+  parameter bit          RAWCouplingAvail   = 0,
+  parameter bit          IsTwoD             = 0,
   // iDMA transfer req/resp type
-  parameter type         axi_mst_req_t    = logic,
-  parameter type         axi_mst_rsp_t    = logic,
+  parameter type         axi_mst_req_t      = logic,
+  parameter type         axi_mst_rsp_t      = logic,
   // iDMA configuration req/resp type
-  parameter type         axi_slv_req_t    = logic,
-  parameter type         axi_slv_rsp_t    = logic
+  parameter type         axi_slv_req_t      = logic,
+  parameter type         axi_slv_rsp_t      = logic
 ) (
-  input  logic          clk_i,
-  input  logic          rst_ni,
-  input  logic          testmode_i,
+  input  logic         clk_i,
+  input  logic         rst_ni,
+  input  logic         testmode_i,
   // iDMA transfer req/resp
-  output axi_mst_req_t  axi_mst_req_o,
-  input  axi_mst_rsp_t  axi_mst_rsp_i,
+  output axi_mst_req_t axi_mst_req_o,
+  input  axi_mst_rsp_t axi_mst_rsp_i,
   // iDMA configuration req/resp
-  input  axi_slv_req_t  axi_slv_req_i,
-  output axi_slv_rsp_t  axi_slv_rsp_o
+  input  axi_slv_req_t axi_slv_req_i,
+  output axi_slv_rsp_t axi_slv_rsp_o
 );
 
   `include "axi/assign.svh"
@@ -51,21 +51,21 @@ module mem_tile_dma_wrap #(
   `include "idma/typedef.svh"
   `include "register_interface/typedef.svh"
 
-  localparam int unsigned IdCounterWidth  = 32;
-  localparam int unsigned NumDim          = 2;
-  localparam int unsigned RepWidth        = 32;
-  localparam int unsigned TfLenWidth      = 32;
+  localparam int unsigned IdCounterWidth = 32;
+  localparam int unsigned NumDim = 2;
+  localparam int unsigned RepWidth = 32;
+  localparam int unsigned TfLenWidth = 32;
 
-  typedef logic [AxiNarrowDataWidth-1:0]     narrow_data_t;
-  typedef logic [AxiNarrowDataWidth/8-1:0]   narrow_strb_t;
-  typedef logic [AxiNarrowAddrWidth-1:0]     narrow_addr_t;
+  typedef logic [AxiNarrowDataWidth-1:0] narrow_data_t;
+  typedef logic [AxiNarrowDataWidth/8-1:0] narrow_strb_t;
+  typedef logic [AxiNarrowAddrWidth-1:0] narrow_addr_t;
   // typedef logic [AxiSlvIdWidth-1:0]    slv_id_t;
 
-  typedef logic [AxiAddrWidth-1:0]     addr_t;
+  typedef logic [AxiAddrWidth-1:0] addr_t;
   // TODO: Check if we should use narrow id (for register configuration) or wide id (for iDMA transfer), now we are using the id in wide AXI type
-  typedef logic [AxiIdWidth-1:0]       id_t;
-  typedef logic [AxiUserWidth-1:0]     user_t;
-  typedef logic [TfLenWidth-1:0]       tf_len_t;
+  typedef logic [AxiIdWidth-1:0] id_t;
+  typedef logic [AxiUserWidth-1:0] user_t;
+  typedef logic [TfLenWidth-1:0] tf_len_t;
   // typedef logic [IdCounterWidth-1:0]   tf_id_t;
   // typedef logic [RepWidth-1:0]         reps_t;
   // typedef logic [RepWidth-1:0]         strides_t;
@@ -82,53 +82,45 @@ module mem_tile_dma_wrap #(
   // iDMA configuration types
   `REG_BUS_TYPEDEF_ALL(dma_regs, narrow_addr_t, narrow_data_t, narrow_strb_t)
 
-  typedef struct packed {
-    axi_ar_chan_t ar_chan;
-  } axi_read_meta_channel_t;
+  typedef struct packed {axi_ar_chan_t ar_chan;} axi_read_meta_channel_t;
 
-  typedef struct packed {
-    axi_read_meta_channel_t axi;
-  } read_meta_channel_t;
+  typedef struct packed {axi_read_meta_channel_t axi;} read_meta_channel_t;
 
-  typedef struct packed {
-    axi_aw_chan_t aw_chan;
-  } axi_write_meta_channel_t;
+  typedef struct packed {axi_aw_chan_t aw_chan;} axi_write_meta_channel_t;
 
-  typedef struct packed {
-    axi_write_meta_channel_t axi;
-  } write_meta_channel_t;
+  typedef struct packed {axi_write_meta_channel_t axi;} write_meta_channel_t;
 
   dma_regs_req_t dma_reg_req;
   dma_regs_rsp_t dma_reg_rsp;
 
   // 1D FE signals
-  idma_req_t    burst_req_d;
-  logic         be_valid_d;
-  logic         be_ready_d;
+  idma_req_t     burst_req_d;
+  logic          be_valid_d;
+  logic          be_ready_d;
 
   // ND FE signals
-  idma_nd_req_t idma_nd_req_d;
-  logic         idma_nd_req_valid_d;
-  logic         idma_nd_req_ready_d;
+  idma_nd_req_t  idma_nd_req_d;
+  logic          idma_nd_req_valid_d;
+  logic          idma_nd_req_ready_d;
 
   // ND ME signals
-  idma_nd_req_t idma_nd_req;
-  logic         idma_nd_req_valid;
-  logic         idma_nd_req_ready;
-  logic         idma_nd_rsp_valid;
-  logic         idma_nd_rsp_ready;
+  idma_nd_req_t  idma_nd_req;
+  logic          idma_nd_req_valid;
+  logic          idma_nd_req_ready;
+  logic          idma_nd_rsp_valid;
+  logic          idma_nd_rsp_ready;
 
   // BE signals
-  idma_req_t    burst_req;
-  logic         be_valid;
-  logic         be_ready;
-  idma_rsp_t    idma_rsp;
-  logic         idma_rsp_valid;
-  logic         idma_rsp_ready;
+  idma_req_t     burst_req;
+  logic          be_valid;
+  logic          be_ready;
+  idma_rsp_t     idma_rsp;
+  logic          idma_rsp_valid;
+  logic          idma_rsp_ready;
 
   // ID signals
-  logic              issue_id;
-  logic              retire_id;
+  logic          issue_id;
+  logic          retire_id;
   logic [IdCounterWidth-1:0] done_id, next_id;
 
   // Status signals
