@@ -39,9 +39,9 @@
 // entire test: source buffer, destination buffer, and which tile's DMA drives
 // the copy. DRIVER_TILE may be the src tile, the dst tile, or a third tile that
 // owns neither buffer (then both the read and the write traverse the NoC).
-#define SRC_TILE     0
-#define DST_TILE     1
-#define DRIVER_TILE  1
+#define SRC_TILE     1
+#define DST_TILE     0
+#define DRIVER_TILE  0
 
 // Select the driver tile's DMA helpers from DRIVER_TILE. Token paste needs a
 // bare integer (hence no 'u' suffix on the tile indices). Resolves e.g.

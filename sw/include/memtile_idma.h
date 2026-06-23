@@ -15,7 +15,7 @@
 #include "regs/idma.h"
 #include "gw_addrmap.h"
 
-#define NUM_L2_MEM_TILES 8
+#define NUM_L2_MEM_TILES 2
 
 // Per-tile DMA register base, derived from the generated address map.
 #define MEMTILE_IDMA_BASE(i) \
@@ -80,11 +80,5 @@
 
 MEMTILE_IDMA_X(memtile0, MEMTILE_IDMA_BASE(0))
 MEMTILE_IDMA_X(memtile1, MEMTILE_IDMA_BASE(1))
-MEMTILE_IDMA_X(memtile2, MEMTILE_IDMA_BASE(2))
-MEMTILE_IDMA_X(memtile3, MEMTILE_IDMA_BASE(3))
-MEMTILE_IDMA_X(memtile4, MEMTILE_IDMA_BASE(4))
-MEMTILE_IDMA_X(memtile5, MEMTILE_IDMA_BASE(5))
-MEMTILE_IDMA_X(memtile6, MEMTILE_IDMA_BASE(6))
-MEMTILE_IDMA_X(memtile7, MEMTILE_IDMA_BASE(7))
 
 #undef MEMTILE_IDMA_X

@@ -62,9 +62,7 @@ module mem_tile
   assign mem_tile_idx = samidx_i;
 
   // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
-  // from the generated enum so it survives YAML / regeneration changes. With the
-  // current SAM layout L2SpmDma{i}SamIdx = L2Spm{i}SamIdx - 1, so the offset is
-  // -1; declared as signed `int` to allow that.
+  // from the generated enum so it survives YAML / regeneration changes.
   localparam int DmaIdxOffset = int'(L2SpmDma0SamIdx) - int'(L2Spm0SamIdx);
 
   // NOTE(fischeti): The TileCfg range is approximate since it does not include
