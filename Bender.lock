@@ -175,10 +175,10 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: d9db428e5f8d3bf5948cce7929ed3f84b171cb24
+    revision: f7f81e2c65c231a8fab4cf8a6e6cd2aa3efdcdb6
     version: null
     source:
-      Git: git@github.com:pulp-platform/FlooNoC.git
+      Git: https://github.com/pulp-platform/FlooNoC.git
     dependencies:
     - axi
     - axi_riscv_atomics
