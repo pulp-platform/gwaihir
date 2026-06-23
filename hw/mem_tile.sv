@@ -20,21 +20,21 @@ module mem_tile
   parameter int unsigned AxiUserAtopLsb = 0,
   parameter int unsigned MemTileId      = 0
 ) (
-  input  logic                    clk_i,
-  input  logic                    rst_ni,
-  input  logic                    test_enable_i,
-  input  logic                    clk_rst_bypass_i,
+  input  logic                              clk_i,
+  input  logic                              rst_ni,
+  input  logic                              test_enable_i,
+  input  logic                              clk_rst_bypass_i,
   // Chimney ports
   input  id_t                               id_i,
   // Sam idx
   input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
   // Router ports
-  output floo_req_t  [West:North] floo_req_o,
-  input  floo_rsp_t  [West:North] floo_rsp_i,
-  output floo_wide_t [West:North] floo_wide_o,
-  input  floo_req_t  [West:North] floo_req_i,
-  output floo_rsp_t  [West:North] floo_rsp_o,
-  input  floo_wide_t [West:North] floo_wide_i
+  output floo_req_t  [          West:North] floo_req_o,
+  input  floo_rsp_t  [          West:North] floo_rsp_i,
+  output floo_wide_t [          West:North] floo_wide_o,
+  input  floo_req_t  [          West:North] floo_req_i,
+  output floo_rsp_t  [          West:North] floo_rsp_o,
+  input  floo_wide_t [          West:North] floo_wide_i
 );
 
   // Tile-specific reset and clock signals
