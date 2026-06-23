@@ -380,26 +380,17 @@ module mem_tile
   localparam axi_pkg::xbar_cfg_t AxiWideXbarCfg = '{
       NoSlvPorts: 1,
       NoMstPorts: 2,
-      // TODO: Check what the most suitable value are for MaxMstTrans and MaxSlvTrans
       MaxMstTrans: 4,
       MaxSlvTrans: 4,
-      // TODO: If the timing allows, we can set FallThrough to high. Also check functionality.
       FallThrough: 0,
       LatencyMode: axi_pkg::CUT_ALL_PORTS,
       PipelineStages: 0,
-      // TODO: Check if AxiIdWidthSlvPorts and AxiIdUsedSlvPorts are correctly assigned
-      //       Not sure if this is correct: This xbar is actually a demux, so the id width
-      //       for master and slave side should be the same and `axi_mst_` types and
-      //       `axi_slv_` types are the same because the userwidth and id width are the same.
       AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
       AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
-      // TODO: Check if we should use UniqueIds
       UniqueIds: 0,
       AxiAddrWidth: $bits(axi_wide_in_addr_t),
       AxiDataWidth: $bits(axi_wide_in_data_t),
       NoAddrRules: 2,
-      // Setting a `default` here allows for custom XBars with extended configs outside Cheshire.
-      // Importantly, this requires that '0 *disables* any and all such custom extensions.
       default: '0
   };
 
