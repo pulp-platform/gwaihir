@@ -143,7 +143,7 @@ floo-clean: gw-addrmap-clean
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= c929aaf81dbb62a9140f58f16893ee328f0547af
+PD_COMMIT ?= dcff85d4d1f0b73843d28bb8d914a1928d65e6d8
 PD_DIR = $(GW_ROOT)/pd
 .PHONY: init-pd clean-pd update-pd-commit
 
