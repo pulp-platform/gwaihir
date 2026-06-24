@@ -96,12 +96,12 @@ module mem_tile
 
   logic [cf_math_pkg::idx_width(NumDemuxPorts)-1:0] aw_select, ar_select;
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t       chimney_narrow_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t       chimney_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t                     chimney_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t                     chimney_narrow_out_rsp;
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumDemuxPorts-1:0] axi_demux_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumDemuxPorts-1:0] axi_demux_out_rsp;
 
-  gw_tile_regs_pkg::gw_tile_regs__out_t            hwif_out;
+  gw_tile_regs_pkg::gw_tile_regs__out_t                          hwif_out;
 
   tile_cfg_axi_lite_req_t                          tile_cfg_axi_lite_req;
   tile_cfg_axi_lite_resp_t                         tile_cfg_axi_lite_rsp;
