@@ -13,7 +13,7 @@ remotes:
 
 dependencies:
   register_interface: "0.4.5"
-  axi: "0.39.9"
+  axi: { git: "https://github.com/colluca/axi.git", rev: "multicast" }
   apb_fll_if: "0.3.0"
   floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "f7f81e2c65c231a8fab4cf8a6e6cd2aa3efdcdb6", upstream_name: "FlooNoC" }
   apb: "0.2.4"
