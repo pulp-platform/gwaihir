@@ -10,7 +10,7 @@ module gwaihir_top
   import gwaihir_pkg::*;
   import cheshire_pkg::*;
   import floo_pkg::*;
-  import snitch_cluster_pkg::*;
+  import snitch_cluster_wrapper_pkg::*;
   import floo_gwaihir_noc_pkg::*;
 (
   input  logic                                                   clk_i,

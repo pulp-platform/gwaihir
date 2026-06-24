@@ -18,7 +18,7 @@ dependencies:
   floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "9d2f0a77ac59b62f40391a120e43f33cada868a3", upstream_name: "FlooNoC" }
   apb: "0.2.4"
   common_cells: "1.39.0"
-  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "06426b0632814cd0acdba5e0eef3dd342bf42c71" } # branch: main
+  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "4fb60aca9ac16045be7cd93fb57f391c07eaa7f5" }
   cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir"                                  }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "acfcd0f80c7539aa8da7821a66d9acf2074a5b4e" }
   axi_obi: "0.1.0"
@@ -36,15 +36,18 @@ sources:
   # package. Files in level 1 only depend on files in level 0, files in level 2 on files in
   # levels 1 and 0, etc. Files within a level are ordered alphabetically.
   # Level 0
+
+  - target: gw_gen_rtl
+    override_files: true
+    files:
+      - .generated/snitch_cluster_wrapper_pkg.sv
   - target: gw_gen_rtl
     files:
       # Level 0.0
       - .generated/floo_gwaihir_noc_pkg.sv
-      - .generated/snitch_cluster_pkg.sv
       - .generated/gw_tile_regs_pkg.sv
       # Level 0.1
       - .generated/gw_tile_regs.sv
-      - .generated/snitch_cluster_wrapper.sv
 
   # Level 1
   - hw/gwaihir_pkg.sv

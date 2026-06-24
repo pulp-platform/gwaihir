@@ -14,7 +14,7 @@ package gwaihir_pkg;
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import cheshire_pkg::*;
-  import snitch_cluster_pkg::*;
+  import snitch_cluster_wrapper_pkg::*;
 
   typedef axi_narrow_in_addr_t addr_t;
 
@@ -419,11 +419,11 @@ package gwaihir_pkg;
   typedef logic [HWPECtrlDataWidth-1:0] data_hwpe_ctrl_t;
   typedef logic [3:0] strb_hwpe_ctrl_t;
 
-  `AXI_TYPEDEF_ALL(cluster_narrow_out_dw_conv, snitch_cluster_pkg::addr_t,
-                   snitch_cluster_pkg::narrow_out_id_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t,
-                   snitch_cluster_pkg::user_narrow_t)
+  `AXI_TYPEDEF_ALL(cluster_narrow_out_dw_conv, snitch_cluster_wrapper_pkg::addr_t,
+                   snitch_cluster_wrapper_pkg::narrow_out_id_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t,
+                   snitch_cluster_wrapper_pkg::user_narrow_t)
 
-  `TCDM_TYPEDEF_ALL(hwpectrl, addr_hwpe_ctrl_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t, logic)
+  `TCDM_TYPEDEF_ALL(hwpectrl, HWPECtrlDataWidth, HWPECtrlAddrWidth, 1)
 
   ////////////////
   //  Mem Tile  //

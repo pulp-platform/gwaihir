@@ -78,6 +78,15 @@ wheels = [
 ]
 
 [[package]]
+name = "bigtree"
+version = "1.5.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/06/2f/7425b19e4831fc446786d6e1b5b322fc53e19c0c48889dcb7a7bfa7d628e/bigtree-1.5.2.tar.gz", hash = "sha256:25f344248ab3debae6b746f19e62824db5a5973fc3d9e1e389af55d2abb7cd4a", size = 1648083, upload-time = "2026-07-14T19:04:30.632Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/ea/2df47816f8a30f7f12656764585700e13dda057eed872f220d6a966f2532/bigtree-1.5.2-py3-none-any.whl", hash = "sha256:4c4dba1e5387f7f4fafa06796f3ea988de45e67fef06316f6a1a140b0a938bf9", size = 136198, upload-time = "2026-07-14T19:04:31.949Z" },
+]
+
+[[package]]
 name = "boolean-py"
 version = "5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1986,6 +1995,20 @@ wheels = [
 ]
 
 [[package]]
+name = "pysynthutils"
+version = "0.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "bigtree" },
+    { name = "pandas" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f6/90/533748e2eb3cf93ccc76b7c8816a047b4f43d907a07bddd66349848009e2/pysynthutils-0.0.0.tar.gz", hash = "sha256:3d666daf13b1ffaaf49b15a71b75f24a67080d8c88a61ebf4cad85cfbb7195aa", size = 5135, upload-time = "2026-06-02T16:55:46.26Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2f/68/3d918d12c4d332338171e06d5d801a8caa8ba66e642255f0fcb5447f3dfe/pysynthutils-0.0.0-py3-none-any.whl", hash = "sha256:97c201f63a8506d23b953ffab042647f7836dbbbe6c55494d5c423553ed43b0b", size = 6113, upload-time = "2026-06-02T16:55:45.037Z" },
+]
+
+[[package]]
 name = "pytablewriter"
 version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2192,6 +2215,20 @@ dependencies = [
     { name = "tomlkit" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/05/35/298d9410b3635107ce586725cdfbca4c219c08d77a3511551f5e479a78db/reuse-6.2.0.tar.gz", hash = "sha256:4feae057a2334c9a513e6933cdb9be819d8b822f3b5b435a36138bd218897d23", size = 1615611, upload-time = "2025-10-27T15:25:46.336Z" }
+
+[[package]]
+name = "riscv-opcodes"
+version = "0.1.0"
+source = { editable = ".deps/snitch_cluster/sw/deps/riscv-opcodes" }
+dependencies = [
+    { name = "matplotlib" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "matplotlib", specifier = ">=3.9.0,<4" }]
+
+[package.metadata.requires-dev]
+dev = [{ name = "coverage", specifier = ">=7,<8" }]
 
 [[package]]
 name = "rpds-py"
@@ -2517,10 +2554,12 @@ dependencies = [
     { name = "pyelftools" },
     { name = "pyflexfloat" },
     { name = "pymakeutils" },
+    { name = "pysynthutils" },
     { name = "pytablewriter" },
     { name = "pytest" },
     { name = "pyyaml" },
     { name = "reuse" },
+    { name = "riscv-opcodes" },
     { name = "tabulate" },
     { name = "termcolor" },
     { name = "yamllint" },
@@ -2585,10 +2624,12 @@ requires-dist = [
     { name = "pyelftools" },
     { name = "pyflexfloat" },
     { name = "pymakeutils", specifier = ">=1.4.0" },
+    { name = "pysynthutils" },
     { name = "pytablewriter" },
     { name = "pytest" },
     { name = "pyyaml" },
     { name = "reuse" },
+    { name = "riscv-opcodes", editable = ".deps/snitch_cluster/sw/deps/riscv-opcodes" },
     { name = "scikit-learn", marker = "extra == 'kernels'" },
     { name = "snitch", extras = ["docs", "kernels"], marker = "extra == 'all'", editable = ".deps/snitch_cluster" },
     { name = "tabulate" },
