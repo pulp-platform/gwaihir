@@ -18,7 +18,7 @@ dependencies:
   floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "f7f81e2c65c231a8fab4cf8a6e6cd2aa3efdcdb6", upstream_name: "FlooNoC" }
   apb: "0.2.4"
   common_cells: "1.39.0"
-  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main"                                     }
+  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "270defc49af6519fc9cde75efaaacfff7933e094" }
   cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir"                                  }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "acfcd0f80c7539aa8da7821a66d9acf2074a5b4e" }
   axi_obi: "0.1.0"
@@ -38,11 +38,10 @@ sources:
     files:
       # Level 0.0
       - .generated/floo_gwaihir_noc_pkg.sv
-      - .generated/snitch_cluster_pkg.sv
+      - .generated/snitch_cluster_wrapper_pkg.sv
       - .generated/gw_tile_regs_pkg.sv
       # Level 0.1
       - .generated/gw_tile_regs.sv
-      - .generated/snitch_cluster_wrapper.sv
 
   # Level 1
   - hw/gwaihir_pkg.sv

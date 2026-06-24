@@ -113,9 +113,9 @@ $(SN_CFG): $(FLOO_CFG)
 
 .PHONY: sn-hw-clean sn-hw-all
 
-sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER) $(SN_CLUSTER_PKG)
+sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG)
 sn-hw-clean:
-	rm -rf $(SN_CLUSTER_WRAPPER) $(SN_CLUSTER_PKG)
+	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
 
 ###########
 # FlooNoC #
