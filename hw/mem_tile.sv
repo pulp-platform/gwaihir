@@ -103,12 +103,12 @@ module mem_tile
 
   gw_tile_regs_pkg::gw_tile_regs__out_t                          hwif_out;
 
-  tile_cfg_axi_lite_req_t                          tile_cfg_axi_lite_req;
-  tile_cfg_axi_lite_resp_t                         tile_cfg_axi_lite_rsp;
-  tile_cfg_axi_lite_32_req_t                       tile_cfg_reg_lite_req;
-  tile_cfg_axi_lite_32_resp_t                      tile_cfg_reg_lite_rsp;
-  tile_cfg_apb_req_t                               tile_cfg_apb_req;
-  tile_cfg_apb_resp_t                              tile_cfg_apb_rsp;
+  tile_cfg_axi_lite_req_t                                        tile_cfg_axi_lite_req;
+  tile_cfg_axi_lite_resp_t                                       tile_cfg_axi_lite_rsp;
+  tile_cfg_axi_lite_32_req_t                                     tile_cfg_reg_lite_req;
+  tile_cfg_axi_lite_32_resp_t                                    tile_cfg_reg_lite_rsp;
+  tile_cfg_apb_req_t                                             tile_cfg_apb_req;
+  tile_cfg_apb_resp_t                                            tile_cfg_apb_rsp;
 
   ////////////
   // Router //
