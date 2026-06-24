@@ -58,12 +58,16 @@ module mem_tile
   // This tile's SAM index, passed in from the parent (gwaihir_top) rather than
   // derived from the NoC coordinates here. Used to look up the tile-specific
   // iDMA register address range below.
-  logic [5:0] mem_tile_idx;
+  logic [$bits(sam_idx_e)-1:0] mem_tile_idx;
   assign mem_tile_idx = samidx_i;
 
   // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
   // from the generated enum so it survives YAML / regeneration changes.
   localparam int DmaIdxOffset = int'(L2SpmDma0SamIdx) - int'(L2Spm0SamIdx);
+
+  // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
+  // from the generated enum so it survives YAML / regeneration changes.
+  localparam int CfgIdxOffset = int'(L2SpmConfig0SamIdx) - int'(L2Spm0SamIdx);
 
   // NOTE(fischeti): The TileCfg range is approximate since it does not include
   // the actual address range for this exact tile, but it is sufficient since the
@@ -75,8 +79,8 @@ module mem_tile
     TileAddrMap = '{
         '{
             idx: TileCfg,
-            start_addr: Sam[L2SpmConfig0SamIdx].start_addr,
-            end_addr: Sam[L2SpmConfig1SamIdx].end_addr
+            start_addr: Sam[int'(mem_tile_idx)+CfgIdxOffset].start_addr,
+            end_addr: Sam[int'(mem_tile_idx)+CfgIdxOffset].end_addr
         },
         '{
             idx: Dma,
@@ -94,8 +98,8 @@ module mem_tile
 
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t       chimney_narrow_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t       chimney_narrow_out_rsp;
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [2:0] axi_demux_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [2:0] axi_demux_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumDemuxPorts-1:0] axi_demux_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumDemuxPorts-1:0] axi_demux_out_rsp;
 
   gw_tile_regs_pkg::gw_tile_regs__out_t            hwif_out;
 
@@ -166,8 +170,8 @@ module mem_tile
   axi_wide_in_rsp_t [1:0] axi_dma_rsp_demux;
 
   typedef enum logic {
-    LOCAL    = 1'b0,
-    EXTERNAL = 1'b1
+    Local    = 1'b0,
+    External = 1'b1
   } wide_axi_sel_e;
 
   /////////////
@@ -219,8 +223,8 @@ module mem_tile
     .axi_narrow_out_req_o(chimney_narrow_out_req),
     .axi_narrow_out_rsp_i(chimney_narrow_out_rsp),
     // Receive transfer requests from DMA
-    .axi_wide_in_req_i   (axi_dma_req_demux[EXTERNAL]),
-    .axi_wide_in_rsp_o   (axi_dma_rsp_demux[EXTERNAL]),
+    .axi_wide_in_req_i   (axi_dma_req_demux[External]),
+    .axi_wide_in_rsp_o   (axi_dma_rsp_demux[External]),
     .axi_wide_out_req_o  (axi_wide_req),
     .axi_wide_out_rsp_i  (axi_wide_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
@@ -401,18 +405,18 @@ module mem_tile
     axi_wide_in_addr_t                            end_addr;
   } dma_rule_t;
 
-  // TODO: The address of EXTERNAL needs to be adapted
+  // TODO: The address of External needs to be adapted
   // Generate address map for narrow_axi_demux
   dma_rule_t [1:0] routing_rules_dma;
   assign routing_rules_dma = '{
           '{
-              idx: LOCAL,
+              idx: Local,
               start_addr: Sam[mem_tile_idx].start_addr,
               end_addr  : Sam[mem_tile_idx].end_addr
           },
-          // The address range for EXTERNAL is not the actual address range, all the unmapped requests will go to EXTERNAL
+          // The address range for External is not the actual address range, all the unmapped requests will go to External
           '{
-              idx: EXTERNAL,
+              idx: External,
               start_addr: Sam[int'(mem_tile_idx)+DmaIdxOffset].start_addr,
               end_addr  : Sam[int'(mem_tile_idx)+DmaIdxOffset].end_addr
           }
@@ -448,7 +452,7 @@ module mem_tile
     .addr_map_i           (routing_rules_dma),
     // Unmapped address go to the external port
     .en_default_mst_port_i(1'b1),
-    .default_mst_port_i   (EXTERNAL)
+    .default_mst_port_i   (External)
   );
 
   /////////
@@ -577,8 +581,8 @@ module mem_tile
   ) i_dma_axi_monitor (
     .clk_i,
     .rst_ni,
-    .axi_req_i (axi_dma_req_demux[LOCAL]),
-    .axi_resp_i(axi_dma_rsp_demux[LOCAL])
+    .axi_req_i (axi_dma_req_demux[Local]),
+    .axi_resp_i(axi_dma_rsp_demux[Local])
   );
 `endif
 
@@ -599,8 +603,8 @@ module mem_tile
     .clk_i     (tile_clk),
     .rst_ni    (tile_rst_n),
     .testmode_i(test_enable_i),
-    .axi_req_i (axi_dma_req_demux[LOCAL]),
-    .axi_rsp_o (axi_dma_rsp_demux[LOCAL]),
+    .axi_req_i (axi_dma_req_demux[Local]),
+    .axi_rsp_o (axi_dma_rsp_demux[Local]),
     .obi_req_o (dma_obi_req),
     .obi_rsp_i (dma_obi_rsp),
 
