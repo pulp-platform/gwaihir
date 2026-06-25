@@ -166,7 +166,7 @@ clean-pd:
 #########################
 
 GW_HW_ALL += $(CHS_HW_ALL)
-GW_HW_ALL += $(CHS_SIM_ALL)
+GW_HW_ALL += $(CHS_MODELS_ALL)
 GW_HW_ALL += $(GW_RDL_HW_ALL)
 
 .PHONY: gwaihir-hw-all gwaihir-hw-clean clean
