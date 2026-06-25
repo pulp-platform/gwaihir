@@ -45,10 +45,10 @@ packages:
     - register_interface
     - tech_cells_generic
   axi_obi:
-    revision: null
-    version: null
+    revision: 84f21a6524bedcf17a569a62ac01b8a5610819c8
+    version: 0.1.0
     source:
-      Path: hw/axi_obi
+      Git: https://github.com/pulp-platform/axi_obi.git
     dependencies:
     - axi
     - common_cells
