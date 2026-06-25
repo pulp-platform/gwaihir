@@ -4,6 +4,8 @@
 //
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
+`include "axi/assign.svh"
+
 module gwaihir_top
   import gwaihir_pkg::*;
   import cheshire_pkg::*;
@@ -288,33 +290,17 @@ module gwaihir_top
 
   end
 
-  logic [47:0] ucie_addr_mask = ~ (48'h000F00000000);
+  // loopback UCIe[0] -> UCIe[1]
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[1], ucie_axi_narrow_out_req[0]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[0], ucie_axi_narrow_in_rsp[1]);
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[1], ucie_axi_wide_out_req[0]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[0], ucie_axi_wide_in_rsp[1]);
 
-  // AXI narrow channels
-  always_comb begin
-    ucie_axi_narrow_in_req[0] = ucie_axi_narrow_out_req[1];
-    ucie_axi_narrow_out_rsp[0] = ucie_axi_narrow_in_rsp[1];
-    ucie_axi_narrow_in_req[1] = ucie_axi_narrow_out_req[0];
-    ucie_axi_narrow_out_rsp[1] = ucie_axi_narrow_in_rsp[0];
-
-    ucie_axi_narrow_in_req[0].ar.addr = ucie_axi_narrow_out_req[1].ar.addr & ucie_addr_mask;
-    ucie_axi_narrow_in_req[0].aw.addr = ucie_axi_narrow_out_req[1].aw.addr & ucie_addr_mask;
-    ucie_axi_narrow_in_req[1].ar.addr = ucie_axi_narrow_out_req[0].ar.addr & ucie_addr_mask;
-    ucie_axi_narrow_in_req[1].aw.addr = ucie_axi_narrow_out_req[0].aw.addr & ucie_addr_mask;
-  end
-
-  // AXI wide channels
-  always_comb begin
-    ucie_axi_wide_in_req[0] = ucie_axi_wide_out_req[1];
-    ucie_axi_wide_out_rsp[0] = ucie_axi_wide_in_rsp[1];
-    ucie_axi_wide_in_req[1] = ucie_axi_wide_out_req[0];
-    ucie_axi_wide_out_rsp[1] = ucie_axi_wide_in_rsp[0];
-
-    ucie_axi_wide_in_req[0].ar.addr = ucie_axi_wide_out_req[1].ar.addr & ucie_addr_mask;
-    ucie_axi_wide_in_req[0].aw.addr = ucie_axi_wide_out_req[1].aw.addr & ucie_addr_mask;
-    ucie_axi_wide_in_req[1].ar.addr = ucie_axi_wide_out_req[0].ar.addr & ucie_addr_mask;
-    ucie_axi_wide_in_req[1].aw.addr = ucie_axi_wide_out_req[0].aw.addr & ucie_addr_mask;
-  end
+  // loopback UCIe[1] -> UCIe[0]
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[0], ucie_axi_narrow_out_req[1]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[1], ucie_axi_narrow_in_rsp[0]);
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[0], ucie_axi_wide_out_req[1]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[1], ucie_axi_wide_in_rsp[0]);
 
   ////////////////
   // PCIe tile  //
