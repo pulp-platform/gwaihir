@@ -112,7 +112,7 @@ endpoints:
     addr_range:
       base: 0x1_0000_0000
       size: 0x1_0000_0000
-      rdl_as_mem: false
+      rdl_as_mem: true
     mgr_port_protocol:
       - "narrow_in"
       - "wide_in"
