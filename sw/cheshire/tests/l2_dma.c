@@ -31,30 +31,23 @@
 #include <assert.h>
 
 #include "gw_addrmap.h"
+#include "gw_raw_addrmap.h"   // for GW_L2_SPM_NUM (number of L2 mem tiles)
 #include "memtile_idma.h"
 #include "regs/idma.h"
 
 // ---- Topology --------------------------------------------------------------
-// Tile indices (0..NUM_L2_MEM_TILES-1). Change these three to retarget the
+// Tile indices (0..GW_L2_SPM_NUM-1). Change these three to retarget the
 // entire test: source buffer, destination buffer, and which tile's DMA drives
 // the copy. DRIVER_TILE may be the src tile, the dst tile, or a third tile that
 // owns neither buffer (then both the read and the write traverse the NoC).
-#define SRC_TILE     1
-#define DST_TILE     0
-#define DRIVER_TILE  0
+#define SRC_TILE     0
+#define DST_TILE     3
+#define DRIVER_TILE  2
 
-// Select the driver tile's DMA helpers from DRIVER_TILE. Token paste needs a
-// bare integer (hence no 'u' suffix on the tile indices). Resolves e.g.
-// DRIVER_TILE=5 -> memtile5_dma_blk_memcpy / memtile5_dma_2d_blk_memcpy.
-#define MEMTILE_CONCAT_(tile, fn) memtile##tile##fn
-#define MEMTILE_CONCAT(tile, fn)  MEMTILE_CONCAT_(tile, fn)
-#define DMA_BLK_MEMCPY            MEMTILE_CONCAT(DRIVER_TILE, _dma_blk_memcpy)
-#define DMA_2D_BLK_MEMCPY         MEMTILE_CONCAT(DRIVER_TILE, _dma_2d_blk_memcpy)
-
-// Phase 5 (concurrent-arbiter) deliberately drives the SOURCE tile's DMA, so
-// its reads hit the source tile's own banks via the LOCAL path, regardless of
-// DRIVER_TILE above. Non-blocking issue helper (returns tf_id immediately).
-#define SRC_DMA_2D_MEMCPY         MEMTILE_CONCAT(SRC_TILE, _dma_2d_memcpy)
+// The DMA helpers (memtile_dma_*) take the driver tile's SAM index as their
+// first argument, selecting which tile's iDMA register file is configured.
+// DRIVER_TILE drives Phases 1-4; Phase 5 deliberately drives SRC_TILE's own DMA
+// so its reads hit the source tile's banks via the LOCAL path.
 
 // ---- Debug: encode "which stage + where it first broke" into the exit code -
 #define NO_BAD                0xFFFFFFFFu
@@ -138,9 +131,9 @@
 #define P5_DST_END (P5_LEN_BYTES)
 
 // ---- Compile-time invariants -----------------------------------------------
-// Tile indices in range (memtile<N>_* helpers exist for N in 0..NUM-1).
-static_assert(SRC_TILE < NUM_L2_MEM_TILES && DST_TILE < NUM_L2_MEM_TILES &&
-              DRIVER_TILE < NUM_L2_MEM_TILES, "tile index out of range");
+// Tile indices in range (memtile_dma_* helpers accept any tile in 0..NUM-1).
+static_assert(SRC_TILE < GW_L2_SPM_NUM && DST_TILE < GW_L2_SPM_NUM &&
+              DRIVER_TILE < GW_L2_SPM_NUM, "tile index out of range");
 // Word alignment (exact CVA6 word verify).
 static_assert(P1_LEN_BYTES % WORD_BYTES == 0, "P1 length must be word-aligned");
 static_assert(P2_LEN_BYTES % WORD_BYTES == 0 && P2_SRC_OFF % WORD_BYTES == 0 &&
@@ -179,19 +172,6 @@ int main(void) {
     for (uint32_t i = 0; i < SRC_INIT_WORDS; i++) {
         src[i] = i;
     }
-    // ****************************************************************************************************** //
-    // // CVA6 self-check of the source: validates the CVA6 -> Tile-SRC path
-    // // before any DMA is involved.
-    // for (uint32_t i = 0; i < SRC_INIT_WORDS; i++) {
-    //     if (src[i] != i) {
-    //         n_errors++;
-    //         if (first_bad == NO_BAD) first_bad = i;
-    //     }
-    // }
-    // if (n_errors != 0) {
-    //     return BAD_CODE(5, first_bad);   // source path broken (STAGE 5)
-    // }
-    // ****************************************************************************************************** //
 
     // -----------------------------------------------------------------------
     // Phase 1: 1D aligned vector (P1_LEN_BYTES).
@@ -207,7 +187,8 @@ int main(void) {
             dst[dst_w + i] = ~(src_w + i);          // poison
         }
 
-        DMA_BLK_MEMCPY(
+        memtile_dma_blk_memcpy(
+            /*tile=*/ DRIVER_TILE,
             /*dst=*/  (uint64_t)(uintptr_t)&dst[dst_w],
             /*src=*/  (uint64_t)(uintptr_t)&src[src_w],
             /*size=*/ P1_LEN_BYTES,
@@ -243,7 +224,8 @@ int main(void) {
             dst[dst_w + i] = ~(src_w + i);          // poison
         }
 
-        DMA_BLK_MEMCPY(
+        memtile_dma_blk_memcpy(
+            /*tile=*/ DRIVER_TILE,
             /*dst=*/  (uint64_t)(uintptr_t)&dst[dst_w],
             /*src=*/  (uint64_t)(uintptr_t)&src[src_w],
             /*size=*/ P2_LEN_BYTES,
@@ -293,7 +275,8 @@ int main(void) {
             }
         }
 
-        DMA_2D_BLK_MEMCPY(
+        memtile_dma_2d_blk_memcpy(
+            /*tile=*/       DRIVER_TILE,
             /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_base],
             /*src=*/        (uint64_t)(uintptr_t)&src[src_base],
             /*size=*/       P3_ROW_BYTES,
@@ -346,7 +329,8 @@ int main(void) {
             dst[dst_w + i] = ~(src_w + i);          // poison
         }
 
-        DMA_2D_BLK_MEMCPY(
+        memtile_dma_2d_blk_memcpy(
+            /*tile=*/       DRIVER_TILE,
             /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_w],
             /*src=*/        (uint64_t)(uintptr_t)&src[src_w],
             /*size=*/       P4_ROW_BYTES,
@@ -397,7 +381,8 @@ int main(void) {
 
         // Non-blocking 1D issue (conf=0 => ND off => reps ignored). Reading
         // NEXT_ID_0 inside the helper both launches the transfer and returns id.
-        uint64_t tf_id = SRC_DMA_2D_MEMCPY(
+        uint64_t tf_id = memtile_dma_2d_memcpy(
+            /*tile=*/       SRC_TILE,
             /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_w],
             /*src=*/        (uint64_t)(uintptr_t)&src[src_w],
             /*size=*/       P5_LEN_BYTES,
@@ -409,9 +394,11 @@ int main(void) {
         // Concurrent CVA6 traffic onto SRC_TILE's row-P5_SRC_ROW banks until the
         // DMA is done. src is volatile, so each load is issued (generates
         // payload_ext); the value is consumed by the check, so it is not elided.
+        // (uintptr_t)&gwaihir_addrmap.l2_spm_dma[SRC_TILE].mem[0] is the base
+        // address of SRC_TILE's iDMA registers.
         const uintptr_t done_reg =
-            MEMTILE_IDMA_BASE(SRC_TILE) + IDMA_REG64_2D_DONE_ID_0_REG_OFFSET;
-        uint32_t cva6_errs = 0;
+            (uintptr_t)&gwaihir_addrmap.l2_spm_dma[SRC_TILE].mem[0] +
+            IDMA_REG64_2D_DONE_ID_0_REG_OFFSET;
         do {
             for (uint32_t i = 0; i < n_words; i += P5_SWEEP_STRIDE_WORDS) {
                 uint32_t v = src[src_w + i];               // ext read of SRC_TILE
