@@ -21,7 +21,7 @@ dependencies:
   snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "06426b0632814cd0acdba5e0eef3dd342bf42c71" } # branch: main
   cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir"                                  }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "acfcd0f80c7539aa8da7821a66d9acf2074a5b4e" }
-  axi_obi:            { path: "hw/axi_obi"                                                                                              }
+  axi_obi: "0.1.0"
   pcie:               { path: ".deps/pcie"                                                                                              }
   iDMA:               { git: "https://github.com/pulp-platform/iDMA.git",               version: 0.6.5  }
   gwaihir-pd:         { path: "./pd"                                                                                                    }
