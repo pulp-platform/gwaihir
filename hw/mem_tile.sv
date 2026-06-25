@@ -1066,6 +1066,7 @@ module mem_tile
         .NumWords (SramNumWords),
         .DataWidth(SramDataWidth),
         .NumPorts (1),
+        .SimInit  ("zeros"),
         .Latency  (1)
       ) i_mem (
         .clk_i  (tile_clk),
