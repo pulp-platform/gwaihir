@@ -93,7 +93,7 @@ endpoints:
       - "narrow_out"
       - "wide_out"
   - name: "l2_spm"
-    array: [2]
+    array: [4]
     addr_range:
       - base: 0x7000_0000
         size: 0x0010_0000
@@ -118,20 +118,20 @@ endpoints:
       - "wide_out"
 
 routers:
-  - name: "router_top"
-    array: [4, 1]
+  - name: "router_right"
+    array: [1, 5]
     degree: 5
     xy_id_offset:
-      y: 8
-      x: 0
+      x: 8
+      y: 0
   - name: "router_center"
-    array: [4, 4]
+    array: [4, 5]
     degree: 5
     xy_id_offset:
-      y: 4
-      x: 0
-  - name: "router_bottom"
-    array: [4, 1]
+      x: 4
+      y: 0
+  - name: "router_left"
+    array: [1, 5]
     degree: 5
 
 connections:
@@ -145,50 +145,58 @@ connections:
     - [0, 3]
     dst_dir: "Eject"
   - src: "cheshire"
-    dst: "router_top"
-    dst_idx: [3, 0]
+    dst: "router_right"
+    dst_idx: [0, 4]
     dst_dir: "Eject"
   - src: "l2_spm"
-    dst: "router_bottom"
+    dst: "router_left"
     src_range:
       - [0, 1]
     dst_range:
-      - [1, 2]
       - [0, 0]
+      - [2, 3]
     dst_dir: "Eject"
-  # bottom left UCIe (ucie[0] → router_bottom[0,0])
+  - src: "l2_spm"
+    dst: "router_right"
+    src_range:
+      - [2, 3]
+    dst_range:
+      - [0, 0]
+      - [2, 3]
+    dst_dir: "Eject"
+  # bottom left UCIe (ucie[0] → router_left[0,0])
   - src: "ucie"
-    dst: "router_bottom"
+    dst: "router_left"
     src_range:
       - [0, 0]
     dst_idx: [0, 0]
     dst_dir: "Eject"
-  # bottom right UCIe (ucie[1] → router_bottom[3,0])
+  # bottom right UCIe (ucie[1] → router_right[0,0])
   - src: "ucie"
-    dst: "router_bottom"
+    dst: "router_right"
     src_range:
       - [1, 1]
-    dst_idx: [3, 0]
+    dst_idx: [0, 0]
     dst_dir: "Eject"
-  # router_bottom (y=0) ↔ router_center south boundary (y=1)
-  - src: "router_bottom"
+  # router_left (x=0) ↔ router_center West boundary (x=4)
+  - src: "router_left"
     dst: "router_center"
     src_range:
-      - [0, 3]
       - [0, 0]
+      - [0, 4]
     dst_range:
-      - [0, 3]
       - [0, 0]
-    src_dir: "North"
-    dst_dir: "South"
-  # router_center north boundary (y=3) ↔ router_top (y=0)
+      - [0, 4]
+    src_dir: "East"
+    dst_dir: "West"
+  # router_center East boundary (x=7) ↔ router_right (x=8)
   - src: "router_center"
-    dst: "router_top"
+    dst: "router_right"
     src_range:
-      - [0, 3]
       - [3, 3]
+      - [0, 4]
     dst_range:
-      - [0, 3]
       - [0, 0]
-    src_dir: "North"
-    dst_dir: "South"
+      - [0, 4]
+    src_dir: "East"
+    dst_dir: "West"

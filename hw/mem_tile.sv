@@ -54,12 +54,15 @@ module mem_tile
   // NOTE(fischeti): This is approximate since it does not include the
   // actual address range for this exact tile, but it is sufficient since
   // the NoC will take care of routing the request to the correct tile.
+  // The end address covers all NumL2Spm config entries; each config SAM
+  // entry is interleaved with its SRAM entry so the last config index is
+  // L2SpmConfig0SamIdx + (NumL2Spm-1)*2.
   localparam int unsigned NumTileAddrMapRules = 1;
   addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
       '{
           idx: TileCfg,
           start_addr: Sam[L2SpmConfig0SamIdx].start_addr,
-          end_addr: Sam[L2SpmConfig1SamIdx].end_addr
+          end_addr: Sam[L2SpmConfig0SamIdx+(NumL2Spm-1)*2].end_addr
       }
   };
   localparam int unsigned NumTileApbAddrMapRules = 1;
