@@ -38,11 +38,10 @@
 // ---- Topology --------------------------------------------------------------
 // Tile indices (0..GW_L2_SPM_NUM-1). Change these three to retarget the
 // entire test: source buffer, destination buffer, and which tile's DMA drives
-// the copy. DRIVER_TILE may be the src tile, the dst tile, or a third tile that
-// owns neither buffer (then both the read and the write traverse the NoC).
-#define SRC_TILE     0
-#define DST_TILE     3
-#define DRIVER_TILE  2
+// the copy.
+#define SRC_TILE     3
+#define DST_TILE     1
+#define DRIVER_TILE  1
 
 // The DMA helpers (memtile_dma_*) take the driver tile's SAM index as their
 // first argument, selecting which tile's iDMA register file is configured.
@@ -50,7 +49,6 @@
 // so its reads hit the source tile's banks via the LOCAL path.
 
 // ---- Debug: encode "which stage + where it first broke" into the exit code -
-#define NO_BAD                0xFFFFFFFFu
 #define BAD_CODE(stage, idx)  ((int)((uint32_t)(stage) * 1000000u + (uint32_t)(idx)))
 
 // ---- Phase enable switches (1 = run, 0 = skip) -----------------------------
@@ -64,9 +62,9 @@
 #define ENABLE_PHASE_5   1   // concurrent row-arbiter
 
 // ---- Geometry --------------------------------------------------------------
-#define WORD_BYTES   4             // sizeof(uint32_t)
-#define BEAT_BYTES   64            // 512-bit wide AXI beat (alignment unit)
-#define TILE_BYTES   0x100000      // 1 MiB per L2 tile
+#define WORD_BYTES   sizeof(uint32_t)
+#define BEAT_BYTES   (512/8)              // 512-bit wide AXI beat (alignment unit)
+#define TILE_BYTES   GW_L2_SPM_SIZE     // L2 tile size
 
 // All *_BYTES / *_OFF / *_GAP MUST be multiples of WORD_BYTES (exact word
 // verify). "Unaligned" => NOT a multiple of BEAT_BYTES. Defaults are > 4 KiB to
@@ -82,22 +80,20 @@
 #define P2_DST_OFF     96          // dst byte offset (word-aligned, !=64-mult)
 
 // Phase 3 — 2D aligned, strided (gaps between rows) with INDEPENDENT src/dst
-// gaps, so src_stride != dst_stride (asymmetric strides). The defaults below
-// (row 256, strides 512/320, 8 rows) are scaled UP from the original test
-// (row 128, strides 256/192, 2 rows) to push more/larger bursts. To reproduce
-// the original exactly: row=128, SRC_GAP=128, DST_GAP=64, NUM_ROWS=2.
-#define P3_ROW_BYTES   256         // inner length per row (64-B aligned)
+// gaps, so src_stride != dst_stride (asymmetric strides). The setting below
+// (row 256, src strides 512, dst stride 320, 8 rows).
+#define P3_ROW_BYTES   256         // inner length (in bytes) per row (64-B aligned)
 #define P3_NUM_ROWS    8           // reps_2
-#define P3_SRC_GAP     256         // src_stride = ROW + SRC_GAP = 512
-#define P3_DST_GAP     64          // dst_stride = ROW + DST_GAP = 320
-#define P3_SRC_STRIDE  (P3_ROW_BYTES + P3_SRC_GAP)
-#define P3_DST_STRIDE  (P3_ROW_BYTES + P3_DST_GAP)
+#define P3_SRC_GAP     256         // Bytes gap till next src matrix row
+#define P3_DST_GAP     64          // Bytes gap till next dst matrix row
+#define P3_SRC_STRIDE  (P3_ROW_BYTES + P3_SRC_GAP) // src_stride = ROW + SRC_GAP = 512 bytes
+#define P3_DST_STRIDE  (P3_ROW_BYTES + P3_DST_GAP) // dst_stride = ROW + DST_GAP = 320 bytes
 
 // Phase 4 — 2D unaligned, contiguous matrix (stride == row length, no gap).
-#define P4_ROW_BYTES   324         // non-64B-multiple inner length
+#define P4_ROW_BYTES   324              // non-64B-multiple inner length in bytes
 #define P4_NUM_ROWS    8
-#define P4_SRC_OFF     32          // unaligned src base (word-aligned, !=64)
-#define P4_DST_OFF     96          // unaligned dst base
+#define P4_SRC_OFF     32               // unaligned src base (word-aligned, !=BEAT_BYTES)
+#define P4_DST_OFF     96               // unaligned dst base
 #define P4_STRIDE      (P4_ROW_BYTES)   // contiguous
 
 // Phase 5 — concurrent arbiter test. Tile-SRC's own DMA reads tile-SRC's L2
@@ -107,7 +103,8 @@
 // so the contention lands on that row's arbiter.
 #define P5_LEN_BYTES          8192               // 8 KiB window (<= one 64 KiB row)
 #define P5_SRC_ROW            3                  // macro row to contend on (0..15)
-#define P5_SRC_OFF            (P5_SRC_ROW * 0x10000)  // row base; 64 KiB per macro row, dependent on the bank size
+// ** This needs to be changed if the row size is changed. Currently the row size is 64 KiB (0x10000).
+#define P5_SRC_OFF            (P5_SRC_ROW * 0x10000)  // row base; 64 KiB per macro row, dependent on the bank size //
 #define P5_SWEEP_STRIDE_WORDS 10                 // 1 = densest collisions; raise to speed sim
 
 // ---- Derived: source ramp init span (union of all phase reads) -------------
@@ -131,7 +128,7 @@
 #define P5_DST_END (P5_LEN_BYTES)
 
 // ---- Compile-time invariants -----------------------------------------------
-// Tile indices in range (memtile_dma_* helpers accept any tile in 0..NUM-1).
+// Tile indices in range.
 static_assert(SRC_TILE < GW_L2_SPM_NUM && DST_TILE < GW_L2_SPM_NUM &&
               DRIVER_TILE < GW_L2_SPM_NUM, "tile index out of range");
 // Word alignment (exact CVA6 word verify).
@@ -151,7 +148,7 @@ static_assert(P4_SRC_OFF % BEAT_BYTES != 0 && P4_DST_OFF % BEAT_BYTES != 0,
 static_assert(P5_LEN_BYTES % WORD_BYTES == 0 && P5_LEN_BYTES % BEAT_BYTES == 0 &&
               P5_SRC_OFF % BEAT_BYTES == 0,
               "P5 length/offset must be 64-B aligned");
-// 1-MiB-per-tile ceiling (src in SRC_TILE, dst in DST_TILE).
+// 1-MiB-per-tile ceiling.
 static_assert(SRC_SPAN_BYTES <= TILE_BYTES, "source span exceeds 1 MiB tile");
 static_assert(P5_SRC_END <= TILE_BYTES, "P5 source window exceeds 1 MiB tile");
 static_assert(P1_DST_END <= TILE_BYTES && P2_DST_END <= TILE_BYTES &&
@@ -165,9 +162,6 @@ int main(void) {
     volatile uint32_t *src = gwaihir_addrmap.l2_spm[SRC_TILE].mem;
     volatile uint32_t *dst = gwaihir_addrmap.l2_spm[DST_TILE].mem;
 
-    uint32_t n_errors  = 0;
-    uint32_t first_bad = NO_BAD;
-
     // Initialize source ramp src[i] = i over the union of all phase reads.
     for (uint32_t i = 0; i < SRC_INIT_WORDS; i++) {
         src[i] = i;
@@ -180,29 +174,22 @@ int main(void) {
 #if ENABLE_PHASE_1
     {
         const uint32_t n_words = P1_LEN_BYTES / WORD_BYTES;
-        const uint32_t dst_w   = 0;
-        const uint32_t src_w   = 0;
 
         for (uint32_t i = 0; i < n_words; i++) {
-            dst[dst_w + i] = ~(src_w + i);          // poison
+            dst[i] = ~i;          // poison
         }
 
         memtile_dma_blk_memcpy(
             /*tile=*/ DRIVER_TILE,
-            /*dst=*/  (uint64_t)(uintptr_t)&dst[dst_w],
-            /*src=*/  (uint64_t)(uintptr_t)&src[src_w],
+            /*dst=*/  (uint64_t)(uintptr_t)&dst[0],
+            /*src=*/  (uint64_t)(uintptr_t)&src[0],
             /*size=*/ P1_LEN_BYTES,
             /*conf=*/ 0);
 
-        first_bad = NO_BAD;
         for (uint32_t i = 0; i < n_words; i++) {
-            if (dst[dst_w + i] != (src_w + i)) {
-                n_errors++;
-                if (first_bad == NO_BAD) first_bad = dst_w + i;
+            if (dst[i] != i) {
+                return BAD_CODE(1, i);          // skip Phases 2-5
             }
-        }
-        if (n_errors != 0) {
-            return BAD_CODE(1, first_bad);          // skip Phases 2-4
         }
     }
 #endif
@@ -231,25 +218,18 @@ int main(void) {
             /*size=*/ P2_LEN_BYTES,
             /*conf=*/ 0);
 
-        first_bad = NO_BAD;
         for (uint32_t i = 0; i < n_words; i++) {
             if (dst[dst_w + i] != (src_w + i)) {
-                n_errors++;
-                if (first_bad == NO_BAD) first_bad = dst_w + i;
+                return BAD_CODE(2, dst_w + i);  // skip Phases 3-5
             }
-        }
-        if (n_errors != 0) {
-            return BAD_CODE(2, first_bad);          // skip Phases 3-4
         }
     }
 #endif
 
     // -----------------------------------------------------------------------
     // Phase 3: 2D aligned, strided matrix. P3_NUM_ROWS rows of P3_ROW_BYTES,
-    //   with independent src/dst strides (gaps between rows). Each dst row is
-    //   verified against its src row; each inter-row dst gap is poisoned and
-    //   verified to remain untouched. All quantities are 64-B aligned.
-    //     row r: src = src_base + r*P3_SRC_STRIDE, dst = dst_base + r*P3_DST_STRIDE
+    //   with independent src/dst strides (gaps between rows).
+    //     row r: src = r*P3_SRC_STRIDE, dst = r*P3_DST_STRIDE
     //     dst[row r][i] should equal src[row r][i] = r*(P3_SRC_STRIDE/4) + i
     // -----------------------------------------------------------------------
 #if ENABLE_PHASE_3
@@ -258,13 +238,11 @@ int main(void) {
         const uint32_t src_str_w = P3_SRC_STRIDE  / WORD_BYTES;
         const uint32_t dst_str_w = P3_DST_STRIDE  / WORD_BYTES;
         const uint32_t dst_gap_w = P3_DST_GAP     / WORD_BYTES;
-        const uint32_t dst_base  = 0;
-        const uint32_t src_base  = 0;
 
         // Poison each dst row window and each inter-row dst gap.
         for (uint32_t r = 0; r < P3_NUM_ROWS; r++) {
-            const uint32_t drow = dst_base + r * dst_str_w;
-            const uint32_t srow = src_base + r * src_str_w;
+            const uint32_t drow = r * dst_str_w;
+            const uint32_t srow = r * src_str_w;
             for (uint32_t i = 0; i < n_words; i++) {
                 dst[drow + i] = ~(srow + i);
             }
@@ -277,8 +255,8 @@ int main(void) {
 
         memtile_dma_2d_blk_memcpy(
             /*tile=*/       DRIVER_TILE,
-            /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_base],
-            /*src=*/        (uint64_t)(uintptr_t)&src[src_base],
+            /*dst=*/        (uint64_t)(uintptr_t)&dst[0],
+            /*src=*/        (uint64_t)(uintptr_t)&src[0],
             /*size=*/       P3_ROW_BYTES,
             /*dst_stride=*/ P3_DST_STRIDE,
             /*src_stride=*/ P3_SRC_STRIDE,
@@ -286,27 +264,21 @@ int main(void) {
             /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D_CONF_ENABLE_ND_BIT));
 
         // Verify each row, and that each gap stayed poisoned.
-        first_bad = NO_BAD;
         for (uint32_t r = 0; r < P3_NUM_ROWS; r++) {
-            const uint32_t drow = dst_base + r * dst_str_w;
-            const uint32_t srow = src_base + r * src_str_w;
+            const uint32_t drow = r * dst_str_w;
+            const uint32_t srow = r * src_str_w;
             for (uint32_t i = 0; i < n_words; i++) {
                 if (dst[drow + i] != (srow + i)) {
-                    n_errors++;
-                    if (first_bad == NO_BAD) first_bad = drow + i;
+                    return BAD_CODE(3, drow + i); // skip Phase 4-5
                 }
             }
             if (r + 1 < P3_NUM_ROWS) {
                 for (uint32_t g = 0; g < dst_gap_w; g++) {
                     if (dst[drow + n_words + g] != 0xDEADBEEF) {
-                        n_errors++;
-                        if (first_bad == NO_BAD) first_bad = drow + n_words + g;
+                        return BAD_CODE(3, drow + n_words + g); // skip Phase 4-5
                     }
                 }
             }
-        }
-        if (n_errors != 0) {
-            return BAD_CODE(3, first_bad);          // skip Phase 4
         }
     }
 #endif
@@ -339,15 +311,10 @@ int main(void) {
             /*num_reps=*/   P4_NUM_ROWS,
             /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D_CONF_ENABLE_ND_BIT));
 
-        first_bad = NO_BAD;
         for (uint32_t i = 0; i < total_w; i++) {
             if (dst[dst_w + i] != (src_w + i)) {
-                n_errors++;
-                if (first_bad == NO_BAD) first_bad = dst_w + i;
+                return BAD_CODE(4, dst_w + i); // skip Phase 5
             }
-        }
-        if (n_errors != 0) {
-            return BAD_CODE(4, first_bad);
         }
     }
 #endif
@@ -406,15 +373,10 @@ int main(void) {
         } while (*(volatile uint64_t *)done_reg != tf_id);
 
         // Verify the DMA result (DST_TILE) and the concurrent reads (SRC_TILE).
-        first_bad = NO_BAD;
         for (uint32_t i = 0; i < n_words; i++) {
             if (dst[dst_w + i] != (src_w + i)) {
-                n_errors++;
-                if (first_bad == NO_BAD) first_bad = dst_w + i;
+                return BAD_CODE(6, dst_w + i); // STAGE 6 = concurrent
             }
-        }
-        if (n_errors != 0) {
-            return BAD_CODE(6, first_bad);                 // STAGE 6 = concurrent
         }
     }
 #endif

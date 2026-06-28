@@ -16,6 +16,7 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/sanity_fail.spm.elf, NZ_EXIT_CODE: 7}
       - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.spm.elf, USTR: "Hello World!" }
       - { CHS_BINARY: $CHS_BUILD_DIR/access_l2.spm.elf, PRELMODE: 1}
+      - { CHS_BINARY: $CHS_BUILD_DIR/l2_dma.spm.elf, PRELMODE: 3}
       - { CHS_BINARY: $CHS_BUILD_DIR/access_clk_gating_rst_ctrl_reg.spm.elf, PRELMODE: 1}
       - { CHS_BINARY: $CHS_BUILD_DIR/cva6_dcache_spm_1.spm.elf, PRELMODE: 0 }
       - { CHS_BINARY: $CHS_BUILD_DIR/cva6_dcache_spm_2.spm.elf, PRELMODE: 0 }

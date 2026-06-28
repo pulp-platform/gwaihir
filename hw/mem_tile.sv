@@ -1043,6 +1043,34 @@ module mem_tile
       .req_o(arb_sram_req[row]),
       .gnt_i(arb_sram_req[row])  // Acknowledge it directly
     );
+
+`ifndef SYNTHESIS
+`ifndef VERILATOR
+    // (1) Both clients (EXT and DMA) request the SAME row in the SAME cycle.
+    RowReqCollision: cover property (@(posedge tile_clk) disable iff (!tile_rst_n)
+        payload_ext_req[row] && payload_dma_req[row]);
+
+    // (2) Collision resolved by priority: ext granted, DMA denied same cycle.
+    RowDmaPreempted: cover property (@(posedge tile_clk) disable iff (!tile_rst_n)
+        payload_ext_req[row] && payload_dma_req[row] &&
+        payload_ext_gnt[row] && !payload_dma_gnt[row]);
+
+    // (3) DMA holds its request across a denied cycle.
+    RowDmaReqStable: assert property (@(posedge tile_clk) disable iff (!tile_rst_n)
+        (payload_dma_req[row] && !payload_dma_gnt[row])
+        |=> (payload_dma_req[row]
+             && $stable(payload_dma[row].addr)
+             && $stable(payload_dma[row].we)
+             && (!payload_dma[row].we ||
+                ($stable(payload_dma[row].wdata) && $stable(payload_dma[row].be)))));
+
+    // Optional safety ASSERT: the arbiter never grants both clients in one
+    // cycle.
+    RowGntMutex: assert property (@(posedge tile_clk) disable iff (!tile_rst_n)
+        $onehot0({payload_ext_gnt[row], payload_dma_gnt[row]}))
+      else $error("Row %0d: ext and dma granted simultaneously", row);
+`endif
+`endif
   end
 
   for (genvar bank = 0; bank < NumBanksPerWord; bank++) begin : gen_sram_banks
