@@ -24,14 +24,14 @@ module ucie_tile
 
   // AXI narrow channels
   output floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req_o,
-  input floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t  axi_narrow_out_rsp_i,
-  input floo_gwaihir_noc_pkg::axi_narrow_in_req_t   axi_narrow_in_req_i,
+  input  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_out_rsp_i,
+  input  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  axi_narrow_in_req_i,
   output floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  axi_narrow_in_rsp_o,
   // AXI wide channels
-  output floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_out_req_o,
-  input floo_gwaihir_noc_pkg::axi_wide_out_rsp_t  axi_wide_out_rsp_i,
-  input floo_gwaihir_noc_pkg::axi_wide_in_req_t   axi_wide_in_req_i,
-  output floo_gwaihir_noc_pkg::axi_wide_in_rsp_t  axi_wide_in_rsp_o
+  output floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req_o,
+  input  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_out_rsp_i,
+  input  floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req_i,
+  output floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    axi_wide_in_rsp_o
 );
 
   ////////////
@@ -90,7 +90,7 @@ module ucie_tile
   /////////////
 
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req;
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
@@ -101,7 +101,7 @@ module ucie_tile
     .AtopSupport         (1'b1),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
-    .MaxAtomicTxns       (3), // TODO: CHECK
+    .MaxAtomicTxns       (3),                                           // TODO: CHECK
     .Sam                 (floo_gwaihir_noc_pkg::Sam),
     .id_t                (floo_gwaihir_noc_pkg::id_t),
     .rob_idx_t           (floo_gwaihir_noc_pkg::rob_idx_t),
@@ -117,12 +117,12 @@ module ucie_tile
     .axi_wide_out_req_t  (floo_gwaihir_noc_pkg::axi_wide_out_req_t),
     .axi_wide_out_rsp_t  (floo_gwaihir_noc_pkg::axi_wide_out_rsp_t),
 
-    .floo_req_t          (floo_gwaihir_noc_pkg::floo_req_t),
-    .floo_rsp_t          (floo_gwaihir_noc_pkg::floo_rsp_t),
-    .floo_wide_t         (floo_gwaihir_noc_pkg::floo_wide_t)
+    .floo_req_t (floo_gwaihir_noc_pkg::floo_req_t),
+    .floo_rsp_t (floo_gwaihir_noc_pkg::floo_rsp_t),
+    .floo_wide_t(floo_gwaihir_noc_pkg::floo_wide_t)
   ) i_chimney (
-    .clk_i               (clk_i), // TODO: add gating
-    .rst_ni              (rst_ni), // TODO: add gating
+    .clk_i               (clk_i),                       // TODO: add gating
+    .rst_ni              (rst_ni),                      // TODO: add gating
     .test_enable_i,
     .id_i,
     .route_table_i       ('0),
@@ -145,16 +145,16 @@ module ucie_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
-  logic [47:0] ucie_addr_mask = ~ (48'h000300000000);
+  logic [47:0] ucie_addr_mask = ~(48'h000300000000);
 
   always_comb begin
-    axi_narrow_out_req_o = axi_narrow_out_req;
+    axi_narrow_out_req_o         = axi_narrow_out_req;
     axi_narrow_out_req_o.aw.addr = axi_narrow_out_req.aw.addr & ucie_addr_mask;
     axi_narrow_out_req_o.ar.addr = axi_narrow_out_req.ar.addr & ucie_addr_mask;
 
-    axi_wide_out_req_o = axi_wide_out_req;
-    axi_wide_out_req_o.aw.addr = axi_wide_out_req.aw.addr & ucie_addr_mask;
-    axi_wide_out_req_o.ar.addr = axi_wide_out_req.ar.addr & ucie_addr_mask;
+    axi_wide_out_req_o           = axi_wide_out_req;
+    axi_wide_out_req_o.aw.addr   = axi_wide_out_req.aw.addr & ucie_addr_mask;
+    axi_wide_out_req_o.ar.addr   = axi_wide_out_req.ar.addr & ucie_addr_mask;
   end
 
   //////////////////////

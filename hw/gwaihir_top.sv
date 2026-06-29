@@ -252,10 +252,10 @@ module gwaihir_top
   floo_gwaihir_noc_pkg::axi_narrow_in_req_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_req;
   floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_rsp;
   // AXI wide channels
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t [NumUcieTiles-1:0] ucie_axi_wide_out_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t [NumUcieTiles-1:0] ucie_axi_wide_out_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t  [NumUcieTiles-1:0] ucie_axi_wide_in_req;
-  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   [NumUcieTiles-1:0] ucie_axi_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   [NumUcieTiles-1:0] ucie_axi_wide_out_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t    [NumUcieTiles-1:0] ucie_axi_wide_in_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
 
   for (genvar u = 0; u < NumUcieTiles; u++) begin : gen_ucietile
 
@@ -277,15 +277,15 @@ module gwaihir_top
       .floo_rsp_o   (floo_rsp_out[UcieX][UcieY]),
       .floo_wide_i  (floo_wide_in[UcieX][UcieY]),
       // loopback
-      .axi_narrow_out_req_o (ucie_axi_narrow_out_req[u]),
-      .axi_narrow_out_rsp_i (ucie_axi_narrow_out_rsp[u]),
-      .axi_narrow_in_req_i  (ucie_axi_narrow_in_req[u]),
-      .axi_narrow_in_rsp_o  (ucie_axi_narrow_in_rsp[u]),
+      .axi_narrow_out_req_o(ucie_axi_narrow_out_req[u]),
+      .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[u]),
+      .axi_narrow_in_req_i (ucie_axi_narrow_in_req[u]),
+      .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[u]),
 
-      .axi_wide_out_req_o   (ucie_axi_wide_out_req[u]),
-      .axi_wide_out_rsp_i   (ucie_axi_wide_out_rsp[u]),
-      .axi_wide_in_req_i    (ucie_axi_wide_in_req[u]),
-      .axi_wide_in_rsp_o    (ucie_axi_wide_in_rsp[u])
+      .axi_wide_out_req_o(ucie_axi_wide_out_req[u]),
+      .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[u]),
+      .axi_wide_in_req_i (ucie_axi_wide_in_req[u]),
+      .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[u])
     );
 
   end
