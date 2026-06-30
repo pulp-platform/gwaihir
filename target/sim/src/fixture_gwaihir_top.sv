@@ -53,6 +53,9 @@ module fixture_gwaihir_top;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o;
 
+  axi_llc_req_t axi_llc_mst_req;
+  axi_llc_rsp_t axi_llc_mst_rsp;
+
   // Set to 1 to bypass tile-specific clock gating and reset (use global signals instead)
   logic   clk_rst_bypass;
   assign  clk_rst_bypass = 1'b0;
@@ -117,7 +120,9 @@ module fixture_gwaihir_top;
     .pcie_jtag_phys_tck_i  (1'b0),
     .pcie_jtag_phys_tms_i  (1'b0),
     .pcie_jtag_phys_trst_ni(1'b1),
-    .pcie_jtag_phys_tdo_o  ()
+    .pcie_jtag_phys_tdo_o  (),
+    .axi_llc_mst_req_o(axi_llc_mst_req),
+    .axi_llc_mst_rsp_i(axi_llc_mst_rsp)
   );
 
   ////////////////////////
@@ -139,9 +144,6 @@ module fixture_gwaihir_top;
 
   axi_mst_req_t axi_slink_mst_req;
   axi_mst_rsp_t axi_slink_mst_rsp;
-
-  axi_llc_req_t axi_llc_mst_req;
-  axi_llc_rsp_t axi_llc_mst_rsp;
 
   assign axi_slink_mst_req = '0;
 

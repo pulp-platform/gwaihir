@@ -85,7 +85,7 @@ $(GW_GEN_DIR)/gw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
 
 $(GW_GEN_DIR)/gw_addrmap_64b.svh: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
-	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
+	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svpkg --no-prefix
 
 $(GW_GEN_DIR)/gw_raw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
@@ -99,7 +99,7 @@ $(GW_GEN_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL)
 
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_64b.svh
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_pkg.sv
 
 .PHONY: docs docs-build docs-serve docs-clean rdl-markdown
 
@@ -187,9 +187,13 @@ PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
 PCIE_COMMIT ?= 7335dd196ce9e5ec68b10c97a7dbc6334938fd1d
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
+LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
+LPDDR_COMMIT ?= 3e22f547907604ae0fa4156588930c02a1c402b5
+LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
+
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -198,13 +202,20 @@ $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
 
+$(LPDDR_DIR):
+	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
+	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT)
+
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^LPDDR_COMMIT ?= .*/LPDDR_COMMIT ?= $(shell git -C $(LPDDR_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
 	rm -rf $(PD_DIR) $(PCIE_DIR)
 
 -include $(PD_DIR)/pd.mk
+-include $(LPDDR_DIR)/lpddr.mk
 
 
 #########################

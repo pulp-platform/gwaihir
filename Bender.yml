@@ -28,6 +28,7 @@ dependencies:
   # This is not a direct dependency of Gwaihir, but tcdm_interface (snitch_cluster) needs it and Bender
   # does not transitively export incdirs (see https://github.com/pulp-platform/bender/issues/340).
   reqrsp_interface: 0.1.0
+  gwaihir_lpddr:      { path: "./.deps/lpddr"                                                                                         }
 
 workspace:
   package_links:
@@ -48,6 +49,7 @@ sources:
     files:
       # Level 0.0
       - .generated/floo_gwaihir_noc_pkg.sv
+      - .generated/gw_addrmap_pkg.sv
       - .generated/gw_tile_regs_pkg.sv
       # Level 0.1
       - .generated/gw_tile_regs.sv
