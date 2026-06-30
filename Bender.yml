@@ -25,6 +25,7 @@ dependencies:
   pcie:               { path: ".deps/pcie"                                                                                              }
   iDMA:               { git: "https://github.com/pulp-platform/iDMA.git",               version: 0.6.5  }
   gwaihir-pd:         { path: "./pd"                                                                                                    }
+  gwaihir_lpddr:      { path: "./.deps/lpddr"                                                                                         }
 
 workspace:
   package_links:
@@ -41,6 +42,7 @@ sources:
       # Level 0.0
       - .generated/floo_gwaihir_noc_pkg.sv
       - .generated/snitch_cluster_pkg.sv
+      - .generated/gw_addrmap_pkg.sv
       - .generated/gw_tile_regs_pkg.sv
       # Level 0.1
       - .generated/gw_tile_regs.sv

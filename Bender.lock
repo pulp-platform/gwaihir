@@ -191,7 +191,7 @@ packages:
     revision: null
     version: null
     source:
-      Path: .bender/git/checkouts/floo_noc-e85a4cce70333e4d/pd
+      Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/./pd
     dependencies: []
   fpnew:
     revision: e5aa6a01b5bbe1675c3aa8872e1203413ded83d1
@@ -214,6 +214,17 @@ packages:
     source:
       Path: pd
     dependencies: []
+  gwaihir_lpddr:
+    revision: null
+    version: null
+    source:
+      Path: .deps/lpddr
+    dependencies:
+    - apb
+    - axi
+    - common_cells
+    - register_interface
+    - tech_cells_generic
   idma:
     revision: 28a36e5e07705549e59fc33db96ab681bc1ca88e
     version: 0.6.5
