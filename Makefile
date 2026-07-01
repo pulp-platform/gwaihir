@@ -80,9 +80,11 @@ GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap.svh
 
-# TODO (lleone): remove phony, they are never used
-.PHONY: gw-addrmap gw-addrmap-clean
-gw-addrmap: $(GW_GEN_DIR)/gw_addrmap.h $(GW_GEN_DIR)/gw_addrmap.svh
+.PHONY: rdl-markdown
+
+rdl-markdown: $(GW_GEN_DIR)/gwaihir_addrmap.md
+$(GW_GEN_DIR)/gwaihir_addrmap.md: $(GW_GEN_DIR)/gwaihir_addrmap.rdl $(GW_RDL_ALL)
+	$(PEAKRDL) markdown $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@
 
 ############
 # Cheshire #
@@ -152,7 +154,7 @@ PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR) 
+init-pd: $(PD_DIR) $(PCIE_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)

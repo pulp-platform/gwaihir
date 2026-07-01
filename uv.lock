@@ -622,6 +622,7 @@ dependencies = [
     { name = "cheshire" },
     { name = "floogen" },
     { name = "peakrdl" },
+    { name = "peakrdl-markdown" },
     { name = "peakrdl-rawheader" },
     { name = "snitch", extra = ["kernels"] },
 ]
@@ -629,6 +630,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "mako" },
+    { name = "markdown" },
     { name = "pyyaml" },
     { name = "reuse" },
 ]
@@ -638,6 +640,7 @@ requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
     { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=f7f81e2c65c231a8fab4cf8a6e6cd2aa3efdcdb6" },
     { name = "peakrdl", specifier = ">=1.5.0" },
+    { name = "peakrdl-markdown", specifier = ">=1.0.3" },
     { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
     { name = "snitch", extras = ["kernels"], editable = ".deps/snitch_cluster" },
 ]
@@ -645,6 +648,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "mako", specifier = ">=1.3.10" },
+    { name = "markdown", specifier = ">=3.10.2" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "reuse", specifier = ">=6.2.0" },
 ]
