@@ -17,7 +17,7 @@
  * @return Start addres of memory tile idx
  */
 inline uintptr_t gw_l2_tile_address(uint32_t tile_idx) {
-  return (uintptr_t)(gwaihir_addrmap.l2_spm[tile_idx].mem);
+  return (uintptr_t)(gwaihir_addrmap_snitch.l2_spm[tile_idx].mem);
 }
 
 /**
