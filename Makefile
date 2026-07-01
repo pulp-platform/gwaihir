@@ -43,6 +43,9 @@ SIM_TARGS += -t simulation -t test -t idma_test
 #############
 SLINK_NUM_LANES ?= 8
 PEAKRDL_PARAMS   += -P SlinkNumLanes=$(SLINK_NUM_LANES)
+DOCS_DIR         ?= $(GW_ROOT)/docs
+DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
+DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
 GW_RDL_ALL += $(GW_GEN_DIR)/gwaihir_addrmap.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
@@ -80,11 +83,23 @@ GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap.svh
 
-.PHONY: rdl-markdown
+.PHONY: docs docs-build docs-serve docs-clean rdl-markdown
 
-rdl-markdown: $(GW_GEN_DIR)/gwaihir_addrmap.md
-$(GW_GEN_DIR)/gwaihir_addrmap.md: $(GW_GEN_DIR)/gwaihir_addrmap.rdl $(GW_RDL_ALL)
+docs rdl-markdown: $(DOCS_ADDRMAP_MD)
+$(DOCS_ADDRMAP_MD): $(GW_GEN_DIR)/gwaihir_addrmap.rdl $(GW_RDL_ALL) | $(DOCS_DIR)
 	$(PEAKRDL) markdown $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@
+
+$(DOCS_DIR):
+	mkdir -p $@
+
+docs-build: $(DOCS_ADDRMAP_MD)
+	$(UV) run --group docs zensical build --clean
+
+docs-serve: $(DOCS_ADDRMAP_MD)
+	$(UV) run --group docs zensical serve --open
+
+docs-clean:
+	rm -rf $(DOCS_ADDRMAP_MD) $(GW_GEN_DIR)/docs-site
 
 ############
 # Cheshire #
@@ -187,7 +202,7 @@ gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
 gwaihir-hw-clean: sn-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)
 
-clean: gwaihir-hw-clean
+clean: gwaihir-hw-clean docs-clean
 	rm -rf $(BENDER_ROOT)
 
 ############
@@ -216,7 +231,7 @@ include $(GW_ROOT)/target/sim/traces.mk
 # %-all / %-clean cover all hw-all/hw-clean variants; vsim-% / gw-% cover sim/rdl targets.
 # Clean targets never need dep tracking regardless of subsystem.
 _GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist slang-flist verible-fmt \
-                     init-pd clean-pd update-pd-commit python-venv% %-all %-clean vsim-% gw-%
+                     init-pd clean-pd update-pd-commit python-venv% %-all %-clean vsim-% gw-% rdl-% docs%
 ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
 # All requested goals are hw-only/informational — skip dep tracking.
 else
@@ -274,6 +289,11 @@ help:
 	@echo -e "${Green}sn-hw-all            ${Black}Generate Snitch Cluster wrapper RTL."
 	@echo -e "${Green}sn-hw-clean          ${Black}Clean Snitch Cluster wrapper RTL."
 	@echo -e "${Green}chs-hw-all           ${Black}Generate Cheshire RTL."
+	@echo -e "${Green}rdl-markdown         ${Black}Generate RDL Markdown documentation."
+	@echo -e "${Green}docs                 ${Black}Generate documentation sources."
+	@echo -e "${Green}docs-build           ${Black}Build documentation with Zensical."
+	@echo -e "${Green}docs-serve           ${Black}Serve documentation with Zensical and open it in a browser."
+	@echo -e "${Green}docs-clean           ${Black}Clean generated documentation files."
 	@echo -e ""
 	@echo -e "Software:"
 	@echo -e "${Green}sw                   ${Black}Compile all software tests."

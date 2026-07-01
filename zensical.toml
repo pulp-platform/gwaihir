@@ -1,0 +1,23 @@
+# Copyright 2025 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+[project]
+site_name = "Gwaihir"
+site_description = "Generated and project documentation for Gwaihir."
+site_author = "ETH Zurich and University of Bologna"
+docs_dir = "docs"
+nav = [
+  { "Home" = "index.md" },
+  { "Address map" = "addressmap.md" },
+]
+
+[project.theme]
+language = "en"
+features = [
+  "content.code.copy",
+  "navigation.footer",
+  "navigation.sections",
+  "navigation.top",
+  "search.highlight",
+]

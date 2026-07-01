@@ -60,3 +60,7 @@ gmon.out
 .dvt
 .vscode
 sources.flist
+
+# documentation
+docs/addressmap.md
+/site
