@@ -28,8 +28,8 @@ SN_RUNTIME_BUILDDIR  = $(GW_SNITCH_SW_DIR)/runtime/build
 GW_RUNTIME_INCDIRS   = $(GW_INCDIR)
 SN_RUNTIME_INCDIRS  += $(GW_GEN_DIR)
 SN_RUNTIME_INCDIRS  += $(GW_SNITCH_SW_DIR)/runtime/src
-SN_RUNTIME_HAL_HDRS  = $(GW_GEN_DIR)/gw_addrmap.h
-SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/gw_raw_addrmap.h
+SN_RUNTIME_HAL_HDRS  = $(GW_GEN_DIR)/gw_addrmap_snitch.h
+SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/gw_raw_addrmap_snitch.h
 SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/gw_noc_cfg.h
 
 #TODO(lleone): do we need this?
@@ -76,7 +76,7 @@ GW_CHS_SW_TEST_ELF  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).elf) $(patsubst 
 GW_CHS_SW_TEST = $(GW_CHS_SW_TEST_DUMP)
 
 $(GW_CHS_SW_TEST_DUMP): $(GW_CHS_SW_TEST_ELF)
-$(GW_CHS_SW_TEST_ELF): $(GW_GEN_DIR)/gw_addrmap.h $(SN_RUNTIME_HAL_HDRS)
+$(GW_CHS_SW_TEST_ELF): $(GW_GEN_DIR)/gw_addrmap.h $(GW_GEN_DIR)/gw_raw_addrmap.h $(SN_RUNTIME_HAL_HDRS)
 
 .PHONY: chs-sw-tests chs-sw-tests-clean
 

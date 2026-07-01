@@ -47,10 +47,24 @@ DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
-GW_RDL_ALL += $(GW_GEN_DIR)/gwaihir_addrmap.rdl
-GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
-GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
-GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
+GW_RDL_IPS += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
+GW_RDL_IPS += $(GW_GEN_DIR)/snitch_cluster.rdl
+GW_RDL_IPS += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
+
+### TODO (glodi): Add this after it is generated
+GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap.rdl
+GW_RDL_SN_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_snitch.rdl
+
+########### TODO (glodi): Separate GW_RDL_ALL required for Cheshire and Snitch
+# GW_RDL_CHS += $(GW_GEN_DIR)/gwaihir_addrmap_snitch.rdl
+# GW_RDL_CHS += $(wildcard $(GW_ROOT)/cfg/rdl/cheshire_external.rdl)
+
+# GW_RDL_SN += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
+# GW_RDL_SN += $(GW_GEN_DIR)/snitch_cluster.rdl
+# GW_RDL_CHS += $(wildcard $(GW_ROOT)/cfg/rdl/cheshire_tile.rdl)
+# GW_RDL_CHS += $(wildcard $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl)
+# GW_RDL_CHS += $(wildcard $(GW_ROOT)/cfg/rdl/ucie_external.rdl)
+####################################
 
 PEAKRDL_INCLUDES += -I $(GW_ROOT)/cfg/rdl
 PEAKRDL_INCLUDES += -I $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster_peripheral
@@ -66,17 +80,32 @@ $(GW_GEN_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
 $(GW_GEN_DIR)/gwaihir_addrmap.rdl: $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
 
+## TODO (glodi): Add generation of gwaihir_addrmap_snitch.rdl
+# $(GW_GEN_DIR)/gwaihir_addrmap_snitch.rdl: $(FLOO_CFG)
+# 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
+
 # Those are dummy RDL files, for generation without access to the PD repository.
 $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl: | $(GW_GEN_DIR)
 	@touch $@
 
-$(GW_GEN_DIR)/gw_addrmap.h: $(GW_GEN_DIR)/gwaihir_addrmap.rdl $(GW_RDL_ALL)
+# Cheshire
+$(GW_GEN_DIR)/gw_addrmap.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
 
-$(GW_GEN_DIR)/gw_addrmap.svh: $(GW_RDL_ALL)
+$(GW_GEN_DIR)/gw_addrmap.svh: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
 
-$(GW_GEN_DIR)/gw_raw_addrmap.h: $(GW_RDL_ALL)
+$(GW_GEN_DIR)/gw_raw_addrmap.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
+	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
+
+# Snitch
+$(GW_GEN_DIR)/gw_addrmap_snitch.h: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
+	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
+
+$(GW_GEN_DIR)/gw_addrmap_snitch.svh: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
+	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
+
+$(GW_GEN_DIR)/gw_raw_addrmap_snitch.h: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
 
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
