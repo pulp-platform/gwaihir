@@ -14,6 +14,7 @@ module ucie_tile
   input  logic                    test_enable_i,
   // Router ID
   input  id_t                     id_i,
+  input logic [47:0]              base_addr_i,
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,
@@ -145,16 +146,14 @@ module ucie_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
-  logic [47:0] ucie_addr_mask = ~(48'h000300000000);
-
   always_comb begin
     axi_narrow_out_req_o         = axi_narrow_out_req;
-    axi_narrow_out_req_o.aw.addr = axi_narrow_out_req.aw.addr & ucie_addr_mask;
-    axi_narrow_out_req_o.ar.addr = axi_narrow_out_req.ar.addr & ucie_addr_mask;
+    axi_narrow_out_req_o.aw.addr = axi_narrow_out_req.aw.addr - base_addr_i;
+    axi_narrow_out_req_o.ar.addr = axi_narrow_out_req.ar.addr - base_addr_i;
 
     axi_wide_out_req_o           = axi_wide_out_req;
-    axi_wide_out_req_o.aw.addr   = axi_wide_out_req.aw.addr & ucie_addr_mask;
-    axi_wide_out_req_o.ar.addr   = axi_wide_out_req.ar.addr & ucie_addr_mask;
+    axi_wide_out_req_o.aw.addr   = axi_wide_out_req.aw.addr - base_addr_i;
+    axi_wide_out_req_o.ar.addr   = axi_wide_out_req.ar.addr - base_addr_i;
   end
 
   //////////////////////
