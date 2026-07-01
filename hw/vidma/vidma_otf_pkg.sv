@@ -61,7 +61,8 @@ package vidma_otf_pkg;
   function automatic logic [63:0] otf_element_sizes(input logic [7:0] opcode);
     int unsigned in_size, out_size;
     if (is_otf_mx_quant(opcode)) begin
-      in_size  = MxFp32BlockBytes;
+      // opcode[1] selects FP16-source quant: a block is 32*2=64B (FP16) vs 128B (FP32).
+      in_size  = opcode[1] ? (MxFp32BlockBytes/2) : MxFp32BlockBytes;
       out_size = MxCompressedBlockBytes;
     end else if (is_otf_mx_dequant(opcode)) begin
       in_size  = MxCompressedBlockBytes;

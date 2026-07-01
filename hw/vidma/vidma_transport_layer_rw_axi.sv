@@ -12,7 +12,7 @@
 //   crates/vidma_new/src/backend/transport/layer/detailed.rs
 //
 // When EnableOtfTransform=0, this module is functionally identical to the
-// upstream idma_transport_layer_rw_axi.sv (purely structural wiring).
+// upstream vidma_transport_layer_rw_axi.sv (purely structural wiring).
 //
 // OTF extensions (gated by EnableOtfTransform generate block):
 //   - ALCU between dataflow element and write barrel shift
@@ -403,7 +403,47 @@ module vidma_transport_layer_rw_axi
       // Zero during expansion bypass (dataflow is stalled).
       // Mask prevents popping empty dataflow entries during drain.
       // Zero during expansion bypass (dataflow is stalled).
-      assign dataflow_ready_in = expansion_bypass_active ? '0 : (alcu_ready_o & buffer_out_valid);
+      // ── Pure-passthrough fast path ───────────────────────────
+      // Opcode 0x08 performs no transform, yet routing it through the
+      // ALCU + registered write latch adds a pipeline stage whose draining
+      // is NOT lock-stepped with the per-transfer w_dp write metadata. When
+      // transfers are issued back-to-back (pipelined, no wait between them),
+      // the last beat of transfer N can remain buffered/latched after
+      // transfer N's write legalizer has retired its w_dp -> the beat has no
+      // write request to drain it -> buffer_busy stays high forever -> the
+      // backend's busy_o never clears -> snrt_dma_wait_all spins (hang).
+      // Single/serialized transfers flush the latch fine, which is why it
+      // only bites pipelined passthrough (e.g. the MXCore GEMM operand load).
+      // Fix: drain the buffer in lock-step with the write datapath exactly
+      // like gen_passthrough (EnableOtfTransform=0), bypassing the ALCU+latch
+      // for opcode 0x08 only. MX/FpCast transforms and ALU ops are untouched
+      // (they legitimately need the ALCU), so the cosim-verified transform
+      // datapath is unaffected. 0x08 == vidma_alcu_pkg::OpPassthrough.
+      logic is_pure_passthrough;
+      assign is_pure_passthrough = (effective_otf_opcode == 8'h08)
+          && !mx_draining_q && !fp_draining_q && !expansion_bypass_active;
+
+      // During a residual drain (mx_draining_q / fp_draining_q) the ALCU flushes
+      // its INTERNAL pack buffer and does NOT consume from the dataflow — its
+      // input valid is gated to 0 (see `gated_valid`). But alcu_ready_o
+      // (= the pack buffer's can_accept) stays high while it drains, so without
+      // this guard `dataflow_ready_in` would keep POPPING the per-lane dataflow
+      // FIFO and DISCARD whatever it holds. With force-decoupled R/W and
+      // back-to-back (pipelined) transfers, the NEXT transfer's first read beat
+      // can already be sitting in the dataflow while the current transfer is
+      // still draining -> it gets popped-and-dropped, never reaching the ALCU.
+      // That lost beat shifts the next transfer's MX-block phase by one beat, so
+      // its final block ends up half-built (fill_q != 0) and its residual drain
+      // can never complete the final 33B block -> the write legalizer's last
+      // w_dp is never satisfied -> backend stays busy -> snrt_dma_wait_all hangs.
+      // Holding dataflow_ready_in low during drain keeps the next transfer's
+      // beats buffered until the drain finishes; the dataflow then resumes
+      // feeding them intact. Single / serialized transfers never overlap a drain
+      // with the next transfer's data, so this is a no-op for them (the cosim-
+      // verified streaming datapath is unchanged).
+      assign dataflow_ready_in = is_pure_passthrough ? write_ready_shifted
+          : (expansion_bypass_active || mx_draining_q || fp_draining_q) ? '0
+          : (alcu_ready_o & buffer_out_valid);
 
       // ── Write buffer latch ───────────────────────────────────
       // Preserves ALCU output across multiple W beats for
@@ -432,8 +472,13 @@ module vidma_transport_layer_rw_axi
       assign use_alcu_direct = is_mx_quant || is_mx_dequant
           || is_fpcast_compress || (alcu_valid_o != '0);
 
-      assign write_data_in = use_alcu_direct ? alcu_data_o : latch_data_q;
-      assign write_valid_in = use_alcu_direct ? alcu_valid_o : latch_valid_q;
+      // Pure passthrough drains the read buffer directly (lock-step with the
+      // write datapath, exactly like gen_passthrough); transforms/ALU use the
+      // ALCU output or its latch as before.
+      assign write_data_in  = is_pure_passthrough ? buffer_out
+          : use_alcu_direct ? alcu_data_o : latch_data_q;
+      assign write_valid_in = is_pure_passthrough ? buffer_out_valid
+          : use_alcu_direct ? alcu_valid_o : latch_valid_q;
 
       // ── Drain FSM combinational ──────────────────────────────
       // Burst init: compute expected R bytes on first data arrival

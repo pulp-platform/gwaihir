@@ -102,7 +102,10 @@ module idma_alcu
     .valid_o   (valid_mxq),
     .ready_i   (is_mx_quant ? ready_i : '0),
     .drain_i   (mx_quant_drain_i),
-    .consumed_i(is_mx_quant ? consumed_i : 1'b0)
+    .consumed_i(is_mx_quant ? consumed_i : 1'b0),
+    // opcode bit 1 selects FP16-source quant (0x22) vs FP32 (0x20). Don't-care for
+    // non-quant opcodes since valid_i is gated by is_mx_quant.
+    .src_fp16_i(opcode_i[1])
   );
 
   // ── MX Dequant: monolithic (sequential unpacking buffer) ────────

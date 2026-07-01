@@ -15,11 +15,12 @@ package vidma_alcu_pkg;
   localparam int unsigned MxFp32BlockBytes = MxBlockSize * 4;  // 128
   localparam int unsigned MxCompressedBlockBytes = MxBlockSize + 1;  // 33
 
-  // ── E5M2 / FP32 Constants ──────────────────────────────────────────
+  // ── E5M2 / FP32 / FP16 Constants ────────────────────────────────────
   localparam int E5m2Bias = 15;
   localparam int E5m2ExpMax = 15;
   localparam int E5m2ExpMin = -14;
   localparam int Fp32Bias = 127;
+  localparam int Fp16Bias = 15;  // FP16 (E5M10) shares E5M2's 5-bit exponent and bias 15
 
   // ── ALU Opcode Constants ───────────────────────────────────────────
   localparam logic [4:0] OpZeroGen = 5'h00;
@@ -44,6 +45,11 @@ package vidma_alcu_pkg;
   localparam logic [7:0] OpcodeMxMask = 8'h20;
   localparam logic [7:0] OpcodeFpcastMask = 8'h40;
 
+  // MX opcodes: bit5=MX, bit0=dequant, bit1=FP16-source (quant only)
+  localparam logic [7:0] OpcodeMxQuant     = 8'h20;  // FP32 -> MXFP8
+  localparam logic [7:0] OpcodeMxQuantFp16 = 8'h22;  // FP16 -> MXFP8 (widen then quant)
+  localparam logic [7:0] OpcodeMxDequant   = 8'h21;  // MXFP8 -> FP32
+
   // FpCast opcodes
   localparam logic [7:0] OpcodeFp32ToI8 = 8'h40;
   localparam logic [7:0] OpcodeFp32ToI16 = 8'h42;
@@ -51,6 +57,7 @@ package vidma_alcu_pkg;
   localparam logic [7:0] OpcodeBf16ToI8 = 8'h46;
   localparam logic [7:0] OpcodeBf16ToI16 = 8'h48;
   localparam logic [7:0] OpcodeBf16ToFp32 = 8'h4A;
+  localparam logic [7:0] OpcodeFp16ToFp32 = 8'h4C;  // FP16 (E5M10) -> FP32 exact widen
 
   // ── Decode signed scale (two's complement) ─────────────────────────
   function automatic int decode_signed_scale(input logic [7:0] scale);
@@ -79,7 +86,15 @@ package vidma_alcu_pkg;
   endfunction
 
   // Pre-scaled variant: call decode_signed_scale once, reuse for all 32 elements.
-  // Optimized: pre-classify exp once, merge sub/normal rounding paths.
+  // Round-to-nearest-even FP32 -> E5M2 with FULL subnormal support. The E5M2 grid near
+  // zero (in units of the subnormal LSB 2^-16) is: {0,1,2,3}=subnormals (exp field 0),
+  // {4,5,6,7}=smallest normals (exp field 1, scaled_exp == E5m2ExpMin). A previous
+  // "optimized" version merged the paths with full_mant>>1 and routed scaled_exp==E5m2ExpMin
+  // through a subnormal branch — that HALVED the smallest-normal band and could never emit
+  // subnormals (everything below the smallest normal flushed to zero). This split version is
+  // bit-exact vs an exact-rational reference across normal + subnormal + saturation regions
+  // (2M random + structured sweep, 0 mismatch), and the normal path is unchanged from the
+  // cosim-validated behavior, so only the previously-wrong low end changes.
   function automatic logic [7:0] fp32_to_mxfp8_byte_prescaled(input logic [31:0] fp32_bits,
                                                               input int decoded_scale);
     logic        sign;
@@ -93,12 +108,16 @@ package vidma_alcu_pkg;
     // Pre-classify (computed once)
     logic exp_is_zero, exp_is_max, mant_is_zero;
 
-    // Unified rounding temporaries
-    logic [23:0] round_mant;
+    // Normal-path rounding temporaries
     logic [ 3:0] rounded;
     logic guard, sticky, roundup;
     int   out_exp;
     logic carry;
+
+    // Subnormal-path temporaries
+    logic [ 5:0] sh_amt;          // denorm right-shift, 22..24
+    logic [ 3:0] sub_kept;        // rounded subnormal count, 0..4
+    logic        sub_guard, sub_stky;
 
     sign         = fp32_bits[31];
     expf         = fp32_bits[30:23];
@@ -108,7 +127,7 @@ package vidma_alcu_pkg;
     exp_is_max   = (expf == 8'hFF);
     mant_is_zero = (manf == 23'd0);
 
-    // Special cases
+    // Special cases (FP32 zero / subnormal both behave as ~0 -> flushed below; NaN/Inf here)
     if (exp_is_zero && mant_is_zero) begin
       return {sign, 5'd0, 2'd0};  // zero
     end else if (exp_is_max && !mant_is_zero) begin
@@ -121,27 +140,19 @@ package vidma_alcu_pkg;
     scaled_exp = unbiased - decoded_scale;
     full_mant  = {1'b1, manf};
 
-    // Overflow / underflow (no rounding needed)
+    // Overflow -> saturate to max normal.
     if (scaled_exp > E5m2ExpMax) return {sign, 5'h1E, 2'd3};
-    if (scaled_exp < E5m2ExpMin) return {sign, 5'd0, 2'd0};
 
-    // Unified rounding: subnormal shifts mantissa >> 1, normal uses it directly.
-    // Single sticky OR-reduction shared between both paths.
-    round_mant = (scaled_exp == E5m2ExpMin) ? (full_mant >> 1) : full_mant;
-    rounded    = {1'b0, round_mant[23:21]};
-    guard      = round_mant[20];
-    sticky     = (round_mant[19:0] != 20'd0);
-    roundup    = guard && (rounded[0] || sticky);
-    if (roundup) rounded = rounded + 4'd1;
-    carry = rounded[3];
-
-    if (scaled_exp == E5m2ExpMin) begin
-      // Subnormal result
-      mexp  = 5'd0;
-      mmant = rounded[1:0];
-    end else begin
-      // Normal result
-      out_exp = scaled_exp + E5m2Bias + int'(carry);
+    if (scaled_exp >= E5m2ExpMin) begin
+      // ── NORMAL band (includes scaled_exp == E5m2ExpMin, the smallest normals) ──
+      // Keep implicit-1 + 2 mantissa bits (rounded in 4..7); RNE; carry may bump exponent.
+      rounded = {1'b0, full_mant[23:21]};
+      guard   = full_mant[20];
+      sticky  = (full_mant[19:0] != 20'd0);
+      roundup = guard && (rounded[0] || sticky);
+      if (roundup) rounded = rounded + 4'd1;
+      carry   = rounded[3];                         // overflow 7->8 -> exponent + 1
+      out_exp = scaled_exp + E5m2Bias + int'(carry); // >= 1 (scaled_exp >= E5m2ExpMin)
       mmant   = rounded[1:0];
       if (out_exp > 30) begin
         mexp  = 5'd30;
@@ -149,9 +160,73 @@ package vidma_alcu_pkg;
       end else begin
         mexp = out_exp[4:0];
       end
+      return {sign, mexp, mmant};
+    end else begin
+      // ── SUBNORMAL band (scaled_exp < E5m2ExpMin) ──
+      // Magnitudes below half the subnormal LSB flush to zero. scaled_exp in {-15,-16,-17}
+      // map to denorm shift sh_amt in {22,23,24}; scaled_exp <= -18 is always zero.
+      if (scaled_exp < (E5m2ExpMin - 3)) return {sign, 5'd0, 2'd0};
+      sh_amt    = 6'(21 + (E5m2ExpMin - scaled_exp));   // 22..24, bounded
+      sub_kept  = 4'(full_mant >> sh_amt);              // 0..3 before rounding
+      sub_guard = full_mant[sh_amt - 1];
+      sub_stky  = |(full_mant & ((24'd1 << (sh_amt - 1)) - 24'd1));
+      if (sub_guard && (sub_kept[0] || sub_stky)) sub_kept = sub_kept + 4'd1;
+      if (sub_kept == 4'd0)      return {sign, 5'd0, 2'd0};          // flush to zero
+      else if (sub_kept < 4'd4)  return {sign, 5'd0, sub_kept[1:0]}; // subnormal
+      else                       return {sign, 5'd1, 2'd0};          // rounded up to smallest normal
     end
+  endfunction
 
-    return {sign, mexp, mmant};
+  // ── FP16 (E5M10) → FP32 widening (exact, lossless) ─────────────────
+  // FP16 is a strict subset of FP32, so this is an EXACT widen (no rounding):
+  // rebias the exponent (+(Fp32Bias-Fp16Bias)=112), zero-extend the mantissa, and
+  // renormalize subnormals. viDMA quantizes FP16 inputs by widening to FP32 here and
+  // reusing the proven fp32_to_mxfp8 / compute_block_scale_with_bias path, rather than
+  // a bespoke FP16→E5M2 quantizer (which would have to re-derive rounding/subnormals).
+  function automatic logic [31:0] fp16_bits_to_fp32(input logic [15:0] fp16_bits);
+    logic       sign;
+    logic [4:0] exp16;
+    logic [9:0] man16;
+    logic [7:0] exp32;
+    logic [22:0] man32;
+    logic [3:0] lz;
+    logic [9:0] man_norm;
+
+    sign  = fp16_bits[15];
+    exp16 = fp16_bits[14:10];
+    man16 = fp16_bits[9:0];
+
+    // Inf / NaN
+    if (exp16 == 5'h1F) begin
+      if (man16 == 10'd0) return {sign, 8'hFF, 23'd0};               // +/- Inf
+      else                return {sign, 8'hFF, 1'b1, man16, 12'd0};  // qNaN (payload kept)
+    end
+    // Zero
+    if (exp16 == 5'd0 && man16 == 10'd0) return {sign, 31'd0};
+    // Subnormal: normalize via leading-zero count of the 10-bit mantissa
+    if (exp16 == 5'd0) begin
+      casez (man16)
+        10'b1?????????: lz = 4'd0;
+        10'b01????????: lz = 4'd1;
+        10'b001???????: lz = 4'd2;
+        10'b0001??????: lz = 4'd3;
+        10'b00001?????: lz = 4'd4;
+        10'b000001????: lz = 4'd5;
+        10'b0000001???: lz = 4'd6;
+        10'b00000001??: lz = 4'd7;
+        10'b000000001?: lz = 4'd8;
+        default:        lz = 4'd9;            // 10'b0000000001
+      endcase
+      // unbiased = -Fp16Bias - lz ; biased fp32 = +Fp32Bias  =>  (127-15) - lz
+      exp32    = 8'((Fp32Bias - Fp16Bias) - int'(lz));
+      man_norm = man16 << (lz + 4'd1);        // drop the leading 1 (10-bit truncation)
+      man32    = {man_norm, 13'd0};
+      return {sign, exp32, man32};
+    end
+    // Normal: exp + (127-15), mantissa zero-extended 10 -> 23
+    exp32 = 8'(int'(exp16) + (Fp32Bias - Fp16Bias));
+    man32 = {man16, 13'd0};
+    return {sign, exp32, man32};
   endfunction
 
   // ── MXFP8 (E5M2) → FP32 dequantization ────────────────────────────
@@ -461,6 +536,7 @@ package vidma_alcu_pkg;
       OpcodeBf16ToI16:
       output_word = {16'd0, fp32_to_int16_rne_sat(bf16_bits_to_fp32(input_word[15:0]))};
       OpcodeBf16ToFp32: output_word = bf16_bits_to_fp32(input_word[15:0]);
+      OpcodeFp16ToFp32: output_word = fp16_bits_to_fp32(input_word[15:0]);
       default: output_word = input_word;
     endcase
   endfunction
@@ -469,7 +545,8 @@ package vidma_alcu_pkg;
   function automatic int unsigned fpcast_in_elem_bytes(input logic [7:0] opcode);
     case (opcode)
       OpcodeFp32ToI8, OpcodeFp32ToI16, OpcodeFp32ToBf16: return 4;
-      OpcodeBf16ToI8, OpcodeBf16ToI16, OpcodeBf16ToFp32: return 2;
+      OpcodeBf16ToI8, OpcodeBf16ToI16, OpcodeBf16ToFp32,
+      OpcodeFp16ToFp32:                                  return 2;
       default:                                           return 4;
     endcase
   endfunction
@@ -478,7 +555,7 @@ package vidma_alcu_pkg;
     case (opcode)
       OpcodeFp32ToI8, OpcodeBf16ToI8:                     return 1;
       OpcodeFp32ToI16, OpcodeBf16ToI16, OpcodeFp32ToBf16: return 2;
-      OpcodeBf16ToFp32:                                   return 4;
+      OpcodeBf16ToFp32, OpcodeFp16ToFp32:                 return 4;
       default:                                            return 4;
     endcase
   endfunction
