@@ -76,13 +76,21 @@ $(GW_GEN_DIR)/gw_addrmap.svh: $(GW_RDL_ALL)
 $(GW_GEN_DIR)/gw_raw_addrmap.h: $(GW_RDL_ALL)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
 
+# viDMA OTF compute-config register (compute_options_t vocabulary).
+$(GW_GEN_DIR)/vidma_reg.h: $(GW_ROOT)/cfg/rdl/vidma_reg.rdl | $(GW_GEN_DIR)
+	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
+
+$(GW_GEN_DIR)/vidma_reg_pkg.sv: $(GW_ROOT)/cfg/rdl/vidma_reg.rdl | $(GW_GEN_DIR)
+	$(PEAKRDL) raw-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ --format svpkg --no-prefix
+
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap.svh
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/vidma_reg_pkg.sv
 
 # TODO (lleone): remove phony, they are never used
 .PHONY: gw-addrmap gw-addrmap-clean
-gw-addrmap: $(GW_GEN_DIR)/gw_addrmap.h $(GW_GEN_DIR)/gw_addrmap.svh
+gw-addrmap: $(GW_GEN_DIR)/gw_addrmap.h $(GW_GEN_DIR)/gw_addrmap.svh $(GW_GEN_DIR)/vidma_reg.h $(GW_GEN_DIR)/vidma_reg_pkg.sv
 
 ############
 # Cheshire #

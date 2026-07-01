@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include "regs/idma.h"
 #include "gw_addrmap.h"
+#include "vidma_reg.h"   // generated: viDMA OTF compute-options register
 
 // Mem-tile iDMA helpers. The leading `tile` argument is the SAM index of the
 // target mem tile; it selects which tile's iDMA register is configured.
@@ -69,4 +70,32 @@ static inline void memtile_dma_blk_memcpy(uint32_t tile, uint64_t dst,
                                           uint64_t conf) {
     memtile_dma_2d_blk_memcpy(tile, dst, src, size, 0, 0, 1,
                               conf & ~(1u << IDMA_REG64_2D_CONF_ENABLE_ND_BIT));
+}
+
+// viDMA OTF compute ops (compute_op_e; aligned to iDMA idma_pkg::compute_op_e,
+// extended with the MX ops). `variant` carries per-op params.
+enum {
+    VIDMA_COMPUTE_NONE      = 0,
+    VIDMA_COMPUTE_TRANSPOSE = 1,
+    VIDMA_COMPUTE_MXQUANT   = 2,
+    VIDMA_COMPUTE_MXDEQUANT = 3,
+    VIDMA_COMPUTE_FPCAST    = 4,
+};
+#define VIDMA_MXQUANT_VARIANT_FP16 0x1u   // MXQUANT variant: FP16 source (else FP32)
+
+// Program the mem-tile viDMA OTF compute options (sticky until changed). Writes the
+// RDL-generated compute register (offset/fields from vidma_reg.h) in one store.
+static inline void memtile_vidma_set_compute(uint32_t tile, uint32_t op,
+                                             uint32_t variant) {
+    volatile vidma_reg_t *r =
+        (volatile vidma_reg_t *)&gwaihir_addrmap.l2_spm_dma[tile].mem[0];
+    vidma_reg__compute_t c = { .w = 0 };
+    c.f.enable  = (op != (uint32_t)VIDMA_COMPUTE_NONE);
+    c.f.op      = op;
+    c.f.variant = variant;
+    r->compute.w = c.w;
+}
+
+static inline void memtile_vidma_passthrough(uint32_t tile) {
+    memtile_vidma_set_compute(tile, VIDMA_COMPUTE_NONE, 0);
 }

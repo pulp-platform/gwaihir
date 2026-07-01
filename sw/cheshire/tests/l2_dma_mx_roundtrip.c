@@ -38,11 +38,6 @@
 #define DRIVER_TILE  1   // whose iDMA drives both transfers
 #define D_OFF        0x10000u  // D lives well past S inside SRC_TILE's L2 SPM
 
-// ---- OTF trigger -----------------------------------------------------------
-#define OTF_OPCODE_OFFSET    0x100u
-#define OPCODE_MX_QUANT_FP16 0x22u   // FP16 (E5M10) -> MXFP8 (E5M2)
-#define OPCODE_MX_DEQUANT    0x21u   // MXFP8 (E5M2) -> FP32
-#define OPCODE_PASSTHROUGH   0x08u
 
 // ---- Geometry --------------------------------------------------------------
 // 64 blocks: quant out = 64*33 = 2112 B and dequant out = 64*128 = 8192 B are
@@ -194,7 +189,6 @@ int main(void) {
     volatile uint16_t *S = (volatile uint16_t *)gwaihir_addrmap.l2_spm[SRC_TILE].mem;
     volatile uint8_t  *M = (volatile uint8_t  *)gwaihir_addrmap.l2_spm[MID_TILE].mem;
     volatile uint32_t *D = (volatile uint32_t *)((uintptr_t)gwaihir_addrmap.l2_spm[SRC_TILE].mem + D_OFF);
-    uintptr_t drv = (uintptr_t)&gwaihir_addrmap.l2_spm_dma[DRIVER_TILE].mem[0];
 
     const uint32_t s_bytes = (uint32_t)kTotalBlocks * kBlockSize * (uint32_t)sizeof(uint16_t); // 4096
     const uint32_t m_bytes = (uint32_t)kTotalBlocks * MX_BLOCK_OUT_BYTES;                       // 2112
@@ -212,15 +206,15 @@ int main(void) {
     for (uint32_t i = 0; i < d_words; ++i) D[i] = 0xDEADBEEFu;
 
     // 2) Quant: FP16 S -> MXFP8 M (descriptor LENGTH = READ bytes = s_bytes).
-    *(volatile uint32_t *)(drv + OTF_OPCODE_OFFSET) = OPCODE_MX_QUANT_FP16;
+    memtile_vidma_set_compute(DRIVER_TILE, VIDMA_COMPUTE_MXQUANT, VIDMA_MXQUANT_VARIANT_FP16);
     memtile_dma_blk_memcpy(DRIVER_TILE, (uint64_t)(uintptr_t)M, (uint64_t)(uintptr_t)S, s_bytes, 0);
 
     // 3) Dequant: MXFP8 M -> FP32 D (LENGTH = READ bytes = m_bytes).
-    *(volatile uint32_t *)(drv + OTF_OPCODE_OFFSET) = OPCODE_MX_DEQUANT;
+    memtile_vidma_set_compute(DRIVER_TILE, VIDMA_COMPUTE_MXDEQUANT, 0);
     memtile_dma_blk_memcpy(DRIVER_TILE, (uint64_t)(uintptr_t)D, (uint64_t)(uintptr_t)M, m_bytes, 0);
 
     // 4) Restore passthrough.
-    *(volatile uint32_t *)(drv + OTF_OPCODE_OFFSET) = OPCODE_PASSTHROUGH;
+    memtile_vidma_passthrough(DRIVER_TILE);
 
     // 5) Verify both stages against the goldens.
     float scratch[kBlockSize];

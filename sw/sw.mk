@@ -31,6 +31,7 @@ SN_RUNTIME_INCDIRS  += $(GW_SNITCH_SW_DIR)/runtime/src
 SN_RUNTIME_HAL_HDRS  = $(GW_GEN_DIR)/gw_addrmap.h
 SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/gw_raw_addrmap.h
 SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/gw_noc_cfg.h
+SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/vidma_reg.h
 
 #TODO(lleone): do we need this?
 SN_RVTESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/riscv-tests/build

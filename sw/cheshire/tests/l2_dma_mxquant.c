@@ -37,12 +37,6 @@
 #define DST_TILE     1   // MXFP8 destination buffer
 #define DRIVER_TILE  1   // whose iDMA drives the transfer
 
-// ---- OTF trigger -----------------------------------------------------------
-// The OTF opcode holding register lives at addr[8] (byte offset 0x100) of the
-// mem-tile DMA reg region; reset value 0x08 == ALU passthrough.
-#define OTF_OPCODE_OFFSET      0x100u
-#define OPCODE_MX_QUANT_FP16   0x22u   // FP16 (E5M10) -> MXFP8 (E5M2)
-#define OPCODE_PASSTHROUGH     0x08u
 
 // ---- Geometry --------------------------------------------------------------
 // 16 blocks keeps CVA6's per-element NoC init/verify traffic small (fast sim);
@@ -169,7 +163,6 @@ static uint16_t fp16_pattern(size_t blk, size_t lane) {
 int main(void) {
     volatile uint16_t *src = (volatile uint16_t *)gwaihir_addrmap.l2_spm[SRC_TILE].mem;
     volatile uint8_t  *dst = (volatile uint8_t  *)gwaihir_addrmap.l2_spm[DST_TILE].mem;
-    uintptr_t drv_base = (uintptr_t)&gwaihir_addrmap.l2_spm_dma[DRIVER_TILE].mem[0];
 
     const uint32_t src_bytes = (uint32_t)kTotalBlocks * kBlockSize * (uint32_t)sizeof(uint16_t); // 16384
     const uint32_t dst_bytes = (uint32_t)kTotalBlocks * MX_BLOCK_OUT_BYTES;                       // 8448
@@ -186,7 +179,7 @@ int main(void) {
     for (uint32_t i = (dst_bytes / 8u) * 8u; i < dst_bytes; ++i) dst[i] = 0xA5u;
 
     // 2) Select the FP16 MX-quant transform on the driver tile's viDMA (sticky).
-    *(volatile uint32_t *)(drv_base + OTF_OPCODE_OFFSET) = OPCODE_MX_QUANT_FP16;
+    memtile_vidma_set_compute(DRIVER_TILE, VIDMA_COMPUTE_MXQUANT, VIDMA_MXQUANT_VARIANT_FP16);
 
     // 3) Issue the transfer: read src_bytes of FP16 from SRC_TILE, quantize
     //    on the fly, write the 33B-inline MXFP8 blocks to DST_TILE. The reg64
@@ -199,8 +192,8 @@ int main(void) {
         /*size=*/ src_bytes,
         /*conf=*/ 0);
 
-    // 4) Restore passthrough so the sticky opcode does not leak to later users.
-    *(volatile uint32_t *)(drv_base + OTF_OPCODE_OFFSET) = OPCODE_PASSTHROUGH;
+    // 4) Restore passthrough so the sticky op does not leak to later users.
+    memtile_vidma_passthrough(DRIVER_TILE);
 
     // 5) Verify every output byte against the golden.
     float scratch[kBlockSize];

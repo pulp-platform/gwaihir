@@ -1,0 +1,36 @@
+// Copyright 2026 ETH Zurich and University of Bologna.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+`ifndef __VIDMA_REG_RDL__
+`define __VIDMA_REG_RDL__
+
+// viDMA on-the-fly (OTF) compute-configuration register.
+//
+// Modelled in the upstream iDMA idma_pkg::compute_options_t vocabulary
+// (enable / op / params) so the mem-tile viDMA speaks the same interface the
+// iDMA 0.7.0 idma_otf_compute framework uses. Lives in the mem-tile DMA
+// register window, placed ABOVE the iDMA register block so it never aliases an
+// iDMA register (the RTL demux and the SW use the generated `compute` offset,
+// not a hard-coded 0x100).
+//
+// `op` values are aligned to iDMA compute_op_e; the MX ops extend it:
+//   0 = NONE (passthrough)     1 = TRANSPOSE (upstream; unused here)
+//   2 = MXQUANT                3 = MXDEQUANT               4 = FPCAST
+// `variant` carries per-op params; for MXQUANT bit0 selects an FP16 source
+// (else FP32). Reset = all-zero == { enable: 0 } == passthrough.
+
+addrmap vidma_reg {
+    default regwidth = 32;
+    default sw = rw;
+    default hw = r;
+
+    reg {
+        desc = "viDMA OTF compute options (compute_options_t)";
+        field { desc = "Compute enable (0 = passthrough)";                 reset = 0; } enable  [0:0];
+        field { desc = "Compute op (compute_op_e: NONE/TRANSPOSE/MXQUANT/MXDEQUANT/FPCAST)"; reset = 0; } op      [7:4];
+        field { desc = "Op variant/params (MXQUANT bit0 = FP16 source)";   reset = 0; } variant [11:8];
+    } compute @ 0x100;
+};
+
+`endif // __VIDMA_REG_RDL__

@@ -162,19 +162,27 @@ module mem_tile_dma_wrap #(
   );
 
   // ---------------------------------------------------------------------------
-  // OTF opcode register (only present when viDMA is selected)
-  // Splits the DMA reg bus by addr[8]: 0x000-0x0FF -> iDMA frontend,
-  // 0x100 -> 8-bit OTF opcode holding register (reset 0x08 = passthrough).
-  // When UseViDMA=0 the reg path is identical to the original design.
+  // OTF compute-options register (only present when viDMA is selected).
+  // The DMA reg bus is split at the RDL-generated compute-register offset:
+  // below it -> iDMA frontend, at/above it -> the compute-options register
+  // (compute_options_t: enable/op/variant), decoded and mapped to the viDMA
+  // backend's 8-bit OTF opcode. Reset all-zero == { enable: 0 } == passthrough.
   // ---------------------------------------------------------------------------
-  if (UseViDMA) begin : gen_otf_opcode_reg
+  if (UseViDMA) begin : gen_otf_compute_reg
     dma_regs_req_t [1:0] reg_out_req;
     dma_regs_rsp_t [1:0] reg_out_rsp;
     logic                otf_sel;
-    logic [7:0]          otf_opcode_q;
+    logic [31:0]         compute_q;
+    logic                c_enable;
+    logic [3:0]          c_op, c_variant;
 
-    // 0x000-0x0FF -> frontend (port 0), 0x100-0x1FF -> opcode reg (port 1)
-    assign otf_sel = dma_reg_req.addr[8];
+    // Select the compute register by the single address bit that distinguishes
+    // its (power-of-2) offset from the iDMA register block below it. Derived from
+    // the RDL-generated offset, and offset-agnostic (the reg-bus address is not
+    // 0-based), unlike a magnitude compare against the raw address.
+    localparam int unsigned ComputeSelBit =
+        $clog2(vidma_reg_addrmap_pkg::COMPUTE_BASE_ADDR);
+    assign otf_sel = dma_reg_req.addr[ComputeSelBit];
 
     reg_demux #(
       .NoPorts ( 32'd2          ),
@@ -194,25 +202,40 @@ module mem_tile_dma_wrap #(
     assign dma_reg_req_fe = reg_out_req[0];
     assign reg_out_rsp[0] = dma_reg_rsp_fe;
 
-    // Port 1 -> 8-bit OTF opcode holding register
+    // Port 1 -> compute-options holding register (field layout: vidma_reg.rdl)
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (!rst_ni) begin
-        otf_opcode_q <= 8'h08;
+        compute_q <= '0;
       end else if (reg_out_req[1].valid && reg_out_req[1].write) begin
-        otf_opcode_q <= reg_out_req[1].wdata[7:0];
+        compute_q <= reg_out_req[1].wdata[31:0];
       end
     end
     assign reg_out_rsp[1].ready = 1'b1;
-    assign reg_out_rsp[1].rdata = {{(AxiNarrowDataWidth-8){1'b0}}, otf_opcode_q};
+    assign reg_out_rsp[1].rdata = {{(AxiNarrowDataWidth-32){1'b0}}, compute_q};
     assign reg_out_rsp[1].error = 1'b0;
 
-    assign otf_opcode = otf_opcode_q;
+    // Map compute_options_t -> viDMA OTF opcode (vidma_alcu_pkg encoding).
+    assign c_enable  = compute_q[0];
+    assign c_op      = compute_q[7:4];
+    assign c_variant = compute_q[11:8];
+    always_comb begin
+      otf_opcode = 8'(vidma_alcu_pkg::OpPassthrough);
+      if (c_enable) begin
+        unique case (c_op)
+          4'd2:    otf_opcode = c_variant[0] ? vidma_alcu_pkg::OpcodeMxQuantFp16
+                                             : vidma_alcu_pkg::OpcodeMxQuant;
+          4'd3:    otf_opcode = vidma_alcu_pkg::OpcodeMxDequant;
+          4'd4:    otf_opcode = vidma_alcu_pkg::OpcodeFp16ToFp32;
+          default: otf_opcode = 8'(vidma_alcu_pkg::OpPassthrough);
+        endcase
+      end
+    end
 
-  end else begin : gen_no_otf_opcode_reg
+  end else begin : gen_no_otf_compute_reg
     // Bypass: reg path identical to the original design
     assign dma_reg_req_fe = dma_reg_req;
     assign dma_reg_rsp    = dma_reg_rsp_fe;
-    assign otf_opcode     = 8'h08; // passthrough (unused by stock backend)
+    assign otf_opcode     = 8'(vidma_alcu_pkg::OpPassthrough);
   end
 
   if (!IsTwoD) begin : gen_1d
