@@ -11,9 +11,8 @@
 
 int main() {
 
-  volatile uintptr_t TileUcie0BaseAddr = 0x100000000ULL;
-  volatile uint64_t *l2_mem_w = (volatile uint64_t *)((uintptr_t)&gwaihir_addrmap.l2_spm + TileUcie0BaseAddr);
-  (*l2_mem_w) = 0xdeadbeefULL;
+  volatile uint32_t *l2_mem = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap.l2_spm + (uintptr_t)&gwaihir_addrmap.ucie);
+  (*l2_mem) = 0xdeadbeef;
 
   fencei();
 
