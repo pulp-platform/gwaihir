@@ -18,7 +18,13 @@ module mem_tile
   parameter bit          AxiUserAtop    = 1'b1,
   parameter int unsigned AxiUserAtopMsb = 3,
   parameter int unsigned AxiUserAtopLsb = 0,
-  parameter int unsigned MemTileId      = 0
+  parameter int unsigned MemTileId      = 0,
+  // viDMA (OTF) configuration — defaults to the gwaihir_pkg global knobs
+  parameter bit          UseViDMA           = gwaihir_pkg::UseViDMA,
+  parameter bit          EnableOtfTransform = gwaihir_pkg::EnableOtfTransform,
+  parameter int unsigned NumSimdLanes       = gwaihir_pkg::NumSimdLanes,
+  parameter bit          EnableMultiply     = gwaihir_pkg::EnableMultiply,
+  parameter bit          EnableFpCast       = gwaihir_pkg::EnableFpCast
 ) (
   input  logic                              clk_i,
   input  logic                              rst_ni,
@@ -474,6 +480,11 @@ module mem_tile
     .JobFifoDepth      (gwaihir_pkg::DmaJobFifoDepth),
     .RAWCouplingAvail  (gwaihir_pkg::DmaRAWCouplingAvail),
     .IsTwoD            (gwaihir_pkg::DmaConfEnableTwoD),
+    .UseViDMA          (UseViDMA),
+    .EnableOtfTransform(EnableOtfTransform),
+    .NumSimdLanes      (NumSimdLanes),
+    .EnableMultiply    (EnableMultiply),
+    .EnableFpCast      (EnableFpCast),
     .axi_mst_req_t     (axi_wide_in_req_t),
     .axi_mst_rsp_t     (axi_wide_in_rsp_t),
     .axi_slv_req_t     (axi_narrow_out_req_t),

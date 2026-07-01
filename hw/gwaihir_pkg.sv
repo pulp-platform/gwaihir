@@ -461,4 +461,11 @@ package gwaihir_pkg;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
 
+  // viDMA (OTF) configuration — single source of truth for the whole SoC.
+  localparam bit          UseViDMA           = 1'b1;  // 1 => instantiate viDMA backend
+  localparam bit          EnableOtfTransform = 1'b0;  // OTF datapath gate (when UseViDMA=1)
+  localparam int unsigned NumSimdLanes       = 1;
+  localparam bit          EnableMultiply     = 1'b0;
+  localparam bit          EnableFpCast       = 1'b1;
+
 endpackage
