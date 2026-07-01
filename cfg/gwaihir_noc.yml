@@ -60,6 +60,21 @@ protocols:
       collective_op: 4
 
 endpoints:
+  - name: "cheshire"
+    addr_range:
+      - start: 0x0000_0000
+        end: 0x2000_0000
+        desc: "internal"
+        rdl_name: "cheshire_tile"
+      - start: 0x1_1000_0000
+        end: 0x2_0000_0000
+        desc: "external"
+        rdl_name: "cheshire_external"
+    mgr_port_protocol:
+      - "narrow_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
   - name: "cluster"
     array: [4, 4]
     addr_range:
@@ -67,7 +82,7 @@ endpoints:
         size: 0x0004_0000
         rdl_name: "snitch_cluster"
         en_collective: true
-      - base: 0x6000_0000
+      - base: 0x3000_0000
         size: 0x0000_1000
         desc: "config"
         rdl_name: "gw_tile_regs"
@@ -77,27 +92,12 @@ endpoints:
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
-  - name: "cheshire"
-    addr_range:
-      - start: 0x0000_0000
-        end: 0x2000_0000
-        desc: "internal"
-        rdl_name: "cheshire_tile"
-      - start: 0x8000_0000
-        end: 0x1_0000_0000
-        desc: "external"
-        rdl_name: "cheshire_external"
-    mgr_port_protocol:
-      - "narrow_in"
-    sbr_port_protocol:
-      - "narrow_out"
-      - "wide_out"
   - name: "l2_spm"
     array: [4]
     addr_range:
-      - base: 0x7000_0000
+      - base: 0x4000_0000
         size: 0x0010_0000
-      - base: 0x6001_0000
+      - base: 0x3001_0000
         size: 0x0000_1000
         desc: "config"
         rdl_name: "gw_tile_regs"
@@ -110,8 +110,8 @@ endpoints:
   - name: "ucie"
     array: [2]
     addr_range:
-      base: 0x1_0000_0000
-      size: 0x1_0000_0000
+      base: 0x5000_0000
+      size: 0x5000_0000
       rdl_as_mem: true
     mgr_port_protocol:
       - "narrow_in"
@@ -121,7 +121,7 @@ endpoints:
       - "wide_out"
   - name: "pcie"
     addr_range:
-      - base: 0x3000_0000
+      - base: 0x1_0000_0000
         size: 0x1000_0000
     mgr_port_protocol:
       - "narrow_in"
