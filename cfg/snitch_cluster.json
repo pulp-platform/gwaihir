@@ -31,7 +31,7 @@
         dca_data_width: 512,
         cluster_base_expose: true,
         alias_region_enable: true,
-        alias_region_base: 0x30000000,
+        alias_region_base: 0x20400000,
         num_exposed_wide_tcdm_ports: 1,
         narrow_axi_port_expose: true,
         collective_width: 4,
