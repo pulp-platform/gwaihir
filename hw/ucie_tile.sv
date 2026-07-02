@@ -15,6 +15,7 @@ module ucie_tile
   // Router ID
   input  id_t                     id_i,
   input  logic       [      47:0] base_addr_i,
+  input  logic       [      47:0] addr_size_i,
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,
@@ -146,14 +147,32 @@ module ucie_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
-  always_comb begin
-    axi_narrow_out_req_o         = axi_narrow_out_req;
-    axi_narrow_out_req_o.aw.addr = axi_narrow_out_req.aw.addr - base_addr_i;
-    axi_narrow_out_req_o.ar.addr = axi_narrow_out_req.ar.addr - base_addr_i;
+  logic aw_narrow_addr_match;
+  logic ar_narrow_addr_match;
+  logic aw_wide_addr_match;
+  logic ar_wide_addr_match;
 
-    axi_wide_out_req_o           = axi_wide_out_req;
-    axi_wide_out_req_o.aw.addr   = axi_wide_out_req.aw.addr - base_addr_i;
-    axi_wide_out_req_o.ar.addr   = axi_wide_out_req.ar.addr - base_addr_i;
+  // Check if incoming addresses fall within [base_addr_i, base_addr_i + addr_size_i - 1]
+  assign aw_narrow_addr_match = (axi_narrow_out_req.aw.addr >= base_addr_i) &&
+                                (axi_narrow_out_req.aw.addr <  (base_addr_i + addr_size_i));
+
+  assign ar_narrow_addr_match = (axi_narrow_out_req.ar.addr >= base_addr_i) &&
+                                (axi_narrow_out_req.ar.addr <  (base_addr_i + addr_size_i));
+
+  assign aw_wide_addr_match = (axi_wide_out_req.aw.addr >= base_addr_i) &&
+                              (axi_wide_out_req.aw.addr <  (base_addr_i + addr_size_i));
+
+  assign ar_wide_addr_match = (axi_wide_out_req.ar.addr >= base_addr_i) &&
+                              (axi_wide_out_req.ar.addr <  (base_addr_i + addr_size_i));
+
+  always_comb begin
+    axi_narrow_out_req_o = axi_narrow_out_req;
+    axi_narrow_out_req_o.aw.addr = (aw_narrow_addr_match) ? (axi_narrow_out_req.aw.addr - base_addr_i) : '0;
+    axi_narrow_out_req_o.ar.addr = (ar_narrow_addr_match) ? (axi_narrow_out_req.ar.addr - base_addr_i) : '0;
+
+    axi_wide_out_req_o = axi_wide_out_req;
+    axi_wide_out_req_o.aw.addr   = (aw_wide_addr_match) ? (axi_wide_out_req.aw.addr - base_addr_i) : '0;
+    axi_wide_out_req_o.ar.addr   = (ar_wide_addr_match) ? (axi_wide_out_req.ar.addr - base_addr_i) : '0;
   end
 
   //////////////////////

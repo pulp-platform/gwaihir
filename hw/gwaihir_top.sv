@@ -262,6 +262,7 @@ module gwaihir_top
     localparam int UcieSamIdx = u + Ucie0SamIdx;
     localparam id_t UcieId = Sam[UcieSamIdx].idx;
     localparam logic [47:0] UcieId_BaseAddr = Sam[UcieSamIdx].start_addr;
+    localparam logic [47:0] UcieId_AddrSize = Sam[Ucie0SamIdx].start_addr;
     localparam id_t UciePhysicalId = SamPhysical[UcieSamIdx].idx;
     localparam int UcieX = int'(UciePhysicalId.x);
     localparam int UcieY = int'(UciePhysicalId.y);
@@ -272,6 +273,7 @@ module gwaihir_top
       .test_enable_i       (test_mode_i),
       .id_i                (UcieId),
       .base_addr_i         (UcieId_BaseAddr),
+      .addr_size_i         (UcieId_AddrSize),
       .floo_req_o          (floo_req_out[UcieX][UcieY]),
       .floo_rsp_i          (floo_rsp_in[UcieX][UcieY]),
       .floo_wide_o         (floo_wide_out[UcieX][UcieY]),
