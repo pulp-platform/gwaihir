@@ -51,20 +51,11 @@ GW_RDL_IPS += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
 GW_RDL_IPS += $(GW_GEN_DIR)/snitch_cluster.rdl
 GW_RDL_IPS += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
-### TODO (glodi): Add this after it is generated
 GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap.rdl
-GW_RDL_SN_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_snitch.rdl
+### TODO (glodi): Change this path after it is generated
+GW_RDL_SN_ADDR = $(GW_ROOT)/cfg/rdl/gwaihir_addrmap_snitch.rdl
 
-########### TODO (glodi): Separate GW_RDL_ALL required for Cheshire and Snitch
-# GW_RDL_CHS += $(GW_GEN_DIR)/gwaihir_addrmap_snitch.rdl
-# GW_RDL_CHS += $(wildcard $(GW_ROOT)/cfg/rdl/cheshire_external.rdl)
-
-# GW_RDL_SN += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
-# GW_RDL_SN += $(GW_GEN_DIR)/snitch_cluster.rdl
-# GW_RDL_CHS += $(wildcard $(GW_ROOT)/cfg/rdl/cheshire_tile.rdl)
-# GW_RDL_CHS += $(wildcard $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl)
-# GW_RDL_CHS += $(wildcard $(GW_ROOT)/cfg/rdl/ucie_external.rdl)
-####################################
+### TODO (glodi): Separate GW_RDL_ALL required for Cheshire and Snitch
 
 PEAKRDL_INCLUDES += -I $(GW_ROOT)/cfg/rdl
 PEAKRDL_INCLUDES += -I $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster_peripheral
@@ -304,15 +295,15 @@ help:
 	@echo -e "Makefile ${Green}targets${Black} for gwaihir"
 	@echo -e "Use 'make <target>' where <target> is one of:"
 	@echo -e ""
-	@echo -e "${Green}help           	     ${Black}Show an overview of all Makefile targets."
+	@echo -e "${Green}help           	   ${Black}Show an overview of all Makefile targets."
 	@echo -e ""
 	@echo -e "General targets:"
 	@echo -e "${Green}all                  ${Black}Alias for gwaihir-hw-all."
 	@echo -e "${Green}clean                ${Black}Alias for gwaihir-hw-clean."
 	@echo -e ""
 	@echo -e "Source generation targets:"
-	@echo -e "${Green}gwaihir-hw-all     ${Black}Build all RTL."
-	@echo -e "${Green}gwaihir-hw-clean   ${Black}Clean everything."
+	@echo -e "${Green}gwaihir-hw-all       ${Black}Build all RTL."
+	@echo -e "${Green}gwaihir-hw-clean     ${Black}Clean everything."
 	@echo -e "${Green}floo-hw-all          ${Black}Generate FlooNoC RTL."
 	@echo -e "${Green}floo-clean           ${Black}Clean FlooNoC RTL."
 	@echo -e "${Green}sn-hw-all            ${Black}Generate Snitch Cluster wrapper RTL."
