@@ -4,7 +4,7 @@
 //
 // Author: Hong Pang <hopang@iis.ee.ethz.ch>
 //
-// L2-to-L2 DMA burst test (viDMA in passthrough == iDMA).
+// L2-to-L2 DMA burst test through the mem-tile iDMA.
 //
 // Tile-1's DMA copies data from Tile-0's L2 SPM into Tile-1's L2 SPM in up to
 // five phases, each individually enabled via the ENABLE_PHASE_* switches below.
@@ -21,11 +21,9 @@
 // destination and tallies mismatches. Verification is fail-fast: the first
 // failing stage returns immediately.
 //
-// *** DEBUG RETURN ENCODING (temporary, for root-causing a failure) ***
-// On any mismatch a stage returns  STAGE*1000000 + <first bad dst word index>
-// (source self-check uses STAGE 5). A fully passing run still returns 0.
-// e.g. 1001728 => Phase 1, first wrong at dst word 1728. Revert to a plain
-// error count once the failure is understood.
+// Return encoding: on any mismatch a stage returns STAGE*1000000 + <first bad
+// dst word index> (source self-check uses STAGE 5); a fully passing run
+// returns 0. e.g. 1001728 => Phase 1, first wrong at dst word 1728.
 
 #include <stdint.h>
 #include <assert.h>
@@ -263,7 +261,7 @@ int main(void) {
             /*dst_stride=*/ P3_DST_STRIDE,
             /*src_stride=*/ P3_SRC_STRIDE,
             /*num_reps=*/   P3_NUM_ROWS,
-            /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D_CONF_ENABLE_ND_BIT));
+            /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D__CONF__ENABLE_ND_bp));
 
         // Verify each row, and that each gap stayed poisoned.
         for (uint32_t r = 0; r < P3_NUM_ROWS; r++) {
@@ -311,7 +309,7 @@ int main(void) {
             /*dst_stride=*/ P4_STRIDE,
             /*src_stride=*/ P4_STRIDE,
             /*num_reps=*/   P4_NUM_ROWS,
-            /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D_CONF_ENABLE_ND_BIT));
+            /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D__CONF__ENABLE_ND_bp));
 
         for (uint32_t i = 0; i < total_w; i++) {
             if (dst[dst_w + i] != (src_w + i)) {
@@ -349,7 +347,7 @@ int main(void) {
         }
 
         // Non-blocking 1D issue (conf=0 => ND off => reps ignored). Reading
-        // NEXT_ID_0 inside the helper both launches the transfer and returns id.
+        // Reading next_id inside the helper both launches the transfer and returns its id.
         uint64_t tf_id = memtile_dma_2d_memcpy(
             /*tile=*/       SRC_TILE,
             /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_w],
@@ -366,7 +364,7 @@ int main(void) {
         // GW_L2_SPM_DMA_BASE_ADDR(SRC_TILE) is the base of SRC_TILE's iDMA registers.
         const uintptr_t done_reg =
             (uintptr_t)GW_L2_SPM_DMA_BASE_ADDR(SRC_TILE) +
-            IDMA_REG64_2D_DONE_ID_0_REG_OFFSET;
+            offsetof(idma_reg64_2d_t, done_id);
         do {
             for (uint32_t i = 0; i < n_words; i += P5_SWEEP_STRIDE_WORDS) {
                 uint32_t v = src[src_w + i];               // ext read of SRC_TILE
