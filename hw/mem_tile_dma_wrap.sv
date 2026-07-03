@@ -54,6 +54,7 @@ module mem_tile_dma_wrap #(
   `include "axi/typedef.svh"
   `include "idma/typedef.svh"
   `include "register_interface/typedef.svh"
+  `include "apb/typedef.svh"
 
   localparam int unsigned IdCounterWidth = 32;
   localparam int unsigned NumDim = 2;
@@ -63,16 +64,12 @@ module mem_tile_dma_wrap #(
   typedef logic [AxiNarrowDataWidth-1:0] narrow_data_t;
   typedef logic [AxiNarrowDataWidth/8-1:0] narrow_strb_t;
   typedef logic [AxiNarrowAddrWidth-1:0] narrow_addr_t;
-  // typedef logic [AxiSlvIdWidth-1:0]    slv_id_t;
 
   typedef logic [AxiAddrWidth-1:0] addr_t;
   // TODO: Check if we should use narrow id (for register configuration) or wide id (for iDMA transfer), now we are using the id in wide AXI type
   typedef logic [AxiIdWidth-1:0] id_t;
   typedef logic [AxiUserWidth-1:0] user_t;
   typedef logic [TfLenWidth-1:0] tf_len_t;
-  // typedef logic [IdCounterWidth-1:0]   tf_id_t;
-  // typedef logic [RepWidth-1:0]         reps_t;
-  // typedef logic [RepWidth-1:0]         strides_t;
 
   // AXI4+ATOP typedefs
   `AXI_TYPEDEF_AW_CHAN_T(axi_aw_chan_t, addr_t, id_t, user_t)
@@ -81,10 +78,12 @@ module mem_tile_dma_wrap #(
   // iDMA request / response types
   `IDMA_TYPEDEF_FULL_REQ_T(idma_req_t, id_t, addr_t, tf_len_t)
   `IDMA_TYPEDEF_FULL_RSP_T(idma_rsp_t, addr_t)
-  `IDMA_TYPEDEF_FULL_ND_REQ_T(idma_nd_req_t, idma_req_t, tf_len_t, tf_len_t)
+  `IDMA_TYPEDEF_FULL_ND_REQ_T(idma_nd_req_t, idma_req_t, tf_len_t, addr_t)
 
   // iDMA configuration types
   `REG_BUS_TYPEDEF_ALL(dma_regs, narrow_addr_t, narrow_data_t, narrow_strb_t)
+  `APB_TYPEDEF_REQ_T(dma_apb_req_t, logic [31:0], logic [31:0], logic [3:0])
+  `APB_TYPEDEF_RESP_T(dma_apb_rsp_t, logic [31:0])
 
   typedef struct packed {axi_ar_chan_t ar_chan;} axi_read_meta_channel_t;
 
@@ -96,6 +95,8 @@ module mem_tile_dma_wrap #(
 
   dma_regs_req_t dma_reg_req;
   dma_regs_rsp_t dma_reg_rsp;
+  dma_apb_req_t  dma_apb_req;
+  dma_apb_rsp_t  dma_apb_rsp;
 
   // 1D FE signals
   idma_req_t burst_req_d;
@@ -156,20 +157,34 @@ module mem_tile_dma_wrap #(
     .busy_o   ()
   );
 
+  reg_to_apb #(
+    .reg_req_t(dma_regs_req_t),
+    .reg_rsp_t(dma_regs_rsp_t),
+    .apb_req_t(dma_apb_req_t),
+    .apb_rsp_t(dma_apb_rsp_t)
+  ) i_reg_to_apb (
+    .clk_i,
+    .rst_ni,
+    .reg_req_i(dma_reg_req),
+    .reg_rsp_o(dma_reg_rsp),
+    .apb_req_o(dma_apb_req),
+    .apb_rsp_i(dma_apb_rsp)
+  );
+
   if (!IsTwoD) begin : gen_1d
 
     idma_reg64_1d #(
       .NumRegs       (32'd1),
       .NumStreams    (32'd1),
       .IdCounterWidth(IdCounterWidth),
-      .reg_req_t     (dma_regs_req_t),
-      .reg_rsp_t     (dma_regs_rsp_t),
+      .apb_req_t     (dma_apb_req_t),
+      .apb_rsp_t     (dma_apb_rsp_t),
       .dma_req_t     (idma_req_t)
     ) i_dma_frontend_1d (
       .clk_i,
       .rst_ni,
-      .dma_ctrl_req_i(dma_reg_req),
-      .dma_ctrl_rsp_o(dma_reg_rsp),
+      .dma_ctrl_req_i(dma_apb_req),
+      .dma_ctrl_rsp_o(dma_apb_rsp),
       .dma_req_o     (burst_req_d),
       .req_valid_o   (be_valid_d),
       .req_ready_i   (be_ready_d),
@@ -218,14 +233,14 @@ module mem_tile_dma_wrap #(
       .NumRegs       (1),
       .NumStreams    (1),
       .IdCounterWidth(IdCounterWidth),
-      .reg_req_t     (dma_regs_req_t),
-      .reg_rsp_t     (dma_regs_rsp_t),
+      .apb_req_t     (dma_apb_req_t),
+      .apb_rsp_t     (dma_apb_rsp_t),
       .dma_req_t     (idma_nd_req_t)
     ) idma_frontend_2d (
       .clk_i,
       .rst_ni,
-      .dma_ctrl_req_i(dma_reg_req),
-      .dma_ctrl_rsp_o(dma_reg_rsp),
+      .dma_ctrl_req_i(dma_apb_req),
+      .dma_ctrl_rsp_o(dma_apb_rsp),
       .dma_req_o     (idma_nd_req_d),
       .req_valid_o   (idma_nd_req_valid_d),
       .req_ready_i   (idma_nd_req_ready_d),

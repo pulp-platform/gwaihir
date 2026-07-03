@@ -348,6 +348,7 @@ package gwaihir_pkg;
   // Define function to derive configuration from Cheshire defaults.
   function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
     cheshire_pkg::cheshire_cfg_t ret = cheshire_pkg::DefaultCfg;
+    ret.Dma = 1'b0;
     // Enable the external AXI master and slave interfaces
     ret.AxiExtNumMst   = 1;
     ret.AxiExtNumSlv   = 1;
