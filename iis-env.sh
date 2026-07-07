@@ -23,7 +23,7 @@ export UV=/usr/local/uv/uv
 export BENDER="/home/fischeti/new-bender"
 export BENDER_GIT_SUBMODULES=false
 
-eval "$BENDER checkout --suppress E24"
+eval "$BENDER checkout --suppress E24 --suppress W22"
 
 # Cheshire's upstream makefile otherwise initializes sw/deps/printf while
 # parsing every top-level make invocation. CI initializes it explicitly.
