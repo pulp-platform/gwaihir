@@ -20,6 +20,10 @@ PEAKRDL          ?= peakrdl
 BENDER_DIR            = $(GW_ROOT)
 # Avoid cloning expensive submodules that are not used
 BENDER_GIT_SUBMODULES = false
+# Suppress non-existent dependency warnings, since those are expected
+# for internal dependencies like `pd` etc., and exist only after being
+# cloned explicitly via `init-pd` target.
+BENDER_SUPPRESS_WARNINGS = W22
 
 # Configuration files
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
