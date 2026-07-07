@@ -10,11 +10,16 @@ BENDER_ROOT ?= $(GW_ROOT)/.bender
 UTIL_DIR = $(GW_ROOT)/util
 
 # Executables — must be defined before dependency paths that call $(BENDER)
-BENDER           ?= /home/fischeti/new-bender --suppress W22 -d $(GW_ROOT)
+BENDER           ?= bender
 FLOO_GEN         ?= floogen
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
+
+# Bender environment variables
+BENDER_DIR            = $(GW_ROOT)
+# Avoid cloning expensive submodules that are not used
+BENDER_GIT_SUBMODULES = false
 
 # Configuration files
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml

@@ -20,10 +20,10 @@ export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-snitch-llvm-a
 
 export UV=/usr/local/uv/uv
 
-export BENDER="/home/fischeti/new-bender --suppress W22 -d $(pwd -P)"
+export BENDER="/home/fischeti/new-bender"
 export BENDER_GIT_SUBMODULES=false
 
-$BENDER checkout
+eval "$BENDER checkout --suppress E24"
 
 # Cheshire's upstream makefile otherwise initializes sw/deps/printf while
 # parsing every top-level make invocation. CI initializes it explicitly.
