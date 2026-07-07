@@ -10,7 +10,6 @@ default:
   interruptible: true
 
 stages:
-  - init
   - build
   - run
 
@@ -32,16 +31,13 @@ stages:
 # Initialization #
 ##################
 
-init-deps:
-  stage: init
+init-pd:
+  stage: build
   extends:
     - .init-env
   # Initialize the PD repository (provides pd/ci.yml for the subpipe trigger)
   script:
     - make init-pd
-  # the bender checkout in the before_script sometimes fails,
-  # due to rate limiting of github
-  retry: 1
   artifacts:
     paths:
       - pd/ci.yml
@@ -167,9 +163,10 @@ subpipe:
   stage: build
   interruptible: true
   needs:
-    - init-deps
+    - job: init-pd
+      artifacts: true
   trigger:
     include:
       - artifact: pd/ci.yml
-        job: init-deps
+        job: init-pd
     strategy: depend
