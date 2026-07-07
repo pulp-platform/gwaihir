@@ -10,7 +10,7 @@ BENDER_ROOT ?= $(GW_ROOT)/.bender
 UTIL_DIR = $(GW_ROOT)/util
 
 # Executables — must be defined before dependency paths that call $(BENDER)
-BENDER           ?= /home/fischeti/.local/bin/bender-shared-locks --suppress W22 -d $(GW_ROOT)
+BENDER           ?= /home/fischeti/new-bender --suppress W22 -d $(GW_ROOT)
 FLOO_GEN         ?= floogen
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
@@ -26,10 +26,23 @@ SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
+CVA6_ROOT = $(shell $(BENDER) path cva6)
 
 # Bender prerequisites
 BENDER_YML = $(GW_ROOT)/Bender.yml
 BENDER_LOCK = $(GW_ROOT)/Bender.lock
+
+#####################
+# Bender submodules #
+#####################
+
+.PHONY: chs-sw-submodules hw-submodules
+
+chs-sw-submodules:
+	git -C $(CHS_ROOT) submodule update --init sw/deps/printf
+
+hw-submodules:
+	git -C $(CVA6_ROOT) submodule update --init core/cache_subsystem/hpdcache
 
 ################
 # Bender flags #
@@ -232,6 +245,8 @@ include $(GW_ROOT)/target/sim/traces.mk
 # Clean targets never need dep tracking regardless of subsystem.
 _GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist slang-flist verible-fmt \
                      init-pd clean-pd update-pd-commit python-venv% %-all %-clean vsim-% gw-% rdl-% docs%
+_GW_NO_DEPS_GOALS += chs-sw-submodules sn-sw-submodules hw-submodules
+_GW_NO_DEPS_GOALS += sn-riscv-tests sn-clean-riscv-tests
 ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
 # All requested goals are hw-only/informational — skip dep tracking.
 else

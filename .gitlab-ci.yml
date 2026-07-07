@@ -69,6 +69,7 @@ vsim-compile:
   extends:
     - .init-env
   script:
+    - make hw-submodules
     - make gwaihir-hw-all
     - make vsim-compile | tee compile.log 2>&1
     - '! grep "\*\* Error" compile.log'
@@ -82,6 +83,7 @@ vcs-compile:
   extends:
     - .init-env
   script:
+    - make hw-submodules
     - make gwaihir-hw-all
     - make vcs-compile-batch | tee compile.log 2>&1
     - '! grep "Error-\[" compile.log'
@@ -152,6 +154,7 @@ sim-exps:
       - EXPERIMENT: reduction
       - EXPERIMENT: barrier
   script:
+    - make sn-sw-submodules
     - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j
   artifacts:
     expire_in: 2 days

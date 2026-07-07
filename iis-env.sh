@@ -20,7 +20,15 @@ export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-snitch-llvm-a
 
 export UV=/usr/local/uv/uv
 
-/home/fischeti/new-bender checkout
+export BENDER="/home/fischeti/new-bender --suppress W22 -d $(pwd -P)"
+export BENDER_GIT_SUBMODULES=false
+
+$BENDER checkout
+
+# Cheshire's upstream makefile otherwise initializes sw/deps/printf while
+# parsing every top-level make invocation. CI initializes it explicitly.
+mkdir -p .bender
+touch .bender/.chs_deps
 
 $UV sync --locked
 source .venv/bin/activate
