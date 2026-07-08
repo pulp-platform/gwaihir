@@ -23,7 +23,6 @@ variables:
   extends:
     - .init-env
   script:
-    - make chs-sw-submodules
     - make chs-sw-tests
   artifacts:
     paths:

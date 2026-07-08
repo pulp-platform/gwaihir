@@ -219,7 +219,7 @@ GW_HW_ALL += $(GW_RDL_HW_ALL)
 
 .PHONY: gwaihir-hw-all gwaihir-hw-clean clean
 
-gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
+gwaihir-hw-all all: hw-submodules $(GW_HW_ALL) sn-hw-all floo-hw-all
 
 gwaihir-hw-clean: sn-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)
