@@ -151,7 +151,7 @@ PCIE_COMMIT ?= b98ea5cb3748761f0288c24cfc3ba286df67890e
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
-LPDDR_COMMIT ?= 60f6b9e68c4a5baad5d3954b4869004bc1366c34
+LPDDR_COMMIT ?= da108983f21c9ac4e77aa0e8378a1c7e7b5a166d
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 .PHONY: init-pd clean-pd update-pd-commit
