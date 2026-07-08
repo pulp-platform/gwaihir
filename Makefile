@@ -16,14 +16,14 @@ VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
 
-# Bender environment variables
-BENDER_DIR            = $(GW_ROOT)
+# Bender config
+export BENDER_DIR ?= $(GW_ROOT)
 # Avoid cloning expensive submodules that are not used
-BENDER_GIT_SUBMODULES = false
+export BENDER_GIT_SUBMODULES ?= false
 # Suppress non-existent dependency warnings, since those are expected
 # for internal dependencies like `pd` etc., and exist only after being
 # cloned explicitly via `init-pd` target.
-BENDER_SUPPRESS_WARNINGS = W22
+export BENDER_SUPPRESS_WARNINGS ?= W22
 
 # Configuration files
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
