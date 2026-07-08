@@ -60,7 +60,25 @@ module gwaihir_top
   input  logic          [   SlinkNumChan-1:0]                    slink_rcv_clk_i,
   output logic          [   SlinkNumChan-1:0]                    slink_rcv_clk_o,
   input  logic          [   SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
-  output logic          [   SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o
+  output logic          [   SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
+  // PCIe interface
+  inout  wire                                                    pcie_refclk_n,
+  inout  wire                                                    pcie_refclk_p,
+  input  logic                                                   pcie_button_rst_ni,
+  inout  wire           [                1:0]                    pcie_rx_p,
+  inout  wire           [                1:0]                    pcie_rx_n,
+  inout  wire           [                1:0]                    pcie_tx_p,
+  inout  wire           [                1:0]                    pcie_tx_n,
+  input  logic                                                   pcie_test_clk_en_i,
+  input  logic                                                   pcie_test_coreclk_i,
+  input  logic                                                   pcie_test_rst_en_i,
+  input  logic                                                   pcie_test_rst_n_i,
+  input  logic                                                   pcie_test_phy_rst_n_i,
+  input  logic                                                   pcie_jtag_phys_tdi_i,
+  input  logic                                                   pcie_jtag_phys_tck_i,
+  input  logic                                                   pcie_jtag_phys_tms_i,
+  input  logic                                                   pcie_jtag_phys_trst_ni,
+  output logic                                                   pcie_jtag_phys_tdo_o
 );
 
   floo_req_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_req_in, floo_req_out;
@@ -259,16 +277,33 @@ module gwaihir_top
   localparam int PCIeTileY = int'(PCIeTilePhysicalId.y);
 
   pcie_tile i_pcie_tile (
-    .clk_i        (clk_i),
-    .rst_ni       (rst_ni),
-    .test_enable_i(test_mode_i),
-    .id_i         (PCIeId),
-    .floo_req_o   (floo_req_out[PCIeTileX][PCIeTileY]),
-    .floo_rsp_i   (floo_rsp_in[PCIeTileX][PCIeTileY]),
-    .floo_wide_o  (floo_wide_out[PCIeTileX][PCIeTileY]),
-    .floo_req_i   (floo_req_in[PCIeTileX][PCIeTileY]),
-    .floo_rsp_o   (floo_rsp_out[PCIeTileX][PCIeTileY]),
-    .floo_wide_i  (floo_wide_in[PCIeTileX][PCIeTileY])
+    .clk_i            (clk_i),
+    .rst_ni           (rst_ni),
+    .test_enable_i    (test_mode_i),
+    .pcie_refclk_n,
+    .pcie_refclk_p,
+    .pcie_button_rst_ni,
+    .pcie_rx_p,
+    .pcie_rx_n,
+    .pcie_tx_p,
+    .pcie_tx_n,
+    .test_clk_en_i    (pcie_test_clk_en_i),
+    .test_coreclk_i   (pcie_test_coreclk_i),
+    .test_rst_en_i    (pcie_test_rst_en_i),
+    .test_rst_n_i     (pcie_test_rst_n_i),
+    .test_phy_rst_n_i (pcie_test_phy_rst_n_i),
+    .jtag_phys_tdi_i  (pcie_jtag_phys_tdi_i),
+    .jtag_phys_tck_i  (pcie_jtag_phys_tck_i),
+    .jtag_phys_tms_i  (pcie_jtag_phys_tms_i),
+    .jtag_phys_trst_ni(pcie_jtag_phys_trst_ni),
+    .jtag_phys_tdo_o  (pcie_jtag_phys_tdo_o),
+    .id_i             (PCIeId),
+    .floo_req_o       (floo_req_out[PCIeTileX][PCIeTileY]),
+    .floo_rsp_i       (floo_rsp_in[PCIeTileX][PCIeTileY]),
+    .floo_wide_o      (floo_wide_out[PCIeTileX][PCIeTileY]),
+    .floo_req_i       (floo_req_in[PCIeTileX][PCIeTileY]),
+    .floo_rsp_o       (floo_rsp_out[PCIeTileX][PCIeTileY]),
+    .floo_wide_i      (floo_wide_in[PCIeTileX][PCIeTileY])
   );
 
   ////////////////
