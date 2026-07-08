@@ -148,7 +148,6 @@ sim-exps:
       - EXPERIMENT: reduction
       - EXPERIMENT: barrier
   script:
-    - make sn-sw-submodules
     - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j
   artifacts:
     expire_in: 2 days

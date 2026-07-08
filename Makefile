@@ -45,13 +45,26 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 # Bender submodules #
 #####################
 
-.PHONY: chs-sw-submodules hw-submodules
+.PHONY: chs-sw-submodules sn-sw-submodules hw-submodules
 
 chs-sw-submodules:
 	git -C $(CHS_ROOT) submodule update --init sw/deps/printf
 
+sn-sw-submodules:
+	git -C $(SN_ROOT) submodule update --init --recursive sw/deps/printf sw/deps/riscv-opcodes sw/deps/riscv-tests
+
 hw-submodules:
 	git -C $(CVA6_ROOT) submodule update --init core/cache_subsystem/hpdcache
+
+SN_SW_SUBMODULE_MARKERS = $(SN_ROOT)/sw/deps/printf/printf.h
+SN_SW_SUBMODULE_MARKERS += $(SN_ROOT)/sw/deps/riscv-opcodes/encoding.h
+SN_RVTESTS_MAKEFRAGS = $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32ui/Makefrag
+SN_RVTESTS_MAKEFRAGS += $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32um/Makefrag
+SN_RVTESTS_MAKEFRAGS += $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32ua/Makefrag
+SN_RVTESTS_MAKEFRAGS += $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32uf/Makefrag
+SN_RVTESTS_MAKEFRAGS += $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32ud/Makefrag
+
+$(SN_SW_SUBMODULE_MARKERS) $(SN_RVTESTS_MAKEFRAGS): sn-sw-submodules
 
 ################
 # Bender flags #

@@ -56,6 +56,9 @@ $(GW_GEN_DIR)/gw_noc_cfg.h: $(UTIL_DIR)/mako_render.py $(FLOO_CFG)
 
 include $(SN_ROOT)/make/sw.mk
 
+sn-runtime sn-tests sn-apps sn-riscv-tests: sn-sw-submodules
+$(SN_DEPS): | sn-sw-submodules
+
 ##############
 ## Cheshire ##
 ##############
