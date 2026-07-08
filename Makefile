@@ -16,9 +16,14 @@ VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
 
-# Bender config.
-BENDER_FLAGS ?= -d $(GW_ROOT) --suppress W22
-override BENDER += $(BENDER_FLAGS)
+# Bender config. Keep these as CLI flags so parse-time $(shell $(BENDER) ...)
+# calls in included dependency makefiles see the same options.
+ifeq ($(filter -d --dir --dir=%,$(BENDER)),)
+override BENDER += -d $(GW_ROOT)
+endif
+ifeq ($(filter --suppress --suppress=%,$(BENDER)),)
+override BENDER += --suppress W22
+endif
 
 # Configuration files
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
