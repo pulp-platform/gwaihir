@@ -51,11 +51,8 @@ GW_RDL_IPS += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
 GW_RDL_IPS += $(GW_GEN_DIR)/snitch_cluster.rdl
 GW_RDL_IPS += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
-GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap.rdl
-### TODO (glodi): Change this path after it is generated
-GW_RDL_SN_ADDR = $(GW_ROOT)/cfg/rdl/gwaihir_addrmap_snitch.rdl
-
-### TODO (glodi): Separate GW_RDL_ALL required for Cheshire and Snitch
+GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_64b.rdl
+GW_RDL_SN_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_32b.rdl
 
 PEAKRDL_INCLUDES += -I $(GW_ROOT)/cfg/rdl
 PEAKRDL_INCLUDES += -I $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster_peripheral
@@ -68,12 +65,8 @@ $(GW_GEN_DIR)/gw_tile_regs.sv: $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 $(GW_GEN_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
 	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n
 
-$(GW_GEN_DIR)/gwaihir_addrmap.rdl: $(FLOO_CFG)
+$(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
-
-## TODO (glodi): Add generation of gwaihir_addrmap_snitch.rdl
-# $(GW_GEN_DIR)/gwaihir_addrmap_snitch.rdl: $(FLOO_CFG)
-# 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
 
 # Those are dummy RDL files, for generation without access to the PD repository.
 $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl: | $(GW_GEN_DIR)
@@ -106,7 +99,7 @@ GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap.svh
 .PHONY: docs docs-build docs-serve docs-clean rdl-markdown
 
 docs rdl-markdown: $(DOCS_ADDRMAP_MD)
-$(DOCS_ADDRMAP_MD): $(GW_GEN_DIR)/gwaihir_addrmap.rdl $(GW_RDL_ALL) | $(DOCS_DIR)
+$(DOCS_ADDRMAP_MD): $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL) | $(DOCS_DIR)
 	$(PEAKRDL) markdown $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@
 
 $(DOCS_DIR):
@@ -173,7 +166,7 @@ $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv: $(FLOO_CFG)
 
 floo-clean: gw-addrmap-clean
 	rm -f $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv
-	rm -f $(GW_GEN_DIR)/gwaihir_addrmap.rdl
+	rm -f $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR)
 
 ###################
 # Physical Design #
