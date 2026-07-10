@@ -17,7 +17,7 @@
 
 // Mem-tile iDMA helpers. The leading `tile` argument is the SAM index of the
 // target mem tile; it selects which tile's iDMA register is configured.
-// `(uintptr_t)&gwaihir_addrmap.l2_spm_dma[tile].mem[0]` is the base address of
+// `(uintptr_t)&gwaihir_addrmap_64b.l2_spm_dma[tile].mem[0]` is the base address of
 // that tile's iDMA registers (the DMA reg file is modeled as a mem{} region in
 // the address map, hence the `.mem[0]`).
 //
@@ -30,7 +30,7 @@ static inline uint64_t memtile_dma_2d_memcpy(uint32_t tile, uint64_t dst,
                                              uint64_t src_stride,
                                              uint64_t num_reps, uint64_t conf) {
     // Base address of this tile's iDMA registers.
-    uintptr_t base = (uintptr_t)&gwaihir_addrmap.l2_spm_dma[tile].mem[0];
+    uintptr_t base = (uintptr_t)&gwaihir_addrmap_64b.l2_spm_dma[tile].mem[0];
 
     *(volatile uint64_t *)(base + IDMA_REG64_2D_SRC_ADDR_LOW_REG_OFFSET) = src;
     *(volatile uint64_t *)(base + IDMA_REG64_2D_DST_ADDR_LOW_REG_OFFSET) = dst;
@@ -54,7 +54,7 @@ static inline void memtile_dma_2d_blk_memcpy(uint32_t tile, uint64_t dst,
                                              uint64_t src_stride,
                                              uint64_t num_reps, uint64_t conf) {
     // Base address of this tile's iDMA registers.
-    uintptr_t base = (uintptr_t)&gwaihir_addrmap.l2_spm_dma[tile].mem[0];
+    uintptr_t base = (uintptr_t)&gwaihir_addrmap_64b.l2_spm_dma[tile].mem[0];
 
     uint64_t tf_id = memtile_dma_2d_memcpy(tile, dst, src, size, dst_stride,
                                            src_stride, num_reps, conf);

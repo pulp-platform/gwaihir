@@ -15,8 +15,8 @@ int main(void) {
 
     uint32_t n_errors = 2 * (GW_CLUSTER_NUM + GW_L2_SPM_NUM);
 
-    volatile gw_tile_regs__stride1000_t *cluster_cfg = gwaihir_addrmap.cluster_config;
-    volatile gw_tile_regs__stride1000_t *mem_cfg = gwaihir_addrmap.l2_spm_config;
+    volatile gw_tile_regs__stride1000_t *cluster_cfg = gwaihir_addrmap_64b.cluster_config;
+    volatile gw_tile_regs__stride1000_t *mem_cfg = gwaihir_addrmap_64b.l2_spm_config;
 
     // Write and read back the clock-enable and reset bits of every cluster tile
     for (int i = 0; i < GW_CLUSTER_NUM; i++) {

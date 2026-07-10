@@ -159,8 +159,8 @@ static_assert(P1_DST_END <= TILE_BYTES && P2_DST_END <= TILE_BYTES &&
 // ---- Main ------------------------------------------------------------------
 
 int main(void) {
-    volatile uint32_t *src = gwaihir_addrmap.l2_spm[SRC_TILE].mem;
-    volatile uint32_t *dst = gwaihir_addrmap.l2_spm[DST_TILE].mem;
+    volatile uint32_t *src = gwaihir_addrmap_64b.l2_spm[SRC_TILE].mem;
+    volatile uint32_t *dst = gwaihir_addrmap_64b.l2_spm[DST_TILE].mem;
 
     // Initialize source ramp src[i] = i over the union of all phase reads.
     for (uint32_t i = 0; i < SRC_INIT_WORDS; i++) {
@@ -361,10 +361,10 @@ int main(void) {
         // Concurrent CVA6 traffic onto SRC_TILE's row-P5_SRC_ROW banks until the
         // DMA is done. src is volatile, so each load is issued (generates
         // payload_ext); the value is consumed by the check, so it is not elided.
-        // (uintptr_t)&gwaihir_addrmap.l2_spm_dma[SRC_TILE].mem[0] is the base
+        // (uintptr_t)&gwaihir_addrmap_64b.l2_spm_dma[SRC_TILE].mem[0] is the base
         // address of SRC_TILE's iDMA registers.
         const uintptr_t done_reg =
-            (uintptr_t)&gwaihir_addrmap.l2_spm_dma[SRC_TILE].mem[0] +
+            (uintptr_t)&gwaihir_addrmap_64b.l2_spm_dma[SRC_TILE].mem[0] +
             IDMA_REG64_2D_DONE_ID_0_REG_OFFSET;
         do {
             for (uint32_t i = 0; i < n_words; i += P5_SWEEP_STRIDE_WORDS) {

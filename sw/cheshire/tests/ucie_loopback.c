@@ -11,7 +11,7 @@
 
 int main() {
 
-  volatile uint32_t *l2_mem = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap.l2_spm + (uintptr_t)&gwaihir_addrmap.ucie);
+  volatile uint32_t *l2_mem = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_64b.l2_spm + (uintptr_t)&gwaihir_addrmap_64b.ucie);
   (*l2_mem) = 0xdeadbeef;
 
   fencei();

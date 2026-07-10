@@ -497,12 +497,10 @@ wheels = [
 
 [[package]]
 name = "floogen"
-version = "0.8.3"
-source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=f7f81e2c65c231a8fab4cf8a6e6cd2aa3efdcdb6#f7f81e2c65c231a8fab4cf8a6e6cd2aa3efdcdb6" }
+version = "0.8.4"
+source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=d202e4e767bd7c984641154e9ab9cfebf0973bd4#d202e4e767bd7c984641154e9ab9cfebf0973bd4" }
 dependencies = [
-    { name = "click" },
     { name = "mako" },
-    { name = "matplotlib" },
     { name = "networkx" },
     { name = "pydantic" },
     { name = "ruamel-yaml" },
@@ -649,7 +647,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
-    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=f7f81e2c65c231a8fab4cf8a6e6cd2aa3efdcdb6" },
+    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=d202e4e767bd7c984641154e9ab9cfebf0973bd4" },
     { name = "peakrdl", specifier = ">=1.5.0" },
     { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
     { name = "snitch", extras = ["kernels"], editable = ".deps/snitch_cluster" },

@@ -28,10 +28,10 @@ int main() {
   uint32_t z_size = sizeof(golden);
 
   // Sum ucie 0 base address to all vectors to be transferred
-  volatile uint32_t* x_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_snitch.ucie[0] + (uintptr_t)x_inp);
-  volatile uint32_t* w_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_snitch.ucie[0] + (uintptr_t)w_inp);
-  volatile uint32_t* y_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_snitch.ucie[0] + (uintptr_t)y_inp);
-  volatile uint32_t* golden_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_snitch.ucie[0] + (uintptr_t)golden);
+  volatile uint32_t* x_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_32b.ucie[0] + (uintptr_t)x_inp);
+  volatile uint32_t* w_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_32b.ucie[0] + (uintptr_t)w_inp);
+  volatile uint32_t* y_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_32b.ucie[0] + (uintptr_t)y_inp);
+  volatile uint32_t* golden_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_32b.ucie[0] + (uintptr_t)golden);
 
   // Allocate space in TCDM and copy input vectors from L2 to TCDM
   if (snrt_is_dm_core()) {

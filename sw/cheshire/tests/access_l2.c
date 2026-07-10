@@ -21,11 +21,11 @@
 typedef uint32_t l2_mem_t[GW_L2_SPM_NUM][L2_BANK_ROWS][L2_SRAM_NUM_WORDS][L2_BANKS_PER_WORD][L2_SRAM_DATA_WIDTH / NARROW_WORD_WIDTH];
 
 static_assert((sizeof(l2_mem_t)/GW_L2_SPM_NUM) == GW_L2_SPM_SIZE, "Packing error");
-static_assert(sizeof(gwaihir_addrmap__l2_spm_t) == GW_L2_SPM_SIZE, "L2 tile size mismatch");
+static_assert(sizeof(gwaihir_addrmap_64b__l2_spm_t) == GW_L2_SPM_SIZE, "L2 tile size mismatch");
 
 int main() {
 
-  volatile l2_mem_t *l2_mem = (volatile l2_mem_t *)&gwaihir_addrmap.l2_spm;
+  volatile l2_mem_t *l2_mem = (volatile l2_mem_t *)&gwaihir_addrmap_64b.l2_spm;
 
   uint32_t n_errors = GW_L2_SPM_NUM * L2_BANK_ROWS * L2_BANKS_PER_WORD * 4; // Total number of writes
 

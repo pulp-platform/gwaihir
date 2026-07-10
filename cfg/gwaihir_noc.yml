@@ -60,23 +60,6 @@ protocols:
       collective_op: 4
 
 endpoints:
-  - name: "cheshire"
-    addr_range:
-      - start: 0x0000_0000
-        end: 0x2000_0000
-        desc: "internal"
-        rdl_name: "cheshire_tile"
-        rdl_addrmap_grp: ["64b", "32b"]
-      - start: 0x8000_0000
-        end: 0x1_0000_0000
-        desc: "external"
-        rdl_name: "cheshire_external"
-        rdl_addrmap_grp: ["64b", "32b"]
-    mgr_port_protocol:
-      - "narrow_in"
-    sbr_port_protocol:
-      - "narrow_out"
-      - "wide_out"
   - name: "cluster"
     array: [4, 4]
     addr_range:
@@ -93,6 +76,23 @@ endpoints:
     mgr_port_protocol:
       - "narrow_in"
       - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "cheshire"
+    addr_range:
+      - start: 0x0000_0000
+        end: 0x2000_0000
+        desc: "internal"
+        rdl_name: "cheshire_tile"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - start: 0x8000_0000
+        end: 0x1_0000_0000
+        desc: "external"
+        rdl_name: "cheshire_external"
+        rdl_addrmap_grp: ["64b", "32b"]
+    mgr_port_protocol:
+      - "narrow_in"
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
