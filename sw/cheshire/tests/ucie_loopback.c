@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include "params.h"
 #include "util.h"
-#include "gw_addrmap.h"
-#include "gw_raw_addrmap.h"
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"
 
 
 int main() {

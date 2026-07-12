@@ -4,8 +4,8 @@
 //
 // Cyrill Durrer <cdurrer@iis.ee.ethz.ch>
 
-#include "gw_addrmap.h"
-#include "gw_raw_addrmap.h"
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"
 
 // The clock-gating and reset control are now per-tile registers, exposed via
 // the per-tile config blocks. Each tile holds a single clock-enable bit

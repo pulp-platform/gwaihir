@@ -73,28 +73,28 @@ $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl: | $(GW_GEN_DIR)
 	@touch $@
 
 # Cheshire
-$(GW_GEN_DIR)/gw_addrmap.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
+$(GW_GEN_DIR)/gw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
 
-$(GW_GEN_DIR)/gw_addrmap.svh: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
+$(GW_GEN_DIR)/gw_addrmap_64b.svh: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
 
-$(GW_GEN_DIR)/gw_raw_addrmap.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
+$(GW_GEN_DIR)/gw_raw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
 
 # Snitch
-$(GW_GEN_DIR)/gw_addrmap_snitch.h: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
+$(GW_GEN_DIR)/gw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
 
-$(GW_GEN_DIR)/gw_addrmap_snitch.svh: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
+$(GW_GEN_DIR)/gw_addrmap_32b.svh: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
 
-$(GW_GEN_DIR)/gw_raw_addrmap_snitch.h: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
+$(GW_GEN_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_IPS)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
 
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap.svh
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_64b.svh
 
 .PHONY: docs docs-build docs-serve docs-clean rdl-markdown
 

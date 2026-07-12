@@ -5,7 +5,7 @@
 // Author: Hong Pang <hopang@iis.ee.ethz.ch>
 //
 // Mem-tile iDMA helpers. Mirrors the helper set of cheshire/sw/include/dif/dma.h,
-// but rebased onto Gwaihir's mem-tile DMA region exposed by gw_addrmap.h. A single
+// but rebased onto Gwaihir's mem-tile DMA region exposed by gw_addrmap_64b.h. A single
 // set of inline helpers serves every tile; the target tile's iDMA is selected at
 // run time via the SAM index passed as the first argument.
 
@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 #include "regs/idma.h"
-#include "gw_addrmap.h"
+#include "gw_addrmap_64b.h"
 
 // Mem-tile iDMA helpers. The leading `tile` argument is the SAM index of the
 // target mem tile; it selects which tile's iDMA register is configured.

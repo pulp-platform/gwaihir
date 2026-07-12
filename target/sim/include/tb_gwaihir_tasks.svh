@@ -11,7 +11,7 @@ import "DPI-C" context function byte read_section(input longint address, inout b
 
 import gwaihir_pkg::*;
 
-`include "gw_addrmap.svh"
+`include "gw_addrmap_64b.svh"
 `include "cheshire/typedef.svh"
 
 `CHESHIRE_TYPEDEF_ALL(, fix.vip.DutCfg)

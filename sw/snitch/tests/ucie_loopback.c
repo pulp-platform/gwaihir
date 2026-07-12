@@ -7,7 +7,7 @@
 #include "snrt.h"
 #include "data/redmule_tensors.h"
 
-#include "gw_addrmap_snitch.h"
+#include "gw_addrmap_32b.h"
 
 uint16_t *local_x;
 uint16_t *local_w;

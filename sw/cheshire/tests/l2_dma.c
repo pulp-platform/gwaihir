@@ -30,8 +30,8 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "gw_addrmap.h"
-#include "gw_raw_addrmap.h"   // for GW_L2_SPM_NUM (number of L2 mem tiles)
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"   // for GW_L2_SPM_NUM (number of L2 mem tiles)
 #include "memtile_idma.h"
 #include "regs/idma.h"
 

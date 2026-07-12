@@ -8,8 +8,8 @@
 // It will read the first uint32 data from each memory bank.
 
 #include <stdint.h>
-#include "gw_addrmap.h"
-#include "gw_raw_addrmap.h"
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"
 
 #define WIDE_WORD_WIDTH 512
 #define NARROW_WORD_WIDTH (sizeof(uint32_t) * 8)

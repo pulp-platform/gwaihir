@@ -5,8 +5,8 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 #include <stdint.h>
-#include "gw_addrmap.h"
-#include "gw_raw_addrmap.h"
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"
 
 #include "snitch_cluster_cfg.h"
 
