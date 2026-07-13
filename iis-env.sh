@@ -19,8 +19,7 @@ export VERIBLE_FMT="oseda -2025.03 verible-verilog-format"
 export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-snitch-llvm-almalinux8-15.0.0-snitch-0.5.0/bin
 
 export UV=/usr/local/uv/uv
-
-export BENDER="/home/fischeti/new-bender"
+export BENDER="bender-0.32.1"
 
 eval "$BENDER checkout --suppress E24 --suppress W22 --git-submodules false"
 
