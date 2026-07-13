@@ -353,7 +353,7 @@ package gwaihir_pkg;
     ret.RegExtNumRules       = CshRegExtNumSlv;
     ret.AxiExtRegionIdx[0]   = 0;
     ret.AxiExtRegionStart[0] = 'h2000_0000;
-    ret.AxiExtRegionEnd[0]   = 'h3_0000_0000;
+    ret.AxiExtRegionEnd[0]   = 'h8000_0000;
     ret.RegExtRegionIdx[0]   = CshRegExtFLL;
     ret.RegExtRegionStart[0] = 'h1800_1000;
     ret.RegExtRegionEnd[0]   = 'h1800_2000;
