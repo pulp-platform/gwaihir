@@ -15,7 +15,7 @@ dependencies:
   register_interface: "0.4.5"
   axi: "0.39.9"
   apb_fll_if: "0.3.0"
-  floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "d202e4e767bd7c984641154e9ab9cfebf0973bd4", upstream_name: "FlooNoC" }
+  floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "9d2f0a77ac59b62f40391a120e43f33cada868a3", upstream_name: "FlooNoC" }
   apb: "0.2.4"
   common_cells: "1.39.0"
   snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "06426b0632814cd0acdba5e0eef3dd342bf42c71" } # branch: main

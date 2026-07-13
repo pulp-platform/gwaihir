@@ -41,7 +41,7 @@ members = [
 [tool.uv.sources]
 # To locally edit floogen, also uncomment:
 # floogen = { workspace = true, editable = true }
-floogen = { git = "https://github.com/pulp-platform/FlooNoC.git", rev = "d202e4e767bd7c984641154e9ab9cfebf0973bd4" }
+floogen = { git = "https://github.com/pulp-platform/FlooNoC.git", rev = "9d2f0a77ac59b62f40391a120e43f33cada868a3" }
 snitch = { workspace = true, editable = true }
 cheshire = { workspace = true }
 torch = [{ index = "pytorch-cpu" }]
