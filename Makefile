@@ -51,7 +51,9 @@ chs-sw-submodules:
 	git -C $(CHS_ROOT) submodule update --init sw/deps/printf
 
 sn-sw-submodules:
-	git -C $(SN_ROOT) submodule update --init --recursive sw/deps/printf sw/deps/riscv-opcodes sw/deps/riscv-tests
+	# Experiment jobs share this checkout across concurrent recursive make processes.
+	flock "$$(git -C $(SN_ROOT) rev-parse --path-format=absolute --git-path gwaihir-sn-sw-submodules.lock)" \
+		git -C $(SN_ROOT) submodule update --init --recursive sw/deps/printf sw/deps/riscv-opcodes sw/deps/riscv-tests
 
 hw-submodules:
 	git -C $(CVA6_ROOT) submodule update --init core/cache_subsystem/hpdcache
