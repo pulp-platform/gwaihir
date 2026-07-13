@@ -19,8 +19,14 @@ export VERIBLE_FMT="oseda -2025.03 verible-verilog-format"
 export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-snitch-llvm-almalinux8-15.0.0-snitch-0.5.0/bin
 
 export UV=/usr/local/uv/uv
+export BENDER="bender-0.32.1"
 
-bender checkout
+eval "$BENDER checkout --suppress E24 --suppress W22 --git-submodules false"
+
+# Cheshire's upstream makefile otherwise initializes sw/deps/printf while
+# parsing every top-level make invocation. CI initializes it explicitly.
+mkdir -p .bender
+touch .bender/.chs_deps
 
 $UV sync --locked
 source .venv/bin/activate

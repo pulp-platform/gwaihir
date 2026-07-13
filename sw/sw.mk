@@ -56,6 +56,9 @@ $(GW_GEN_DIR)/gw_noc_cfg.h: $(UTIL_DIR)/mako_render.py $(FLOO_CFG)
 
 include $(SN_ROOT)/make/sw.mk
 
+sn-runtime sn-tests sn-apps sn-riscv-tests: sn-sw-submodules
+$(SN_DEPS): | sn-sw-submodules
+
 ##############
 ## Cheshire ##
 ##############
@@ -80,7 +83,7 @@ $(GW_CHS_SW_TEST_ELF): $(GW_GEN_DIR)/gw_addrmap.h $(SN_RUNTIME_HAL_HDRS)
 
 .PHONY: chs-sw-tests chs-sw-tests-clean
 
-chs-sw-tests: $(GW_CHS_SW_TEST)
+chs-sw-tests: chs-sw-submodules $(GW_CHS_SW_TEST)
 
 chs-sw-tests-clean:
 	rm -f $(GW_CHS_SW_TEST_DUMP)

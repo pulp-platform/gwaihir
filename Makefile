@@ -10,11 +10,20 @@ BENDER_ROOT ?= $(GW_ROOT)/.bender
 UTIL_DIR = $(GW_ROOT)/util
 
 # Executables — must be defined before dependency paths that call $(BENDER)
-BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
+BENDER           ?= bender
 FLOO_GEN         ?= floogen
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
+
+# Bender config. Keep these as CLI flags so parse-time $(shell $(BENDER) ...)
+# calls in included dependency makefiles see the same options.
+ifeq ($(filter -d --dir --dir=%,$(BENDER)),)
+override BENDER += -d $(GW_ROOT)
+endif
+ifeq ($(filter --suppress --suppress=%,$(BENDER)),)
+override BENDER += --suppress W22
+endif
 
 # Configuration files
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
@@ -26,10 +35,38 @@ SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
+CVA6_ROOT = $(shell $(BENDER) path cva6)
 
 # Bender prerequisites
 BENDER_YML = $(GW_ROOT)/Bender.yml
 BENDER_LOCK = $(GW_ROOT)/Bender.lock
+
+#####################
+# Bender submodules #
+#####################
+
+.PHONY: chs-sw-submodules sn-sw-submodules hw-submodules
+
+chs-sw-submodules:
+	git -C $(CHS_ROOT) submodule update --init sw/deps/printf
+
+sn-sw-submodules:
+	# Experiment jobs share this checkout across concurrent recursive make processes.
+	flock "$$(git -C $(SN_ROOT) rev-parse --path-format=absolute --git-path gwaihir-sn-sw-submodules.lock)" \
+		git -C $(SN_ROOT) submodule update --init --recursive sw/deps/printf sw/deps/riscv-opcodes sw/deps/riscv-tests
+
+hw-submodules:
+	git -C $(CVA6_ROOT) submodule update --init core/cache_subsystem/hpdcache
+
+SN_SW_SUBMODULE_MARKERS = $(SN_ROOT)/sw/deps/printf/printf.h
+SN_SW_SUBMODULE_MARKERS += $(SN_ROOT)/sw/deps/riscv-opcodes/encoding.h
+SN_RVTESTS_MAKEFRAGS = $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32ui/Makefrag
+SN_RVTESTS_MAKEFRAGS += $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32um/Makefrag
+SN_RVTESTS_MAKEFRAGS += $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32ua/Makefrag
+SN_RVTESTS_MAKEFRAGS += $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32uf/Makefrag
+SN_RVTESTS_MAKEFRAGS += $(SN_ROOT)/sw/deps/riscv-tests/isa/rv32ud/Makefrag
+
+$(SN_SW_SUBMODULE_MARKERS) $(SN_RVTESTS_MAKEFRAGS): sn-sw-submodules
 
 ################
 # Bender flags #
@@ -160,7 +197,7 @@ floo-clean: gw-addrmap-clean
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 5875cf3ec443660b2600117ab7db363885d7cfad
+PD_COMMIT ?= b473b9a89259bab66e955b59424292b14addf7fd
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -197,7 +234,7 @@ GW_HW_ALL += $(GW_RDL_HW_ALL)
 
 .PHONY: gwaihir-hw-all gwaihir-hw-clean clean
 
-gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
+gwaihir-hw-all all: hw-submodules $(GW_HW_ALL) sn-hw-all floo-hw-all
 
 gwaihir-hw-clean: sn-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)
@@ -232,6 +269,8 @@ include $(GW_ROOT)/target/sim/traces.mk
 # Clean targets never need dep tracking regardless of subsystem.
 _GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist slang-flist verible-fmt \
                      init-pd clean-pd update-pd-commit python-venv% %-all %-clean vsim-% gw-% rdl-% docs%
+_GW_NO_DEPS_GOALS += chs-sw-submodules sn-sw-submodules hw-submodules
+_GW_NO_DEPS_GOALS += sn-riscv-tests sn-clean-riscv-tests
 ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
 # All requested goals are hw-only/informational — skip dep tracking.
 else

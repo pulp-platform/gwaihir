@@ -22,7 +22,7 @@ For non-IIS members, there is some additional setup required to get the environm
 
 #### Bender
 
-The first requirement you need to install is `bender`. Check the [installation page](https://github.com/pulp-platform/bender/tree/master?tab=readme-ov-file#installation) on how to set it up.
+The first requirement you need to install is `bender >= 0.32.1`. Check the [installation page](https://pulp-platform.github.io/bender/installation.html) on how to set it up.
 
 #### Python environment
 
