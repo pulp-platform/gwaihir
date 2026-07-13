@@ -39,6 +39,14 @@ modelsim.ini
 .chsbinary
 *.do
 
+## VCS
+.inter*
+inter.*
+novas.*
+ucli.key
+.vcs*
+verdiLog
+
 # Software build files
 *.bin
 *.dump
