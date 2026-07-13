@@ -164,7 +164,7 @@ PD_COMMIT ?= 2c9e246cbda8754299a4c65964c16c2164fd2555
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
-PCIE_COMMIT ?= abe0d66c6269364d592f838a7d4974b4d6e415d7
+PCIE_COMMIT ?= 75f4aa7c700a110b2e37b5a9978784b5b6a8265c
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 .PHONY: init-pd clean-pd update-pd-commit
