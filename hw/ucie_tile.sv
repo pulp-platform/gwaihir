@@ -123,8 +123,8 @@ module ucie_tile
     .floo_rsp_t (floo_gwaihir_noc_pkg::floo_rsp_t),
     .floo_wide_t(floo_gwaihir_noc_pkg::floo_wide_t)
   ) i_chimney (
-    .clk_i               (clk_i),                       // TODO: add gating
-    .rst_ni              (rst_ni),                      // TODO: add gating
+    .clk_i               (clk_i),
+    .rst_ni              (rst_ni),
     .test_enable_i,
     .id_i,
     .route_table_i       ('0),
@@ -174,19 +174,5 @@ module ucie_tile
     axi_wide_out_req_o.aw.addr   = (aw_wide_addr_match) ? (axi_wide_out_req.aw.addr - base_addr_i) : '0;
     axi_wide_out_req_o.ar.addr   = (ar_wide_addr_match) ? (axi_wide_out_req.ar.addr - base_addr_i) : '0;
   end
-
-  //////////////////////
-  // UCIe Top Wrapper //
-  //////////////////////
-
-  // ucie_pkg::axi_narrow_out_req_t axi_narrow_req;
-  // ucie_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
-  // ucie_pkg::axi_wide_out_req_t   axi_wide_req;
-  // ucie_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
-
-  // ucie_top_wrapper #(
-  // ) i_ucie_wrap (
-
-  // );
 
 endmodule : ucie_tile
