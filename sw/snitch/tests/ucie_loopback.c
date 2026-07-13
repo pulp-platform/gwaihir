@@ -5,9 +5,7 @@
 #include <stdint.h>
 
 #include "snrt.h"
-#include "data/redmule_tensors.h"
-
-#include "gw_addrmap_32b.h"
+#include "data/ucie_tensors.h"
 
 uint16_t *local_x;
 uint16_t *local_w;
