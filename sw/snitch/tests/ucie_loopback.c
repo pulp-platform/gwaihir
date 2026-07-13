@@ -31,12 +31,19 @@ int main() {
 
   snrt_cluster_hw_barrier();
 
-  // Sum ucie 0 base address to vector to be transferred
-  volatile uint32_t* vec_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_32b.ucie0 + (uintptr_t)vec_inp);
+  // Form the ucie0 alias address of the vector: canonical | alias-window base
+  // TODO: OR-ing ucie0's base hardcodes chiplet-select bit 25 = 1 (only chiplet0->chiplet1);
+  //       a correct alias derives bit 25 from the destination chiplet.
+  volatile uint32_t* vec_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_32b.ucie0 | (uintptr_t)vec_inp);
 
-  // Allocate space in TCDM and copy input vector from L2 to TCDM
   if (snrt_is_dm_core()) {
     local_vec = (uint32_t *) snrt_l1_alloc_cluster_local(vec_size, 64);
+
+    // Push the vector out to the peer L2 through ucie0
+    snrt_dma_start_1d(vec_inp_ucie, vec_inp, vec_size);
+    snrt_dma_wait_all();
+
+    // Read it back into TCDM
     snrt_dma_start_1d(local_vec, vec_inp_ucie, vec_size);
     snrt_dma_wait_all();
   }
