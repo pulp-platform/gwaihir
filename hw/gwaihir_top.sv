@@ -257,42 +257,62 @@ module gwaihir_top
   floo_gwaihir_noc_pkg::axi_wide_in_req_t    [NumUcieTiles-1:0] ucie_axi_wide_in_req;
   floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
 
-  for (genvar u = 0; u < NumUcieTiles; u++) begin : gen_ucietile
+  localparam int Ucie0X = int'(SamPhysical[Ucie0SamIdx].idx.x);
+  localparam int Ucie0Y = int'(SamPhysical[Ucie0SamIdx].idx.y);
+  localparam int Ucie1X = int'(SamPhysical[Ucie1SamIdx].idx.x);
+  localparam int Ucie1Y = int'(SamPhysical[Ucie1SamIdx].idx.y);
 
-    localparam int UcieSamIdx = u + Ucie0SamIdx;
-    localparam id_t UcieId = Sam[UcieSamIdx].idx;
-    localparam axi_narrow_out_addr_t UcieId_BaseAddr = Sam[UcieSamIdx].start_addr;
-    localparam axi_narrow_out_addr_t UcieId_AddrSize = Sam[Ucie0SamIdx].start_addr;
-    localparam id_t UciePhysicalId = SamPhysical[UcieSamIdx].idx;
-    localparam int UcieX = int'(UciePhysicalId.x);
-    localparam int UcieY = int'(UciePhysicalId.y);
+  ucie_tile #(
+    // ucie0 (chiplet0) ingress is pass-through.
+    .EnIngressHalfShift(0)
+  ) i_ucie_tile0 (
+    .clk_i,
+    .rst_ni,
+    .test_enable_i       (test_mode_i),
+    .id_i                (Sam[Ucie0SamIdx].idx),
+    .floo_req_o          (floo_req_out[Ucie0X][Ucie0Y]),
+    .floo_rsp_i          (floo_rsp_in[Ucie0X][Ucie0Y]),
+    .floo_wide_o         (floo_wide_out[Ucie0X][Ucie0Y]),
+    .floo_req_i          (floo_req_in[Ucie0X][Ucie0Y]),
+    .floo_rsp_o          (floo_rsp_out[Ucie0X][Ucie0Y]),
+    .floo_wide_i         (floo_wide_in[Ucie0X][Ucie0Y]),
+    // loopback
+    .axi_narrow_out_req_o(ucie_axi_narrow_out_req[0]),
+    .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[0]),
+    .axi_narrow_in_req_i (ucie_axi_narrow_in_req[0]),
+    .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[0]),
 
-    ucie_tile i_ucie_tile (
-      .clk_i,
-      .rst_ni,
-      .test_enable_i       (test_mode_i),
-      .id_i                (UcieId),
-      .base_addr_i         (UcieId_BaseAddr),
-      .addr_size_i         (UcieId_AddrSize),
-      .floo_req_o          (floo_req_out[UcieX][UcieY]),
-      .floo_rsp_i          (floo_rsp_in[UcieX][UcieY]),
-      .floo_wide_o         (floo_wide_out[UcieX][UcieY]),
-      .floo_req_i          (floo_req_in[UcieX][UcieY]),
-      .floo_rsp_o          (floo_rsp_out[UcieX][UcieY]),
-      .floo_wide_i         (floo_wide_in[UcieX][UcieY]),
-      // loopback
-      .axi_narrow_out_req_o(ucie_axi_narrow_out_req[u]),
-      .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[u]),
-      .axi_narrow_in_req_i (ucie_axi_narrow_in_req[u]),
-      .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[u]),
+    .axi_wide_out_req_o(ucie_axi_wide_out_req[0]),
+    .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[0]),
+    .axi_wide_in_req_i (ucie_axi_wide_in_req[0]),
+    .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[0])
+  );
 
-      .axi_wide_out_req_o(ucie_axi_wide_out_req[u]),
-      .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[u]),
-      .axi_wide_in_req_i (ucie_axi_wide_in_req[u]),
-      .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[u])
-    );
+  ucie_tile #(
+    // ucie1 (chiplet1) ingress is shift.
+    .EnIngressHalfShift(1)
+  ) i_ucie_tile1 (
+    .clk_i,
+    .rst_ni,
+    .test_enable_i       (test_mode_i),
+    .id_i                (Sam[Ucie1SamIdx].idx),
+    .floo_req_o          (floo_req_out[Ucie1X][Ucie1Y]),
+    .floo_rsp_i          (floo_rsp_in[Ucie1X][Ucie1Y]),
+    .floo_wide_o         (floo_wide_out[Ucie1X][Ucie1Y]),
+    .floo_req_i          (floo_req_in[Ucie1X][Ucie1Y]),
+    .floo_rsp_o          (floo_rsp_out[Ucie1X][Ucie1Y]),
+    .floo_wide_i         (floo_wide_in[Ucie1X][Ucie1Y]),
+    // loopback
+    .axi_narrow_out_req_o(ucie_axi_narrow_out_req[1]),
+    .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[1]),
+    .axi_narrow_in_req_i (ucie_axi_narrow_in_req[1]),
+    .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[1]),
 
-  end
+    .axi_wide_out_req_o(ucie_axi_wide_out_req[1]),
+    .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[1]),
+    .axi_wide_in_req_i (ucie_axi_wide_in_req[1]),
+    .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[1])
+  );
 
   // loopback UCIe[0] -> UCIe[1]
   `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[1], ucie_axi_narrow_out_req[0]);

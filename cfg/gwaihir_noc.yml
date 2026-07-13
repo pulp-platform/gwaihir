@@ -114,11 +114,22 @@ endpoints:
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
-  - name: "ucie"
-    array: [2]
+  - name: "ucie0"
     addr_range:
-      base: 0x2200_0000
-      size: 0x2200_0000
+      base: 0x3200_0000
+      size: 0x0200_0000
+      rdl_as_mem: true
+      rdl_addrmap_grp: ["64b", "32b"]
+    mgr_port_protocol:
+      - "narrow_in"
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "ucie1"
+    addr_range:
+      base: 0x3000_0000
+      size: 0x0200_0000
       rdl_as_mem: true
       rdl_addrmap_grp: ["64b", "32b"]
     mgr_port_protocol:
@@ -187,17 +198,13 @@ connections:
       - [2, 3]
     dst_dir: "Eject"
   # bottom left UCIe (ucie[0] → router_left[0,0])
-  - src: "ucie"
+  - src: "ucie0"
     dst: "router_left"
-    src_range:
-      - [0, 0]
     dst_idx: [0, 0]
     dst_dir: "Eject"
   # bottom right UCIe (ucie[1] → router_right[0,0])
-  - src: "ucie"
+  - src: "ucie1"
     dst: "router_right"
-    src_range:
-      - [1, 1]
     dst_idx: [0, 0]
     dst_dir: "Eject"
   # pcie

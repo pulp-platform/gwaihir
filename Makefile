@@ -151,7 +151,7 @@ sn-hw-clean:
 # FlooNoC #
 ###########
 
-.PHONY: floo-hw-all floo-clean
+.PHONY: floo-hw-all floo-clean gw-addrmap-clean
 
 # Check if `VERIBLE_FMT` executable is valid, otherwise don't format FlooGen output
 FLOO_GEN_FLAGS = --no-format

@@ -32,7 +32,7 @@ int main() {
   snrt_cluster_hw_barrier();
 
   // Sum ucie 0 base address to vector to be transferred
-  volatile uint32_t* vec_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_32b.ucie[0] + (uintptr_t)vec_inp);
+  volatile uint32_t* vec_inp_ucie = (volatile uint32_t*)((uintptr_t)&gwaihir_addrmap_32b.ucie0 + (uintptr_t)vec_inp);
 
   // Allocate space in TCDM and copy input vector from L2 to TCDM
   if (snrt_is_dm_core()) {

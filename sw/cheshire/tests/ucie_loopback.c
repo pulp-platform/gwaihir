@@ -12,11 +12,11 @@
 
 int main() {
 
-  volatile uint32_t *l2_mem = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_64b.l2_spm + (uintptr_t)&gwaihir_addrmap_64b.ucie);
-  (*l2_mem) = TRANSFER_DATA;
+  volatile uint32_t *l2_chiplet1 = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_64b.l2_spm | (uintptr_t)&gwaihir_addrmap_64b.ucie0);
+  (*l2_chiplet1) = TRANSFER_DATA;
 
   fencei();
 
-  return (*l2_mem != TRANSFER_DATA);
+  return (*l2_chiplet1 != TRANSFER_DATA);
 
 }
