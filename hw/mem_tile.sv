@@ -283,7 +283,6 @@ module mem_tile
   ) i_axi_demux (
     .clk_i          (clk_i),
     .rst_ni         (rst_ni),
-    .rst_ni         (rst_ni),
     .test_i         (test_enable_i),
     .slv_aw_select_i(aw_select),
     .slv_ar_select_i(ar_select),
