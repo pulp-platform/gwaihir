@@ -476,11 +476,11 @@ package gwaihir_pkg;
 
   // Shift alias addr according to whether it's cluster or l2.
   localparam addr_t TcdmExposedBase = addr_t'(Sam[ClusterX0Y0SamIdx].start_addr);
-  localparam addr_t TcdmHalfShift   = addr_t'((NumClusters / 2) * ClusterTileSize);
-  localparam addr_t TcdmExposedEnd  = TcdmExposedBase + TcdmHalfShift;
-  localparam addr_t L2ExposedBase   = addr_t'(Sam[L2Spm0SamIdx].start_addr);
-  localparam addr_t L2HalfShift     = addr_t'((NumMemTiles / 2) * MemTileSize);
-  localparam addr_t L2ExposedEnd    = L2ExposedBase + L2HalfShift;
+  localparam addr_t TcdmHalfShift = addr_t'((NumClusters / 2) * ClusterTileSize);
+  localparam addr_t TcdmExposedEnd = TcdmExposedBase + TcdmHalfShift;
+  localparam addr_t L2ExposedBase = addr_t'(Sam[L2Spm0SamIdx].start_addr);
+  localparam addr_t L2HalfShift = addr_t'((NumMemTiles / 2) * MemTileSize);
+  localparam addr_t L2ExposedEnd = L2ExposedBase + L2HalfShift;
 
   function automatic addr_t ingress_half_shift(input addr_t addr);
     if (addr >= TcdmExposedBase && addr < TcdmExposedEnd) return addr + TcdmHalfShift;
