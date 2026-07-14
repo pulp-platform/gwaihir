@@ -35,7 +35,8 @@ module dummy_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .ReqRouteAlgo  (ReqRouteAlgo),
+    .RspRouteAlgo  (RspRouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
