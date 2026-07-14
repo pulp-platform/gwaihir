@@ -14,8 +14,8 @@ module ucie_tile
   input  logic                    test_enable_i,
   // Router ID
   input  id_t                     id_i,
-  input  logic       [      47:0] base_addr_i,
-  input  logic       [      47:0] addr_size_i,
+  input  floo_gwaihir_noc_pkg::axi_narrow_out_addr_t base_addr_i,
+  input  floo_gwaihir_noc_pkg::axi_narrow_out_addr_t addr_size_i,
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,

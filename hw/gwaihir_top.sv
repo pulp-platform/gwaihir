@@ -261,8 +261,8 @@ module gwaihir_top
 
     localparam int UcieSamIdx = u + Ucie0SamIdx;
     localparam id_t UcieId = Sam[UcieSamIdx].idx;
-    localparam logic [47:0] UcieId_BaseAddr = Sam[UcieSamIdx].start_addr;
-    localparam logic [47:0] UcieId_AddrSize = Sam[Ucie0SamIdx].start_addr;
+    localparam axi_narrow_out_addr_t UcieId_BaseAddr = Sam[UcieSamIdx].start_addr;
+    localparam axi_narrow_out_addr_t UcieId_AddrSize = Sam[Ucie0SamIdx].start_addr;
     localparam id_t UciePhysicalId = SamPhysical[UcieSamIdx].idx;
     localparam int UcieX = int'(UciePhysicalId.x);
     localparam int UcieY = int'(UciePhysicalId.y);
