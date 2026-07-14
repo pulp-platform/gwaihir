@@ -17,12 +17,12 @@ module ucie_tile
   // Router ID
   input  id_t                     id_i,
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
-  output floo_req_t               [West:North] floo_req_o,
-  input  floo_rsp_t               [West:North] floo_rsp_i,
-  output floo_wide_t              [West:North] floo_wide_o,
-  input  floo_req_t               [West:North] floo_req_i,
-  output floo_rsp_t               [West:North] floo_rsp_o,
-  input  floo_wide_t              [West:North] floo_wide_i,
+  output floo_req_t  [West:North] floo_req_o,
+  input  floo_rsp_t  [West:North] floo_rsp_i,
+  output floo_wide_t [West:North] floo_wide_o,
+  input  floo_req_t  [West:North] floo_req_i,
+  output floo_rsp_t  [West:North] floo_rsp_o,
+  input  floo_wide_t [West:North] floo_wide_i,
 
   // AXI narrow channels
   output floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req_o,
