@@ -9,20 +9,20 @@ module ucie_tile
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
 (
-  input  logic                    clk_i,
-  input  logic                    rst_ni,
-  input  logic                    test_enable_i,
+  input  logic                                                    clk_i,
+  input  logic                                                    rst_ni,
+  input  logic                                                    test_enable_i,
   // Router ID
-  input  id_t                     id_i,
-  input  floo_gwaihir_noc_pkg::axi_narrow_out_addr_t base_addr_i,
-  input  floo_gwaihir_noc_pkg::axi_narrow_out_addr_t addr_size_i,
+  input  id_t                                                     id_i,
+  input  floo_gwaihir_noc_pkg::axi_narrow_out_addr_t              base_addr_i,
+  input  floo_gwaihir_noc_pkg::axi_narrow_out_addr_t              addr_size_i,
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
-  output floo_req_t  [West:North] floo_req_o,
-  input  floo_rsp_t  [West:North] floo_rsp_i,
-  output floo_wide_t [West:North] floo_wide_o,
-  input  floo_req_t  [West:North] floo_req_i,
-  output floo_rsp_t  [West:North] floo_rsp_o,
-  input  floo_wide_t [West:North] floo_wide_i,
+  output floo_req_t                                  [West:North] floo_req_o,
+  input  floo_rsp_t                                  [West:North] floo_rsp_i,
+  output floo_wide_t                                 [West:North] floo_wide_o,
+  input  floo_req_t                                  [West:North] floo_req_i,
+  output floo_rsp_t                                  [West:North] floo_rsp_o,
+  input  floo_wide_t                                 [West:North] floo_wide_i,
 
   // AXI narrow channels
   output floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req_o,
