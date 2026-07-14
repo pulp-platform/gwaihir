@@ -17,6 +17,6 @@ int main() {
 
   fencei();
 
-  return (*l2_mem == TRANSFER_DATA);
+  return (*l2_mem != TRANSFER_DATA);
 
 }
