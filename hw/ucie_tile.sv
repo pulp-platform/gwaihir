@@ -149,28 +149,28 @@ module ucie_tile
 
   // Alias clearing
   always_comb begin
-    axi_narrow_in_req_can = axi_narrow_in_req_i;
+    axi_narrow_in_req_can         = axi_narrow_in_req_i;
     axi_narrow_in_req_can.aw.addr = axi_narrow_in_req_i.aw.addr & ~gwaihir_pkg::AliasClearMask;
     axi_narrow_in_req_can.ar.addr = axi_narrow_in_req_i.ar.addr & ~gwaihir_pkg::AliasClearMask;
 
-    axi_wide_in_req_can = axi_wide_in_req_i;
-    axi_wide_in_req_can.aw.addr = axi_wide_in_req_i.aw.addr & ~gwaihir_pkg::AliasClearMask;
-    axi_wide_in_req_can.ar.addr = axi_wide_in_req_i.ar.addr & ~gwaihir_pkg::AliasClearMask;
+    axi_wide_in_req_can           = axi_wide_in_req_i;
+    axi_wide_in_req_can.aw.addr   = axi_wide_in_req_i.aw.addr & ~gwaihir_pkg::AliasClearMask;
+    axi_wide_in_req_can.ar.addr   = axi_wide_in_req_i.ar.addr & ~gwaihir_pkg::AliasClearMask;
   end
 
   // Half-shift
   if (EnIngressHalfShift) begin : gen_ingress_half_shift
     always_comb begin
-      axi_narrow_in_req = axi_narrow_in_req_can;
+      axi_narrow_in_req         = axi_narrow_in_req_can;
       axi_narrow_in_req.aw.addr = ingress_half_shift(axi_narrow_in_req_can.aw.addr);
       axi_narrow_in_req.ar.addr = ingress_half_shift(axi_narrow_in_req_can.ar.addr);
-      axi_wide_in_req = axi_wide_in_req_can;
-      axi_wide_in_req.aw.addr = ingress_half_shift(axi_wide_in_req_can.aw.addr);
-      axi_wide_in_req.ar.addr = ingress_half_shift(axi_wide_in_req_can.ar.addr);
+      axi_wide_in_req           = axi_wide_in_req_can;
+      axi_wide_in_req.aw.addr   = ingress_half_shift(axi_wide_in_req_can.aw.addr);
+      axi_wide_in_req.ar.addr   = ingress_half_shift(axi_wide_in_req_can.ar.addr);
     end
   end else begin : gen_ingress_passthrough
     assign axi_narrow_in_req = axi_narrow_in_req_can;
-    assign axi_wide_in_req = axi_wide_in_req_can;
+    assign axi_wide_in_req   = axi_wide_in_req_can;
   end
 
 endmodule : ucie_tile
