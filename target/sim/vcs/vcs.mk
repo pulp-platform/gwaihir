@@ -42,6 +42,8 @@ $(VCS_BUILD):
 # Always analyze Verilog before VHDL
 $(VCS_BUILD)/compile.sh: $(BENDER_YML) $(BENDER_LOCK) | $(VCS_BUILD)
 	$(BENDER) script vcs $(COMMON_TARGS) $(SIM_TARGS) --vlog-arg="$(VLOGAN_ARGS)" --vlogan-bin "$(VLOGAN)" > $@
+	# The HyperRAM model is compiled aside
+	echo '$(VLOGAN) $(VLOGAN_ARGS) "$(HYPER_MODEL)"' >> $@
 	chmod +x $@
 
 $(VCS_BUILD)/gwaihir_top.vcs: $(VCS_BUILD)/compile.sh $(GW_HW_ALL)
@@ -51,7 +53,7 @@ $(VCS_BUILD)/gwaihir_top.vcs: $(VCS_BUILD)/compile.sh $(GW_HW_ALL)
 
 vcs-compile: $(VCS_BUILD)/gwaihir_top.vcs
 
-vcs-run:
+vcs-run: $(HYPER_MODEL)
 	$(VCS_SEPP) $(VCS_BUILD)/gwaihir_top.vcs -verdi $(VCS_FLAGS)
 
 # Compilation + Run for batch mode (no debug overhead)
@@ -62,7 +64,7 @@ $(VCS_BUILD)/gwaihir_top_batch.vcs: $(VCS_BUILD)/compile.sh $(GW_HW_ALL)
 
 vcs-compile-batch: $(VCS_BUILD)/gwaihir_top_batch.vcs
 
-vcs-run-batch:
+vcs-run-batch: $(HYPER_MODEL)
 	$(VCS_SEPP) $(VCS_BUILD)/gwaihir_top_batch.vcs $(VCS_FLAGS)
 
 vcs-run-batch-verify: vcs-run-batch

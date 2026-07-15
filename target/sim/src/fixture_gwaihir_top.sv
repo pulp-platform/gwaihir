@@ -56,6 +56,15 @@ module fixture_gwaihir_top;
   // Set to 1 to bypass tile-specific clock gating and reset (use global signals instead)
   logic   clk_rst_bypass;
   assign  clk_rst_bypass = 1'b0;
+
+  // HyperBus pad wires
+  wire                                              hyper_tc_pad_int_0;
+  wire [HyperbusNumPhys-1:0][HyperbusNumChips-1:0] hyper_csn;
+  wire [HyperbusNumPhys-1:0]                        hyper_ck;
+  wire [HyperbusNumPhys-1:0]                        hyper_ckn;
+  wire [HyperbusNumPhys-1:0]                        hyper_rwds;
+  wire [HyperbusNumPhys-1:0][7:0]                   hyper_dq;
+  wire [HyperbusNumPhys-1:0]                        hyper_resetn;
   // verilog_format: on
 
   gwaihir_top dut (
@@ -117,8 +126,65 @@ module fixture_gwaihir_top;
     .pcie_jtag_phys_tck_i  (1'b0),
     .pcie_jtag_phys_tms_i  (1'b0),
     .pcie_jtag_phys_trst_ni(1'b1),
-    .pcie_jtag_phys_tdo_o  ()
+    .pcie_jtag_phys_tdo_o  (),
+    // HyperBus pads
+    .pad_config_tc_pad_internal_signals_0 (hyper_tc_pad_int_0),
+    .pad_hyper_phy0_cs_n_0_pad  (hyper_csn[0][0]),
+    .pad_hyper_phy0_cs_n_1_pad  (hyper_csn[0][1]),
+    .pad_hyper_phy0_ck_pad      (hyper_ck[0]),
+    .pad_hyper_phy0_ck_n_pad    (hyper_ckn[0]),
+    .pad_hyper_phy0_rwds_pad    (hyper_rwds[0]),
+    .pad_hyper_phy0_dq_b0_pad   (hyper_dq[0][0]),
+    .pad_hyper_phy0_dq_b1_pad   (hyper_dq[0][1]),
+    .pad_hyper_phy0_dq_b2_pad   (hyper_dq[0][2]),
+    .pad_hyper_phy0_dq_b3_pad   (hyper_dq[0][3]),
+    .pad_hyper_phy0_dq_b4_pad   (hyper_dq[0][4]),
+    .pad_hyper_phy0_dq_b5_pad   (hyper_dq[0][5]),
+    .pad_hyper_phy0_dq_b6_pad   (hyper_dq[0][6]),
+    .pad_hyper_phy0_dq_b7_pad   (hyper_dq[0][7]),
+    .pad_hyper_phy0_reset_n_pad (hyper_resetn[0]),
+    .pad_hyper_phy1_cs_n_0_pad  (hyper_csn[1][0]),
+    .pad_hyper_phy1_cs_n_1_pad  (hyper_csn[1][1]),
+    .pad_hyper_phy1_ck_pad      (hyper_ck[1]),
+    .pad_hyper_phy1_ck_n_pad    (hyper_ckn[1]),
+    .pad_hyper_phy1_rwds_pad    (hyper_rwds[1]),
+    .pad_hyper_phy1_dq_b0_pad   (hyper_dq[1][0]),
+    .pad_hyper_phy1_dq_b1_pad   (hyper_dq[1][1]),
+    .pad_hyper_phy1_dq_b2_pad   (hyper_dq[1][2]),
+    .pad_hyper_phy1_dq_b3_pad   (hyper_dq[1][3]),
+    .pad_hyper_phy1_dq_b4_pad   (hyper_dq[1][4]),
+    .pad_hyper_phy1_dq_b5_pad   (hyper_dq[1][5]),
+    .pad_hyper_phy1_dq_b6_pad   (hyper_dq[1][6]),
+    .pad_hyper_phy1_dq_b7_pad   (hyper_dq[1][7]),
+    .pad_hyper_phy1_reset_n_pad (hyper_resetn[1])
   );
+
+  //////////////
+  // HyperRAM //
+  //////////////
+
+  for (genvar i = 0; i < HyperbusNumPhys; i++) begin : gen_hyper_phy
+    pullup (hyper_rwds[i]);
+    for (genvar j = 0; j < HyperbusNumChips; j++) begin : gen_hyper_chip
+      s27ks0641 #(
+        .TimingModel ("S27KS0641DPBHI020")
+      ) dut ( // `dut` instance name derives from the available SDF hierarchy
+        .DQ7      (hyper_dq[i][7]),
+        .DQ6      (hyper_dq[i][6]),
+        .DQ5      (hyper_dq[i][5]),
+        .DQ4      (hyper_dq[i][4]),
+        .DQ3      (hyper_dq[i][3]),
+        .DQ2      (hyper_dq[i][2]),
+        .DQ1      (hyper_dq[i][1]),
+        .DQ0      (hyper_dq[i][0]),
+        .RWDS     (hyper_rwds[i]),
+        .CSNeg    (hyper_csn[i][j]),
+        .CK       (hyper_ck[i]),
+        .CKNeg    (hyper_ckn[i]),
+        .RESETNeg (hyper_resetn[i])
+      );
+    end
+  end
 
   ////////////////////////
   //  Tristate Adapter  //
