@@ -188,9 +188,13 @@ PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
 PCIE_COMMIT ?= 7335dd196ce9e5ec68b10c97a7dbc6334938fd1d
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
+UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
+UCIE_COMMIT ?= 4a121356e7bac17b6a37a2627a1659c7097413c5
+UCIE_DIR = $(GW_ROOT)/.deps/ucie
+
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -199,11 +203,15 @@ $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
 
+$(UCIE_DIR):
+	git clone $(UCIE_REMOTE) $(UCIE_DIR)
+	cd $(UCIE_DIR) && git checkout $(UCIE_COMMIT)
+
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
-	rm -rf $(PD_DIR) $(PCIE_DIR)
+	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR)
 
 -include $(PD_DIR)/pd.mk
 
