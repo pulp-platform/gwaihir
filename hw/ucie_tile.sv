@@ -91,10 +91,8 @@ module ucie_tile
   // Chimney //
   /////////////
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  axi_narrow_in_req;
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req;
+  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  axi_narrow_in_req, axi_narrow_in_req_canonical;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req, axi_wide_in_req_canonical;
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
@@ -134,12 +132,12 @@ module ucie_tile
     // AXI narrow channels
     .axi_narrow_in_req_i (axi_narrow_in_req),
     .axi_narrow_in_rsp_o (axi_narrow_in_rsp_o),
-    .axi_narrow_out_req_o(axi_narrow_out_req),
+    .axi_narrow_out_req_o(axi_narrow_out_req_o),
     .axi_narrow_out_rsp_i(axi_narrow_out_rsp_i),
     // AXI wide channels
     .axi_wide_in_req_i   (axi_wide_in_req),
     .axi_wide_in_rsp_o   (axi_wide_in_rsp_o),
-    .axi_wide_out_req_o  (axi_wide_out_req),
+    .axi_wide_out_req_o  (axi_wide_out_req_o),
     .axi_wide_out_rsp_i  (axi_wide_out_rsp_i),
     .floo_req_o          (router_floo_req_in[Eject]),
     .floo_rsp_o          (router_floo_rsp_in[Eject]),
@@ -149,30 +147,30 @@ module ucie_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
-  // Ingress half-shift
-  if (EnIngressHalfShift) begin : gen_ingress_half_shift
-    always_comb begin
-      axi_narrow_in_req         = axi_narrow_in_req_i;
-      axi_narrow_in_req.aw.addr = ingress_half_shift(axi_narrow_in_req_i.aw.addr);
-      axi_narrow_in_req.ar.addr = ingress_half_shift(axi_narrow_in_req_i.ar.addr);
-      axi_wide_in_req           = axi_wide_in_req_i;
-      axi_wide_in_req.aw.addr   = ingress_half_shift(axi_wide_in_req_i.aw.addr);
-      axi_wide_in_req.ar.addr   = ingress_half_shift(axi_wide_in_req_i.ar.addr);
-    end
-  end else begin : gen_ingress_passthrough
-    assign axi_narrow_in_req = axi_narrow_in_req_i;
-    assign axi_wide_in_req   = axi_wide_in_req_i;
+  // Alias clearing
+  always_comb begin
+    axi_narrow_in_req_canonical         = axi_narrow_in_req_i;
+    axi_narrow_in_req_canonical.aw.addr = axi_narrow_in_req_i.aw.addr & ~gwaihir_pkg::AliasClearMask;
+    axi_narrow_in_req_canonical.ar.addr = axi_narrow_in_req_i.ar.addr & ~gwaihir_pkg::AliasClearMask;
+
+    axi_wide_in_req_canonical           = axi_wide_in_req_i;
+    axi_wide_in_req_canonical.aw.addr   = axi_wide_in_req_i.aw.addr & ~gwaihir_pkg::AliasClearMask;
+    axi_wide_in_req_canonical.ar.addr   = axi_wide_in_req_i.ar.addr & ~gwaihir_pkg::AliasClearMask;
   end
 
-  // Egress alias clearing
-  always_comb begin
-    axi_narrow_out_req_o         = axi_narrow_out_req;
-    axi_narrow_out_req_o.aw.addr = axi_narrow_out_req.aw.addr & ~gwaihir_pkg::AliasClearMask;
-    axi_narrow_out_req_o.ar.addr = axi_narrow_out_req.ar.addr & ~gwaihir_pkg::AliasClearMask;
-
-    axi_wide_out_req_o           = axi_wide_out_req;
-    axi_wide_out_req_o.aw.addr   = axi_wide_out_req.aw.addr & ~gwaihir_pkg::AliasClearMask;
-    axi_wide_out_req_o.ar.addr   = axi_wide_out_req.ar.addr & ~gwaihir_pkg::AliasClearMask;
+  // Half-shift
+  if (EnIngressHalfShift) begin : gen_ingress_half_shift
+    always_comb begin
+      axi_narrow_in_req         = axi_narrow_in_req_canonical;
+      axi_narrow_in_req.aw.addr = ingress_half_shift(axi_narrow_in_req_canonical.aw.addr);
+      axi_narrow_in_req.ar.addr = ingress_half_shift(axi_narrow_in_req_canonical.ar.addr);
+      axi_wide_in_req           = axi_wide_in_req_canonical;
+      axi_wide_in_req.aw.addr   = ingress_half_shift(axi_wide_in_req_canonical.aw.addr);
+      axi_wide_in_req.ar.addr   = ingress_half_shift(axi_wide_in_req_canonical.ar.addr);
+    end
+  end else begin : gen_ingress_passthrough
+    assign axi_narrow_in_req = axi_narrow_in_req_canonical;
+    assign axi_wide_in_req   = axi_wide_in_req_canonical;
   end
 
 endmodule : ucie_tile

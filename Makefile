@@ -151,7 +151,7 @@ sn-hw-clean:
 # FlooNoC #
 ###########
 
-.PHONY: floo-hw-all floo-clean gw-addrmap-clean
+.PHONY: floo-hw-all floo-clean
 
 # Check if `VERIBLE_FMT` executable is valid, otherwise don't format FlooGen output
 FLOO_GEN_FLAGS = --no-format
@@ -164,7 +164,7 @@ $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv: $(FLOO_CFG)
 	$(FLOO_GEN) pkg -c $(FLOO_CFG) -o $(GW_GEN_DIR) $(FLOO_GEN_FLAGS)
 
 
-floo-clean: gw-addrmap-clean
+floo-clean:
 	rm -f $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv
 	rm -f $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR)
 
