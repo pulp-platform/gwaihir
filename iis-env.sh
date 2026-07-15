@@ -13,7 +13,7 @@ export VLIB="${VSIM_SEPP} vlib"
 export VCS_SEPP="vcs-2024.09-zr"
 export VCS="${VCS_SEPP} vcs"
 export VLOGAN="${VCS_SEPP} vlogan"
-export VCS_HOME=/usr/pack/$(VCS_SEPP)/vcs
+export VCS_HOME=/usr/pack/${VCS_SEPP}/vcs
 
 export DESIGNWARE_HOME=/usr/pack/tsmc-7-kgf/gwaihir/configurable_ips
 
