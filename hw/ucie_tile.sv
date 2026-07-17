@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: SHL-0.51
 //
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
+// Chen Wu <chenwu@iis.ee.ethz.ch>
 
 module ucie_tile
   import floo_pkg::*;
