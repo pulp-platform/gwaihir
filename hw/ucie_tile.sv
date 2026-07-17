@@ -91,8 +91,8 @@ module ucie_tile
   // Chimney //
   /////////////
 
-  floo_gwaihir_noc_pkg::axi_narrow_in_req_t axi_narrow_in_req, axi_narrow_in_req_can;
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_in_req, axi_wide_in_req_can;
+  floo_gwaihir_noc_pkg::axi_narrow_in_req_t axi_narrow_in_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_in_req;
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
@@ -147,30 +147,15 @@ module ucie_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
-  // Alias clearing
+  // Translate ingress addresses to their canonical form
   always_comb begin
-    axi_narrow_in_req_can         = axi_narrow_in_req_i;
-    axi_narrow_in_req_can.aw.addr = axi_narrow_in_req_i.aw.addr & ~gwaihir_pkg::AliasClearMask;
-    axi_narrow_in_req_can.ar.addr = axi_narrow_in_req_i.ar.addr & ~gwaihir_pkg::AliasClearMask;
+    axi_narrow_in_req = axi_narrow_in_req_i;
+    axi_narrow_in_req.aw.addr = unalias_ucie_address(axi_narrow_in_req_i.aw.addr, EnIngressHalfShift);
+    axi_narrow_in_req.ar.addr = unalias_ucie_address(axi_narrow_in_req_i.ar.addr, EnIngressHalfShift);
 
-    axi_wide_in_req_can           = axi_wide_in_req_i;
-    axi_wide_in_req_can.aw.addr   = axi_wide_in_req_i.aw.addr & ~gwaihir_pkg::AliasClearMask;
-    axi_wide_in_req_can.ar.addr   = axi_wide_in_req_i.ar.addr & ~gwaihir_pkg::AliasClearMask;
-  end
-
-  // Half-shift
-  if (EnIngressHalfShift) begin : gen_ingress_half_shift
-    always_comb begin
-      axi_narrow_in_req         = axi_narrow_in_req_can;
-      axi_narrow_in_req.aw.addr = ingress_half_shift(axi_narrow_in_req_can.aw.addr);
-      axi_narrow_in_req.ar.addr = ingress_half_shift(axi_narrow_in_req_can.ar.addr);
-      axi_wide_in_req           = axi_wide_in_req_can;
-      axi_wide_in_req.aw.addr   = ingress_half_shift(axi_wide_in_req_can.aw.addr);
-      axi_wide_in_req.ar.addr   = ingress_half_shift(axi_wide_in_req_can.ar.addr);
-    end
-  end else begin : gen_ingress_passthrough
-    assign axi_narrow_in_req = axi_narrow_in_req_can;
-    assign axi_wide_in_req   = axi_wide_in_req_can;
+    axi_wide_in_req = axi_wide_in_req_i;
+    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_in_req_i.aw.addr, EnIngressHalfShift);
+    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_in_req_i.ar.addr, EnIngressHalfShift);
   end
 
 endmodule : ucie_tile

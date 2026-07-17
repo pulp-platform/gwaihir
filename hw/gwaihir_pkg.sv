@@ -465,6 +465,7 @@ package gwaihir_pkg;
   ////////////////
   // UCIe Tile  //
   ////////////////
+
   function automatic addr_t alias_clear_mask();
     addr_t ucie0_base, ucie1_base, canonical_base;
     ucie0_base     = addr_t'(Sam[Ucie0SamIdx].start_addr);
@@ -486,6 +487,15 @@ package gwaihir_pkg;
     if (addr >= TcdmExposedBase && addr < TcdmExposedEnd) return addr + TcdmHalfShift;
     else if (addr >= L2ExposedBase && addr < L2ExposedEnd) return addr + L2HalfShift;
     else return addr;
+  endfunction
+
+  // Translate an ingress UCIe address to its canonical form: clear the alias
+  // bits, then, if `en_half_shift` is set (i.e. on the chiplet owning the
+  // upper half of the exposed regions), apply the half shift.
+  function automatic addr_t unalias_ucie_address(input addr_t addr, input bit en_half_shift);
+    addr_t cleared;
+    cleared = addr & ~AliasClearMask;
+    return en_half_shift ? ingress_half_shift(cleared) : cleared;
   endfunction
 
 endpackage
