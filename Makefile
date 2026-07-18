@@ -179,11 +179,11 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 6089301f56f3b31051e6a492572eada5bc592d56
+PD_COMMIT ?= bfff5a00cf483918dad1dd8544335caa4c09d6bd
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
-PCIE_COMMIT ?= 7335dd196ce9e5ec68b10c97a7dbc6334938fd1d
+PCIE_COMMIT ?= 020c8085a2acaf298d34ab6c8d2d237095bf3998
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git

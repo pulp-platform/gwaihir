@@ -355,7 +355,7 @@ package gwaihir_pkg;
     // TODO(fischeti): Inherit these from generated SV/RDL.
     ret.AxiExtRegionIdx[0]                   = 0;
     ret.AxiExtRegionStart[0]                 = 'h2000_0000;
-    ret.AxiExtRegionEnd[0]                   = 'h8000_0000;
+    ret.AxiExtRegionEnd[0]                   = 'h6_0000_0000;
     ret.RegExtRegionIdx[CshRegExtFLL]        = CshRegExtFLL;
     ret.RegExtRegionStart[CshRegExtFLL]      = 'h1800_1000;
     ret.RegExtRegionEnd[CshRegExtFLL]        = 'h1800_2000;
@@ -380,7 +380,7 @@ package gwaihir_pkg;
     // We do not need/want USB
     ret.Usb                                  = 1'b0;
     ret.LlcOutRegionStart                    = 'h8000_0000;
-    ret.LlcOutRegionEnd                      = 'h12_0000_0000;
+    ret.LlcOutRegionEnd                      = 'h1_0000_0000;
     ret.SlinkRegionStart                     = 'h100_0000_0000;
     ret.SlinkRegionEnd                       = 'h200_0000_0000;
     // RT features
