@@ -9,6 +9,11 @@ export VSIM_SEPP="questa-2023.4"
 export VSIM="${VSIM_SEPP} vsim"
 export VOPT="${VSIM_SEPP} vopt"
 export VLIB="${VSIM_SEPP} vlib"
+export WLF2VCD="${VSIM_SEPP} wlf2vcd"
+export WLFMAN="${VSIM_SEPP} wlfman"
+
+export OSEDA="oseda -2026.04"
+export VCD2FST="${OSEDA} vcd2fst"
 
 export VCS_SEPP="vcs-2024.09-zr"
 export VCS="${VCS_SEPP} vcs"

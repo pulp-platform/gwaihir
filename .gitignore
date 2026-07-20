@@ -38,6 +38,8 @@ modelsim.ini
 .rtlbinary
 .chsbinary
 *.do
+*.vcd
+*.fst
 
 ## VCS
 .inter*
