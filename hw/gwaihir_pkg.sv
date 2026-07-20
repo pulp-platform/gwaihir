@@ -482,7 +482,6 @@ package gwaihir_pkg;
     localparam addr_t L2ExposedBase = addr_t'(Sam[L2Spm0SamIdx].start_addr);
     localparam addr_t L2HalfShift = addr_t'((NumMemTiles / 2) * MemTileSize);
     localparam addr_t L2ExposedEnd = L2ExposedBase + L2HalfShift;
-    
     if (addr >= TcdmExposedBase && addr < TcdmExposedEnd) return addr + TcdmHalfShift;
     else if (addr >= L2ExposedBase && addr < L2ExposedEnd) return addr + L2HalfShift;
     else return addr;

@@ -149,15 +149,13 @@ module ucie_tile
 
   // Translate ingress addresses to their canonical form
   always_comb begin
-    axi_narrow_in_req = axi_narrow_in_req_i;
-    axi_narrow_in_req.aw.addr =
-        unalias_ucie_address(axi_narrow_in_req_i.aw.addr, ucie_id_i);
-    axi_narrow_in_req.ar.addr =
-        unalias_ucie_address(axi_narrow_in_req_i.ar.addr, ucie_id_i);
+    axi_narrow_in_req         = axi_narrow_in_req_i;
+    axi_narrow_in_req.aw.addr = unalias_ucie_address(axi_narrow_in_req_i.aw.addr, ucie_id_i);
+    axi_narrow_in_req.ar.addr = unalias_ucie_address(axi_narrow_in_req_i.ar.addr, ucie_id_i);
 
-    axi_wide_in_req = axi_wide_in_req_i;
-    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_in_req_i.aw.addr, ucie_id_i);
-    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_in_req_i.ar.addr, ucie_id_i);
+    axi_wide_in_req           = axi_wide_in_req_i;
+    axi_wide_in_req.aw.addr   = unalias_ucie_address(axi_wide_in_req_i.aw.addr, ucie_id_i);
+    axi_wide_in_req.ar.addr   = unalias_ucie_address(axi_wide_in_req_i.ar.addr, ucie_id_i);
   end
 
 endmodule : ucie_tile
