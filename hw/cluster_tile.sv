@@ -529,7 +529,6 @@ module cluster_tile
   ) i_axi_demux (
     .clk_i          (clk_i),
     .rst_ni         (rst_ni),
-    .test_i         (test_enable_i),
     .slv_req_i      (chimney_narrow_out_req),
     .slv_aw_select_i(aw_select),
     .slv_ar_select_i(ar_select),
@@ -563,7 +562,6 @@ module cluster_tile
   ) i_axi_to_axi_lite_tile_cfg (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .test_i    (test_enable_i),
     .slv_req_i (tile_cfg_demux_req),
     .slv_resp_o(tile_cfg_demux_rsp),
     .mst_req_o (tile_cfg_axi_lite_req),

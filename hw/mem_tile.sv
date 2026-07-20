@@ -283,7 +283,6 @@ module mem_tile
   ) i_axi_demux (
     .clk_i          (clk_i),
     .rst_ni         (rst_ni),
-    .test_i         (test_enable_i),
     .slv_aw_select_i(aw_select),
     .slv_ar_select_i(ar_select),
     .slv_req_i      (chimney_narrow_out_req),
@@ -306,7 +305,6 @@ module mem_tile
   ) i_axi_to_axi_lite_tile_cfg (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .test_i    (test_enable_i),
     .slv_req_i (axi_demux_out_req[TileCfg]),
     .slv_resp_o(axi_demux_out_rsp[TileCfg]),
     .mst_req_o (tile_cfg_axi_lite_req),
@@ -444,7 +442,6 @@ module mem_tile
   ) i_axi_dma_xbar (
     .clk_i                (tile_clk),
     .rst_ni               (tile_rst_n),
-    .test_i               (test_enable_i),
     .slv_ports_req_i      (axi_dma_req),
     .slv_ports_resp_o     (axi_dma_rsp),
     .mst_ports_req_o      (axi_dma_req_demux),
@@ -602,7 +599,6 @@ module mem_tile
   ) i_dma_axi_to_obi (
     .clk_i     (tile_clk),
     .rst_ni    (tile_rst_n),
-    .testmode_i(test_enable_i),
     .axi_req_i (axi_dma_req_demux[Local]),
     .axi_rsp_o (axi_dma_rsp_demux[Local]),
     .obi_req_o (dma_obi_req),
@@ -851,7 +847,6 @@ module mem_tile
   ) i_axi_to_obi (
     .clk_i     (tile_clk),
     .rst_ni    (tile_rst_n),
-    .testmode_i(test_enable_i),
     .axi_req_i (axi_req),
     .axi_rsp_o (axi_rsp),
     .obi_req_o (obi_req),
@@ -913,7 +908,6 @@ module mem_tile
   ) i_obi_atop_resolver (
     .clk_i         (tile_clk),
     .rst_ni        (tile_rst_n),
-    .testmode_i    (test_enable_i),
     .sbr_port_req_i(obi_req),
     .sbr_port_rsp_o(obi_rsp),
     .mgr_port_req_o(mem_obi_req),

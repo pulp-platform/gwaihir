@@ -396,7 +396,6 @@ module cheshire_tile
   ) i_llc_err_slv (
     .clk_i,
     .rst_ni,
-    .test_i    (test_mode_i),
     .slv_req_i (axi_llc_req),
     .slv_resp_o(axi_llc_rsp)
   );
