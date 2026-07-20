@@ -262,14 +262,13 @@ module gwaihir_top
   localparam int Ucie1X = int'(SamPhysical[Ucie1SamIdx].idx.x);
   localparam int Ucie1Y = int'(SamPhysical[Ucie1SamIdx].idx.y);
 
-  ucie_tile #(
-    // ucie0 (chiplet0) ingress is pass-through.
-    .EnIngressHalfShift(0)
-  ) i_ucie_tile0 (
+  ucie_tile i_ucie_tile0 (
     .clk_i,
     .rst_ni,
     .test_enable_i       (test_mode_i),
     .id_i                (Sam[Ucie0SamIdx].idx),
+    // ucie0 (chiplet0) ingress is pass-through.
+    .ucie_id_i           (1'b0),
     .floo_req_o          (floo_req_out[Ucie0X][Ucie0Y]),
     .floo_rsp_i          (floo_rsp_in[Ucie0X][Ucie0Y]),
     .floo_wide_o         (floo_wide_out[Ucie0X][Ucie0Y]),
@@ -288,14 +287,13 @@ module gwaihir_top
     .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[0])
   );
 
-  ucie_tile #(
-    // ucie1 (chiplet1) ingress is shift.
-    .EnIngressHalfShift(1)
-  ) i_ucie_tile1 (
+  ucie_tile i_ucie_tile1 (
     .clk_i,
     .rst_ni,
     .test_enable_i       (test_mode_i),
     .id_i                (Sam[Ucie1SamIdx].idx),
+    // ucie1 (chiplet1) ingress applies the half-shift.
+    .ucie_id_i           (1'b1),
     .floo_req_o          (floo_req_out[Ucie1X][Ucie1Y]),
     .floo_rsp_i          (floo_rsp_in[Ucie1X][Ucie1Y]),
     .floo_wide_o         (floo_wide_out[Ucie1X][Ucie1Y]),

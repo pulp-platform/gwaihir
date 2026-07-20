@@ -9,14 +9,13 @@ module ucie_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
-#(
-  parameter bit EnIngressHalfShift = 1'b0
-) (
+(
   input  logic                    clk_i,
   input  logic                    rst_ni,
   input  logic                    test_enable_i,
   // Router ID
   input  id_t                     id_i,
+  input  logic                    ucie_id_i,
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,
@@ -152,13 +151,13 @@ module ucie_tile
   always_comb begin
     axi_narrow_in_req = axi_narrow_in_req_i;
     axi_narrow_in_req.aw.addr =
-        unalias_ucie_address(axi_narrow_in_req_i.aw.addr, EnIngressHalfShift);
+        unalias_ucie_address(axi_narrow_in_req_i.aw.addr, ucie_id_i);
     axi_narrow_in_req.ar.addr =
-        unalias_ucie_address(axi_narrow_in_req_i.ar.addr, EnIngressHalfShift);
+        unalias_ucie_address(axi_narrow_in_req_i.ar.addr, ucie_id_i);
 
     axi_wide_in_req = axi_wide_in_req_i;
-    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_in_req_i.aw.addr, EnIngressHalfShift);
-    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_in_req_i.ar.addr, EnIngressHalfShift);
+    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_in_req_i.aw.addr, ucie_id_i);
+    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_in_req_i.ar.addr, ucie_id_i);
   end
 
 endmodule : ucie_tile

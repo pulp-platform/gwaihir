@@ -21,7 +21,7 @@ int main() {
 
   (*alias_wr) = TRANSFER_DATA;
 
-  fencei();
+  fence();
 
   return (*local_rd != TRANSFER_DATA);
 
