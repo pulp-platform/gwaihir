@@ -56,8 +56,8 @@ module gwaihir_top
   output logic          [               31:0]                    gpio_o,
   output logic          [               31:0]                    gpio_en_o,
   // APB configuration interfaces
-  output csh_apb_req_t  [CshRegExtChipCtrl:CshRegExtFLL]         apb_req_o,
-  input  csh_apb_resp_t [CshRegExtChipCtrl:CshRegExtFLL]         apb_rsp_i,
+  output csh_apb_req_t [CshRegExtChipCtrl:CshRegExtFLL] apb_req_o,
+  input csh_apb_resp_t [CshRegExtChipCtrl:CshRegExtFLL] apb_rsp_i,
   // Serial link interface
   input  logic          [   SlinkNumChan-1:0]                    slink_rcv_clk_i,
   output logic          [   SlinkNumChan-1:0]                    slink_rcv_clk_o,
@@ -82,35 +82,37 @@ module gwaihir_top
   input  logic                                                   pcie_jtag_phys_trst_ni,
   output logic                                                   pcie_jtag_phys_tdo_o,
   // HyperBus pads
-  inout  wire                                                    pad_config_tc_pad_internal_signals_0,
-  inout  wire                                                    pad_hyper_phy0_cs_n_0_pad,
-  inout  wire                                                    pad_hyper_phy0_cs_n_1_pad,
-  inout  wire                                                    pad_hyper_phy0_ck_pad,
-  inout  wire                                                    pad_hyper_phy0_ck_n_pad,
-  inout  wire                                                    pad_hyper_phy0_rwds_pad,
-  inout  wire                                                    pad_hyper_phy0_dq_b0_pad,
-  inout  wire                                                    pad_hyper_phy0_dq_b1_pad,
-  inout  wire                                                    pad_hyper_phy0_dq_b2_pad,
-  inout  wire                                                    pad_hyper_phy0_dq_b3_pad,
-  inout  wire                                                    pad_hyper_phy0_dq_b4_pad,
-  inout  wire                                                    pad_hyper_phy0_dq_b5_pad,
-  inout  wire                                                    pad_hyper_phy0_dq_b6_pad,
-  inout  wire                                                    pad_hyper_phy0_dq_b7_pad,
-  inout  wire                                                    pad_hyper_phy0_reset_n_pad,
-  inout  wire                                                    pad_hyper_phy1_cs_n_0_pad,
-  inout  wire                                                    pad_hyper_phy1_cs_n_1_pad,
-  inout  wire                                                    pad_hyper_phy1_ck_pad,
-  inout  wire                                                    pad_hyper_phy1_ck_n_pad,
-  inout  wire                                                    pad_hyper_phy1_rwds_pad,
-  inout  wire                                                    pad_hyper_phy1_dq_b0_pad,
-  inout  wire                                                    pad_hyper_phy1_dq_b1_pad,
-  inout  wire                                                    pad_hyper_phy1_dq_b2_pad,
-  inout  wire                                                    pad_hyper_phy1_dq_b3_pad,
-  inout  wire                                                    pad_hyper_phy1_dq_b4_pad,
-  inout  wire                                                    pad_hyper_phy1_dq_b5_pad,
-  inout  wire                                                    pad_hyper_phy1_dq_b6_pad,
-  inout  wire                                                    pad_hyper_phy1_dq_b7_pad,
-  inout  wire                                                    pad_hyper_phy1_reset_n_pad
+  // verilog_format: off
+  inout wire pad_config_tc_pad_internal_signals_0,
+  inout wire pad_hyper_phy0_cs_n_0_pad,
+  inout wire pad_hyper_phy0_cs_n_1_pad,
+  inout wire pad_hyper_phy0_ck_pad,
+  inout wire pad_hyper_phy0_ck_n_pad,
+  inout wire pad_hyper_phy0_rwds_pad,
+  inout wire pad_hyper_phy0_dq_b0_pad,
+  inout wire pad_hyper_phy0_dq_b1_pad,
+  inout wire pad_hyper_phy0_dq_b2_pad,
+  inout wire pad_hyper_phy0_dq_b3_pad,
+  inout wire pad_hyper_phy0_dq_b4_pad,
+  inout wire pad_hyper_phy0_dq_b5_pad,
+  inout wire pad_hyper_phy0_dq_b6_pad,
+  inout wire pad_hyper_phy0_dq_b7_pad,
+  inout wire pad_hyper_phy0_reset_n_pad,
+  inout wire pad_hyper_phy1_cs_n_0_pad,
+  inout wire pad_hyper_phy1_cs_n_1_pad,
+  inout wire pad_hyper_phy1_ck_pad,
+  inout wire pad_hyper_phy1_ck_n_pad,
+  inout wire pad_hyper_phy1_rwds_pad,
+  inout wire pad_hyper_phy1_dq_b0_pad,
+  inout wire pad_hyper_phy1_dq_b1_pad,
+  inout wire pad_hyper_phy1_dq_b2_pad,
+  inout wire pad_hyper_phy1_dq_b3_pad,
+  inout wire pad_hyper_phy1_dq_b4_pad,
+  inout wire pad_hyper_phy1_dq_b5_pad,
+  inout wire pad_hyper_phy1_dq_b6_pad,
+  inout wire pad_hyper_phy1_dq_b7_pad,
+  inout wire pad_hyper_phy1_reset_n_pad
+  // verilog_format: on
 );
 
   floo_req_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_req_in, floo_req_out;
@@ -171,6 +173,7 @@ module gwaihir_top
   logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext;
   logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] msip_ext;
 
+  // verilog_format: off
   csh_axi_llc_aw_chan_t [2**HyperbusAxiLogDepth-1:0] hyper_axi_aw_data;
   logic                 [HyperbusAxiLogDepth:0]      hyper_axi_aw_wptr, hyper_axi_aw_rptr;
   csh_axi_llc_w_chan_t  [2**HyperbusAxiLogDepth-1:0] hyper_axi_w_data;
@@ -181,10 +184,11 @@ module gwaihir_top
   logic                 [HyperbusAxiLogDepth:0]      hyper_axi_ar_wptr, hyper_axi_ar_rptr;
   csh_axi_llc_r_chan_t  [2**HyperbusAxiLogDepth-1:0] hyper_axi_r_data;
   logic                 [HyperbusAxiLogDepth:0]      hyper_axi_r_wptr, hyper_axi_r_rptr;
-  logic                 hyper_reg_async_req,      hyper_reg_async_ack;
-  csh_reg_req_t         hyper_reg_async_data;
-  logic                 hyper_reg_async_rsp_req,  hyper_reg_async_rsp_ack;
-  csh_reg_rsp_t         hyper_reg_async_rsp_data;
+  // verilog_format: on
+  logic hyper_reg_async_req, hyper_reg_async_ack;
+  csh_reg_req_t hyper_reg_async_data;
+  logic hyper_reg_async_rsp_req, hyper_reg_async_rsp_ack;
+  csh_reg_rsp_t     hyper_reg_async_rsp_data;
 
   csh_axi_llc_req_t hyper_axi_req;
   csh_axi_llc_rsp_t hyper_axi_rsp;
@@ -269,41 +273,41 @@ module gwaihir_top
   ///////////////
 
   axi_cdc_src #(
-    .LogDepth   (HyperbusAxiLogDepth),
-    .SyncStages (HyperbusCdcSyncStages),
-    .aw_chan_t  (csh_axi_llc_aw_chan_t),
-    .w_chan_t   (csh_axi_llc_w_chan_t),
-    .b_chan_t   (csh_axi_llc_b_chan_t),
-    .ar_chan_t  (csh_axi_llc_ar_chan_t),
-    .r_chan_t   (csh_axi_llc_r_chan_t),
-    .axi_req_t  (csh_axi_llc_req_t),
-    .axi_resp_t (csh_axi_llc_rsp_t)
+    .LogDepth  (HyperbusAxiLogDepth),
+    .SyncStages(HyperbusCdcSyncStages),
+    .aw_chan_t (csh_axi_llc_aw_chan_t),
+    .w_chan_t  (csh_axi_llc_w_chan_t),
+    .b_chan_t  (csh_axi_llc_b_chan_t),
+    .ar_chan_t (csh_axi_llc_ar_chan_t),
+    .r_chan_t  (csh_axi_llc_r_chan_t),
+    .axi_req_t (csh_axi_llc_req_t),
+    .axi_resp_t(csh_axi_llc_rsp_t)
   ) i_hyper_axi_cdc_src (
-    .src_clk_i                   (clk_i),
-    .src_rst_ni                  (rst_ni),
-    .src_req_i                   (hyper_axi_req),
-    .src_resp_o                  (hyper_axi_rsp),
-    .async_data_master_aw_data_o (hyper_axi_aw_data),
-    .async_data_master_aw_wptr_o (hyper_axi_aw_wptr),
-    .async_data_master_aw_rptr_i (hyper_axi_aw_rptr),
-    .async_data_master_w_data_o  (hyper_axi_w_data),
-    .async_data_master_w_wptr_o  (hyper_axi_w_wptr),
-    .async_data_master_w_rptr_i  (hyper_axi_w_rptr),
-    .async_data_master_b_data_i  (hyper_axi_b_data),
-    .async_data_master_b_wptr_i  (hyper_axi_b_wptr),
-    .async_data_master_b_rptr_o  (hyper_axi_b_rptr),
-    .async_data_master_ar_data_o (hyper_axi_ar_data),
-    .async_data_master_ar_wptr_o (hyper_axi_ar_wptr),
-    .async_data_master_ar_rptr_i (hyper_axi_ar_rptr),
-    .async_data_master_r_data_i  (hyper_axi_r_data),
-    .async_data_master_r_wptr_i  (hyper_axi_r_wptr),
-    .async_data_master_r_rptr_o  (hyper_axi_r_rptr)
+    .src_clk_i                  (clk_i),
+    .src_rst_ni                 (rst_ni),
+    .src_req_i                  (hyper_axi_req),
+    .src_resp_o                 (hyper_axi_rsp),
+    .async_data_master_aw_data_o(hyper_axi_aw_data),
+    .async_data_master_aw_wptr_o(hyper_axi_aw_wptr),
+    .async_data_master_aw_rptr_i(hyper_axi_aw_rptr),
+    .async_data_master_w_data_o (hyper_axi_w_data),
+    .async_data_master_w_wptr_o (hyper_axi_w_wptr),
+    .async_data_master_w_rptr_i (hyper_axi_w_rptr),
+    .async_data_master_b_data_i (hyper_axi_b_data),
+    .async_data_master_b_wptr_i (hyper_axi_b_wptr),
+    .async_data_master_b_rptr_o (hyper_axi_b_rptr),
+    .async_data_master_ar_data_o(hyper_axi_ar_data),
+    .async_data_master_ar_wptr_o(hyper_axi_ar_wptr),
+    .async_data_master_ar_rptr_i(hyper_axi_ar_rptr),
+    .async_data_master_r_data_i (hyper_axi_r_data),
+    .async_data_master_r_wptr_i (hyper_axi_r_wptr),
+    .async_data_master_r_rptr_o (hyper_axi_r_rptr)
   );
 
   reg_cdc_src #(
-    .CDC_KIND ("cdc_4phase"),
-    .req_t    (csh_reg_req_t),
-    .rsp_t    (csh_reg_rsp_t)
+    .CDC_KIND("cdc_4phase"),
+    .req_t   (csh_reg_req_t),
+    .rsp_t   (csh_reg_rsp_t)
   ) i_hyper_reg_cdc_src (
     .src_clk_i   (clk_i),
     .src_rst_ni  (rst_ni),
@@ -318,35 +322,35 @@ module gwaihir_top
   );
 
   hyperbus_wrap #(
-    .NumChips         (HyperbusNumChips),
-    .NumPhys          (HyperbusNumPhys),
-    .AxiAddrWidth     (CheshireCfg.AddrWidth),
-    .AxiDataWidth     (CheshireCfg.AxiDataWidth),
-    .AxiIdWidth       ($bits(csh_axi_llc_id_t)),
-    .AxiUserWidth     (CheshireCfg.AxiUserWidth),
-    .AxiMaxTrans      (HyperbusAxiMaxTrans),
-    .axi_req_t        (csh_axi_llc_req_t),
-    .axi_rsp_t        (csh_axi_llc_rsp_t),
-    .axi_aw_chan_t    (csh_axi_llc_aw_chan_t),
-    .axi_w_chan_t     (csh_axi_llc_w_chan_t),
-    .axi_b_chan_t     (csh_axi_llc_b_chan_t),
-    .axi_ar_chan_t    (csh_axi_llc_ar_chan_t),
-    .axi_r_chan_t     (csh_axi_llc_r_chan_t),
-    .RegAddrWidth     (CheshireCfg.AddrWidth),
-    .RegDataWidth     (32),
-    .reg_req_t        (csh_reg_req_t),
-    .reg_rsp_t        (csh_reg_rsp_t),
-    .MinFreqMHz       (HyperbusMinFreqMHz),
-    .RxFifoLogDepth   (HyperbusRxFifoLogDepth),
-    .TxFifoLogDepth   (HyperbusTxFifoLogDepth),
-    .PhyStartupCycles (HyperbusPhyStartupCycles),
-    .AxiLogDepth      (HyperbusAxiLogDepth),
-    .AxiSlaveAwWidth  ($bits(csh_axi_llc_aw_chan_t) * (2**HyperbusAxiLogDepth)),
-    .AxiSlaveArWidth  ($bits(csh_axi_llc_ar_chan_t) * (2**HyperbusAxiLogDepth)),
-    .AxiSlaveBWidth   ($bits(csh_axi_llc_b_chan_t)  * (2**HyperbusAxiLogDepth)),
-    .AxiSlaveRWidth   ($bits(csh_axi_llc_r_chan_t)  * (2**HyperbusAxiLogDepth)),
-    .AxiSlaveWWidth   ($bits(csh_axi_llc_w_chan_t)  * (2**HyperbusAxiLogDepth)),
-    .CdcSyncStages    (HyperbusCdcSyncStages)
+    .NumChips        (HyperbusNumChips),
+    .NumPhys         (HyperbusNumPhys),
+    .AxiAddrWidth    (CheshireCfg.AddrWidth),
+    .AxiDataWidth    (CheshireCfg.AxiDataWidth),
+    .AxiIdWidth      ($bits(csh_axi_llc_id_t)),
+    .AxiUserWidth    (CheshireCfg.AxiUserWidth),
+    .AxiMaxTrans     (HyperbusAxiMaxTrans),
+    .axi_req_t       (csh_axi_llc_req_t),
+    .axi_rsp_t       (csh_axi_llc_rsp_t),
+    .axi_aw_chan_t   (csh_axi_llc_aw_chan_t),
+    .axi_w_chan_t    (csh_axi_llc_w_chan_t),
+    .axi_b_chan_t    (csh_axi_llc_b_chan_t),
+    .axi_ar_chan_t   (csh_axi_llc_ar_chan_t),
+    .axi_r_chan_t    (csh_axi_llc_r_chan_t),
+    .RegAddrWidth    (CheshireCfg.AddrWidth),
+    .RegDataWidth    (32),
+    .reg_req_t       (csh_reg_req_t),
+    .reg_rsp_t       (csh_reg_rsp_t),
+    .MinFreqMHz      (HyperbusMinFreqMHz),
+    .RxFifoLogDepth  (HyperbusRxFifoLogDepth),
+    .TxFifoLogDepth  (HyperbusTxFifoLogDepth),
+    .PhyStartupCycles(HyperbusPhyStartupCycles),
+    .AxiLogDepth     (HyperbusAxiLogDepth),
+    .AxiSlaveAwWidth ($bits(csh_axi_llc_aw_chan_t) * (2 ** HyperbusAxiLogDepth)),
+    .AxiSlaveArWidth ($bits(csh_axi_llc_ar_chan_t) * (2 ** HyperbusAxiLogDepth)),
+    .AxiSlaveBWidth  ($bits(csh_axi_llc_b_chan_t) * (2 ** HyperbusAxiLogDepth)),
+    .AxiSlaveRWidth  ($bits(csh_axi_llc_r_chan_t) * (2 ** HyperbusAxiLogDepth)),
+    .AxiSlaveWWidth  ($bits(csh_axi_llc_w_chan_t) * (2 ** HyperbusAxiLogDepth)),
+    .CdcSyncStages   (HyperbusCdcSyncStages)
   ) i_hyperbus_wrap (
     .clk_i,
     .rst_ni,
@@ -366,12 +370,12 @@ module gwaihir_top
     .axi_slave_r_data_o  (hyper_axi_r_data),
     .axi_slave_r_wptr_o  (hyper_axi_r_wptr),
     .axi_slave_r_rptr_i  (hyper_axi_r_rptr),
-    .reg_async_mst_req_i  (hyper_reg_async_req),
-    .reg_async_mst_ack_o  (hyper_reg_async_ack),
-    .reg_async_mst_data_i (hyper_reg_async_data),
-    .reg_async_mst_req_o  (hyper_reg_async_rsp_req),
-    .reg_async_mst_ack_i  (hyper_reg_async_rsp_ack),
-    .reg_async_mst_data_o (hyper_reg_async_rsp_data),
+    .reg_async_mst_req_i (hyper_reg_async_req),
+    .reg_async_mst_ack_o (hyper_reg_async_ack),
+    .reg_async_mst_data_i(hyper_reg_async_data),
+    .reg_async_mst_req_o (hyper_reg_async_rsp_req),
+    .reg_async_mst_ack_i (hyper_reg_async_rsp_ack),
+    .reg_async_mst_data_o(hyper_reg_async_rsp_data),
     .pad_config_tc_pad_internal_signals_0,
     .pad_hyper_phy0_cs_n_0_pad,
     .pad_hyper_phy0_cs_n_1_pad,

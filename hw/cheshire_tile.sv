@@ -87,10 +87,10 @@ module cheshire_tile
   input floo_wide_t floo_wide_south_i,
   // Hyperbus AXI interface
   output csh_axi_llc_req_t hyper_axi_req_o,
-  input  csh_axi_llc_rsp_t hyper_axi_rsp_i,
+  input csh_axi_llc_rsp_t hyper_axi_rsp_i,
   // Hyperbus reg interface
   output csh_reg_req_t hyper_reg_req_o,
-  input  csh_reg_rsp_t hyper_reg_rsp_i
+  input csh_reg_rsp_t hyper_reg_rsp_i
 );
 
   ////////////
@@ -392,70 +392,70 @@ module cheshire_tile
 
   // LLC master port address decode + demux
   logic [LlcIdxWidth-1:0] llc_dec_aw, llc_dec_ar;
-  logic                   llc_dec_aw_valid, llc_dec_ar_valid;
-  logic                   llc_dec_aw_error, llc_dec_ar_error;
+  logic llc_dec_aw_valid, llc_dec_ar_valid;
+  logic llc_dec_aw_error, llc_dec_ar_error;
 
   addr_decode #(
-    .NoIndices (LlcNumMstPorts),
-    .NoRules   (LlcNumAddrRules),
-    .addr_t    (csh_addr_t),
-    .rule_t    (llc_addr_rule_t)
+    .NoIndices(LlcNumMstPorts),
+    .NoRules  (LlcNumAddrRules),
+    .addr_t   (csh_addr_t),
+    .rule_t   (llc_addr_rule_t)
   ) i_llc_aw_decode (
-    .addr_i           (axi_llc_req.aw.addr),
-    .addr_map_i       (LlcAddrMap),
-    .idx_o            (llc_dec_aw),
-    .dec_valid_o      (llc_dec_aw_valid),
-    .dec_error_o      (llc_dec_aw_error),
-    .en_default_idx_i ('0),
-    .default_idx_i    ('0)
+    .addr_i          (axi_llc_req.aw.addr),
+    .addr_map_i      (LlcAddrMap),
+    .idx_o           (llc_dec_aw),
+    .dec_valid_o     (llc_dec_aw_valid),
+    .dec_error_o     (llc_dec_aw_error),
+    .en_default_idx_i('0),
+    .default_idx_i   ('0)
   );
 
   addr_decode #(
-    .NoIndices (LlcNumMstPorts),
-    .NoRules   (LlcNumAddrRules),
-    .addr_t    (csh_addr_t),
-    .rule_t    (llc_addr_rule_t)
+    .NoIndices(LlcNumMstPorts),
+    .NoRules  (LlcNumAddrRules),
+    .addr_t   (csh_addr_t),
+    .rule_t   (llc_addr_rule_t)
   ) i_llc_ar_decode (
-    .addr_i           (axi_llc_req.ar.addr),
-    .addr_map_i       (LlcAddrMap),
-    .idx_o            (llc_dec_ar),
-    .dec_valid_o      (llc_dec_ar_valid),
-    .dec_error_o      (llc_dec_ar_error),
-    .en_default_idx_i ('0),
-    .default_idx_i    ('0)
+    .addr_i          (axi_llc_req.ar.addr),
+    .addr_map_i      (LlcAddrMap),
+    .idx_o           (llc_dec_ar),
+    .dec_valid_o     (llc_dec_ar_valid),
+    .dec_error_o     (llc_dec_ar_error),
+    .en_default_idx_i('0),
+    .default_idx_i   ('0)
   );
 
   axi_demux #(
-    .AxiIdWidth (CheshireCfg.AxiMstIdWidth + $clog2(
+    .AxiIdWidth(CheshireCfg.AxiMstIdWidth + $clog2(
         csh_axi__AxiIn.num_in
     ) + CheshireCfg.LlcNotBypass),
     .AtopSupport(1'b1),
-    .aw_chan_t  (csh_axi_llc_aw_chan_t),
-    .w_chan_t   (csh_axi_llc_w_chan_t),
-    .b_chan_t   (csh_axi_llc_b_chan_t),
-    .ar_chan_t  (csh_axi_llc_ar_chan_t),
-    .r_chan_t   (csh_axi_llc_r_chan_t),
-    .axi_req_t  (csh_axi_llc_req_t),
-    .axi_resp_t (csh_axi_llc_rsp_t),
-    .NoMstPorts (LlcNumMstPorts),
-    .MaxTrans   (8),
+    .aw_chan_t(csh_axi_llc_aw_chan_t),
+    .w_chan_t(csh_axi_llc_w_chan_t),
+    .b_chan_t(csh_axi_llc_b_chan_t),
+    .ar_chan_t(csh_axi_llc_ar_chan_t),
+    .r_chan_t(csh_axi_llc_r_chan_t),
+    .axi_req_t(csh_axi_llc_req_t),
+    .axi_resp_t(csh_axi_llc_rsp_t),
+    .NoMstPorts(LlcNumMstPorts),
+    .MaxTrans(8),
     .AxiLookBits(3),
-    .UniqueIds  (1'b0),
-    .SpillAw    (1'b1),
-    .SpillW     (1'b0),
-    .SpillB     (1'b0),
-    .SpillAr    (1'b1),
-    .SpillR     (1'b0)
+    .UniqueIds(1'b0),
+    .SpillAw(1'b1),
+    .SpillW(1'b0),
+    .SpillB(1'b0),
+    .SpillAr(1'b1),
+    .SpillR(1'b0)
   ) i_llc_demux (
     .clk_i,
     .rst_ni,
-    .test_i          (test_mode_i),
-    .slv_req_i       (axi_llc_req),
-    .slv_resp_o      (axi_llc_rsp),
-    .slv_aw_select_i (llc_dec_aw),
-    .slv_ar_select_i (llc_dec_ar),
-    .mst_reqs_o      (hyper_axi_req_o),
-    .mst_resps_i     (hyper_axi_rsp_i)
+    .test_i         (test_mode_i),
+    .slv_req_i      (axi_llc_req),
+    .slv_resp_o     (axi_llc_rsp),
+    .slv_aw_select_i(llc_dec_aw),
+    .slv_ar_select_i(llc_dec_ar),
+    .mst_reqs_o     (hyper_axi_req_o),
+    .mst_resps_i    (hyper_axi_rsp_i)
   );
 
   // Add Assertion that no multicast / reduction can enter this tile!

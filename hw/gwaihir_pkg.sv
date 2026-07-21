@@ -337,10 +337,10 @@ package gwaihir_pkg;
   ////////////////
 
   typedef enum bit [MaxExtRegSlvWidth-1:0] {
-    CshRegExtFLL      = 0,  // FLL registers
-    CshRegExtChipCtrl = 1,  // Chip-level registers
-    CshRegHyperbusCtrl= 2,  // Hyperbus control
-    CshRegExtNumSlv   = 3   // Number of external register slaves
+    CshRegExtFLL       = 0,  // FLL registers
+    CshRegExtChipCtrl  = 1,  // Chip-level registers
+    CshRegHyperbusCtrl = 2,  // Hyperbus control
+    CshRegExtNumSlv    = 3   // Number of external register slaves
   } cheshire_reg_ext_e;
 
   // Define function to derive configuration from Cheshire defaults.
@@ -403,7 +403,7 @@ package gwaihir_pkg;
 
   `CHESHIRE_TYPEDEF_ALL(csh_, CheshireCfg)
 
-  localparam int unsigned LlcNumMstPorts  = 1;
+  localparam int unsigned LlcNumMstPorts = 1;
   localparam int unsigned LlcNumAddrRules = 1;
   localparam int unsigned LlcIdxWidth = LlcNumMstPorts > 1 ? $clog2(LlcNumMstPorts) : 1;
 
@@ -415,21 +415,25 @@ package gwaihir_pkg;
 
   // Address rules derived from CheshireCfg; extend entries here when LlcNumMstPorts > 1
   localparam llc_addr_rule_t [LlcNumAddrRules-1:0] LlcAddrMap = '{
-    '{idx: '0, start_addr: CheshireCfg.LlcOutRegionStart, end_addr: CheshireCfg.LlcOutRegionEnd}
+      '{
+          idx: '0,
+          start_addr: CheshireCfg.LlcOutRegionStart,
+          end_addr: CheshireCfg.LlcOutRegionEnd
+      }
   };
 
   /////////////////
   // HyperBus    //
   /////////////////
 
-  localparam int unsigned HyperbusNumChips         = 2;
-  localparam int unsigned HyperbusNumPhys          = 2;
-  localparam int unsigned HyperbusAxiMaxTrans      = 4;
-  localparam int unsigned HyperbusAxiLogDepth      = 3;
-  localparam int unsigned HyperbusCdcSyncStages    = 2;
-  localparam int unsigned HyperbusRxFifoLogDepth   = 2;
-  localparam int unsigned HyperbusTxFifoLogDepth   = 2;
-  localparam int unsigned HyperbusMinFreqMHz       = 100;
+  localparam int unsigned HyperbusNumChips = 2;
+  localparam int unsigned HyperbusNumPhys = 2;
+  localparam int unsigned HyperbusAxiMaxTrans = 4;
+  localparam int unsigned HyperbusAxiLogDepth = 3;
+  localparam int unsigned HyperbusCdcSyncStages = 2;
+  localparam int unsigned HyperbusRxFifoLogDepth = 2;
+  localparam int unsigned HyperbusTxFifoLogDepth = 2;
+  localparam int unsigned HyperbusMinFreqMHz = 100;
   localparam int unsigned HyperbusPhyStartupCycles = 300 * 100;
 
   ////////////////////
