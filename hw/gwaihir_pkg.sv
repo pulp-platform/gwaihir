@@ -89,7 +89,7 @@ package gwaihir_pkg;
   localparam int unsigned NumTiles = MeshDim.x * MeshDim.y;
   localparam int unsigned NumClusters = NumClusterX * NumClusterY;
   localparam int unsigned NumMemTiles = NumL2Spm;
-  localparam int unsigned NumUcieTiles = NumUcie;
+  localparam int unsigned NumUcieTiles = 2;
 
   localparam int unsigned NumDummyTiles = NumTiles - $countones(MeshMap);
 
@@ -404,6 +404,7 @@ package gwaihir_pkg;
   ////////////////////
 
   localparam bit UseHWPE = 1'b0;
+  localparam int unsigned ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
 
   typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH-1:0] tile_cfg_reg_data_t;
   typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH/8-1:0] tile_cfg_reg_strb_t;
@@ -460,5 +461,40 @@ package gwaihir_pkg;
   localparam int unsigned DmaJobFifoDepth = 2;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
+
+  ////////////////
+  // UCIe Tile  //
+  ////////////////
+
+  function automatic addr_t alias_clear_mask();
+    addr_t ucie0_base, ucie1_base, canonical_base;
+    ucie0_base     = addr_t'(Sam[Ucie0SamIdx].start_addr);
+    ucie1_base     = addr_t'(Sam[Ucie1SamIdx].start_addr);
+    canonical_base = addr_t'(Sam[ClusterX0Y0SamIdx].start_addr);
+    return (ucie0_base | ucie1_base) & ~canonical_base;
+  endfunction
+
+  // Shift alias addr according to whether it's cluster or l2.
+  function automatic addr_t ingress_half_shift(input addr_t addr);
+    localparam addr_t TcdmExposedBase = addr_t'(Sam[ClusterX0Y0SamIdx].start_addr);
+    localparam addr_t TcdmHalfShift = addr_t'((NumClusters / 2) * ClusterTileSize);
+    localparam addr_t TcdmExposedEnd = TcdmExposedBase + TcdmHalfShift;
+    localparam addr_t L2ExposedBase = addr_t'(Sam[L2Spm0SamIdx].start_addr);
+    localparam addr_t L2HalfShift = addr_t'((NumMemTiles / 2) * MemTileSize);
+    localparam addr_t L2ExposedEnd = L2ExposedBase + L2HalfShift;
+    if (addr >= TcdmExposedBase && addr < TcdmExposedEnd) return addr + TcdmHalfShift;
+    else if (addr >= L2ExposedBase && addr < L2ExposedEnd) return addr + L2HalfShift;
+    else return addr;
+  endfunction
+
+  // Translate an ingress UCIe address to its canonical form: clear the alias
+  // bits, then, if `en_half_shift` is set (i.e. on the chiplet owning the
+  // upper half of the exposed regions), apply the half shift.
+  function automatic addr_t unalias_ucie_address(input addr_t addr, input logic en_half_shift);
+    localparam addr_t AliasClearMask = alias_clear_mask();
+    addr_t cleared;
+    cleared = addr & ~AliasClearMask;
+    return en_half_shift ? ingress_half_shift(cleared) : cleared;
+  endfunction
 
 endpackage

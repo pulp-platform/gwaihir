@@ -52,6 +52,7 @@ DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
+GW_RDL_ALL += $(GW_GEN_DIR)/chiplet.rdl
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
 GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_64b.rdl
@@ -74,6 +75,10 @@ $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
 # Those are dummy RDL files, for generation without access to the PD repository.
 $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl: | $(GW_GEN_DIR)
 	@touch $@
+
+# Internal addrmap of the chiplet alias windows, derived from the NoC config
+$(GW_GEN_DIR)/chiplet.rdl: $(GW_ROOT)/cfg/rdl/chiplet.rdl.tpl $(FLOO_CFG) $(UTIL_DIR)/mako_render.py
+	$(UTIL_DIR)/mako_render.py -t $< -y $(FLOO_CFG) -o $@
 
 # Cheshire
 $(GW_GEN_DIR)/gw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
@@ -164,7 +169,7 @@ $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv: $(FLOO_CFG)
 	$(FLOO_GEN) pkg -c $(FLOO_CFG) -o $(GW_GEN_DIR) $(FLOO_GEN_FLAGS)
 
 
-floo-clean: gw-addrmap-clean
+floo-clean:
 	rm -f $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv
 	rm -f $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR)
 
@@ -173,7 +178,7 @@ floo-clean: gw-addrmap-clean
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= ba7c3bac5f0ca0a3bce1b430e125d6205f65aec3
+PD_COMMIT ?= 104bfc1b7655a890e41e1eef55b63c2075925cb5
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git

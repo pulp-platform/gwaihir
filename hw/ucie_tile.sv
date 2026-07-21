@@ -3,26 +3,26 @@
 // SPDX-License-Identifier: SHL-0.51
 //
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
+// Chen Wu <chenwu@iis.ee.ethz.ch>
 
 module ucie_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
 (
-  input  logic                                                    clk_i,
-  input  logic                                                    rst_ni,
-  input  logic                                                    test_enable_i,
+  input  logic                    clk_i,
+  input  logic                    rst_ni,
+  input  logic                    test_enable_i,
   // Router ID
-  input  id_t                                                     id_i,
-  input  floo_gwaihir_noc_pkg::axi_narrow_out_addr_t              base_addr_i,
-  input  floo_gwaihir_noc_pkg::axi_narrow_out_addr_t              addr_size_i,
+  input  id_t                     id_i,
+  input  logic                    ucie_id_i,
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
-  output floo_req_t                                  [West:North] floo_req_o,
-  input  floo_rsp_t                                  [West:North] floo_rsp_i,
-  output floo_wide_t                                 [West:North] floo_wide_o,
-  input  floo_req_t                                  [West:North] floo_req_i,
-  output floo_rsp_t                                  [West:North] floo_rsp_o,
-  input  floo_wide_t                                 [West:North] floo_wide_i,
+  output floo_req_t  [West:North] floo_req_o,
+  input  floo_rsp_t  [West:North] floo_rsp_i,
+  output floo_wide_t [West:North] floo_wide_o,
+  input  floo_req_t  [West:North] floo_req_i,
+  output floo_rsp_t  [West:North] floo_rsp_o,
+  input  floo_wide_t [West:North] floo_wide_i,
 
   // AXI narrow channels
   output floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req_o,
@@ -91,8 +91,8 @@ module ucie_tile
   // Chimney //
   /////////////
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_in_req_t axi_narrow_in_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t   axi_wide_in_req;
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
@@ -130,14 +130,14 @@ module ucie_tile
     .route_table_i       ('0),
     .sram_cfg_i          ('0),
     // AXI narrow channels
-    .axi_narrow_in_req_i (axi_narrow_in_req_i),
+    .axi_narrow_in_req_i (axi_narrow_in_req),
     .axi_narrow_in_rsp_o (axi_narrow_in_rsp_o),
-    .axi_narrow_out_req_o(axi_narrow_out_req),
+    .axi_narrow_out_req_o(axi_narrow_out_req_o),
     .axi_narrow_out_rsp_i(axi_narrow_out_rsp_i),
     // AXI wide channels
-    .axi_wide_in_req_i   (axi_wide_in_req_i),
+    .axi_wide_in_req_i   (axi_wide_in_req),
     .axi_wide_in_rsp_o   (axi_wide_in_rsp_o),
-    .axi_wide_out_req_o  (axi_wide_out_req),
+    .axi_wide_out_req_o  (axi_wide_out_req_o),
     .axi_wide_out_rsp_i  (axi_wide_out_rsp_i),
     .floo_req_o          (router_floo_req_in[Eject]),
     .floo_rsp_o          (router_floo_rsp_in[Eject]),
@@ -147,32 +147,15 @@ module ucie_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
-  logic aw_narrow_addr_match;
-  logic ar_narrow_addr_match;
-  logic aw_wide_addr_match;
-  logic ar_wide_addr_match;
-
-  // Check if incoming addresses fall within [base_addr_i, base_addr_i + addr_size_i - 1]
-  assign aw_narrow_addr_match = (axi_narrow_out_req.aw.addr >= base_addr_i) &&
-                                (axi_narrow_out_req.aw.addr <  (base_addr_i + addr_size_i));
-
-  assign ar_narrow_addr_match = (axi_narrow_out_req.ar.addr >= base_addr_i) &&
-                                (axi_narrow_out_req.ar.addr <  (base_addr_i + addr_size_i));
-
-  assign aw_wide_addr_match = (axi_wide_out_req.aw.addr >= base_addr_i) &&
-                              (axi_wide_out_req.aw.addr <  (base_addr_i + addr_size_i));
-
-  assign ar_wide_addr_match = (axi_wide_out_req.ar.addr >= base_addr_i) &&
-                              (axi_wide_out_req.ar.addr <  (base_addr_i + addr_size_i));
-
+  // Translate ingress addresses to their canonical form
   always_comb begin
-    axi_narrow_out_req_o = axi_narrow_out_req;
-    axi_narrow_out_req_o.aw.addr = (aw_narrow_addr_match) ? (axi_narrow_out_req.aw.addr - base_addr_i) : '0;
-    axi_narrow_out_req_o.ar.addr = (ar_narrow_addr_match) ? (axi_narrow_out_req.ar.addr - base_addr_i) : '0;
+    axi_narrow_in_req         = axi_narrow_in_req_i;
+    axi_narrow_in_req.aw.addr = unalias_ucie_address(axi_narrow_in_req_i.aw.addr, ucie_id_i);
+    axi_narrow_in_req.ar.addr = unalias_ucie_address(axi_narrow_in_req_i.ar.addr, ucie_id_i);
 
-    axi_wide_out_req_o = axi_wide_out_req;
-    axi_wide_out_req_o.aw.addr   = (aw_wide_addr_match) ? (axi_wide_out_req.aw.addr - base_addr_i) : '0;
-    axi_wide_out_req_o.ar.addr   = (ar_wide_addr_match) ? (axi_wide_out_req.ar.addr - base_addr_i) : '0;
+    axi_wide_in_req           = axi_wide_in_req_i;
+    axi_wide_in_req.aw.addr   = unalias_ucie_address(axi_wide_in_req_i.aw.addr, ucie_id_i);
+    axi_wide_in_req.ar.addr   = unalias_ucie_address(axi_wide_in_req_i.ar.addr, ucie_id_i);
   end
 
 endmodule : ucie_tile
