@@ -597,12 +597,12 @@ module mem_tile
     .axi_req_t   (axi_wide_in_req_t),
     .axi_rsp_t   (axi_wide_in_rsp_t)
   ) i_dma_axi_to_obi (
-    .clk_i     (tile_clk),
-    .rst_ni    (tile_rst_n),
-    .axi_req_i (axi_dma_req_demux[Local]),
-    .axi_rsp_o (axi_dma_rsp_demux[Local]),
-    .obi_req_o (dma_obi_req),
-    .obi_rsp_i (dma_obi_rsp),
+    .clk_i    (tile_clk),
+    .rst_ni   (tile_rst_n),
+    .axi_req_i(axi_dma_req_demux[Local]),
+    .axi_rsp_o(axi_dma_rsp_demux[Local]),
+    .obi_req_o(dma_obi_req),
+    .obi_rsp_i(dma_obi_rsp),
 
     // No atop on the DMA path: no aid round-trip, no user-field smuggling.
     .req_aw_id_o      (),
@@ -845,12 +845,12 @@ module mem_tile
     .axi_req_t   (axi_nw_join_req_t),
     .axi_rsp_t   (axi_nw_join_rsp_t)
   ) i_axi_to_obi (
-    .clk_i     (tile_clk),
-    .rst_ni    (tile_rst_n),
-    .axi_req_i (axi_req),
-    .axi_rsp_o (axi_rsp),
-    .obi_req_o (obi_req),
-    .obi_rsp_i (obi_rsp),
+    .clk_i    (tile_clk),
+    .rst_ni   (tile_rst_n),
+    .axi_req_i(axi_req),
+    .axi_rsp_o(axi_rsp),
+    .obi_req_o(obi_req),
+    .obi_rsp_i(obi_rsp),
 
     .req_aw_id_o      (axi_in_aw_id),
     .req_aw_user_o    (axi_in_aw_user),
