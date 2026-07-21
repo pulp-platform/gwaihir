@@ -149,6 +149,9 @@ sim-exps:
   script:
     - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j
   artifacts:
+    when: on_failure
+    paths:
+      - experiments/$EXPERIMENT/runs
     expire_in: 2 days
 
 ###################

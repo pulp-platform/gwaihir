@@ -29,6 +29,7 @@ L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) "endpoints.l2_spm.addr
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
+HYPERBUS_ROOT = $(shell $(BENDER) path hyperbus)
 
 # Bender prerequisites
 BENDER_YML = $(GW_ROOT)/Bender.yml
@@ -38,7 +39,7 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 # Bender flags #
 ################
 
-COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t snitch_cluster -t gw_gen_rtl
+COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t snitch_cluster -t gw_gen_rtl -t hyperbus_macro
 SIM_TARGS += -t simulation -t test -t idma_test
 
 #############
@@ -129,6 +130,35 @@ $(CHS_ROOT)/hw/serial_link.hjson: $(CHS_SLINK_DIR)/.generated2
 $(CHS_SLINK_DIR)/.generated2:	$(SLINK_CFG)
 	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
 
+############
+# Hyperbus #
+############
+
+HYPER_MODEL    = $(HYPERBUS_ROOT)/models/s27ks0641/s27ks0641.v
+HYPER_SDF      = $(HYPERBUS_ROOT)/models/s27ks0641/s27ks0641.sdf
+HYPER_PADFRAME = $(HYPERBUS_ROOT)/.generated
+HYPER_PAD_TECH ?= tsmc7
+
+GW_HW_ALL += $(HYPER_MODEL)
+GW_HW_ALL += $(HYPER_SDF)
+GW_HW_ALL += $(HYPER_PADFRAME)
+
+.PHONY: hyper-hw-all
+
+hyper-hw-all: $(HYPER_MODEL) $(HYPER_SDF) $(HYPER_PADFRAME)
+
+$(HYPER_MODEL) $(HYPER_SDF):
+	flock -x $(HYPERBUS_ROOT)/.model.lock sh -c ' \
+		if ! test -f $(HYPER_MODEL) || ! test -f $(HYPER_SDF); then \
+			test -d $(HYPERBUS_ROOT)/nonfree || $(MAKE) -C $(HYPERBUS_ROOT) hyper-nonfree-init; \
+			rm -rf $(HYPERBUS_ROOT)/models/s27ks0641; \
+			$(MAKE) -C $(HYPERBUS_ROOT) models/s27ks0641; \
+		fi'
+
+$(HYPER_PADFRAME): $(HYPERBUS_ROOT)/padframe/padrick_rundir/configs/$(HYPER_PAD_TECH).yml
+	$(MAKE) -C $(HYPERBUS_ROOT) padframe PAD_TECH=$(HYPER_PAD_TECH) PADRICK=padrick
+	touch $@
+
 ##################
 # Snitch Cluster #
 ##################
@@ -173,7 +203,7 @@ floo-clean: gw-addrmap-clean
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= ba7c3bac5f0ca0a3bce1b430e125d6205f65aec3
+PD_COMMIT ?= fad10f829b40d5913f284b3a067f3af7868df027
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -210,7 +240,7 @@ GW_HW_ALL += $(GW_RDL_HW_ALL)
 
 .PHONY: gwaihir-hw-all gwaihir-hw-clean clean
 
-gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
+gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all hyper-hw-all
 
 gwaihir-hw-clean: sn-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)

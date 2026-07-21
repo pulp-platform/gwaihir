@@ -61,18 +61,17 @@ include $(SN_ROOT)/make/sw.mk
 ## Cheshire ##
 ##############
 
-GW_LINK_MODE ?= spm
+GW_LINK_MODE ?= spm dram
 
 # We need to include the address map and snitch cluster includes
 CHS_SW_INCLUDES += -I$(GW_INCDIR)
 CHS_SW_INCLUDES += -I$(SN_RUNTIME_SRCDIR)
 CHS_SW_INCLUDES += -I$(GW_GEN_DIR)
 
-# Collect tests, which should be build for all modes, and their .dump targets
 GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_CHS_SW_DIR)/tests/*.c)
 GW_CHS_SW_TEST_SRC_S += $(wildcard $(GW_CHS_SW_DIR)/tests/*.S)
-GW_CHS_SW_TEST_DUMP  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).dump) $(patsubst %.$(GW_LINK_MODE).S,%.$(GW_LINK_MODE).dump,$(GW_CHS_SW_TEST_SRC_S))
-GW_CHS_SW_TEST_ELF  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).elf) $(patsubst %.$(GW_LINK_MODE).S,%.$(GW_LINK_MODE).elf,$(GW_CHS_SW_TEST_SRC_S))
+GW_CHS_SW_TEST_DUMP  += $(foreach mode,$(GW_LINK_MODE),$(GW_CHS_SW_TEST_SRC:.c=.$(mode).dump)) $(GW_CHS_SW_TEST_SRC_S:.S=.dump)
+GW_CHS_SW_TEST_ELF   += $(foreach mode,$(GW_LINK_MODE),$(GW_CHS_SW_TEST_SRC:.c=.$(mode).elf)) $(GW_CHS_SW_TEST_SRC_S:.S=.elf)
 
 GW_CHS_SW_TEST = $(GW_CHS_SW_TEST_DUMP)
 
