@@ -116,6 +116,22 @@ endpoints:
       - "wide_out"
   - name: "ucie0"
     addr_range:
+      - base: 0x3200_0000
+        size: 0x0200_0000
+        rdl_as_mem: true
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: 0x3401_0000
+        size: 0x0002_0000
+        desc: "config"
+        rdl_addrmap_grp: ["64b", "32b"]
+    mgr_port_protocol:
+      - "narrow_in"
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "ucie1"
+    addr_range:
       - base: 0x3000_0000
         size: 0x0200_0000
         rdl_as_mem: true
