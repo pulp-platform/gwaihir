@@ -4,6 +4,7 @@
 //
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
 // Chen Wu <chenwu@iis.ee.ethz.ch>
+// Gabriele Lodi <galodi@ethz.ch>
 
 module ucie_tile
   import floo_pkg::*;
