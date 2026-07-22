@@ -392,6 +392,14 @@ packages:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:
     - common_verification
+  ucie:
+    revision: null
+    version: null
+    source:
+      Path: .deps/ucie
+    dependencies:
+    - axi
+    - common_cells
   unbent:
     revision: 3797321f3387a8ba9c866a9fad66ce8c0ea03ac3
     version: null
