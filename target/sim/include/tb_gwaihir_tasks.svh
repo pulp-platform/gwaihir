@@ -14,6 +14,16 @@ import gwaihir_pkg::*;
 `include "gw_addrmap_64b.svh"
 `include "cheshire/typedef.svh"
 
+// The four L2 mem tiles are now individual address-map endpoints, so the
+// generated svh exposes only per-tile L2_SPM_<i>_CONFIG_* macros. Re-create the
+// tile-indexed reset/clock macros so the enable loops below keep working.
+`define L2_SPM_CONFIG_RST_BASE_ADDR(i) \
+  ((i) == 0 ? `L2_SPM_0_CONFIG_RST_BASE_ADDR : (i) == 1 ? `L2_SPM_1_CONFIG_RST_BASE_ADDR : \
+   (i) == 2 ? `L2_SPM_2_CONFIG_RST_BASE_ADDR :             `L2_SPM_3_CONFIG_RST_BASE_ADDR)
+`define L2_SPM_CONFIG_CLK_BASE_ADDR(i) \
+  ((i) == 0 ? `L2_SPM_0_CONFIG_CLK_BASE_ADDR : (i) == 1 ? `L2_SPM_1_CONFIG_CLK_BASE_ADDR : \
+   (i) == 2 ? `L2_SPM_2_CONFIG_CLK_BASE_ADDR :             `L2_SPM_3_CONFIG_CLK_BASE_ADDR)
+
 `CHESHIRE_TYPEDEF_ALL(, fix.vip.DutCfg)
 
 task automatic jtag_enable_tiles();
@@ -55,12 +65,12 @@ virtual class virtual_class_fastmode_l2;
   pure virtual task read_word(input int sram_addr, input int byte_offset, output logic [31:0] data);
 endclass
 
-virtual_class_fastmode_l2 l2_sram_class_list[NumMemTiles][NumBanksPerWord][NumBankRows];
+virtual_class_fastmode_l2 l2_sram_class_list[NumMemTiles][NumBanksPerWord][MaxNumBankRows];
 
 `ifdef L2_SRAM_PATH
 for(genvar i = 0; i < NumMemTiles; i++) begin : gen_fastmode_class_per_l2_tile
   for(genvar j = 0; j < NumBanksPerWord; j++) begin : gen_fastmode_class_per_l2_col
-    for(genvar k = 0; k < NumBankRows; k++) begin : gen_fastmode_class_per_l2_row
+    for(genvar k = 0; k < mem_tile_num_bank_rows(i); k++) begin : gen_fastmode_class_per_l2_row
       class class_fastmode_l2 extends virtual_class_fastmode_l2;
         function new;
           l2_sram_class_list[i][j][k] = this;
@@ -81,13 +91,20 @@ end : gen_fastmode_class_per_l2_tile
 // Write a 32-bit word into an `tc_sram` at a given address
 task automatic fastmode_write_word(input longint addr, input logic [31:0] data);
   import floo_gwaihir_noc_pkg::*;
-  if (addr >= Sam[L2Spm0SamIdx].start_addr && addr < Sam[L2Spm0SamIdx+3*NumMemTiles-3].end_addr) begin
+  if (addr >= Sam[L2Spm0SamIdx].start_addr && addr < Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr) begin
     // Selecting the correct mem_tile, sram bank, sram address and byte offset inside sram word
     int byte_offset  = addr[0                   +: SramByteOffsetWidth ];
     int sel_bank_col = addr[SramBankSelOffset   +: SramBankSelWidth    ];
     int sram_addr    = addr[SramAddrWidthOffset +: SramAddrWidth       ];
-    int sel_bank_row = addr[SramMacroSelOffset  +: SramMacroSelWidth   ];
-    int sel_mem_tile = (addr - Sam[L2Spm0SamIdx].start_addr) / MemTileSize;
+    int sel_bank_row = addr[SramMacroSelOffset  +: MaxSramMacroSelWidth];
+    // Heterogeneous tiles: find the owning tile from the SAM (this also rejects
+    // the unmapped 1 MiB "Free" gaps above the half-size tiles).
+    int sel_mem_tile = -1;
+    for (int t = 0; t < NumMemTiles; t++)
+      if (addr >= Sam[L2Spm0SamIdx+L2SpmIdxStride*t].start_addr && addr <  Sam[L2Spm0SamIdx+L2SpmIdxStride*t].end_addr)
+        sel_mem_tile = t;
+    if (sel_mem_tile < 0)
+      $fatal(1, "[FAST_PRELOAD] Address 0x%h falls in an unmapped L2 address range", addr);
     l2_sram_class_list[sel_mem_tile][sel_bank_col][sel_bank_row].write_word(sram_addr, byte_offset, data);
   end else if (addr >= Sam[CheshireInternalSamIdx].start_addr && addr < Sam[CheshireInternalSamIdx].end_addr) begin
     // TODO(fischeti): Implement Cheshire SPM fast preload
@@ -101,13 +118,19 @@ endtask
 // Read a 32-bit word into an `tc_sram` at a given address
 task automatic fastmode_read_word(input longint addr, output logic [31:0] data);
   import floo_gwaihir_noc_pkg::*;
-  if (addr >= Sam[L2Spm0SamIdx].start_addr && addr < Sam[L2Spm0SamIdx+3*NumMemTiles-3].end_addr) begin
+  if (addr >= Sam[L2Spm0SamIdx].start_addr && addr < Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr) begin
     // Selecting the correct mem_tile, sram bank, sram address and byte offset inside sram word
     int byte_offset  = addr[0                   +: SramByteOffsetWidth ];
     int sel_bank_col = addr[SramBankSelOffset   +: SramBankSelWidth    ];
     int sram_addr    = addr[SramAddrWidthOffset +: SramAddrWidth       ];
-    int sel_bank_row = addr[SramMacroSelOffset  +: SramMacroSelWidth   ];
-    int sel_mem_tile = (addr - Sam[L2Spm0SamIdx].start_addr) / MemTileSize;
+    int sel_bank_row = addr[SramMacroSelOffset  +: MaxSramMacroSelWidth];
+    // Heterogeneous memory tiles: find the owning tile from the SAM (unmapped regions are rejected).
+    int sel_mem_tile = -1;
+    for (int t = 0; t < NumMemTiles; t++)
+      if (addr >= Sam[L2Spm0SamIdx+L2SpmIdxStride*t].start_addr &&
+          addr <  Sam[L2Spm0SamIdx+L2SpmIdxStride*t].end_addr) sel_mem_tile = t;
+    if (sel_mem_tile < 0)
+      $fatal(1, "[FAST_READ] Address 0x%h falls in an unmapped L2 address range", addr);
     l2_sram_class_list[sel_mem_tile][sel_bank_col][sel_bank_row].read_word(sram_addr, byte_offset, data);
   end else if (addr >= Sam[CheshireInternalSamIdx].start_addr && addr < Sam[CheshireInternalSamIdx].end_addr) begin
     $fatal(1, "[FAST_READ] Cheshire memory region not supported yet");
@@ -127,8 +150,19 @@ task automatic fastmode_read();
     $error("[FAST_READ] File could not be open: l2mem.bin");
     return;
   end
-  for (longint w = Sam[L2Spm0SamIdx].start_addr; w < Sam[L2Spm0SamIdx+3*NumMemTiles-3].end_addr; w+=4) begin
-    fastmode_read_word(w, data);
+  // Sweep the whole L2 span so l2mem.bin stays a linear image: verify.py's
+  // MemoryDumpReader maps file offset N -> base + N. Tiles 1 and 3 are only
+  // 1 MiB, so the upper 1 MiB of each is unmapped ("Free"). Zero-fill those gap
+  // words instead of reading them (a read would trip fastmode_read_word's
+  // unmapped-address $fatal), keeping every mapped word at its correct offset.
+  for (longint w = Sam[L2Spm0SamIdx].start_addr; w < Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr; w+=4) begin
+    bit mapped;
+    mapped = 1'b0;
+    for (int t = 0; t < NumMemTiles; t++)
+      if (w >= Sam[L2Spm0SamIdx+L2SpmIdxStride*t].start_addr && w < Sam[L2Spm0SamIdx+L2SpmIdxStride*t].end_addr)
+        mapped = 1'b1;
+    if (mapped) fastmode_read_word(w, data);
+    else        data = '0;
     $fwrite(fp, "%u", data);
   end
   $display("[FAST_READ] Read complete and output to l2mem.bin");

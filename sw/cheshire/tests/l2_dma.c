@@ -31,7 +31,8 @@
 #include <assert.h>
 
 #include "gw_addrmap_64b.h"
-#include "gw_raw_addrmap_64b.h"   // for GW_L2_SPM_NUM (number of L2 mem tiles)
+#include "gw_raw_addrmap_64b.h"
+#include "gw_memtile.h"           // GW_L2_SPM_NUM, per-tile bases and sizes
 #include "memtile_idma.h"
 #include "regs/idma.h"
 
@@ -39,8 +40,8 @@
 // Tile indices (0..GW_L2_SPM_NUM-1). Change these three to retarget the
 // entire test: source buffer, destination buffer, and which tile's DMA drives
 // the copy.
-#define SRC_TILE     3
-#define DST_TILE     1
+#define SRC_TILE     0
+#define DST_TILE     2
 #define DRIVER_TILE  1
 
 // The DMA helpers (memtile_dma_*) take the driver tile's SAM index as their
@@ -64,12 +65,13 @@
 // ---- Geometry --------------------------------------------------------------
 #define WORD_BYTES   sizeof(uint32_t)
 #define BEAT_BYTES   (512/8)              // 512-bit wide AXI beat (alignment unit)
-#define TILE_BYTES   GW_L2_SPM_SIZE     // L2 tile size
+#define SRC_TILE_BYTES  GW_L2_SPM_SIZE(SRC_TILE)   // source tile capacity
+#define DST_TILE_BYTES  GW_L2_SPM_SIZE(DST_TILE)   // destination tile capacity
 
 // All *_BYTES / *_OFF / *_GAP MUST be multiples of WORD_BYTES (exact word
 // verify). "Unaligned" => NOT a multiple of BEAT_BYTES. Defaults are > 4 KiB to
 // force multi-burst, page-split traffic; raise them (keep each phase's span
-// <= TILE_BYTES) for super-large runs.
+// <= its tile's size) for super-large runs.
 
 // Phase 1 — 1D aligned vector
 #define P1_LEN_BYTES   8192        // 8 KiB, 64-B aligned
@@ -148,19 +150,19 @@ static_assert(P4_SRC_OFF % BEAT_BYTES != 0 && P4_DST_OFF % BEAT_BYTES != 0,
 static_assert(P5_LEN_BYTES % WORD_BYTES == 0 && P5_LEN_BYTES % BEAT_BYTES == 0 &&
               P5_SRC_OFF % BEAT_BYTES == 0,
               "P5 length/offset must be 64-B aligned");
-// 1-MiB-per-tile ceiling.
-static_assert(SRC_SPAN_BYTES <= TILE_BYTES, "source span exceeds 1 MiB tile");
-static_assert(P5_SRC_END <= TILE_BYTES, "P5 source window exceeds 1 MiB tile");
-static_assert(P1_DST_END <= TILE_BYTES && P2_DST_END <= TILE_BYTES &&
-              P3_DST_END <= TILE_BYTES && P4_DST_END <= TILE_BYTES &&
-              P5_DST_END <= TILE_BYTES,
-              "a destination span exceeds 1 MiB tile");
+// Per-tile ceiling: source spans must fit the source tile, dst spans the dst tile.
+static_assert(SRC_SPAN_BYTES <= SRC_TILE_BYTES, "source span exceeds source tile");
+static_assert(P5_SRC_END <= SRC_TILE_BYTES, "P5 source window exceeds source tile");
+static_assert(P1_DST_END <= DST_TILE_BYTES && P2_DST_END <= DST_TILE_BYTES &&
+              P3_DST_END <= DST_TILE_BYTES && P4_DST_END <= DST_TILE_BYTES &&
+              P5_DST_END <= DST_TILE_BYTES,
+              "a destination span exceeds destination tile");
 
 // ---- Main ------------------------------------------------------------------
 
 int main(void) {
-    volatile uint32_t *src = gwaihir_addrmap_64b.l2_spm[SRC_TILE].mem;
-    volatile uint32_t *dst = gwaihir_addrmap_64b.l2_spm[DST_TILE].mem;
+    volatile uint32_t *src = (volatile uint32_t *)GW_L2_SPM_BASE_ADDR(SRC_TILE);
+    volatile uint32_t *dst = (volatile uint32_t *)GW_L2_SPM_BASE_ADDR(DST_TILE);
 
     // Initialize source ramp src[i] = i over the union of all phase reads.
     for (uint32_t i = 0; i < SRC_INIT_WORDS; i++) {
@@ -361,10 +363,9 @@ int main(void) {
         // Concurrent CVA6 traffic onto SRC_TILE's row-P5_SRC_ROW banks until the
         // DMA is done. src is volatile, so each load is issued (generates
         // payload_ext); the value is consumed by the check, so it is not elided.
-        // (uintptr_t)&gwaihir_addrmap_64b.l2_spm_dma[SRC_TILE].mem[0] is the base
-        // address of SRC_TILE's iDMA registers.
+        // GW_L2_SPM_DMA_BASE_ADDR(SRC_TILE) is the base of SRC_TILE's iDMA registers.
         const uintptr_t done_reg =
-            (uintptr_t)&gwaihir_addrmap_64b.l2_spm_dma[SRC_TILE].mem[0] +
+            (uintptr_t)GW_L2_SPM_DMA_BASE_ADDR(SRC_TILE) +
             IDMA_REG64_2D_DONE_ID_0_REG_OFFSET;
         do {
             for (uint32_t i = 0; i < n_words; i += P5_SWEEP_STRIDE_WORDS) {
