@@ -18,7 +18,8 @@ module mem_tile
   parameter bit          AxiUserAtop    = 1'b1,
   parameter int unsigned AxiUserAtopMsb = 3,
   parameter int unsigned AxiUserAtopLsb = 0,
-  parameter int unsigned MemTileId      = 0
+  parameter int unsigned MemTileId      = 0,
+  parameter int unsigned MemTileSize    = 32'h0020_0000
 ) (
   input  logic                              clk_i,
   input  logic                              rst_ni,
@@ -40,6 +41,11 @@ module mem_tile
   // Tile-specific reset and clock signals
   logic tile_clk;
   logic tile_rst_n;
+
+  // The number of macros required to store the entire memory
+  localparam int unsigned NumBankRows = (MemTileSize / (AxiCfgW.DataWidth / 8)) / SramNumWords;
+  // The number of bits to index the SRAM macro
+  localparam int unsigned SramMacroSelWidth = $clog2(NumBankRows);
 
   typedef enum int unsigned {
     Mem           = 'd0,
@@ -63,11 +69,11 @@ module mem_tile
 
   // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
   // from the generated enum so it survives YAML / regeneration changes.
-  localparam int DmaIdxOffset = int'(L2SpmDma0SamIdx) - int'(L2Spm0SamIdx);
+  localparam int DmaIdxOffset = int'(L2Spm0DmaSamIdx) - int'(L2Spm0SamIdx);
 
   // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
   // from the generated enum so it survives YAML / regeneration changes.
-  localparam int CfgIdxOffset = int'(L2SpmConfig0SamIdx) - int'(L2Spm0SamIdx);
+  localparam int CfgIdxOffset = int'(L2Spm0ConfigSamIdx) - int'(L2Spm0SamIdx);
 
   // NOTE(fischeti): The TileCfg range is approximate since it does not include
   // the actual address range for this exact tile, but it is sufficient since the

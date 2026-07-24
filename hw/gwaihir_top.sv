@@ -220,16 +220,21 @@ module gwaihir_top
   //////////////
 
   for (genvar m = 0; m < NumMemTiles; m++) begin : gen_memtile
-    // Each L2 memory tile spans three idx: idma, memory, and config
-    localparam logic [$bits(sam_idx_e)-1:0] MemTileSamIdx = 3 * m + L2Spm0SamIdx;
+    // Each L2 memory tile spans L2SpmIdxStride idx: idma, memory, and config
+    localparam logic [$bits(sam_idx_e)-1:0] MemTileSamIdx = L2SpmIdxStride * m + L2Spm0SamIdx;
     localparam id_t MemTileId = CollectiveSam[MemTileSamIdx].idx.id;
     localparam id_t MemTilePhysicalId = SamPhysical[MemTileSamIdx].idx;
     localparam int MemTileX = int'(MemTilePhysicalId.x);
     localparam int MemTileY = int'(MemTilePhysicalId.y);
+    // Per-tile L2 SPM size
+    localparam int unsigned MemTileSpmSize = mem_tile_size(m);
 
     mem_tile #(
 `ifndef TARGET_SYNTHESIS
-      .MemTileId(int'(m))
+      .MemTileSize(MemTileSpmSize),
+      .MemTileId (int'(m))
+`else
+      .MemTileSize(MemTileSpmSize)
 `endif
     ) i_mem_tile (
       .clk_i,

@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include "gw_addrmap_64b.h"
 #include "gw_raw_addrmap_64b.h"
+#include "gw_memtile.h"
 
 #include "snitch_cluster_cfg.h"
 
@@ -24,7 +25,7 @@ int main() {
   // and return code address to scratch register 0
   // Initalize return address loaction before offloading.
   for (int i = 0; i < SNRT_CLUSTER_NUM; i++) {
-    *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[i].peripheral_reg.scratch[1].w) = (uintptr_t)&gwaihir_addrmap_64b.l2_spm;
+    *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[i].peripheral_reg.scratch[1].w) = GW_L2_SPM_BASE_ADDR(0);
     *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[i].peripheral_reg.scratch[0].w) = (uintptr_t)&return_code_array[i];
     for (int j = 0; j < CFG_CLUSTER_NR_CORES; j++) {
       return_code_array[i][j] = 0;
