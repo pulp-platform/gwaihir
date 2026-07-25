@@ -23,7 +23,7 @@ PLIC_CFG  ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
 SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 
 # L2 SPM base address, queried from the FlooNoC config so it stays in sync with FLOO_CFG
-L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) "endpoints.l2_spm.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
+L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) "endpoints.l2_spm_0.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
 
 # Root directories of dependencies
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
