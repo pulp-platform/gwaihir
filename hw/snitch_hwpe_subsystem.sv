@@ -2,8 +2,6 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 
-`include "hci_helpers.svh"
-
 module snitch_hwpe_subsystem
   import hci_package::*;
   import hwpe_ctrl_package::*;
@@ -193,7 +191,7 @@ module snitch_hwpe_subsystem
   end
   assign hwpe_evt_o = hwpe_evt_q;
 
-  tc_clk_gating i_redmule_clk_gate (
+  tc_clk_gating i_mxcore_clk_gate (
     .clk_i    (clk_i),
     .en_i     (clk_en[0]),
     .test_en_i('0),
@@ -207,12 +205,7 @@ module snitch_hwpe_subsystem
     .clk_o    (hwpe_clk[1])
   );
 
-  redmule_top #(
-    .ID_WIDTH     (IdWidth),
-    .N_CORES      (NrCores),
-    .DW           (HwpeDataWidth),
-    .HCI_SIZE_tcdm(HCISizeTcdm)
-  ) i_redmule_top (
+  mxcore_hwpe_top i_mxcore_top (
     .clk_i      (hwpe_clk[0]),
     .rst_ni     (rst_ni),
     .test_mode_i(test_mode_i),

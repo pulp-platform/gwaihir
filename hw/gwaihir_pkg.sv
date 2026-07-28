@@ -415,7 +415,7 @@ package gwaihir_pkg;
   //  Cluster Tile  //
   ////////////////////
 
-  localparam bit UseHWPE = 1'b0;
+  localparam bit UseHWPE = 1'b1;
   localparam int unsigned ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
 
   typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH-1:0] tile_cfg_reg_data_t;

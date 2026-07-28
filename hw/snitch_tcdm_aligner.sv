@@ -2,8 +2,6 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 
-`include "hci_helpers.svh"
-
 module snitch_tcdm_aligner
   import reqrsp_pkg::amo_op_e;
 #(
