@@ -1,7 +1,7 @@
 packages:
   apb:
-    revision: 77ddf073f194d44b9119949d2421be59789e69ae
-    version: 0.2.4
+    revision: 6a2bd0fe9f0822322104ac602fac5739fb063aa0
+    version: null
     source:
       Git: https://github.com/pulp-platform/apb.git
     dependencies:
@@ -15,8 +15,8 @@ packages:
     - apb
     - common_cells
   apb_uart:
-    revision: 8182a85d234417db46fe833533f8536644d3bee3
-    version: 0.2.3
+    revision: 1dc41c4eae22c94c471adca7d11824624f4e68e8
+    version: null
     source:
       Git: https://github.com/pulp-platform/apb_uart.git
     dependencies:
@@ -25,7 +25,7 @@ packages:
     - obi_peripherals
     - register_interface
   axi:
-    revision: 06410c36819924e32db2afa428d244dbdbcd5d4e
+    revision: 3a1d386937856c907f81e8b438437239729afb65
     version: null
     source:
       Git: https://github.com/colluca/axi.git
@@ -34,7 +34,7 @@ packages:
     - common_verification
     - tech_cells_generic
   axi_llc:
-    revision: e4a855c416cb8ecc1476f669462e30b6633d824d
+    revision: 2803bf265780a26eb5034c322e624278735e42a2
     version: null
     source:
       Git: https://github.com/pulp-platform/axi_llc.git
@@ -45,17 +45,17 @@ packages:
     - register_interface
     - tech_cells_generic
   axi_obi:
-    revision: null
+    revision: 26fa0b8d4b00d8f401c8c1ae7b5293baa2099362
     version: null
     source:
-      Path: hw/axi_obi
+      Git: https://github.com/pulp-platform/axi_obi.git
     dependencies:
     - axi
     - common_cells
     - obi
   axi_riscv_atomics:
-    revision: 97a1dd2ac643c276880420a0cf8eea697f228aa9
-    version: 0.8.3
+    revision: 399ce0aefe79792d11bef8cc706139281d82df08
+    version: null
     source:
       Git: https://github.com/pulp-platform/axi_riscv_atomics.git
     dependencies:
@@ -63,8 +63,8 @@ packages:
     - common_cells
     - common_verification
   axi_rt:
-    revision: 50153a346b753dc2bc7723c446656a43db35d02d
-    version: 0.0.0-alpha.10
+    revision: 61ad4da4f5eae9387ebbab217c4554544562bb93
+    version: null
     source:
       Git: https://github.com/pulp-platform/axi_rt.git
     dependencies:
@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 5068d3cf2e37519586a31663cb3609537cbec972
+    revision: d87732566895ebb3b35c50da944d8844f2b67970
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -115,7 +115,7 @@ packages:
     - tagger
     - unbent
   clic:
-    revision: 6515a71eb4ae3b143ab912d265e79832b3179a76
+    revision: 65e70ec00d6e82c84a7ab45a2914775ecc7baa08
     version: 3.0.0
     source:
       Git: https://github.com/pulp-platform/clic.git
@@ -131,8 +131,8 @@ packages:
     - common_cells
     - register_interface
   cluster_icache:
-    revision: 1642961b9561513f283674efc2c90f24855e8d39
-    version: 0.3.1
+    revision: f878cdd1a48c4a2fcc9d6dcad5c8de41c10e1ebd
+    version: null
     source:
       Git: https://github.com/pulp-platform/cluster_icache.git
     dependencies:
@@ -141,7 +141,7 @@ packages:
     - scm
     - tech_cells_generic
   common_cells:
-    revision: ca9d577f2fbc45ec557ab4e0905bbfc154441540
+    revision: 831c5fec28d9fad891e11483f74991ced06eaf04
     version: null
     source:
       Git: https://github.com/pulp-platform/common_cells.git
@@ -168,14 +168,14 @@ packages:
     - register_interface
     - tech_cells_generic
   dram_rtl_sim:
-    revision: a764d5200a19cdd72a5237cbfb16985515a3058d
-    version: 0.1.2
+    revision: 965a1c180cabc63e16c7a76106b30217df5e8a5f
+    version: null
     source:
       Git: https://github.com/pulp-platform/dram_rtl_sim.git
     dependencies:
     - axi
   floo_noc:
-    revision: 9d2f0a77ac59b62f40391a120e43f33cada868a3
+    revision: aa297bcaf375252e9a80a8759dd68b1689fdbd8b
     version: null
     source:
       Git: https://github.com/pulp-platform/FlooNoC.git
@@ -191,10 +191,10 @@ packages:
     revision: null
     version: null
     source:
-      Path: .bender/git/checkouts/floo_noc-e85a4cce70333e4d/pd
+      Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: e5aa6a01b5bbe1675c3aa8872e1203413ded83d1
+    revision: 46cb33a4ce6b04b83ec38ebd288dd58a031a6390
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -236,7 +236,7 @@ packages:
     - common_cells
     - register_interface
   obi:
-    revision: acfcd0f80c7539aa8da7821a66d9acf2074a5b4e
+    revision: b69af4aa00630efd14b1c5cbf9bac977f23ce840
     version: null
     source:
       Git: https://github.com/pulp-platform/obi.git
@@ -244,13 +244,14 @@ packages:
     - common_cells
     - common_verification
   obi_peripherals:
-    revision: 079894a6cbd4e544c477643d184a4c340bd4e391
-    version: 0.1.1
+    revision: 1f406194042d87211f286f265a65177ce0bbad97
+    version: null
     source:
       Git: https://github.com/pulp-platform/obi_peripherals.git
     dependencies:
     - common_cells
     - obi
+    - tech_cells_generic
   opentitan_peripherals:
     revision: cd3153de2783abd3d03d0595e6c4b32413c62f14
     version: 0.4.0
@@ -271,8 +272,8 @@ packages:
     - register_interface
     - tech_cells_generic
   register_interface:
-    revision: 5daa85d164cf6b54ad061ea1e4c6f3624556e467
-    version: 0.4.5
+    revision: 856f7adc0f5ca2dc8ce2e3d7099afb4c87c13c22
+    version: null
     source:
       Git: https://github.com/pulp-platform/register_interface.git
     dependencies:
@@ -281,8 +282,8 @@ packages:
     - common_cells
     - common_verification
   riscv-dbg:
-    revision: 358f90110220adf7a083f8b65d157e836d706236
-    version: 0.8.1
+    revision: 83bf60caf6a5180ec3837d67b0dcf6c21f87cab9
+    version: null
     source:
       Git: https://github.com/pulp-platform/riscv-dbg.git
     dependencies:
@@ -296,8 +297,8 @@ packages:
     dependencies:
     - tech_cells_generic
   serial_link:
-    revision: bb06f8522c4b1f185fc09f0b9ef73fe9f19da391
-    version: 2.0.1
+    revision: 5ae59af9c921542e117311cf5340c547c6386dd5
+    version: null
     source:
       Git: https://github.com/pulp-platform/serial_link.git
     dependencies:
@@ -306,7 +307,7 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: 06426b0632814cd0acdba5e0eef3dd342bf42c71
+    revision: 4fb60aca9ac16045be7cd93fb57f391c07eaa7f5
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git
@@ -332,8 +333,8 @@ packages:
     - register_interface
     - tech_cells_generic
   tech_cells_generic:
-    revision: 7968dd6e6180df2c644636bc6d2908a49f2190cf
-    version: 0.2.13
+    revision: 3a3de73632a06826b1bd9c65a0a2e92b32016845
+    version: 0.2.14
     source:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:

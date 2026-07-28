@@ -38,7 +38,7 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 # Bender flags #
 ################
 
-COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t snitch_cluster -t gw_gen_rtl
+COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync
 SIM_TARGS += -t simulation -t test -t idma_test
 
 #############
@@ -148,9 +148,9 @@ $(SN_CFG): $(FLOO_CFG)
 
 .PHONY: sn-hw-clean sn-hw-all
 
-sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER) $(SN_CLUSTER_PKG)
+sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG)
 sn-hw-clean:
-	rm -rf $(SN_CLUSTER_WRAPPER) $(SN_CLUSTER_PKG)
+	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
 
 ###########
 # FlooNoC #
@@ -178,11 +178,11 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 104bfc1b7655a890e41e1eef55b63c2075925cb5
+PD_COMMIT ?= 76cdfa113df14063edc9e7d185ca4f961334c2a8
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
-PCIE_COMMIT ?= 17bdc3024b9790c36600f327db3024f00b74f2c9
+PCIE_COMMIT ?= 7335dd196ce9e5ec68b10c97a7dbc6334938fd1d
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 .PHONY: init-pd clean-pd update-pd-commit

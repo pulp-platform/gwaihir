@@ -113,8 +113,9 @@ sim-vcs:
   variables:
     LOG_FILE: transcript
     CHS_BINARY: sw/cheshire/tests/simple_offload.spm.elf
-    SN_BINARY: sw/snitch/apps/mha/build/mha.elf
-    VERIFY_PY: .deps/snitch_cluster/sw/kernels/dnn/mha/scripts/verify.py
+    # TODO: use MHA again once the new toolchain supports -mno-fdiv or shared FDIV/FSQRT unit is added to the cluster
+    SN_BINARY: sw/snitch/apps/gemm/build/gemm.elf
+    VERIFY_PY: .deps/snitch_cluster/sw/kernels/blas/gemm/scripts/verify.py
     PRELMODE: 3
   needs:
     - chs-sw

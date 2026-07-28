@@ -5,6 +5,8 @@
 # Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 VSIM ?= vsim
+WLF2VCD ?= wlf2vcd
+WLFMAN ?= wlfman
 VSIM_DIR = $(GW_ROOT)/target/sim/vsim
 VSIM_WORK = $(VSIM_DIR)/work
 
@@ -37,7 +39,7 @@ $(eval $(call add_vsim_flag,SN_BINARY))
 $(eval $(call add_vsim_flag,BOOTMODE))
 $(eval $(call add_vsim_flag,PRELMODE))
 
-.PHONY: vsim-compile vsim-clean vsim-run
+.PHONY: vsim-compile vsim-clean vsim-run vsim-vcd vsim-fst
 
 vsim-clean:
 	rm -rf $(VSIM_WORK)
@@ -61,3 +63,16 @@ vsim-run-batch-verify: vsim-run-batch
 ifdef VERIFY_PY
 	cd $(SIM_DIR) && $(VERIFY_PY) placeholder $(SN_BINARY) --no-ipc --memdump l2mem.bin --memaddr $(L2_START_ADDR)
 endif
+
+$(SIM_DIR)/trimmed.wlf: $(VSIM_DIR)/wlf-instances.txt $(SIM_DIR)/vsim.wlf
+	$(WLFMAN) filter -o $@ -f $^
+
+$(SIM_DIR)/vsim.vcd: $(SIM_DIR)/trimmed.wlf
+	$(WLF2VCD) -o $@ $<
+
+$(SIM_DIR)/vsim.fst: $(SIM_DIR)/vsim.vcd
+	$(VCD2FST) $< $@
+
+vsim-vcd: $(SIM_DIR)/vsim.vcd
+
+vsim-fst: $(SIM_DIR)/vsim.fst
