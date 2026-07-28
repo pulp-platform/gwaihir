@@ -136,6 +136,10 @@ module gwaihir_top
   // Cheshire tile //
   ///////////////////
 
+  `ifndef TARGET_UCIE
+    logic [NumUcieTiles-1:0][CheshireCfg.NumExtInIntrs-1:0] ucie_irq; // 4
+  `endif
+
   // TODO(fischeti): Connect the interrupt signals
   logic [iomsb(NumIrqCtxts*CheshireCfg.NumExtIrqHarts):0] xeip_ext;
   logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext;
@@ -150,6 +154,11 @@ module gwaihir_top
     .test_mode_i,
     .boot_mode_i,
     .rtc_i,
+    `ifndef TARGET_UCIE
+      .intr_ext_i       ('0),
+    `else
+      .intr_ext_i       (ucie_irq),
+    `endif
     .xeip_ext_o       (xeip_ext),
     .mtip_ext_o       (mtip_ext),
     .msip_ext_o       (msip_ext),
