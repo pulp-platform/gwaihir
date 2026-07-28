@@ -227,7 +227,7 @@ module cluster_tile
     .meip_i,
     .mtip_i,
     .msip_i,
-    .hart_base_id_i        (snitch_cluster_pkg::hart_id_t'(hart_base_id_i)),
+    .hart_base_id_i        (snitch_pkg::hart_id_t'(hart_base_id_i)),
     .cluster_base_addr_i,
     .cluster_base_offset_i,
     .mxip_i                (mxip),

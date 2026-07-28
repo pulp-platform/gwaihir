@@ -155,6 +155,22 @@ packages:
     source:
       Git: https://github.com/pulp-platform/common_verification.git
     dependencies: []
+  core_ips:
+    revision: e1a85a7f72d0d799dd9ecc4deb40e2e41969b88e
+    version: null
+    source:
+      Git: https://github.com/colluca/core_ips.git
+    dependencies:
+    - axi
+    - common_cells
+    - reqrsp_interface
+  core_v_xif:
+    revision: 3b541fd19b79e18f9e1d5e177778107cbe279007
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/core-v-xif.git
+    dependencies:
+    - common_cells
   cva6:
     revision: 1701c8f5c1fc89248ad1ddb879ae9aab01705e40
     version: null
@@ -284,6 +300,15 @@ packages:
     - axi
     - common_cells
     - common_verification
+  reqrsp_interface:
+    revision: 521f457d754471d9174d27c7c6c6c3892f3387a2
+    version: null
+    source:
+      Git: https://github.com/colluca/reqrsp_interface.git
+    dependencies:
+    - axi
+    - common_cells
+    - tech_cells_generic
   riscv-dbg:
     revision: 83bf60caf6a5180ec3837d67b0dcf6c21f87cab9
     version: null
@@ -319,19 +344,32 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: 4fb60aca9ac16045be7cd93fb57f391c07eaa7f5
+    revision: e8a19cf3d9f382eeae09ee8476e9d1d6c198c099
     version: null
     source:
-      Git: https://github.com/pulp-platform/snitch_cluster.git
+      Git: https://github.com/DiyouS/snitch_cluster.git
     dependencies:
     - apb
     - axi
     - axi_riscv_atomics
     - cluster_icache
     - common_cells
+    - core_ips
+    - core_v_xif
     - fpnew
     - idma
+    - reqrsp_interface
     - riscv-dbg
+    - spatz_vpu
+    - tech_cells_generic
+  spatz_vpu:
+    revision: 235068cb4481dc15f3f49715450726e8404ecc67
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/spatz_vpu.git
+    dependencies:
+    - common_cells
+    - fpnew
     - tech_cells_generic
   tagger:
     revision: ac13da3c43c59b866841935e0d3b822c03e626e1
