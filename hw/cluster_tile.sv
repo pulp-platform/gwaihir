@@ -361,7 +361,7 @@ module cluster_tile
       .hwpe_ctrl_rsp_o(hwpectrl_rsp),
       .hwpe_evt_o     (mxip)
     );
-  end else begin : gen_no_redmul_e
+  end else begin : gen_no_mxcore
     assign mxip                         = '0;
     assign cluster_tcdm_ext_req_aligned = '0;
     assign cluster_narrow_ext_rsp       = '0;

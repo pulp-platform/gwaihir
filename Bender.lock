@@ -141,6 +141,13 @@ packages:
     - common_cells
     - scm
     - tech_cells_generic
+  cluster_interconnect:
+    revision: 1284def6c0b7f7e9355eb093d00883ad9dead1b7
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/cluster_interconnect.git
+    dependencies:
+    - common_cells
   common_cells:
     revision: 63b7c50d43e462b59506f69d341ff1e40202866d
     version: 2.0.0-beta.3
@@ -187,6 +194,15 @@ packages:
     - opentitan_peripherals
     - register_interface
     - tech_cells_generic
+  datamover:
+    revision: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/datamover.git
+    dependencies:
+    - hci
+    - hwpe-ctrl
+    - hwpe-stream
   dram_rtl_sim:
     revision: 5566a81f2f745b5374d092208086aaf9ba6c9d75
     version: null
@@ -214,7 +230,7 @@ packages:
       Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: 46cb33a4ce6b04b83ec38ebd288dd58a031a6390
+    revision: 706b3bc805bd295bcde4375aefd098d68e431f34
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -244,6 +260,32 @@ packages:
     - axi
     - common_cells
     - register_interface
+  hci:
+    revision: a8d8132b7f7839fd55f92df65cdc3e361ea80a6b
+    version: 2.6.1
+    source:
+      Git: https://github.com/pulp-platform/hci.git
+    dependencies:
+    - cluster_interconnect
+    - common_cells
+    - hwpe-stream
+    - l2_tcdm_hybrid_interco
+    - redundancy_cells
+    - register_interface
+  hwpe-ctrl:
+    revision: dfcf1cb746709de206377388bbcb4a3571e24f7b
+    version: 3.1.1
+    source:
+      Git: https://github.com/pulp-platform/hwpe-ctrl
+    dependencies:
+    - common_cells
+    - tech_cells_generic
+  hwpe-stream:
+    revision: f5b017893c590f4b9b4d45c38c5abe5a8fcb4b81
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/hwpe-stream.git
+    dependencies:
     - tech_cells_generic
   idma:
     revision: 28a36e5e07705549e59fc33db96ab681bc1ca88e
@@ -266,6 +308,24 @@ packages:
     - axi
     - common_cells
     - register_interface
+  l2_tcdm_hybrid_interco:
+    revision: fa55e72859dcfb117a2788a77352193bef94ff2b
+    version: 1.0.0
+    source:
+      Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
+    dependencies: []
+  mxcore:
+    revision: eba7ca5bc10bf87df1cb6780dcc9d02429b2a47e
+    version: null
+    source:
+      Git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
+    dependencies:
+    - fpnew
+    - hci
+    - hwpe-ctrl
+    - hwpe-stream
+    - scm
+    - tech_cells_generic
   obi:
     revision: b69af4aa00630efd14b1c5cbf9bac977f23ce840
     version: null
@@ -300,6 +360,16 @@ packages:
     dependencies:
     - axi
     - common_cells
+    - register_interface
+    - tech_cells_generic
+  redundancy_cells:
+    revision: c37bdb47339bf70e8323de8df14ea8bbeafb6583
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/redundancy_cells.git
+    dependencies:
+    - common_cells
+    - common_verification
     - register_interface
     - tech_cells_generic
   register_interface:
