@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 4ecb088cdb9b3761a4dd9cbfb14cd4f1d16903d7
+    revision: 1327f32611e9cdfeede9d71f695149076ee7c089
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -115,8 +115,8 @@ packages:
     - tagger
     - unbent
   clic:
-    revision: 6515a71eb4ae3b143ab912d265e79832b3179a76
-    version: 3.0.0
+    revision: 9060df871d420402141b3da9596fd582f3c5730b
+    version: null
     source:
       Git: https://github.com/pulp-platform/clic.git
     dependencies:
@@ -155,7 +155,7 @@ packages:
       Git: https://github.com/pulp-platform/common_verification.git
     dependencies: []
   cva6:
-    revision: 382cdc74111dd255b442ccfe884ad01ccb3791f9
+    revision: 7d04c9e48d3f86032af11d100892201b168bf7ce
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
@@ -163,8 +163,10 @@ packages:
     - axi
     - axi_riscv_atomics
     - clic
+    - clint
     - common_cells
     - common_verification
+    - opentitan_peripherals
     - register_interface
     - tech_cells_generic
   dram_rtl_sim:
