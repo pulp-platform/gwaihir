@@ -370,28 +370,31 @@ package gwaihir_pkg;
     ret.AxiMstIdWidth        = aw_bt'(max(AxiCfgN.OutIdWidth, AxiCfgW.OutIdWidth));
     // TODO(fischeti): Check if we need external interrupts for each hart/cluster
     ret.NumExtIrqHarts       = doub_bt'(NumClusters);
+`ifdef TARGET_UCIE
+    ret.NumExtInIntrs = NumUcieTiles * 2;  // ucie interrupts
+`endif
     // We do not need/want VGA
-    ret.Vga                  = 1'b0;
+    ret.Vga                 = 1'b0;
     // We do not need/want USB
-    ret.Usb                  = 1'b0;
-    ret.LlcOutRegionStart    = 'h8000_0000;
-    ret.LlcOutRegionEnd      = 'h12_0000_0000;
-    ret.SlinkRegionStart     = 'h100_0000_0000;
-    ret.SlinkRegionEnd       = 'h200_0000_0000;
+    ret.Usb                 = 1'b0;
+    ret.LlcOutRegionStart   = 'h8000_0000;
+    ret.LlcOutRegionEnd     = 'h12_0000_0000;
+    ret.SlinkRegionStart    = 'h100_0000_0000;
+    ret.SlinkRegionEnd      = 'h200_0000_0000;
     // RT features
-    ret.Cva6InstrTlbEntries  = 16;
-    ret.Cva6DataTlbEntries   = 16;  // TODO: can be increased to 32.
-    ret.Cva6TlbColoring      = 1;
-    ret.Cva6NumTlbColors     = 16;
-    ret.Cva6LockableTlbWays  = 8;
-    ret.Cva6UseSharedTlb     = 0;
-    ret.AxiRt                = 1;
-    ret.Clic                 = 1;
-    ret.ClicVsclic           = 1;
-    ret.ClicVsprio           = 1;
-    ret.ClicNumVsctxts       = 4;
-    ret.ClicPrioWidth        = 1;
-    ret.LlcCachePartition    = 1;
+    ret.Cva6InstrTlbEntries = 16;
+    ret.Cva6DataTlbEntries  = 16;  // TODO: can be increased to 32.
+    ret.Cva6TlbColoring     = 1;
+    ret.Cva6NumTlbColors    = 16;
+    ret.Cva6LockableTlbWays = 8;
+    ret.Cva6UseSharedTlb    = 0;
+    ret.AxiRt               = 1;
+    ret.Clic                = 1;
+    ret.ClicVsclic          = 1;
+    ret.ClicVsprio          = 1;
+    ret.ClicNumVsctxts      = 4;
+    ret.ClicPrioWidth       = 1;
+    ret.LlcCachePartition   = 1;
     return ret;
   endfunction
 
