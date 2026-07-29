@@ -124,6 +124,7 @@ docs-clean:
 ############
 
 CLINTCORES ?= 17
+AXIRT_NUM_MGRS ?= 7
 include $(CHS_ROOT)/cheshire.mk
 
 $(CHS_ROOT)/hw/rv_plic.cfg.hjson: $(OTPROOT)/.generated2
