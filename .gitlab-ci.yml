@@ -19,6 +19,7 @@ stages:
   before_script:
     # Hard link cached python packages since the UV cache directory
     # is configured to be on the same filesystem as the build directory in the CI.
+    - 'echo "TMPDIR: $TMPDIR"'
     - export UV_CACHE_DIR=$CI_BUILDS_DIR/../cache/uv
     - export UV_LINK_MODE=hardlink
     - source iis-env.sh
