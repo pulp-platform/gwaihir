@@ -19,7 +19,7 @@ dependencies:
   apb:                { git: "https://github.com/pulp-platform/apb.git",                rev: "common-cells-v2"                          }
   common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",       rev: "831c5fec28d9fad891e11483f74991ced06eaf04" }
   snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "4fb60aca9ac16045be7cd93fb57f391c07eaa7f5" }
-  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "colluca/common-cells-v2"                  }
+  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir-common-cells-v2"                  }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "common-cells-v2" }
   axi_obi:            { git: "https://github.com/pulp-platform/axi_obi.git",            rev: "common-cells-v2"                          }
   pcie:               { path: ".deps/pcie"                                                                                              }

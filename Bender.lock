@@ -25,7 +25,7 @@ packages:
     - obi_peripherals
     - register_interface
   axi:
-    revision: 3a1d386937856c907f81e8b438437239729afb65
+    revision: 6bc6be1382c42ed67aee3fcc085eaa92e3fe5cf1
     version: null
     source:
       Git: https://github.com/colluca/axi.git
@@ -79,8 +79,8 @@ packages:
     dependencies:
     - common_cells
   axi_vga:
-    revision: 4d3e70d4f47bb74edc1ab68d99ffc02382e0fb9e
-    version: 0.1.4
+    revision: d941f81106eeaff463711784753e37cbeff73928
+    version: null
     source:
       Git: https://github.com/pulp-platform/axi_vga.git
     dependencies:
@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: d87732566895ebb3b35c50da944d8844f2b67970
+    revision: f58788ec507b17c74e24176175451aa86940359f
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -111,12 +111,13 @@ packages:
     - opentitan_peripherals
     - register_interface
     - riscv-dbg
+    - riscv-iommu
     - serial_link
     - tagger
     - unbent
   clic:
-    revision: 65e70ec00d6e82c84a7ab45a2914775ecc7baa08
-    version: 3.0.0
+    revision: e31dac7e9292481b9e0a49b21d461a2ef31d7eef
+    version: null
     source:
       Git: https://github.com/pulp-platform/clic.git
     dependencies:
@@ -141,8 +142,8 @@ packages:
     - scm
     - tech_cells_generic
   common_cells:
-    revision: 831c5fec28d9fad891e11483f74991ced06eaf04
-    version: null
+    revision: 03d98106aa19952a10360d2230def85144a0008b
+    version: 2.0.0-beta.2
     source:
       Git: https://github.com/pulp-platform/common_cells.git
     dependencies:
@@ -155,7 +156,7 @@ packages:
       Git: https://github.com/pulp-platform/common_verification.git
     dependencies: []
   cva6:
-    revision: 382cdc74111dd255b442ccfe884ad01ccb3791f9
+    revision: aedd6106f1a7a3bf10614b53ee886563d715049f
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
@@ -253,8 +254,8 @@ packages:
     - obi
     - tech_cells_generic
   opentitan_peripherals:
-    revision: cd3153de2783abd3d03d0595e6c4b32413c62f14
-    version: 0.4.0
+    revision: 7a797ad07d6282280ea968f732ec8f5d5bb8e719
+    version: null
     source:
       Git: https://github.com/pulp-platform/opentitan_peripherals.git
     dependencies:
@@ -289,6 +290,15 @@ packages:
     dependencies:
     - common_cells
     - tech_cells_generic
+  riscv-iommu:
+    revision: bf00499c531ba40dd0cfb06962d64b4b9b2b594c
+    version: null
+    source:
+      Git: https://github.com/FondazioneChipsIt/riscv-iommu.git
+    dependencies:
+    - axi
+    - common_cells
+    - register_interface
   scm:
     revision: 1976c7efb4979271eee2abe262fde0f9a20e2557
     version: 1.2.1
@@ -340,8 +350,8 @@ packages:
     dependencies:
     - common_verification
   unbent:
-    revision: e9c9d5cfb635f2d4668c816ce9235798cfecb297
-    version: 0.1.6
+    revision: 578462b7cc851deda7078913c364b2dad4718650
+    version: null
     source:
       Git: https://github.com/pulp-platform/unbent.git
     dependencies:
