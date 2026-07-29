@@ -136,9 +136,9 @@ module gwaihir_top
   // Cheshire tile //
   ///////////////////
 
-  `ifndef TARGET_UCIE
-    logic [NumUcieTiles-1:0][CheshireCfg.NumExtInIntrs-1:0] ucie_irq; // 4
-  `endif
+`ifndef TARGET_UCIE
+  logic [NumUcieTiles-1:0][CheshireCfg.NumExtInIntrs-1:0] ucie_irq;  // 4
+`endif
 
   // TODO(fischeti): Connect the interrupt signals
   logic [iomsb(NumIrqCtxts*CheshireCfg.NumExtIrqHarts):0] xeip_ext;
@@ -154,11 +154,11 @@ module gwaihir_top
     .test_mode_i,
     .boot_mode_i,
     .rtc_i,
-    `ifndef TARGET_UCIE
-      .intr_ext_i       ('0),
-    `else
-      .intr_ext_i       (ucie_irq),
-    `endif
+`ifndef TARGET_UCIE
+    .intr_ext_i       ('0),
+`else
+    .intr_ext_i       (ucie_irq),
+`endif
     .xeip_ext_o       (xeip_ext),
     .mtip_ext_o       (mtip_ext),
     .msip_ext_o       (msip_ext),
@@ -254,6 +254,7 @@ module gwaihir_top
   ////////////////
   // UCIe tiles //
   ////////////////
+<<<<<<< HEAD
 `ifndef TARGET_UCIE
   // AXI wide ingress
   floo_gwaihir_noc_pkg::axi_wide_in_req_t [NumUcieTiles-1:0] ucie_axi_wide_in_req;
@@ -262,6 +263,20 @@ module gwaihir_top
   // protocol/link layers; for now (stage 1) looped straight back below.
   gwaihir_pkg::axi_wide_join_req_t        [NumUcieTiles-1:0] ucie_axi_join_out_req;
   gwaihir_pkg::axi_wide_join_rsp_t        [NumUcieTiles-1:0] ucie_axi_join_out_rsp;
+=======
+
+`ifndef TARGET_UCIE
+  // AXI narrow channels
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieTiles-1:0] ucie_axi_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumUcieTiles-1:0] ucie_axi_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_req;
+  floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_rsp;
+  // AXI wide channels
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   [NumUcieTiles-1:0] ucie_axi_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   [NumUcieTiles-1:0] ucie_axi_wide_out_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t    [NumUcieTiles-1:0] ucie_axi_wide_in_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
+>>>>>>> fd9bd9f (lint: format code with verible)
 `endif
 
   localparam int Ucie0X = int'(SamPhysical[Ucie0SamIdx].idx.x);
@@ -320,6 +335,7 @@ module gwaihir_top
   );
 
 `ifndef TARGET_UCIE
+<<<<<<< HEAD
   // loopback UCIe[0] -> UCIe[1]: the joined (narrow+wide) egress of one tile
   // feeds the plain wide ingress of the other.
   `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[1], ucie_axi_join_out_req[0]);
@@ -328,6 +344,19 @@ module gwaihir_top
   // loopback UCIe[1] -> UCIe[0]
   `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[0], ucie_axi_join_out_req[1]);
   `AXI_ASSIGN_RESP_STRUCT(ucie_axi_join_out_rsp[1], ucie_axi_wide_in_rsp[0]);
+=======
+  // loopback UCIe[0] -> UCIe[1]
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[1], ucie_axi_narrow_out_req[0]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[0], ucie_axi_narrow_in_rsp[1]);
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[1], ucie_axi_wide_out_req[0]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[0], ucie_axi_wide_in_rsp[1]);
+
+  // loopback UCIe[1] -> UCIe[0]
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[0], ucie_axi_narrow_out_req[1]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[1], ucie_axi_narrow_in_rsp[0]);
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[0], ucie_axi_wide_out_req[1]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[1], ucie_axi_wide_in_rsp[0]);
+>>>>>>> fd9bd9f (lint: format code with verible)
 `endif
 
   ////////////////
