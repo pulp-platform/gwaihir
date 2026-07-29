@@ -136,9 +136,9 @@ module gwaihir_top
   // Cheshire tile //
   ///////////////////
 
-  `ifndef TARGET_UCIE
-    logic [NumUcieTiles-1:0][CheshireCfg.NumExtInIntrs-1:0] ucie_irq; // 4
-  `endif
+`ifndef TARGET_UCIE
+  logic [NumUcieTiles-1:0][CheshireCfg.NumExtInIntrs-1:0] ucie_irq;  // 4
+`endif
 
   // TODO(fischeti): Connect the interrupt signals
   logic [iomsb(NumIrqCtxts*CheshireCfg.NumExtIrqHarts):0] xeip_ext;
@@ -154,11 +154,11 @@ module gwaihir_top
     .test_mode_i,
     .boot_mode_i,
     .rtc_i,
-    `ifndef TARGET_UCIE
-      .intr_ext_i       ('0),
-    `else
-      .intr_ext_i       (ucie_irq),
-    `endif
+`ifndef TARGET_UCIE
+    .intr_ext_i       ('0),
+`else
+    .intr_ext_i       (ucie_irq),
+`endif
     .xeip_ext_o       (xeip_ext),
     .mtip_ext_o       (mtip_ext),
     .msip_ext_o       (msip_ext),
@@ -255,18 +255,18 @@ module gwaihir_top
   // UCIe tiles //
   ////////////////
 
-  `ifndef TARGET_UCIE
-    // AXI narrow channels
-    floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieTiles-1:0] ucie_axi_narrow_out_req;
-    floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumUcieTiles-1:0] ucie_axi_narrow_out_rsp;
-    floo_gwaihir_noc_pkg::axi_narrow_in_req_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_req;
-    floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_rsp;
-    // AXI wide channels
-    floo_gwaihir_noc_pkg::axi_wide_out_req_t   [NumUcieTiles-1:0] ucie_axi_wide_out_req;
-    floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   [NumUcieTiles-1:0] ucie_axi_wide_out_rsp;
-    floo_gwaihir_noc_pkg::axi_wide_in_req_t    [NumUcieTiles-1:0] ucie_axi_wide_in_req;
-    floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
-  `endif
+`ifndef TARGET_UCIE
+  // AXI narrow channels
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieTiles-1:0] ucie_axi_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumUcieTiles-1:0] ucie_axi_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_req;
+  floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_rsp;
+  // AXI wide channels
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   [NumUcieTiles-1:0] ucie_axi_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   [NumUcieTiles-1:0] ucie_axi_wide_out_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t    [NumUcieTiles-1:0] ucie_axi_wide_in_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
+`endif
 
   localparam int Ucie0X = int'(SamPhysical[Ucie0SamIdx].idx.x);
   localparam int Ucie0Y = int'(SamPhysical[Ucie0SamIdx].idx.y);
@@ -278,28 +278,28 @@ module gwaihir_top
     .rst_ni,
     .test_enable_i       (test_mode_i),
     .id_i                (Sam[Ucie0SamIdx].idx),
-    `ifndef TARGET_UCIE
-      // loopback
-      .axi_narrow_out_req_o(ucie_axi_narrow_out_req[0]),
-      .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[0]),
-      .axi_narrow_in_req_i (ucie_axi_narrow_in_req[0]),
-      .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[0]),
+`ifndef TARGET_UCIE
+    // loopback
+    .axi_narrow_out_req_o(ucie_axi_narrow_out_req[0]),
+    .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[0]),
+    .axi_narrow_in_req_i (ucie_axi_narrow_in_req[0]),
+    .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[0]),
 
-      .axi_wide_out_req_o(ucie_axi_wide_out_req[0]),
-      .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[0]),
-      .axi_wide_in_req_i (ucie_axi_wide_in_req[0]),
-      .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[0]),
-    `else
-      .ucie_irq_o (ucie_irq[0]),
-    `endif
+    .axi_wide_out_req_o(ucie_axi_wide_out_req[0]),
+    .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[0]),
+    .axi_wide_in_req_i (ucie_axi_wide_in_req[0]),
+    .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[0]),
+`else
+    .ucie_irq_o        (ucie_irq[0]),
+`endif
     // ucie0 (chiplet0) ingress is pass-through.
-    .ucie_id_i           (1'b0),
-    .floo_req_o          (floo_req_out[Ucie0X][Ucie0Y]),
-    .floo_rsp_i          (floo_rsp_in[Ucie0X][Ucie0Y]),
-    .floo_wide_o         (floo_wide_out[Ucie0X][Ucie0Y]),
-    .floo_req_i          (floo_req_in[Ucie0X][Ucie0Y]),
-    .floo_rsp_o          (floo_rsp_out[Ucie0X][Ucie0Y]),
-    .floo_wide_i         (floo_wide_in[Ucie0X][Ucie0Y])
+    .ucie_id_i         (1'b0),
+    .floo_req_o        (floo_req_out[Ucie0X][Ucie0Y]),
+    .floo_rsp_i        (floo_rsp_in[Ucie0X][Ucie0Y]),
+    .floo_wide_o       (floo_wide_out[Ucie0X][Ucie0Y]),
+    .floo_req_i        (floo_req_in[Ucie0X][Ucie0Y]),
+    .floo_rsp_o        (floo_rsp_out[Ucie0X][Ucie0Y]),
+    .floo_wide_i       (floo_wide_in[Ucie0X][Ucie0Y])
   );
 
   ucie_tile i_ucie_tile1 (
@@ -307,43 +307,43 @@ module gwaihir_top
     .rst_ni,
     .test_enable_i       (test_mode_i),
     .id_i                (Sam[Ucie1SamIdx].idx),
-    `ifndef TARGET_UCIE
-      // loopback
-      .axi_narrow_out_req_o(ucie_axi_narrow_out_req[1]),
-      .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[1]),
-      .axi_narrow_in_req_i (ucie_axi_narrow_in_req[1]),
-      .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[1]),
+`ifndef TARGET_UCIE
+    // loopback
+    .axi_narrow_out_req_o(ucie_axi_narrow_out_req[1]),
+    .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[1]),
+    .axi_narrow_in_req_i (ucie_axi_narrow_in_req[1]),
+    .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[1]),
 
-      .axi_wide_out_req_o(ucie_axi_wide_out_req[1]),
-      .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[1]),
-      .axi_wide_in_req_i (ucie_axi_wide_in_req[1]),
-      .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[1]),
-    `else
-      .ucie_irq_o (ucie_irq[1]), // TODO: CONNECT ME (glodi)
-    `endif
+    .axi_wide_out_req_o(ucie_axi_wide_out_req[1]),
+    .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[1]),
+    .axi_wide_in_req_i (ucie_axi_wide_in_req[1]),
+    .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[1]),
+`else
+    .ucie_irq_o        (ucie_irq[1]),                    // TODO: CONNECT ME (glodi)
+`endif
     // ucie1 (chiplet1) ingress applies the half-shift.
-    .ucie_id_i           (1'b1),
-    .floo_req_o          (floo_req_out[Ucie1X][Ucie1Y]),
-    .floo_rsp_i          (floo_rsp_in[Ucie1X][Ucie1Y]),
-    .floo_wide_o         (floo_wide_out[Ucie1X][Ucie1Y]),
-    .floo_req_i          (floo_req_in[Ucie1X][Ucie1Y]),
-    .floo_rsp_o          (floo_rsp_out[Ucie1X][Ucie1Y]),
-    .floo_wide_i         (floo_wide_in[Ucie1X][Ucie1Y])
+    .ucie_id_i         (1'b1),
+    .floo_req_o        (floo_req_out[Ucie1X][Ucie1Y]),
+    .floo_rsp_i        (floo_rsp_in[Ucie1X][Ucie1Y]),
+    .floo_wide_o       (floo_wide_out[Ucie1X][Ucie1Y]),
+    .floo_req_i        (floo_req_in[Ucie1X][Ucie1Y]),
+    .floo_rsp_o        (floo_rsp_out[Ucie1X][Ucie1Y]),
+    .floo_wide_i       (floo_wide_in[Ucie1X][Ucie1Y])
   );
 
-  `ifndef TARGET_UCIE
-    // loopback UCIe[0] -> UCIe[1]
-    `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[1], ucie_axi_narrow_out_req[0]);
-    `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[0], ucie_axi_narrow_in_rsp[1]);
-    `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[1], ucie_axi_wide_out_req[0]);
-    `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[0], ucie_axi_wide_in_rsp[1]);
+`ifndef TARGET_UCIE
+  // loopback UCIe[0] -> UCIe[1]
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[1], ucie_axi_narrow_out_req[0]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[0], ucie_axi_narrow_in_rsp[1]);
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[1], ucie_axi_wide_out_req[0]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[0], ucie_axi_wide_in_rsp[1]);
 
-    // loopback UCIe[1] -> UCIe[0]
-    `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[0], ucie_axi_narrow_out_req[1]);
-    `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[1], ucie_axi_narrow_in_rsp[0]);
-    `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[0], ucie_axi_wide_out_req[1]);
-    `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[1], ucie_axi_wide_in_rsp[0]);
-  `endif
+  // loopback UCIe[1] -> UCIe[0]
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[0], ucie_axi_narrow_out_req[1]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[1], ucie_axi_narrow_in_rsp[0]);
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[0], ucie_axi_wide_out_req[1]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[1], ucie_axi_wide_in_rsp[0]);
+`endif
 
   ////////////////
   // PCIe tile  //
