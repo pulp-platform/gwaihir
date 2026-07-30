@@ -8,8 +8,8 @@
 
 #include "snrt.h"
 
-// A cluster on chiplet0 pushes a payload plus a flag into chiplet1's L2 
-// through the ucie0 window, and a cluster on chiplet1 polls the flag 
+// A cluster on chiplet0 pushes a payload plus a flag into chiplet1's L2
+// through the ucie0 window, and a cluster on chiplet1 polls the flag
 // locally, then fetches and checks the payload through the local NoC.
 // The flag is raised only after the payload DMA is fully acked.
 
@@ -45,7 +45,7 @@ int main() {
   volatile uint32_t *vec_phys = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.l2_spm[2] + vec_off);
   volatile uint32_t *flag_phys = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.l2_spm[2] + flag_off);
 
-  // The consumer's mailbox is uninitialized memory; 
+  // The consumer's mailbox is uninitialized memory;
   // clear it before any cluster starts sending
   if (cluster_idx == RECEIVER_CLUSTER && snrt_is_dm_core()) {
     *flag_phys = 0;

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Luca Colagrande <colluca@iis.ee.ethz.ch>
-# 
+#
 # Verification script for `reduction_benchmark.c`
 
 import sys
