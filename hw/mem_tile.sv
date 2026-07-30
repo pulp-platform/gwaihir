@@ -707,7 +707,8 @@ module mem_tile
     // Assign the data
     assign dma_sram_wdata[bank] = dma_mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign dma_sram_be[bank] = dma_mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
-    assign dma_sram_rdata[bank*SramDataWidth+:SramDataWidth] = arb_sram_rdata_split[dma_sram_macro_sel_q[bank]][bank];
+    assign dma_sram_rdata[bank*SramDataWidth+:SramDataWidth] =
+        arb_sram_rdata_split[dma_sram_macro_sel_q[bank]][bank];
   end
 
   assign dma_sram_gnt = |payload_dma_gnt;
@@ -971,7 +972,8 @@ module mem_tile
     // Assign the data
     assign sram_wdata[bank] = mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign sram_be[bank] = mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
-    assign sram_rdata[bank*SramDataWidth+:SramDataWidth]  = arb_sram_rdata_split[sram_macro_sel_q[bank]][bank];
+    assign sram_rdata[bank*SramDataWidth+:SramDataWidth] =
+        arb_sram_rdata_split[sram_macro_sel_q[bank]][bank];
   end
 
   assign sram_gnt = |payload_ext_gnt;

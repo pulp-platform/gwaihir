@@ -47,12 +47,20 @@ export LLVM_BINROOT=/path/to/llvm/bin
 export PATH=$PATH:/path/to/gcc/bin
 ```
 
-#### Verible (Optional)
+### Git hooks
 
-For automatic formatting of generated sources, install [`verible`](https://github.com/chipsalliance/verible). By default, the Makefile will look for a `verible-verilog-format` in your path, but you can also set it explicitly with the `VERIBLE_FMT` environment variable. This dependency is optional for normal users, but it is required to contribute to the project, since the CI will use verible to check the formatting of the code. Once installed, you can format the SV code in this repository with:
+Commits are checked by [pre-commit](https://pre-commit.com) hooks, run with [prek](https://github.com/j178/prek). They verify the SPDX license headers, format and lint the SystemVerilog sources with [`verible`](https://github.com/chipsalliance/verible), and apply a few general hygiene checks. CI runs the very same hooks, so having them installed locally avoids the most common CI failures.
+
+Sourcing `iis-env.sh` installs them for you. Otherwise, install them once after setting up the Python environment:
 
 ```bash
-make verible-fmt
+prek install
+```
+
+`prek` comes from the Python environment, and each hook fetches its own pinned tools on first run, so nothing needs to be installed by hand. To run every hook manually, without committing:
+
+```bash
+prek run --all-files
 ```
 
 ### RTL code generation

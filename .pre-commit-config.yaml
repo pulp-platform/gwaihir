@@ -1,0 +1,58 @@
+# Copyright 2025 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# Mirrors the lint jobs in .github/workflows/lint.yml so that the CI failures
+# they cause are caught locally instead. Run by prek, which reads this same
+# format; the hooks are installed by iis-env.sh.
+
+repos:
+
+  #################
+  # Check License #
+  #################
+  # Mirrors the `lint-license` job, which runs the same `reuse lint`.
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.2.0
+    hooks:
+      - id: reuse
+
+  ##################
+  # Verible Format #
+  ##################
+  # Verible pins its own wheel so the config runs standalone, e.g. in CI, where
+  # `uv sync` is unavailable without a full `bender checkout`.
+  - repo: local
+    hooks:
+      - id: verible-verilog-format
+        name: Format SV sources
+        entry: verible-verilog-format --flagfile .verilog_format --inplace
+        language: python
+        additional_dependencies: ["verible==0.0.4071.0"]
+        files: '\.sv$'
+      - id: verible-verilog-lint
+        name: Lint SV sources
+        entry: verible-verilog-lint
+        language: python
+        additional_dependencies: ["verible==0.0.4071.0"]
+        files: '\.sv$'
+
+  ###################
+  # General hygiene #
+  ###################
+  # No check-json: every tracked .json is JSONC (SPDX header in // comments),
+  # and roi.json is a Mako template.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1000]  # largest tracked file is uv.lock at ~430 KB
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-toml
+      - id: check-yaml
+        args: [--unsafe]  # .gitlab-ci.yml uses GitLab's !reference tag
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace

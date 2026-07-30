@@ -228,14 +228,14 @@ static inline void dma_reduction_seq_normal(uintptr_t a, uintptr_t b, uintptr_t 
         comp_src1 = c;
         comp_src2 = dst[0];
         comp_result = a;
-        
+
         // Iterations to cover all reductions in the first column
         n_iters = 1 + 2 * (N_ROWS - 2) + N_BATCHES;
         for (uint32_t i = 0; i < n_iters; i++) {
 
             uint32_t row_idx_inv, base_iter;
             char dma_active, compute_active;
-    
+
             // Determine which clusters need to send data at every iteration
             row_idx_inv = N_ROWS - row_idx - 1;
             base_iter = 2 * row_idx_inv;
@@ -363,7 +363,7 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
             snrt_mcycle();
             axpy_opt(N_ELEMS / N_BATCHES, one, (double *)comp_src1,
                 (double *)comp_src2, (double *)comp_result);
-            
+
             // comp_src1 += BATCH;
             a_ptr[0] += BATCH;
             swap_buffers(&a_ptr[0], &a_ptr[1]);
@@ -398,7 +398,7 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
                 swap_buffers(&c_ptr[0], &c_ptr[1]);
                 dma_src = c_ptr[0];
             }
-            
+
             swap_buffers(&dst[0], &dst[1]);
             dma_dst = (uintptr_t)snrt_remote_l1_ptr((void *)dst[0],
                 snrt_cluster_idx(), gw_cluster_west_neighbour());
@@ -425,14 +425,14 @@ static inline void dma_reduction_seq_hyperbank(uintptr_t a0, uintptr_t a1,
         comp_src1 = c_ptr[0];
         comp_src2 = dst[0];
         comp_result = a_ptr[0];
-        
+
         // Iterations to cover all reductions in the first column
         n_iters = 1 + 2 * (N_ROWS - 2) + N_BATCHES;
         for (uint32_t i = 0; i < n_iters; i++) {
 
             uint32_t row_idx_inv, base_iter;
             char dma_active, compute_active;
-    
+
             // Determine which clusters need to send data at every iteration
             row_idx_inv = N_ROWS - row_idx - 1;
             base_iter = 2 * row_idx_inv;
@@ -703,7 +703,7 @@ int main (void){
         c_buffer[1] = c_buffer[0] + SNRT_TCDM_HYPERBANK_SIZE;
         b_buffer = (uintptr_t)snrt_l1_alloc_cluster_local(BATCH, 4096);
         d_buffer = b_buffer + SNRT_TCDM_HYPERBANK_SIZE;
-    } 
+    }
     else {
         a_buffer[0] = (uintptr_t)snrt_l1_alloc_cluster_local(SIZE, 4096);
         c_buffer[0] = (uintptr_t)snrt_l1_alloc_cluster_local(SIZE, 4096);
@@ -731,7 +731,7 @@ int main (void){
                     uint32_t buffer_idx = batch_id % 2;
                     uint32_t buffer_offset = (batch_id / 2) * (BATCH / sizeof(double)) + (i % (BATCH / sizeof(double)));
                     *((double *)(a_buffer[buffer_idx]) + buffer_offset) = row_major_cluster_idx + i;
-                    
+
                 }
                 else {
                     ((double *)a_buffer[0])[i] = row_major_cluster_idx + i;
@@ -757,15 +757,15 @@ int main (void){
         result_buffer = a_buffer[0];
     if (snrt_is_dm_core() && (snrt_cluster_idx() == 0)) {
         if (SNRT_TCDM_HYPERBANK_NUM!=1 && SIZE != BATCH && (IMPL == SEQ || IMPL == TREE)){
-            snrt_dma_1d_to_2d((void *)output, 
-                            (void *)result_buffer, 
-                            SIZE / 2, 
-                            BATCH, 
+            snrt_dma_1d_to_2d((void *)output,
+                            (void *)result_buffer,
+                            SIZE / 2,
+                            BATCH,
                             BATCH * SNRT_TCDM_HYPERBANK_NUM);
-            snrt_dma_1d_to_2d((void *)((uintptr_t)output + BATCH), 
-                            (void *)(result_buffer + SNRT_TCDM_HYPERBANK_SIZE), 
-                            SIZE / 2, 
-                            BATCH, 
+            snrt_dma_1d_to_2d((void *)((uintptr_t)output + BATCH),
+                            (void *)(result_buffer + SNRT_TCDM_HYPERBANK_SIZE),
+                            SIZE / 2,
+                            BATCH,
                             BATCH * SNRT_TCDM_HYPERBANK_NUM);
         }
         else {
