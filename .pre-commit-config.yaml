@@ -1,0 +1,30 @@
+# Copyright 2025 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# Mirrors the lint jobs in .github/workflows/lint.yml so that the CI failures
+# they cause are caught locally instead. Run by prek, which reads this same
+# format; the hooks are installed by iis-env.sh.
+
+repos:
+
+  #################
+  # Check License #
+  #################
+  # Mirrors the `lint-license` job, which runs the same `reuse lint`.
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.2.0
+    hooks:
+      - id: reuse
+
+  ##################
+  # Verible Format #
+  ##################
+  # Mirrors the `lint-sv-format` job. Verible is pinned as a dev dependency in pyproject.toml
+  - repo: local
+    hooks:
+      - id: verible-verilog-format
+        name: Format SV sources
+        entry: .venv/bin/verible-verilog-format --flagfile .verilog_format --inplace
+        language: system
+        files: '\.sv$'
