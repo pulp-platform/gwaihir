@@ -35,7 +35,7 @@ static_assert((sizeof(l2_mem_t) / GW_L2_SPM_NUM) == GW_L2_SPM_STRIDE, "Packing e
 
 int main() {
 
-  volatile l2_mem_t *l2_mem = (volatile l2_mem_t *)(uintptr_t)GW_L2_SPM_BASE_ADDR(0);
+  volatile l2_mem_t *l2_mem = (volatile l2_mem_t *)(uintptr_t)&gwaihir_addrmap_64b.l2_spm_0;
 
   uint32_t n_errors = L2_TOTAL_BANK_ROWS * L2_BANKS_PER_WORD * 4; // Total number of writes
 
