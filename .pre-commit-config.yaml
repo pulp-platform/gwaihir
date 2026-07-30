@@ -30,6 +30,12 @@ repos:
         language: python
         additional_dependencies: ["verible==0.0.4071.0"]
         files: '\.sv$'
+      - id: verible-verilog-lint
+        name: Lint SV sources
+        entry: verible-verilog-lint
+        language: python
+        additional_dependencies: ["verible==0.0.4071.0"]
+        files: '\.sv$'
 
   ###################
   # General hygiene #

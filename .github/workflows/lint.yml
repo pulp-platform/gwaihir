@@ -14,28 +14,11 @@ on:
 
 jobs:
 
-  ################
-  # Verible Lint #
-  ################
-  verible-lint:
-    name: Lint SV sources
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.0
-      - uses: chipsalliance/verible-linter-action@main
-        with:
-          paths: |
-            ./hw
-            ./target/sim/src
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          fail_on_error: true
-          reviewdog_reporter: github-check
-
   ###############
   # Pre-commit  #
   ###############
   # Runs the same hooks as the local pre-commit install, so .pre-commit-config.yaml
-  # is the single source of truth for SV formatting, REUSE and tool versions.
+  # is the single source of truth for SV linting, formatting, REUSE and tool versions.
   pre-commit:
     name: Run pre-commit hooks
     runs-on: ubuntu-latest
