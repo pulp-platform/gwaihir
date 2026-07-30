@@ -49,10 +49,12 @@ export PATH=$PATH:/path/to/gcc/bin
 
 #### Verible (Optional)
 
-For automatic formatting of generated sources, install [`verible`](https://github.com/chipsalliance/verible). By default, the Makefile will look for a `verible-verilog-format` in your path, but you can also set it explicitly with the `VERIBLE_FMT` environment variable. This dependency is optional for normal users, but it is required to contribute to the project, since the CI will use verible to check the formatting of the code. Once installed, you can format the SV code in this repository with:
+For automatic formatting of generated sources, install [`verible`](https://github.com/chipsalliance/verible). By default, the Makefile will look for a `verible-verilog-format` in your path, but you can also set it explicitly with the `VERIBLE_FMT` environment variable. `verible` is also installed into the virtual environment as a development dependency, so sourcing `iis-env.sh` is enough.
+
+Checked-in SystemVerilog sources are formatted by the pre-commit hooks, which `iis-env.sh` installs for you. To format everything at once without committing:
 
 ```bash
-make verible-fmt
+prek run verible-verilog-format --all-files
 ```
 
 ### RTL code generation

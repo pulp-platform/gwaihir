@@ -248,7 +248,7 @@ include $(GW_ROOT)/target/sim/traces.mk
 # hw-only and informational goals. For unknown targets (e.g. app names), still run it.
 # %-all / %-clean cover all hw-all/hw-clean variants; vsim-% / gw-% cover sim/rdl targets.
 # Clean targets never need dep tracking regardless of subsystem.
-_GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist slang-flist verible-fmt \
+_GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist slang-flist \
                      init-pd clean-pd update-pd-commit python-venv% %-all %-clean vsim-% gw-% rdl-% docs%
 ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
 # All requested goals are hw-only/informational — skip dep tracking.
@@ -261,7 +261,7 @@ endif
 ########
 
 
-.PHONY: dvt-flist dvt-flist-clean verible-fmt slang-flist slang-flist-clean
+.PHONY: dvt-flist dvt-flist-clean slang-flist slang-flist-clean
 
 DVT_FLIST   ?= $(GW_ROOT)/.dvt/default.build
 SLANG_FLIST ?= $(GW_ROOT)/sources.flist
@@ -277,9 +277,6 @@ dvt-flist-clean:
 	rm -f $(DVT_FLIST)
 slang-flist-clean:
 	rm -f $(SLANG_FLIST)
-
-verible-fmt:
-	$(VERIBLE_FMT) $(VERIBLE_FMT_ARGS) $(shell $(BENDER) script flist $(SIM_TARGS) --no-deps)
 
 #################
 # Documentation #
@@ -341,4 +338,3 @@ help:
 	@echo -e "${Green}slang-flist          ${Black}Generate a file list for the slang LSP."
 	@echo -e "${Green}python-venv          ${Black}Create a Python virtual environment and install the required packages."
 	@echo -e "${Green}python-venv-clean    ${Black}Remove the Python virtual environment."
-	@echo -e "${Green}verible-fmt          ${Black}Format SystemVerilog files using Verible."
