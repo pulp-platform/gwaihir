@@ -23,6 +23,6 @@ jobs:
     name: Run pre-commit hooks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v9.0.0
       - run: uvx prek@0.4.11 run --all-files --show-diff-on-failure
