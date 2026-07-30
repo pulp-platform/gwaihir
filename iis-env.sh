@@ -34,7 +34,7 @@ bender checkout
 
 echo "TMPDIR: $TMPDIR"
 
-$UV sync --locked
+$UV sync --locked --reinstall --no-cache
 
 echo "TMPDIR: $TMPDIR"
 
