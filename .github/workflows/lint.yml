@@ -31,31 +31,15 @@ jobs:
           fail_on_error: true
           reviewdog_reporter: github-check
 
-  ##################
-  # Verible Format #
-  ##################
-
-  lint-sv-format:
-    name: Format SV sources
+  ###############
+  # Pre-commit  #
+  ###############
+  # Runs the same hooks as the local pre-commit install, so .pre-commit-config.yaml
+  # is the single source of truth for SV formatting, REUSE and tool versions.
+  pre-commit:
+    name: Run pre-commit hooks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.0
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - uses: chipsalliance/verible-formatter-action@main
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          parameters:
-            --flagfile .verilog_format
-          fail_on_formatting_suggestions: true
-
-  #################
-  # Check License #
-  #################
-  lint-license:
-    name: Lint License Headers
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.0
-      - name: REUSE Compliance Check
-        uses: fsfe/reuse-action@v6
+      - uses: astral-sh/setup-uv@v9.0.0
+      - run: uvx prek@0.4.11 run --all-files --show-diff-on-failure
