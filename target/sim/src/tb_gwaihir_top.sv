@@ -88,8 +88,8 @@ module tb_gwaihir_top;
         3: begin  // Fast Mode
           jtag_enable_tiles();  // Write control registers
           if (snitch_preload) fastmode_elf_preload(snitch_elf, snitch_entry);
-          // TODO(fischeti): Implement fast mode for Cheshire binary
-          fix.vip.jtag_elf_run(preload_elf);
+          fix.vip.jtag_wait_for_llc_config_halt();
+          fastmode_host_elf_preload(preload_elf);
           fix.vip.jtag_wait_for_eoc(exit_code);
           if (snitch_preload) fastmode_read();
         end

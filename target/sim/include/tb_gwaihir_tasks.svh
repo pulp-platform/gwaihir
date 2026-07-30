@@ -192,6 +192,30 @@ task automatic fastmode_elf_preload(input string binary, output cheshire_pkg::do
   $display("[FAST_PRELOAD] Preload complete");
 endtask
 
+// Host ELF fast preload: L2-aperture sections via the SRAM backdoor, the rest via JTAG, then repoint + resume hart 0.
+task automatic fastmode_host_elf_preload(input string binary);
+  import floo_gwaihir_noc_pkg::*;
+  longint sec_addr, sec_len;
+  cheshire_pkg::doub_bt entry;
+  byte bf[];
+  if (read_elf(binary)) $fatal(1, "[FAST_HOST] Failed to load ELF!");
+  while (get_section(sec_addr, sec_len)) begin
+    bf = new [sec_len];
+    if (read_section(sec_addr, bf, sec_len)) $fatal(1, "[FAST_HOST] Failed to read ELF section!");
+    if (sec_addr >= Sam[L2Spm0SamIdx].start_addr &&
+        sec_addr <  Sam[L2Spm0SamIdx+2*NumMemTiles-2].end_addr)
+      for (longint i = 0; i < sec_len; i += 4)
+        fastmode_write_word(sec_addr + i, {bf[i+3], bf[i+2], bf[i+1], bf[i]});
+    else
+      fix.vip.jtag_load_section(sec_addr, bf, sec_len);
+  end
+  void'(get_entry(entry));
+  fix.vip.jtag_write(dm::Data1, entry[63:32]);
+  fix.vip.jtag_write(dm::Data0, entry[31:0]);
+  fix.vip.jtag_write(dm::Command, 32'h0033_07b1, 0, 1);
+  fix.vip.jtag_write(dm::DMControl, dm::dmcontrol_t'{resumereq: 1, dmactive: 1, default: '0});
+endtask
+
 // Suitable for loading ELFs with 32b-aligned sections
 task automatic jtag_32b_elf_preload(input string binary, output bit [63:0] entry);
   longint sec_addr, sec_len;
