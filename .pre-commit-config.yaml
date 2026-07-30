@@ -28,3 +28,23 @@ repos:
         entry: .venv/bin/verible-verilog-format --flagfile .verilog_format --inplace
         language: system
         files: '\.sv$'
+
+  ###################
+  # General hygiene #
+  ###################
+  # No check-json: every tracked .json is JSONC (SPDX header in // comments),
+  # and roi.json is a Mako template.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1000]  # largest tracked file is uv.lock at ~430 KB
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-toml
+      - id: check-yaml
+        args: [--unsafe]  # .gitlab-ci.yml uses GitLab's !reference tag
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
