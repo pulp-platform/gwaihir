@@ -88,6 +88,19 @@ for(genvar i = 0; i < NumMemTiles; i++) begin : gen_fastmode_class_per_l2_tile
 end : gen_fastmode_class_per_l2_tile
 `endif
 
+// Return the index of the L2 mem tile whose SPM window contains `addr`, or -1 if
+// `addr` lies outside every tile.
+function automatic int l2_tile_idx(input longint addr);
+  import floo_gwaihir_noc_pkg::*;
+  for (int t = 0; t < NumMemTiles; t++) begin
+    if (addr >= Sam[L2Spm0SamIdx+L2SpmIdxStride*t].start_addr &&
+        addr <  Sam[L2Spm0SamIdx+L2SpmIdxStride*t].end_addr) begin
+      return t;
+    end
+  end
+  return -1;
+endfunction
+
 // Write a 32-bit word into an `tc_sram` at a given address
 task automatic fastmode_write_word(input longint addr, input logic [31:0] data);
   import floo_gwaihir_noc_pkg::*;
@@ -97,12 +110,9 @@ task automatic fastmode_write_word(input longint addr, input logic [31:0] data);
     int sel_bank_col = addr[SramBankSelOffset   +: SramBankSelWidth    ];
     int sram_addr    = addr[SramAddrWidthOffset +: SramAddrWidth       ];
     int sel_bank_row = addr[SramMacroSelOffset  +: MaxSramMacroSelWidth];
-    // Heterogeneous tiles: find the owning tile from the SAM (this also rejects
-    // the unmapped 1 MiB "Free" gaps above the half-size tiles).
-    int sel_mem_tile = -1;
-    for (int t = 0; t < NumMemTiles; t++)
-      if (addr >= Sam[L2Spm0SamIdx+L2SpmIdxStride*t].start_addr && addr <  Sam[L2Spm0SamIdx+L2SpmIdxStride*t].end_addr)
-        sel_mem_tile = t;
+    // Heterogeneous tiles: the owning tile comes from the SAM, which also
+    // rejects the unmapped "Free" gaps above the half-size tiles.
+    int sel_mem_tile = l2_tile_idx(addr);
     if (sel_mem_tile < 0)
       $fatal(1, "[FAST_PRELOAD] Address 0x%h falls in an unmapped L2 address range", addr);
     l2_sram_class_list[sel_mem_tile][sel_bank_col][sel_bank_row].write_word(sram_addr, byte_offset, data);
@@ -124,11 +134,9 @@ task automatic fastmode_read_word(input longint addr, output logic [31:0] data);
     int sel_bank_col = addr[SramBankSelOffset   +: SramBankSelWidth    ];
     int sram_addr    = addr[SramAddrWidthOffset +: SramAddrWidth       ];
     int sel_bank_row = addr[SramMacroSelOffset  +: MaxSramMacroSelWidth];
-    // Heterogeneous memory tiles: find the owning tile from the SAM (unmapped regions are rejected).
-    int sel_mem_tile = -1;
-    for (int t = 0; t < NumMemTiles; t++)
-      if (addr >= Sam[L2Spm0SamIdx+L2SpmIdxStride*t].start_addr &&
-          addr <  Sam[L2Spm0SamIdx+L2SpmIdxStride*t].end_addr) sel_mem_tile = t;
+    // Heterogeneous memory tiles: the owning tile comes from the SAM (unmapped
+    // regions are rejected).
+    int sel_mem_tile = l2_tile_idx(addr);
     if (sel_mem_tile < 0)
       $fatal(1, "[FAST_READ] Address 0x%h falls in an unmapped L2 address range", addr);
     l2_sram_class_list[sel_mem_tile][sel_bank_col][sel_bank_row].read_word(sram_addr, byte_offset, data);
@@ -156,13 +164,8 @@ task automatic fastmode_read();
   // words instead of reading them (a read would trip fastmode_read_word's
   // unmapped-address $fatal), keeping every mapped word at its correct offset.
   for (longint w = Sam[L2Spm0SamIdx].start_addr; w < Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr; w+=4) begin
-    bit mapped;
-    mapped = 1'b0;
-    for (int t = 0; t < NumMemTiles; t++)
-      if (w >= Sam[L2Spm0SamIdx+L2SpmIdxStride*t].start_addr && w < Sam[L2Spm0SamIdx+L2SpmIdxStride*t].end_addr)
-        mapped = 1'b1;
-    if (mapped) fastmode_read_word(w, data);
-    else        data = '0;
+    if (l2_tile_idx(w) >= 0) fastmode_read_word(w, data);
+    else                     data = '0;
     $fwrite(fp, "%u", data);
   end
   $display("[FAST_READ] Read complete and output to l2mem.bin");

@@ -226,11 +226,9 @@ module gwaihir_top
 
     mem_tile #(
 `ifndef TARGET_SYNTHESIS
-      .MemTileSize(MemTileSpmSize),
-      .MemTileId (int'(m))
-`else
-      .MemTileSize(MemTileSpmSize)
+      .MemTileId  (int'(m)),
 `endif
+      .MemTileSize(MemTileSpmSize)
     ) i_mem_tile (
       .clk_i,
       .rst_ni,
