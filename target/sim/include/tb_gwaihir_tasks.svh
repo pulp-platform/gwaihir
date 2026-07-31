@@ -155,6 +155,78 @@ task automatic fastmode_elf_preload(input string binary, output cheshire_pkg::do
   $display("[FAST_PRELOAD] Preload complete");
 endtask
 
+// Headless offload (tb-driven simple_offload): preload firmware + optional job, set scratch, wake, poll return codes -- no host.
+task automatic headless_offload(output logic [31:0] exit_code);
+  import floo_gwaihir_noc_pkg::*;
+  // HW counts + L2 aperture come from the SoC cfg/addrmap, never hardcoded.
+  localparam int     NR_CLUSTERS = NumClusters;
+  localparam int     NR_CORES    = snitch_cluster_pkg::NrCores;      // 8 compute + 1 DM
+  localparam longint L2_BASE     = Sam[L2Spm0SamIdx].start_addr;
+  localparam longint RC_BASE     = Sam[L2Spm0SamIdx + 2*NumMemTiles - 2].end_addr - 'h1000; // return_code page = top 4K
+  localparam longint IMG_PA     = L2_BASE + 'h10000;                // job-descriptor offset within the image
+  string img_path;
+  int    fp, i, cl, core, iter, ndone, nfail, expect_done;
+  longint stream_pa, c_off, c_len, b;
+  logic [31:0] word, rc, bcount;
+  realtime t_wake;
+
+  // 1) optional: preload a command-stream job image + zero its output (plain apps like summa_gemm carry their own data)
+  if ($value$plusargs("OFFLOAD_IMAGE=%s", img_path)) begin
+    fp = $fopen(img_path, "r");
+    if (fp == 0) $fatal(1, "[OFFLOAD] cannot open image %s", img_path);
+    i = 0;
+    while ($fscanf(fp, "%h", word) == 1) begin fastmode_write_word(IMG_PA + i*4, word); i++; end
+    $fclose(fp);
+    $display("[OFFLOAD] loaded %0d words @0x%h from %s", i, IMG_PA, img_path);
+    fastmode_read_word(IMG_PA + 'h28, word);                       stream_pa = L2_BASE + word;   // descriptor.cmd_stream_ptr
+    fastmode_read_word(stream_pa + 'h3c, bcount);                                                 // dispatch.binding_count
+    fastmode_read_word(stream_pa + 'h40 + (bcount-1)*16,     word); c_off = word;                 // last binding device_ptr
+    fastmode_read_word(stream_pa + 'h40 + (bcount-1)*16 + 8, word); c_len = word;                 //              length
+    for (b = 0; b < c_len; b += 4) fastmode_write_word(L2_BASE + c_off + b, 32'h0);
+    $display("[OFFLOAD] zeroed output binding @0x%h (%0d bytes)", L2_BASE + c_off, c_len);
+  end else begin
+    $display("[OFFLOAD] no image -- plain bare-metal offload (firmware carries its own data)");
+  end
+
+  // 2) zero the return-code page
+  for (i = 0; i < NR_CLUSTERS*NR_CORES; i++)
+    fastmode_write_word(RC_BASE + i*4, 32'h0);
+
+  // 3) per-cluster scratch: [1]=firmware entry (L2 base), [0]=&return_code_array[cl][0]
+  for (cl = 0; cl < NR_CLUSTERS; cl++) begin
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1),     L2_BASE[31:0], 1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1) + 4, 32'h0,         1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0),     (RC_BASE + cl*NR_CORES*4), 1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0) + 4, 32'h0,         1'b0);
+  end
+
+  // 4) wake cluster 0 (snRuntime fans out to the others through the world barrier); start the timer
+  expect_done = NR_CLUSTERS*NR_CORES;
+  t_wake = $realtime;
+  fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR(0), 32'h1FF, 1'b0);
+  $display("[OFFLOAD] woke cluster 0, polling %0d return-code slots ...", expect_done);
+
+  // 5) poll return codes (bit0=done, bits[31:1]=rc) until all done or timeout
+  for (iter = 0; iter < 200000; iter++) begin
+    #1us;
+    ndone = 0; nfail = 0;
+    for (cl = 0; cl < NR_CLUSTERS; cl++)
+      for (core = 0; core < NR_CORES; core++) begin
+        fastmode_read_word(RC_BASE + (cl*NR_CORES + core)*4, rc);
+        if (rc[0]) begin ndone++; if (rc[31:1] != 0) nfail++; end
+      end
+    if (ndone == expect_done) begin
+      $display("[OFFLOAD] COMPLETE done=%0d/%0d fail=%0d  wake->done=%.0f ns", ndone, expect_done, nfail, $realtime - t_wake);
+      exit_code = (nfail != 0);
+      fastmode_read();
+      return;
+    end
+  end
+  $display("[OFFLOAD] TIMEOUT done=%0d/%0d", ndone, expect_done);
+  exit_code = 32'hFF;
+  fastmode_read();
+endtask
+
 // Suitable for loading ELFs with 32b-aligned sections
 task automatic jtag_32b_elf_preload(input string binary, output bit [63:0] entry);
   longint sec_addr, sec_len;
