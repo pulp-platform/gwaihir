@@ -188,7 +188,7 @@ PCIE_COMMIT ?= 7335dd196ce9e5ec68b10c97a7dbc6334938fd1d
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
-UCIE_COMMIT ?= f88199d4cd1611920da223fe2ff30c40b4895e84
+UCIE_COMMIT ?= bb8ac6cf5ff8051ae5f0721f973eceb57d027f31
 UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 .PHONY: init-pd clean-pd update-pd-commit
