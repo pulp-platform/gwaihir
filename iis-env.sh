@@ -26,9 +26,9 @@ export CHS_SW_GCC_BINROOT=/usr/pack/riscv-1.0-kgf/riscv64-gcc-12.2.0/bin
 export VERIBLE_FMT="oseda -2025.03 verible-verilog-format"
 export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-pulp-llvm-almalinux8-22.1.7-pulp-0.1.0/bin/
 
-export UV=uv
+export UV=/usr/local/uv/uv
 
 bender checkout
 
-env --unset=TMPDIR $UV sync --locked
+$UV sync --locked
 source .venv/bin/activate
