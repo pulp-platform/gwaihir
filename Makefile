@@ -141,6 +141,7 @@ $(CHS_SLINK_DIR)/.generated2:	$(SLINK_CFG)
 
 SN_GEN_DIR = $(GW_GEN_DIR)
 include $(SN_ROOT)/make/common.mk
+include $(SN_ROOT)/make/toolchain.mk
 include $(SN_ROOT)/make/rtl.mk
 
 $(SN_CFG): SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.cluster.num 2>/dev/null)
