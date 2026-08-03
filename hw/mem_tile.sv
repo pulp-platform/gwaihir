@@ -122,8 +122,7 @@ module mem_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .ReqRouteAlgo  (ReqRouteAlgo),
-    .RspRouteAlgo  (RspRouteAlgo),
+    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),

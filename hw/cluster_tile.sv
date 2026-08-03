@@ -380,8 +380,7 @@ module cluster_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .ReqRouteAlgo  (ReqRouteAlgo),
-    .RspRouteAlgo  (RspRouteAlgo),
+    .RouteAlgo     (RouteCfg.RouteAlgo),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
     .NoLoopback    (1'b0),
