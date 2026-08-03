@@ -99,8 +99,7 @@ endpoints:
   # ---- Memory tiles: four individual endpoints (heterogeneous L2 sizes) ----
   # Tiles 0,2 = 2 MiB ; tiles 1,3 = 1 MiB.
   # iDMA regs at 0x2101_0xxx.
-  # tile Ctrl Reg (gw_tile_regs) at 0x2101_4xxx. 
-  # Declared consecutively so their SAM indices remain one contiguous, 3-per-tile block.
+  # tile Ctrl Reg (gw_tile_regs) at 0x2101_4xxx.
   - name: "l2_spm_0"
     addr_range:
       - base: 0x2120_0000          # L2 SPM, 2 MiB
