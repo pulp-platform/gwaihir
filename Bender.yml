@@ -27,9 +27,7 @@ dependencies:
   gwaihir-pd:         { path: "./pd"                                                                                                    }
   # This is not a direct dependency of Gwaihir, but tcdm_interface (snitch_cluster) needs it and Bender
   # does not transitively export incdirs (see https://github.com/pulp-platform/bender/issues/340).
-  reqrsp_interface:
-    git: https://github.com/colluca/reqrsp_interface.git,
-    rev: main
+  reqrsp_interface: 0.1.0
 
 workspace:
   package_links:
