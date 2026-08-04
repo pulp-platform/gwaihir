@@ -80,6 +80,9 @@ $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl: | $(GW_GEN_DIR)
 $(GW_GEN_DIR)/chiplet.rdl: $(GW_ROOT)/cfg/rdl/chiplet.rdl.tpl $(FLOO_CFG) $(UTIL_DIR)/mako_render.py
 	$(UTIL_DIR)/mako_render.py -t $< -y $(FLOO_CFG) -o $@
 
+$(GW_GEN_DIR)/gw_addrmap_pkg.sv: $(GW_RDL_ALL)
+	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svpkg --no-prefix
+
 # Cheshire
 $(GW_GEN_DIR)/gw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
@@ -100,6 +103,7 @@ $(GW_GEN_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL)
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_64b.svh
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_pkg.sv
 
 .PHONY: docs docs-build docs-serve docs-clean rdl-markdown
 
@@ -180,16 +184,20 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 7607a91d663c11052639b27e764511ac13ab030b
+PD_COMMIT ?= 6d7460e8d25d5e4a855bf5a632b49c42e46abb79
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
 PCIE_COMMIT ?= 7335dd196ce9e5ec68b10c97a7dbc6334938fd1d
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
+LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
+LPDDR_COMMIT ?= 76ed3c4e91aebdf47063b47122739049d34cc222
+LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
+
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -198,13 +206,20 @@ $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
 
+$(LPDDR_DIR):
+	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
+	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT) && make ip-build
+
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^LPDDR_COMMIT ?= .*/LPDDR_COMMIT ?= $(shell git -C $(LPDDR_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
-	rm -rf $(PD_DIR) $(PCIE_DIR)
+	rm -rf $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
 
 -include $(PD_DIR)/pd.mk
+-include $(LPDDR_DIR)/lpddr.mk
 
 
 #########################

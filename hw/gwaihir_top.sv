@@ -80,7 +80,10 @@ module gwaihir_top
   input  logic                                                   pcie_jtag_phys_tck_i,
   input  logic                                                   pcie_jtag_phys_tms_i,
   input  logic                                                   pcie_jtag_phys_trst_ni,
-  output logic                                                   pcie_jtag_phys_tdo_o
+  output logic                                                   pcie_jtag_phys_tdo_o,
+  // AXI ports to DRAM
+  output csh_axi_llc_req_t                                       axi_llc_mst_req_o,
+  input  csh_axi_llc_rsp_t                                       axi_llc_mst_rsp_i
 );
 
   floo_req_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_req_in, floo_req_out;
@@ -189,6 +192,8 @@ module gwaihir_top
     .slink_rcv_clk_o,
     .slink_i,
     .slink_o,
+    .axi_llc_mst_req_o,
+    .axi_llc_mst_rsp_i,
     .id_i             (CheshireId),
     .floo_req_west_o  (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
     .floo_rsp_west_i  (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),

@@ -11,6 +11,7 @@
 
 package gwaihir_pkg;
 
+  import gwaihir_addrmap_addrmap_pkg::*;
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import cheshire_pkg::*;
@@ -339,7 +340,8 @@ package gwaihir_pkg;
   typedef enum bit [MaxExtRegSlvWidth-1:0] {
     CshRegExtFLL      = 0,  // FLL registers
     CshRegExtChipCtrl = 1,  // Chip-level registers
-    CshRegExtNumSlv   = 2   // Number of external register slaves
+    CshRegLPDDR       = 2,  // LPDDR config
+    CshRegExtNumSlv   = 3   // Number of external register slaves
   } cheshire_reg_ext_e;
 
   // Define function to derive configuration from Cheshire defaults.
@@ -351,15 +353,19 @@ package gwaihir_pkg;
     ret.AxiExtNumRules       = 1;
     ret.RegExtNumSlv         = CshRegExtNumSlv;
     ret.RegExtNumRules       = CshRegExtNumSlv;
-    ret.AxiExtRegionIdx[0]   = 0;
+    // TODO(fischeti): Inherit these from generated SV/RDL.
+    ret.AxiExtRegionIdx[0] = 0;
     ret.AxiExtRegionStart[0] = 'h2000_0000;
-    ret.AxiExtRegionEnd[0]   = 'h8000_0000;
-    ret.RegExtRegionIdx[0]   = CshRegExtFLL;
-    ret.RegExtRegionStart[0] = 'h1800_1000;
-    ret.RegExtRegionEnd[0]   = 'h1800_2000;
-    ret.RegExtRegionIdx[1]   = CshRegExtChipCtrl;
-    ret.RegExtRegionStart[1] = 'h1800_2000;
-    ret.RegExtRegionEnd[1]   = 'h1800_3000;
+    ret.AxiExtRegionEnd[0] = 'h8000_0000;
+    ret.RegExtRegionIdx[CshRegExtFLL] = CshRegExtFLL;
+    ret.RegExtRegionStart[CshRegExtFLL] = CHESHIRE_INTERNAL_FLL_BASE_ADDR;
+    ret.RegExtRegionEnd [CshRegExtFLL] = CHESHIRE_INTERNAL_FLL_BASE_ADDR + CHESHIRE_INTERNAL_FLL_SIZE;
+    ret.RegExtRegionIdx[CshRegExtChipCtrl] = CshRegExtChipCtrl;
+    ret.RegExtRegionStart[CshRegExtChipCtrl] = CHESHIRE_INTERNAL_GW_CHIP_REGS_BASE_ADDR;
+    ret.RegExtRegionEnd [CshRegExtChipCtrl] = CHESHIRE_INTERNAL_GW_CHIP_REGS_BASE_ADDR + CHESHIRE_INTERNAL_GW_CHIP_REGS_SIZE;
+    ret.RegExtRegionIdx[CshRegLPDDR] = CshRegLPDDR;
+    ret.RegExtRegionStart[CshRegLPDDR] = CHESHIRE_INTERNAL_LPDDR_BASE_ADDR;
+    ret.RegExtRegionEnd [CshRegLPDDR] = CHESHIRE_INTERNAL_LPDDR_BASE_ADDR + CHESHIRE_INTERNAL_LPDDR_SIZE;
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
     ret.Cva6ExtCieOnTop      = 0;
