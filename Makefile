@@ -80,7 +80,7 @@ $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl: | $(GW_GEN_DIR)
 $(GW_GEN_DIR)/chiplet.rdl: $(GW_ROOT)/cfg/rdl/chiplet.rdl.tpl $(FLOO_CFG) $(UTIL_DIR)/mako_render.py
 	$(UTIL_DIR)/mako_render.py -t $< -y $(FLOO_CFG) -o $@
 
-$(GW_GEN_DIR)/gw_addrmap_pkg.sv: $(GW_RDL_ALL)
+$(GW_GEN_DIR)/gw_addrmap_pkg.sv: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svpkg --no-prefix
 
 # Cheshire

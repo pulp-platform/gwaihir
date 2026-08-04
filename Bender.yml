@@ -50,6 +50,7 @@ sources:
       # Level 0.0
       - .generated/floo_gwaihir_noc_pkg.sv
       - .generated/gw_tile_regs_pkg.sv
+      - .generated/gw_addrmap_pkg.sv
       # Level 0.1
       - .generated/gw_tile_regs.sv
 
