@@ -84,11 +84,11 @@ sources:
       - .deps/pcie/hw/pcie_tile.sv
 
   # UCIe
-  - target: not(all(ucie, asic))
+  - target: not(ucie)
     files:
       - hw/ucie_tile.sv
 
-  - target: all(ucie, asic)
+  - target: ucie
     files:
       - .deps/ucie/hw/ucie_tile.sv
 
