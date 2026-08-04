@@ -12,7 +12,7 @@ cluster = next(ep for ep in endpoints if ep["name"] == "cluster")
 l2      = next(ep for ep in endpoints if ep["name"] == "l2_spm")
 ucie    = next(ep for ep in endpoints if ep["name"] == "ucie0")
 
-win_mask  = ucie["addr_range"]["size"] - 1
+win_mask  = ucie["addr_range"][0]["size"] - 1
 
 cluster_tile = cluster["addr_range"][0]
 n_cluster    = int(cluster["array"][0]) * int(cluster["array"][1])
