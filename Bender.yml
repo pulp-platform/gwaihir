@@ -15,10 +15,10 @@ dependencies:
   register_interface: "0.4.5"
   axi: { git: "https://github.com/colluca/axi.git", rev: "multicast" }
   apb_fll_if: "0.3.0"
-  floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "common-cells-v2", upstream_name: "FlooNoC" }
+  floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "main", upstream_name: "FlooNoC" }
   apb:                { git: "https://github.com/pulp-platform/apb.git",                rev: "common-cells-v2"                          }
   common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",       rev: "c63eada47c050f78b320d0e854a24a9cd9c1cc80" }
-  snitch_cluster:     { git: "https://github.com/DiyouS/snitch_cluster.git",            rev: "spatz-mxcore" }
+  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "spatz-dca" }
   cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir-common-cells-v2"                  }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "common-cells-v2" }
   axi_obi:            { git: "https://github.com/pulp-platform/axi_obi.git",            rev: "common-cells-v2"                          }
