@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 #
+# Author: Lorenzo Leone <lleone@iis.ee.ethz.ch>
 # Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 GW_ROOT ?= $(shell pwd -P)
