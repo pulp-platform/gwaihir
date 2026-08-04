@@ -40,9 +40,9 @@
 // Tile indices (0..GW_L2_SPM_NUM-1). Change these three to retarget the
 // entire test: source buffer, destination buffer, and which tile's DMA drives
 // the copy.
-#define SRC_TILE     0
-#define DST_TILE     2
-#define DRIVER_TILE  1
+#define SRC_TILE     3
+#define DST_TILE     0
+#define DRIVER_TILE  2
 
 // The DMA helpers (memtile_dma_*) take the driver tile's SAM index as their
 // first argument, selecting which tile's iDMA register file is configured.

@@ -10,7 +10,7 @@
 `include "obi/typedef.svh"
 `include "common_cells/assertions.svh"
 
-module mem_tile
+module mem_tile_small
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
@@ -18,8 +18,7 @@ module mem_tile
   parameter bit          AxiUserAtop    = 1'b1,
   parameter int unsigned AxiUserAtopMsb = 3,
   parameter int unsigned AxiUserAtopLsb = 0,
-  parameter int unsigned MemTileId      = 0,
-  parameter int unsigned MemTileSize    = 32'h0020_0000
+  parameter int unsigned MemTileId      = 0
 ) (
   input  logic                              clk_i,
   input  logic                              rst_ni,
@@ -42,6 +41,7 @@ module mem_tile
   logic tile_clk;
   logic tile_rst_n;
 
+  localparam int unsigned MemTileSize = MemTileSizeSmall;
   // The number of macros required to store the entire memory
   localparam int unsigned NumBankRows = (MemTileSize / (AxiCfgW.DataWidth / 8)) / SramNumWords;
   // The number of bits to index the SRAM macro
