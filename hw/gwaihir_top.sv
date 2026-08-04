@@ -319,7 +319,7 @@ module gwaihir_top
     .axi_wide_in_req_i (ucie_axi_wide_in_req[1]),
     .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[1]),
 `else
-    .ucie_irq_o        (ucie_irq[1]),                    // TODO: CONNECT ME (glodi)
+    .ucie_irq_o        (ucie_irq[1]),
 `endif
     // ucie1 (chiplet1) ingress applies the half-shift.
     .ucie_id_i         (1'b1),
