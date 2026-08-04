@@ -475,6 +475,10 @@ package gwaihir_pkg;
     end
     return max_rows;
   endfunction
+  //Heterogeneous memory tile size
+  localparam int unsigned MemTileSizeLarge = mem_tile_size(0);
+  localparam int unsigned MemTileSizeSmall = mem_tile_size(1);
+
   localparam int unsigned MaxNumBankRows = get_max_num_bank_rows();
   // Macro-row select width of the largest tile. Also a safe extraction width
   // for smaller tiles: their windows are size-aligned, so the extra MSB is 0.
