@@ -462,9 +462,18 @@ package gwaihir_pkg;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
 
+
+  ////////////////
+  // Mem Tile  //
+  ////////////////
+
+  localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
+
   ////////////////
   // UCIe Tile  //
   ////////////////
+
+  localparam int unsigned UcieNumAddrRules = Ucie1SamIdx - Ucie0SamIdx;
 
   function automatic addr_t alias_clear_mask();
     addr_t ucie0_base, ucie1_base, canonical_base;
@@ -496,5 +505,14 @@ package gwaihir_pkg;
     cleared = addr & ~AliasClearMask;
     return en_half_shift ? ingress_half_shift(cleared) : cleared;
   endfunction
+
+  // Narrow/Wide join types for UCIe integration.
+  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+
+  typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] ucie_join_id_t;
+  typedef logic [AxiCfgUcieJoin.UserWidth-1:0] ucie_join_user_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_wide_join, axi_wide_join_req_t, axi_wide_join_rsp_t, axi_wide_in_addr_t,
+                      ucie_join_id_t, axi_wide_in_data_t, axi_wide_in_strb_t, ucie_join_user_t)
 
 endpackage

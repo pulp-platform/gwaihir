@@ -187,8 +187,6 @@ module cluster_tile
       endcase
     end
 
-    // TODO(raroth): move these spill register inside FlooNoC and make them configurable.
-    // Insert a reqrsp-cut to avoid timing violations
     //If teh CutOffloadIntf is enabled, the cut is already in the offload controller, you can bypass teh one below
     generic_reqrsp_cut #(
       .req_chan_t(snitch_cluster_wrapper_pkg::dca_req_chan_t),
