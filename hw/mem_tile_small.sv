@@ -391,7 +391,7 @@ module mem_tile_small
       MaxMstTrans: 4,
       MaxSlvTrans: 4,
       FallThrough: 0,
-      LatencyMode: axi_pkg::CUT_ALL_PORTS,
+      LatencyMode: axi_pkg::NO_LATENCY,
       PipelineStages: 0,
       AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
       AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
