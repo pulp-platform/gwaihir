@@ -188,7 +188,7 @@ module cluster_tile
     end
 
     //If teh CutOffloadIntf is enabled, the cut is already in the offload controller, you can bypass teh one below
-    generic_reqrsp_cut #(
+    reqrsp_cut #(
       .req_chan_t(snitch_cluster_wrapper_pkg::dca_req_chan_t),
       .rsp_chan_t(snitch_cluster_wrapper_pkg::dca_rsp_chan_t),
       .BypassReq (RouteCfg.CollectiveCfg.WideRedCfg.CutOffloadIntf),
@@ -225,7 +225,7 @@ module cluster_tile
     .meip_i,
     .mtip_i,
     .msip_i,
-    .hart_base_id_i        (snitch_cluster_pkg::hart_id_t'(hart_base_id_i)),
+    .hart_base_id_i        (snitch_pkg::hart_id_t'(hart_base_id_i)),
     .cluster_base_addr_i,
     .cluster_base_offset_i,
     .mxip_i                (mxip),
