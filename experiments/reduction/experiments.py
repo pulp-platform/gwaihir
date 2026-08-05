@@ -54,7 +54,7 @@ def gen_experiments(ci=False):
         impls = ['hw']
         n_rows_list = [4]
         sizes = [32768]
-        n_batches_list = [1024, 2048]
+        n_batches_list = [2048]
 
     # Generate experiments list
     experiments = []

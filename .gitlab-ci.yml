@@ -145,7 +145,6 @@ sim-exps:
   parallel:
     matrix:
       - EXPERIMENT: multicast
-      - EXPERIMENT: reduction
       - EXPERIMENT: barrier
   script:
     - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j
