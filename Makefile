@@ -61,6 +61,7 @@ GW_RDL_SN_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_32b.rdl
 PEAKRDL_INCLUDES += -I $(GW_ROOT)/cfg/rdl
 PEAKRDL_INCLUDES += -I $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster_peripheral
 PEAKRDL_INCLUDES += -I $(CHS_ROOT)/hw
+PEAKRDL_INCLUDES += -I $(GW_ROOT)/.deps/lpddr/src/regs
 PEAKRDL_INCLUDES += $(CHS_PEAKRDL_INCLUDES)
 
 PEAKRDL_INCLUDES += -I $(GW_GEN_DIR)
