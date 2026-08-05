@@ -250,7 +250,7 @@ module ucie_tile
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
     .AxiCfgW         (axi_cfg_swap_iw(AxiCfgW)),
-    .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgUcieJoin)),
+    .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgNwJoin)),
     .EnAtopAdapter   (1'b0),
     .AtopUserAsId    (1'b1),
     .axi_narrow_req_t(axi_narrow_out_req_t),
