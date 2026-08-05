@@ -520,4 +520,15 @@ package gwaihir_pkg;
   `AXI_TYPEDEF_ALL_CT(axi_wide_join, axi_wide_join_req_t, axi_wide_join_rsp_t, axi_wide_in_addr_t,
                       nw_join_id_t, axi_wide_in_data_t, axi_wide_in_strb_t, nw_join_user_t)
 
+
+  // TODO (lleone): Derive from RDL when ucie has one.
+  localparam int unsigned UcieCfgRegDataWidth = 32;
+
+  typedef logic [UcieCfgRegDataWidth-1:0] ucie_cfg_reg_data_t;
+  typedef logic [UcieCfgRegDataWidth/8-1:0] ucie_cfg_reg_strb_t;
+
+  `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite, addr_t, axi_narrow_out_data_t, axi_narrow_out_strb_t)
+  `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite_32, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
+  `APB_TYPEDEF_ALL(ucie_cfg_apb, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
+
 endpackage

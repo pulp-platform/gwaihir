@@ -248,10 +248,10 @@ module ucie_tile
   ///////////////////////
 
   // narrow AXI (64b) -> AXI-Lite (64b) -> AXI-Lite (32b) -> APB (32b).
-  tile_cfg_axi_lite_req_t     tile_cfg_axi_lite_req;
-  tile_cfg_axi_lite_resp_t    tile_cfg_axi_lite_rsp;
-  tile_cfg_axi_lite_32_req_t  tile_cfg_reg_lite_req;
-  tile_cfg_axi_lite_32_resp_t tile_cfg_reg_lite_rsp;
+  ucie_cfg_axi_lite_req_t     ucie_cfg_axi_lite_req;
+  ucie_cfg_axi_lite_resp_t    ucie_cfg_axi_lite_rsp;
+  ucie_cfg_axi_lite_32_req_t  ucie_cfg_reg_lite_req;
+  ucie_cfg_axi_lite_32_resp_t ucie_cfg_reg_lite_rsp;
 
   axi_to_axi_lite #(
     .AxiAddrWidth   (AxiCfgN.AddrWidth),
@@ -262,39 +262,39 @@ module ucie_tile
     .AxiMaxReadTxns (floo_pkg::ChimneyDefaultCfg.MaxTxns),
     .full_req_t     (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
     .full_resp_t    (floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t),
-    .lite_req_t     (tile_cfg_axi_lite_req_t),
-    .lite_resp_t    (tile_cfg_axi_lite_resp_t)
+    .lite_req_t     (ucie_cfg_axi_lite_req_t),
+    .lite_resp_t    (ucie_cfg_axi_lite_resp_t)
   ) i_axi_to_axi_lite_slink_cfg (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
     .slv_req_i (axi_narrow_xbar_out_req[LITE_CFG]),
     .slv_resp_o(axi_narrow_xbar_out_rsp[LITE_CFG]),
-    .mst_req_o (tile_cfg_axi_lite_req),
-    .mst_resp_i(tile_cfg_axi_lite_rsp)
+    .mst_req_o (ucie_cfg_axi_lite_req),
+    .mst_resp_i(ucie_cfg_axi_lite_rsp)
   );
 
   axi_lite_dw_converter #(
     .AxiAddrWidth       (AxiCfgN.AddrWidth),
     .AxiSlvPortDataWidth(AxiCfgN.DataWidth),
-    .AxiMstPortDataWidth(gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
-    .axi_lite_aw_t      (tile_cfg_axi_lite_aw_chan_t),
-    .axi_lite_slv_w_t   (tile_cfg_axi_lite_w_chan_t),
-    .axi_lite_mst_w_t   (tile_cfg_axi_lite_32_w_chan_t),
-    .axi_lite_b_t       (tile_cfg_axi_lite_b_chan_t),
-    .axi_lite_ar_t      (tile_cfg_axi_lite_ar_chan_t),
-    .axi_lite_slv_r_t   (tile_cfg_axi_lite_r_chan_t),
-    .axi_lite_mst_r_t   (tile_cfg_axi_lite_32_r_chan_t),
-    .axi_lite_slv_req_t (tile_cfg_axi_lite_req_t),
-    .axi_lite_slv_res_t (tile_cfg_axi_lite_resp_t),
-    .axi_lite_mst_req_t (tile_cfg_axi_lite_32_req_t),
-    .axi_lite_mst_res_t (tile_cfg_axi_lite_32_resp_t)
+    .AxiMstPortDataWidth(UcieCfgRegDataWidth),
+    .axi_lite_aw_t      (ucie_cfg_axi_lite_aw_chan_t),
+    .axi_lite_slv_w_t   (ucie_cfg_axi_lite_w_chan_t),
+    .axi_lite_mst_w_t   (ucie_cfg_axi_lite_32_w_chan_t),
+    .axi_lite_b_t       (ucie_cfg_axi_lite_b_chan_t),
+    .axi_lite_ar_t      (ucie_cfg_axi_lite_ar_chan_t),
+    .axi_lite_slv_r_t   (ucie_cfg_axi_lite_r_chan_t),
+    .axi_lite_mst_r_t   (ucie_cfg_axi_lite_32_r_chan_t),
+    .axi_lite_slv_req_t (ucie_cfg_axi_lite_req_t),
+    .axi_lite_slv_res_t (ucie_cfg_axi_lite_resp_t),
+    .axi_lite_mst_req_t (ucie_cfg_axi_lite_32_req_t),
+    .axi_lite_mst_res_t (ucie_cfg_axi_lite_32_resp_t)
   ) i_axi_lite_dw_converter_slink_cfg (
     .clk_i    (clk_i),
     .rst_ni   (rst_ni),
-    .slv_req_i(tile_cfg_axi_lite_req),
-    .slv_res_o(tile_cfg_axi_lite_rsp),
-    .mst_req_o(tile_cfg_reg_lite_req),
-    .mst_res_i(tile_cfg_reg_lite_rsp)
+    .slv_req_i(ucie_cfg_axi_lite_req),
+    .slv_res_o(ucie_cfg_axi_lite_rsp),
+    .mst_req_o(ucie_cfg_reg_lite_req),
+    .mst_res_i(ucie_cfg_reg_lite_rsp)
   );
 
   // The narrow xbar already isolated this port to the "axi_serial_cfg" SAM
@@ -304,31 +304,30 @@ module ucie_tile
       '{idx: 0, start_addr: '0, end_addr: '1}
   };
 
-  // TODO (lleone): The types used in the chain before must be derived from a UCIe rdl or Slink rdl pkg
-  // TODO (lleone): Temporrary ode before connecting an actual APB subordinate
-  localparam tile_cfg_reg_data_t StubApbRdata = tile_cfg_reg_data_t'(32'hFEEDFACE);
+  // TODO (lleone): Temporary code before connecting an actual APB subordinate.
+  localparam ucie_cfg_reg_data_t StubApbRdata = ucie_cfg_reg_data_t'(32'hFEEDFACE);
 
-  tile_cfg_apb_req_t  tile_cfg_apb_req;
-  tile_cfg_apb_resp_t tile_cfg_apb_rsp;
-  assign tile_cfg_apb_rsp = '{pready: 1'b1, prdata: StubApbRdata, pslverr: 1'b0};
+  ucie_cfg_apb_req_t  ucie_cfg_apb_req;
+  ucie_cfg_apb_resp_t ucie_cfg_apb_rsp;
+  assign ucie_cfg_apb_rsp = '{pready: 1'b1, prdata: StubApbRdata, pslverr: 1'b0};
 
   axi_lite_to_apb #(
     .NoApbSlaves    (1),
     .NoRules        (NumSlinkCfgApbRules),
     .AddrWidth      (AxiCfgN.AddrWidth),
-    .DataWidth      (gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
-    .axi_lite_req_t (tile_cfg_axi_lite_32_req_t),
-    .axi_lite_resp_t(tile_cfg_axi_lite_32_resp_t),
-    .apb_req_t      (tile_cfg_apb_req_t),
-    .apb_resp_t     (tile_cfg_apb_resp_t),
+    .DataWidth      (UcieCfgRegDataWidth),
+    .axi_lite_req_t (ucie_cfg_axi_lite_32_req_t),
+    .axi_lite_resp_t(ucie_cfg_axi_lite_32_resp_t),
+    .apb_req_t      (ucie_cfg_apb_req_t),
+    .apb_resp_t     (ucie_cfg_apb_resp_t),
     .rule_t         (addr_rule_t)
   ) i_axi_lite_to_apb_slink_cfg (
     .clk_i          (clk_i),
     .rst_ni         (rst_ni),
-    .axi_lite_req_i (tile_cfg_reg_lite_req),
-    .axi_lite_resp_o(tile_cfg_reg_lite_rsp),
-    .apb_req_o      (tile_cfg_apb_req),
-    .apb_resp_i     (tile_cfg_apb_rsp),
+    .axi_lite_req_i (ucie_cfg_reg_lite_req),
+    .axi_lite_resp_o(ucie_cfg_reg_lite_rsp),
+    .apb_req_o      (ucie_cfg_apb_req),
+    .apb_resp_i     (ucie_cfg_apb_rsp),
     .addr_map_i     (SlinkCfgApbAddrMap)
   );
 
