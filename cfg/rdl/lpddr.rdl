@@ -1,0 +1,23 @@
+// Copyright 2025 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
+
+`ifndef LPDDR_PHY_RDL
+`define LPDDR_PHY_RDL
+
+`include "lpddr_regs.rdl"
+
+addrmap lpddr #(
+    // The LPDDR PHY has 23 address bits, but access are word-aligned to 16-bit,
+    longint unsigned PHYAddressWidth = 23,
+    // The LPDDR controller has a 12-bit AW meaning it can address 2^12 = 4096 bytes (4 KiB) of configuration space.
+    longint unsigned CtrlAddressWidth = 12
+) {
+    external mem { mementries = 2**PHYAddressWidth; memwidth = 16; } PHY;
+    external mem { mementries = 2**CtrlAddressWidth; memwidth = 8; } Ctrl;
+    lpddr_regs regs;
+};
+
+`endif // LPDDR_PHY_RDL

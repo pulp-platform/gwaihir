@@ -9,9 +9,7 @@
 `include "cheshire.rdl"
 `include "fll.rdl"
 `include "gw_chip_regs.rdl"
-`ifdef GW_LPDDR_RDL
 `include "lpddr.rdl"
-`endif
 
 addrmap cheshire_tile #(
     longint unsigned SlinkNumLanes = 8
