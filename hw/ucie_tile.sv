@@ -5,37 +5,38 @@
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
 // Chen Wu <chenwu@iis.ee.ethz.ch>
 
-`include "axi/typedef.svh"
-
 module ucie_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
 (
-  input  logic                    clk_i,
-  input  logic                    rst_ni,
-  input  logic                    test_enable_i,
+  input  logic                              clk_i,
+  input  logic                              rst_ni,
+  input  logic                              test_enable_i,
   // Router ID
-  input  id_t                     id_i,
-  input  logic                    ucie_id_i,
+  input  id_t                               id_i,
+  input  logic                              ucie_id_i,
+  // Sam idx
+  input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
-  output floo_req_t  [West:North] floo_req_o,
-  input  floo_rsp_t  [West:North] floo_rsp_i,
-  output floo_wide_t [West:North] floo_wide_o,
-  input  floo_req_t  [West:North] floo_req_i,
-  output floo_rsp_t  [West:North] floo_rsp_o,
-  input  floo_wide_t [West:North] floo_wide_i,
+  output floo_req_t  [          West:North] floo_req_o,
+  input  floo_rsp_t  [          West:North] floo_rsp_i,
+  output floo_wide_t [          West:North] floo_wide_o,
+  input  floo_req_t  [          West:North] floo_req_i,
+  output floo_rsp_t  [          West:North] floo_rsp_o,
+  input  floo_wide_t [          West:North] floo_wide_i,
 
-  // AXI narrow channels
-  // output floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req_o, //TODO(lleone): delete
-  // input  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_out_rsp_i, //TODO(lleone): delete
-  input  floo_gwaihir_noc_pkg::axi_narrow_in_req_t axi_narrow_in_req_i,
-  output floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t axi_narrow_in_rsp_o,
-  // AXI wide channels
-  output floo_gwaihir_noc_pkg::axi_wide_out_req_t  axi_wide_out_req_o,
-  input  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t  axi_wide_out_rsp_i,
-  input  floo_gwaihir_noc_pkg::axi_wide_in_req_t   axi_wide_in_req_i,
-  output floo_gwaihir_noc_pkg::axi_wide_in_rsp_t   axi_wide_in_rsp_o
+  // AXI wide ingress (from the other chiplet, towards the mesh)
+  input  floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_in_req_i,
+  output floo_gwaihir_noc_pkg::axi_wide_in_rsp_t axi_wide_in_rsp_o,
+  // Joined AXI egress (mesh towards the other chiplet): the chimney's narrow
+  // and wide outputs are combined into a single wide stream here. For now
+  // (stage 1 of the serial-link integration) it is simply looped back at the
+  // top level; a later stage inserts the serial-link protocol/link layers
+  // between this port and the loopback, plus a config path split off the
+  // narrow xbar below.
+  output gwaihir_pkg::axi_wide_join_req_t        axi_wide_out_req_o,
+  input  gwaihir_pkg::axi_wide_join_rsp_t        axi_wide_out_rsp_i
 );
 
   ////////////
@@ -95,6 +96,9 @@ module ucie_tile
 
   floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_out_rsp;
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
@@ -131,16 +135,17 @@ module ucie_tile
     .id_i,
     .route_table_i       ('0),
     .sram_cfg_i          ('0),
-    // AXI narrow channels
+    // AXI narrow channels: no narrow ingress for this tile (folded into the
+    // joined wide egress below), so tie the chimney's narrow-in off.
     .axi_narrow_in_req_i ('0),
     .axi_narrow_in_rsp_o (),
     .axi_narrow_out_req_o(axi_narrow_out_req),
-    .axi_narrow_out_rsp_i(axi_narrow_out_rsp_i),
+    .axi_narrow_out_rsp_i(axi_narrow_out_rsp),
     // AXI wide channels
     .axi_wide_in_req_i   (axi_wide_in_req),
     .axi_wide_in_rsp_o   (axi_wide_in_rsp_o),
-    .axi_wide_out_req_o  (axi_wide_out_req_o),
-    .axi_wide_out_rsp_i  (axi_wide_out_rsp_i),
+    .axi_wide_out_req_o  (axi_wide_out_req),
+    .axi_wide_out_rsp_i  (axi_wide_out_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
     .floo_rsp_o          (router_floo_rsp_in[Eject]),
     .floo_wide_o         (router_floo_wide_in[Eject]),
@@ -151,128 +156,119 @@ module ucie_tile
 
   // Translate ingress addresses to their canonical form
   always_comb begin
-    axi_narrow_in_req         = axi_narrow_in_req_i;
-    axi_narrow_in_req.aw.addr = unalias_ucie_address(axi_narrow_in_req_i.aw.addr, ucie_id_i);
-    axi_narrow_in_req.ar.addr = unalias_ucie_address(axi_narrow_in_req_i.ar.addr, ucie_id_i);
-
-    axi_wide_in_req           = axi_wide_in_req_i;
-    axi_wide_in_req.aw.addr   = unalias_ucie_address(axi_wide_in_req_i.aw.addr, ucie_id_i);
-    axi_wide_in_req.ar.addr   = unalias_ucie_address(axi_wide_in_req_i.ar.addr, ucie_id_i);
+    axi_wide_in_req         = axi_wide_in_req_i;
+    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_in_req_i.aw.addr, ucie_id_i);
+    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_in_req_i.ar.addr, ucie_id_i);
   end
-
-  localparam axi_cfg_t AxiCfgJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
-
-  typedef logic [AxiCfgJoin.OutIdWidth-1:0] nw_join_id_t;
-  typedef logic [AxiCfgJoin.UserWidth-1:0] nw_join_user_t;
-
-  `AXI_TYPEDEF_ALL_CT(axi_wide_join, axi_wide_join_req_t, axi_wide_join_rsp_t, axi_wide_in_addr_t,
-                      nw_join_id_t, axi_wide_in_data_t, axi_wide_in_strb_t, nw_join_user_t)
 
   /////////////////
   // Narrow XBAR //
   /////////////////
 
-  localparam axi_pkg::xbar_cfg_t AxiWideXbarCfg = '{
+  // Stage 1: the chimney's narrow-out egress only has one real destination
+  // (JOIN, the streaming path below); the config path doesn't exist yet. The
+  // single address rule below therefore only covers this tile's own main
+  // chiplet ("streaming") window, and the xbar's default master port is
+  // disabled (see instantiation below), so any other address -- including
+  // this tile's own "axi_serial_cfg" window, until stage 2 wires up a second
+  // rule/port for it -- correctly hits the xbar's built-in error slave
+  // instead of silently routing to JOIN.
+  typedef enum logic [0:0] {JOIN = 1'b0} ucie_xbar_sel_e;
+
+  localparam int unsigned NumUcieXbarMstPorts = 1;
+
+  localparam axi_pkg::xbar_cfg_t AxiNarrowXbarCfg = '{
       NoSlvPorts: 1,
-      NoMstPorts: 2,
+      NoMstPorts: NumUcieXbarMstPorts,
       MaxMstTrans: 4,
       MaxSlvTrans: 4,
       FallThrough: 0,
-      // If you have timing issue, change latency to cut ports
+      // If you have timing issues, change latency to cut ports
       PipelineStages:
       0,
-      AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
-      AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
+      AxiIdWidthSlvPorts: $bits(axi_narrow_out_id_t),
+      AxiIdUsedSlvPorts: $bits(axi_narrow_out_id_t),
       UniqueIds: 0,
-      AxiAddrWidth: $bits(axi_wide_in_addr_t),
-      AxiDataWidth: $bits(axi_wide_in_data_t),
-      NoAddrRules: 2,
+      AxiAddrWidth: $bits(axi_narrow_out_addr_t),
+      AxiDataWidth: $bits(axi_narrow_out_data_t),
+      NoAddrRules: 1,
       default: '0
   };
 
-  typedef enum logic {
-    APB     = 0,
-    CHIPLET = 1
-  } ucie_rule_idx_t;
-
   typedef struct packed {
-    logic [$clog2(AxiWideXbarCfg.NoMstPorts)-1:0] idx;
-    axi_wide_in_addr_t                            start_addr;
-    axi_wide_in_addr_t                            end_addr;
+    logic [cc_pkg::idx_width(NumUcieXbarMstPorts)-1:0] idx;
+    axi_narrow_out_addr_t                              start_addr;
+    axi_narrow_out_addr_t                              end_addr;
   } ucie_rule_t;
 
-  // Two regions:
-  //   1. The APB cfg region (either UCIe or axi_serializer)
-  //   2. The other chiplet region
-  ucie_rule_t [1:0] tile_addrmap;
 
-  assign tile_addrmap = '{
-          // Address range to the axi serializer cfg interface
-          '{
-              idx: APB,
-              start_addr: Sam[Ucie0SamIdx].start_addr,
-              end_addr  : Sam[Ucie0SamIdx].end_addr
-          },
-          // TODO: Address range to the ucie cfg interface -- placeholder until defined
-          '{
-              idx: CHIPLET,
-              start_addr: '0,
-              end_addr  : '0
-          }
+  // TODO (lleone): Add the CFG APB path as address rule.
+  ucie_rule_t [0:0] tile_addrmap;
+  assign tile_addrmap[0] = '{
+          idx: JOIN,
+          start_addr: Sam[samidx_i].start_addr,
+          end_addr  : Sam[samidx_i].end_addr
       };
 
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieXbarMstPorts-1:0] axi_narrow_xbar_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumUcieXbarMstPorts-1:0] axi_narrow_xbar_out_rsp;
+
   axi_xbar #(
-    .Cfg          (AxiWideXbarCfg),
+    .Cfg          (AxiNarrowXbarCfg),
     .ATOPs        ('0),
     .Connectivity ('1),
-    .slv_aw_chan_t(axi_narrow_in_aw_chan_t),
-    .mst_aw_chan_t(axi_narrow_in_aw_chan_t),
-    .w_chan_t     (axi_narrow_in_w_chan_t),
-    .slv_b_chan_t (axi_narrow_in_b_chan_t),
-    .mst_b_chan_t (axi_narrow_in_b_chan_t),
-    .slv_ar_chan_t(axi_narrow_in_ar_chan_t),
-    .mst_ar_chan_t(axi_narrow_in_ar_chan_t),
-    .slv_r_chan_t (axi_narrow_in_r_chan_t),
-    .mst_r_chan_t (axi_narrow_in_r_chan_t),
-    .slv_req_t    (axi_narrow_in_req_t),
-    .slv_resp_t   (axi_narrow_in_rsp_t),
-    .mst_req_t    (axi_narrow_in_req_t),
-    .mst_resp_t   (axi_narrow_in_rsp_t),
+    .slv_aw_chan_t(axi_narrow_out_aw_chan_t),
+    .mst_aw_chan_t(axi_narrow_out_aw_chan_t),
+    .w_chan_t     (axi_narrow_out_w_chan_t),
+    .slv_b_chan_t (axi_narrow_out_b_chan_t),
+    .mst_b_chan_t (axi_narrow_out_b_chan_t),
+    .slv_ar_chan_t(axi_narrow_out_ar_chan_t),
+    .mst_ar_chan_t(axi_narrow_out_ar_chan_t),
+    .slv_r_chan_t (axi_narrow_out_r_chan_t),
+    .mst_r_chan_t (axi_narrow_out_r_chan_t),
+    .slv_req_t    (axi_narrow_out_req_t),
+    .slv_resp_t   (axi_narrow_out_rsp_t),
+    .mst_req_t    (axi_narrow_out_req_t),
+    .mst_resp_t   (axi_narrow_out_rsp_t),
     .rule_t       (ucie_rule_t)
   ) i_narrow_xbar (
-    .clk_i    (clk_i),
-    .rst_ni   (rst_ni),
-    .test_i   (test_enable_i),
-    .slv_req_i(),
-    .slv_rsp_o(),
-    .mst_req_o(),
-    .mst_rsp_i(),
-    .rule_i   ()
+    .clk_i                (clk_i),
+    .rst_ni               (rst_ni),
+    .slv_ports_req_i      (axi_narrow_out_req),
+    .slv_ports_resp_o     (axi_narrow_out_rsp),
+    .mst_ports_req_o      (axi_narrow_xbar_out_req),
+    .mst_ports_resp_i     (axi_narrow_xbar_out_rsp),
+    .addr_map_i           (tile_addrmap),
+    .en_default_mst_port_i(1'b0),
+    .default_mst_port_i   ('0)
   );
+
+  /////////////
+  // NW Join //
+  /////////////
 
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
     .AxiCfgW         (axi_cfg_swap_iw(AxiCfgW)),
-    .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgJoin)),
+    .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgUcieJoin)),
     .EnAtopAdapter   (1'b0),
     .AtopUserAsId    (1'b1),
     .axi_narrow_req_t(axi_narrow_out_req_t),
     .axi_narrow_rsp_t(axi_narrow_out_rsp_t),
     .axi_wide_req_t  (axi_wide_out_req_t),
     .axi_wide_rsp_t  (axi_wide_out_rsp_t),
-    .axi_req_t       (axi_wide_join_req_t),
-    .axi_rsp_t       (axi_wide_join_rsp_t)
+    .axi_req_t       (gwaihir_pkg::axi_wide_join_req_t),
+    .axi_rsp_t       (gwaihir_pkg::axi_wide_join_rsp_t)
   ) i_floo_nw_join (
     .clk_i           (clk_i),
     .rst_ni          (rst_ni),
     .test_enable_i   (test_enable_i),
-    .axi_narrow_req_i(axi_demux_out_req[Mem]),
-    .axi_narrow_rsp_o(axi_demux_out_rsp[Mem]),
-    .axi_wide_req_i  (axi_wide_req),
-    .axi_wide_rsp_o  (axi_wide_rsp),
-    .axi_req_o       (axi_req),
-    .axi_rsp_i       (axi_rsp)
+    .axi_narrow_req_i(axi_narrow_xbar_out_req[JOIN]),
+    .axi_narrow_rsp_o(axi_narrow_xbar_out_rsp[JOIN]),
+    .axi_wide_req_i  (axi_wide_out_req),
+    .axi_wide_rsp_o  (axi_wide_out_rsp),
+    .axi_req_o       (axi_wide_out_req_o),
+    .axi_rsp_i       (axi_wide_out_rsp_i)
   );
-
 
 endmodule : ucie_tile
