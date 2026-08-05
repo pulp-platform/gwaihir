@@ -489,13 +489,10 @@ module mem_tile
   // NW Join //
   /////////////
 
-  localparam axi_cfg_t AxiCfgJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+  localparam axi_cfg_t AxiCfgJoin = AxiCfgNwJoin;
 
-  typedef logic [AxiCfgJoin.OutIdWidth-1:0] nw_join_id_t;
-  typedef logic [AxiCfgJoin.UserWidth-1:0] nw_join_user_t;
-
-  `AXI_TYPEDEF_ALL_CT(axi_nw_join, axi_nw_join_req_t, axi_nw_join_rsp_t, axi_wide_out_addr_t,
-                      nw_join_id_t, axi_wide_out_data_t, axi_wide_out_strb_t, nw_join_user_t)
+  typedef axi_wide_join_req_t axi_nw_join_req_t;
+  typedef axi_wide_join_rsp_t axi_nw_join_rsp_t;
 
   axi_nw_join_req_t axi_req;
   axi_nw_join_rsp_t axi_rsp;
