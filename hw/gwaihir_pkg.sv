@@ -359,16 +359,16 @@ package gwaihir_pkg;
     ret.AxiExtRegionEnd[0] = 'h8000_0000;
     ret.RegExtRegionIdx[CshRegExtFLL] = CshRegExtFLL;
     ret.RegExtRegionStart[CshRegExtFLL] = CHESHIRE_INTERNAL_FLL_BASE_ADDR;
-    ret.RegExtRegionEnd [CshRegExtFLL] = CHESHIRE_INTERNAL_FLL_BASE_ADDR + \
-                                         CHESHIRE_INTERNAL_FLL_SIZE;
+    ret.RegExtRegionEnd [CshRegExtFLL] = CHESHIRE_INTERNAL_FLL_BASE_ADDR
+                                       + CHESHIRE_INTERNAL_FLL_SIZE;
     ret.RegExtRegionIdx[CshRegExtChipCtrl] = CshRegExtChipCtrl;
     ret.RegExtRegionStart[CshRegExtChipCtrl] = CHESHIRE_INTERNAL_GW_CHIP_REGS_BASE_ADDR;
-    ret.RegExtRegionEnd [CshRegExtChipCtrl] = CHESHIRE_INTERNAL_GW_CHIP_REGS_BASE_ADDR + \
-                                             CHESHIRE_INTERNAL_GW_CHIP_REGS_SIZE;
+    ret.RegExtRegionEnd [CshRegExtChipCtrl] = CHESHIRE_INTERNAL_GW_CHIP_REGS_BASE_ADDR
+                                            + CHESHIRE_INTERNAL_GW_CHIP_REGS_SIZE;
     ret.RegExtRegionIdx[CshRegLPDDR] = CshRegLPDDR;
     ret.RegExtRegionStart[CshRegLPDDR] = CHESHIRE_INTERNAL_LPDDR_BASE_ADDR;
-    ret.RegExtRegionEnd [CshRegLPDDR] = CHESHIRE_INTERNAL_LPDDR_BASE_ADDR + \
-                                         CHESHIRE_INTERNAL_LPDDR_SIZE;
+    ret.RegExtRegionEnd [CshRegLPDDR] = CHESHIRE_INTERNAL_LPDDR_BASE_ADDR
+                                      + CHESHIRE_INTERNAL_LPDDR_SIZE;
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
     ret.Cva6ExtCieOnTop = 0;
