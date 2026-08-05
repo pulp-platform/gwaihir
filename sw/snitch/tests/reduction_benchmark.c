@@ -10,7 +10,7 @@
 
 // Transfer size in bytes
 #ifndef SIZE
-#define SIZE 1024
+#define SIZE 4096
 #endif
 
 // Batch size in bytes
@@ -25,7 +25,7 @@ typedef enum {
 } impl_t;
 
 #ifndef IMPL
-#define IMPL SEQ
+#define IMPL HW
 #endif
 
 #define N_BATCHES (SIZE / BATCH)
