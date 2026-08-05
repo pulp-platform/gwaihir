@@ -208,7 +208,7 @@ $(PCIE_DIR):
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
-	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT) && make ip-build
+	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT)
 
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
