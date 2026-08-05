@@ -18,7 +18,7 @@ module ucie_tile
   input  logic                              ucie_id_i,
   // Sam idx
   input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
-  // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
+  // Router mesh ports
   output floo_req_t  [          West:North] floo_req_o,
   input  floo_rsp_t  [          West:North] floo_rsp_i,
   output floo_wide_t [          West:North] floo_wide_o,
@@ -29,12 +29,7 @@ module ucie_tile
   // AXI wide ingress (from the other chiplet, towards the mesh)
   input  floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_in_req_i,
   output floo_gwaihir_noc_pkg::axi_wide_in_rsp_t axi_wide_in_rsp_o,
-  // Joined AXI egress (mesh towards the other chiplet): the chimney's narrow
-  // and wide outputs are combined into a single wide stream here. For now
-  // (stage 1 of the serial-link integration) it is simply looped back at the
-  // top level; a later stage inserts the serial-link protocol/link layers
-  // between this port and the loopback, plus a config path split off the
-  // narrow xbar below.
+  // Joined AXI egress (mesh towards the other chiplet)
   output gwaihir_pkg::axi_wide_join_req_t        axi_wide_out_req_o,
   input  gwaihir_pkg::axi_wide_join_rsp_t        axi_wide_out_rsp_i
 );
@@ -165,17 +160,12 @@ module ucie_tile
   // Narrow XBAR //
   /////////////////
 
-  // Stage 1: the chimney's narrow-out egress only has one real destination
-  // (JOIN, the streaming path below); the config path doesn't exist yet. The
-  // single address rule below therefore only covers this tile's own main
-  // chiplet ("streaming") window, and the xbar's default master port is
-  // disabled (see instantiation below), so any other address -- including
-  // this tile's own "axi_serial_cfg" window, until stage 2 wires up a second
-  // rule/port for it -- correctly hits the xbar's built-in error slave
-  // instead of silently routing to JOIN.
-  typedef enum logic [0:0] {JOIN = 1'b0} ucie_xbar_sel_e;
+  typedef enum logic {
+    JOIN     = 1'b0,
+    LITE_CFG = 1'b1
+  } ucie_xbar_sel_e;
 
-  localparam int unsigned NumUcieXbarMstPorts = 1;
+  localparam int unsigned NumUcieXbarMstPorts = 2;
 
   localparam axi_pkg::xbar_cfg_t AxiNarrowXbarCfg = '{
       NoSlvPorts: 1,
@@ -191,7 +181,7 @@ module ucie_tile
       UniqueIds: 0,
       AxiAddrWidth: $bits(axi_narrow_out_addr_t),
       AxiDataWidth: $bits(axi_narrow_out_data_t),
-      NoAddrRules: 1,
+      NoAddrRules: 2,
       default: '0
   };
 
@@ -201,13 +191,23 @@ module ucie_tile
     axi_narrow_out_addr_t                              end_addr;
   } ucie_rule_t;
 
+  typedef struct packed {
+    int unsigned idx;
+    addr_t       start_addr;
+    addr_t       end_addr;
+  } addr_rule_t;
 
-  // TODO (lleone): Add the CFG APB path as address rule.
-  ucie_rule_t [0:0] tile_addrmap;
-  assign tile_addrmap[0] = '{
-          idx: JOIN,
-          start_addr: Sam[samidx_i].start_addr,
-          end_addr  : Sam[samidx_i].end_addr
+  // Sam Idx offset between UCIe base and AxiCfg
+  localparam int CfgIdxOffset = int'(Ucie0AxiSerialCfgSamIdx) - int'(Ucie0SamIdx);
+
+  ucie_rule_t [1:0] tile_addrmap;
+  assign tile_addrmap = '{
+          '{
+              idx: LITE_CFG,
+              start_addr: Sam[int'(samidx_i)+CfgIdxOffset].start_addr,
+              end_addr  : Sam[int'(samidx_i)+CfgIdxOffset].end_addr
+          },
+          '{idx: JOIN, start_addr: Sam[samidx_i].start_addr, end_addr  : Sam[samidx_i].end_addr}
       };
 
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieXbarMstPorts-1:0] axi_narrow_xbar_out_req;
@@ -243,9 +243,98 @@ module ucie_tile
     .default_mst_port_i   ('0)
   );
 
-  /////////////
-  // NW Join //
-  /////////////
+  ///////////////////////
+  // Cfg Register Path //
+  ///////////////////////
+
+  // narrow AXI (64b) -> AXI-Lite (64b) -> AXI-Lite (32b) -> APB (32b).
+  tile_cfg_axi_lite_req_t     tile_cfg_axi_lite_req;
+  tile_cfg_axi_lite_resp_t    tile_cfg_axi_lite_rsp;
+  tile_cfg_axi_lite_32_req_t  tile_cfg_reg_lite_req;
+  tile_cfg_axi_lite_32_resp_t tile_cfg_reg_lite_rsp;
+
+  axi_to_axi_lite #(
+    .AxiAddrWidth   (AxiCfgN.AddrWidth),
+    .AxiDataWidth   (AxiCfgN.DataWidth),
+    .AxiIdWidth     (AxiCfgN.OutIdWidth),
+    .AxiUserWidth   (AxiCfgN.UserWidth),
+    .AxiMaxWriteTxns(floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .AxiMaxReadTxns (floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .full_req_t     (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
+    .full_resp_t    (floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t),
+    .lite_req_t     (tile_cfg_axi_lite_req_t),
+    .lite_resp_t    (tile_cfg_axi_lite_resp_t)
+  ) i_axi_to_axi_lite_slink_cfg (
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
+    .slv_req_i (axi_narrow_xbar_out_req[LITE_CFG]),
+    .slv_resp_o(axi_narrow_xbar_out_rsp[LITE_CFG]),
+    .mst_req_o (tile_cfg_axi_lite_req),
+    .mst_resp_i(tile_cfg_axi_lite_rsp)
+  );
+
+  axi_lite_dw_converter #(
+    .AxiAddrWidth       (AxiCfgN.AddrWidth),
+    .AxiSlvPortDataWidth(AxiCfgN.DataWidth),
+    .AxiMstPortDataWidth(gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
+    .axi_lite_aw_t      (tile_cfg_axi_lite_aw_chan_t),
+    .axi_lite_slv_w_t   (tile_cfg_axi_lite_w_chan_t),
+    .axi_lite_mst_w_t   (tile_cfg_axi_lite_32_w_chan_t),
+    .axi_lite_b_t       (tile_cfg_axi_lite_b_chan_t),
+    .axi_lite_ar_t      (tile_cfg_axi_lite_ar_chan_t),
+    .axi_lite_slv_r_t   (tile_cfg_axi_lite_r_chan_t),
+    .axi_lite_mst_r_t   (tile_cfg_axi_lite_32_r_chan_t),
+    .axi_lite_slv_req_t (tile_cfg_axi_lite_req_t),
+    .axi_lite_slv_res_t (tile_cfg_axi_lite_resp_t),
+    .axi_lite_mst_req_t (tile_cfg_axi_lite_32_req_t),
+    .axi_lite_mst_res_t (tile_cfg_axi_lite_32_resp_t)
+  ) i_axi_lite_dw_converter_slink_cfg (
+    .clk_i    (clk_i),
+    .rst_ni   (rst_ni),
+    .slv_req_i(tile_cfg_axi_lite_req),
+    .slv_res_o(tile_cfg_axi_lite_rsp),
+    .mst_req_o(tile_cfg_reg_lite_req),
+    .mst_res_i(tile_cfg_reg_lite_rsp)
+  );
+
+  // The narrow xbar already isolated this port to the "axi_serial_cfg" SAM
+  // range, so everything reaching here is in range: a single wildcard rule.
+  localparam int unsigned NumSlinkCfgApbRules = 1;
+  addr_rule_t [NumSlinkCfgApbRules-1:0] SlinkCfgApbAddrMap = '{
+      '{idx: 0, start_addr: '0, end_addr: '1}
+  };
+
+  // TODO (lleone): The types used in the chain before must be derived from a UCIe rdl or Slink rdl pkg
+  // TODO (lleone): Temporrary ode before connecting an actual APB subordinate
+  localparam tile_cfg_reg_data_t StubApbRdata = tile_cfg_reg_data_t'(32'hFEEDFACE);
+
+  tile_cfg_apb_req_t  tile_cfg_apb_req;
+  tile_cfg_apb_resp_t tile_cfg_apb_rsp;
+  assign tile_cfg_apb_rsp = '{pready: 1'b1, prdata: StubApbRdata, pslverr: 1'b0};
+
+  axi_lite_to_apb #(
+    .NoApbSlaves    (1),
+    .NoRules        (NumSlinkCfgApbRules),
+    .AddrWidth      (AxiCfgN.AddrWidth),
+    .DataWidth      (gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
+    .axi_lite_req_t (tile_cfg_axi_lite_32_req_t),
+    .axi_lite_resp_t(tile_cfg_axi_lite_32_resp_t),
+    .apb_req_t      (tile_cfg_apb_req_t),
+    .apb_resp_t     (tile_cfg_apb_resp_t),
+    .rule_t         (addr_rule_t)
+  ) i_axi_lite_to_apb_slink_cfg (
+    .clk_i          (clk_i),
+    .rst_ni         (rst_ni),
+    .axi_lite_req_i (tile_cfg_reg_lite_req),
+    .axi_lite_resp_o(tile_cfg_reg_lite_rsp),
+    .apb_req_o      (tile_cfg_apb_req),
+    .apb_resp_i     (tile_cfg_apb_rsp),
+    .addr_map_i     (SlinkCfgApbAddrMap)
+  );
+
+  //////////////////
+  // NW Join Path //
+  /////////////////
 
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
