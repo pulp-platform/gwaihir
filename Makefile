@@ -192,7 +192,7 @@ PCIE_COMMIT ?= 7335dd196ce9e5ec68b10c97a7dbc6334938fd1d
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
-LPDDR_COMMIT ?= ae419416acef01be8f37bcc4be2a9fcc49f9bb3e
+LPDDR_COMMIT ?= a8164b22187b9d2a05f5807f5f118e86fc5879a3
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 .PHONY: init-pd clean-pd update-pd-commit
@@ -208,7 +208,7 @@ $(PCIE_DIR):
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
-	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT) && make ip-build
+	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT)
 
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
