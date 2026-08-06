@@ -51,6 +51,7 @@ DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
+GW_RDL_ALL += $(GW_GEN_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/chiplet.rdl
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
@@ -73,7 +74,7 @@ $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
 
 # Those are dummy RDL files, for generation without access to the PD repository.
-$(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl: | $(GW_GEN_DIR)
+$(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl $(GW_GEN_DIR)/lpddr.rdl: | $(GW_GEN_DIR)
 	@touch $@
 
 # Internal addrmap of the chiplet alias windows, derived from the NoC config
