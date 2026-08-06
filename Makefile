@@ -47,6 +47,20 @@ SIM_TARGS += -t simulation -t test -t idma_test
 #############
 SLINK_NUM_LANES ?= 8
 PEAKRDL_PARAMS   += -P SlinkNumLanes=$(SLINK_NUM_LANES)
+
+# TODO(lleone): Too much verbose, to review and integrate better in the flow
+UCIE_SLINK_ROOT  ?= $(GW_ROOT)/working_dir/serial_link
+UCIE_SLINK_RDL   ?= $(UCIE_SLINK_ROOT)/src/regs/slink_reg.rdl
+UCIE_SLINK_NUM_CHANNELS ?= 1
+UCIE_SLINK_NUM_LANES    ?= 256
+UCIE_SLINK_EN_DDR       ?= 0
+UCIE_SLINK_LOG2_MAX_CLK_DIV ?= 10
+UCIE_SLINK_LOG2_RAW_MODE_TX_FIFO_DEPTH ?= 3
+UCIE_SLINK_PEAKRDL_PARAMS += -P NumChannels=$(UCIE_SLINK_NUM_CHANNELS)
+UCIE_SLINK_PEAKRDL_PARAMS += -P NumLanes=$(UCIE_SLINK_NUM_LANES)
+UCIE_SLINK_PEAKRDL_PARAMS += -P EnDdr=$(UCIE_SLINK_EN_DDR)
+UCIE_SLINK_PEAKRDL_PARAMS += -P Log2MaxClkDiv=$(UCIE_SLINK_LOG2_MAX_CLK_DIV)
+UCIE_SLINK_PEAKRDL_PARAMS += -P Log2RawModeTXFifoDepth=$(UCIE_SLINK_LOG2_RAW_MODE_TX_FIFO_DEPTH)
 DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
@@ -70,6 +84,10 @@ PEAKRDL_INCLUDES += -I $(GW_GEN_DIR)
 $(GW_GEN_DIR)/gw_tile_regs.sv: $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 $(GW_GEN_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
 	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n
+
+# UCIe SLink registers
+$(GW_GEN_DIR)/ucie_slink_reg.sv $(GW_GEN_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL)
+	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n --module-name ucie_slink_reg --package-name ucie_slink_reg_pkg $(UCIE_SLINK_PEAKRDL_PARAMS)
 
 $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
@@ -106,6 +124,8 @@ GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_64b.svh
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/ucie_slink_reg.sv
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/ucie_slink_reg_pkg.sv
 
 .PHONY: docs docs-build docs-serve docs-clean rdl-markdown
 
