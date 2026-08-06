@@ -48,6 +48,7 @@ novas.*
 ucli.key
 .vcs*
 verdiLog
+*.fsdb*
 
 # Software build files
 *.bin
