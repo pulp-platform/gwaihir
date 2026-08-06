@@ -61,7 +61,6 @@ sources:
   # Level 2
   - hw/snitch_tcdm_aligner.sv
   - hw/snitch_hwpe_subsystem.sv
-  - hw/cluster_tile.sv
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
@@ -71,6 +70,7 @@ sources:
   - hw/ucie_tile.sv
 
   # Level 3
+  - hw/cluster_tile.sv
   - hw/gwaihir_top.sv
 
   - target: any(simulation, test)
