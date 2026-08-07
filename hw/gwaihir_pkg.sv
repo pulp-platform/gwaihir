@@ -515,8 +515,17 @@ package gwaihir_pkg;
     return en_half_shift ? ingress_half_shift(cleared) : cleared;
   endfunction
 
+  // Narrow config without ATOP support
+  localparam axi_cfg_t AxiCfgNoAtop = '{
+      AddrWidth: AxiCfgN.AddrWidth,
+      DataWidth: AxiCfgN.DataWidth,
+      InIdWidth: 1,
+      OutIdWidth: 1,
+      UserWidth: 1
+  };
+
   // Narrow/wide join types for `floo_nw_join`
-  localparam axi_cfg_t AxiCfgNwJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+  localparam axi_cfg_t AxiCfgNwJoin = floo_pkg::axi_join_cfg(AxiCfgNoAtop, AxiCfgW);
 
   typedef logic [AxiCfgNwJoin.OutIdWidth-1:0] nw_join_id_t;
   typedef logic [AxiCfgNwJoin.UserWidth-1:0] nw_join_user_t;
@@ -525,8 +534,7 @@ package gwaihir_pkg;
                       nw_join_id_t, axi_wide_in_data_t, axi_wide_in_strb_t, nw_join_user_t)
 
 
-  // TODO (lleone): Derive from RDL when ucie has one.
-  localparam int unsigned UcieCfgRegDataWidth = 32;
+  localparam int unsigned UcieCfgRegDataWidth = UCIE_SLINK_REG_DATA_WIDTH;
 
   typedef logic [UcieCfgRegDataWidth-1:0] ucie_cfg_reg_data_t;
   typedef logic [UcieCfgRegDataWidth/8-1:0] ucie_cfg_reg_strb_t;

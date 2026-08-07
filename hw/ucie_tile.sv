@@ -5,6 +5,9 @@
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
 // Chen Wu <chenwu@iis.ee.ethz.ch>
 
+`include "axi/assign.svh"
+`include "axi/typedef.svh"
+
 module ucie_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
@@ -105,9 +108,14 @@ module ucie_tile
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_out_rsp;
   floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req;
-  // floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    axi_wide_in_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    axi_wide_in_rsp;
   floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req;
   floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_out_rsp;
+
+  // From IW Converter to chimney
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_req_iw_conv;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    axi_wide_rsp_iw_conv;
+
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
@@ -153,8 +161,7 @@ module ucie_tile
     // - Ingress: from the other chiplet (serailizer)
     // - Egress: towards the other chiplet (nw join -> serializer)
     .axi_wide_in_req_i   (axi_wide_in_req),
-    // TODO (lleone): Type mismatch
-    .axi_wide_in_rsp_o   (axi_wide_join_in_rsp),
+    .axi_wide_in_rsp_o   (axi_wide_rsp_iw_conv),
     .axi_wide_out_req_o  (axi_wide_out_req),
     .axi_wide_out_rsp_i  (axi_wide_out_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
@@ -170,10 +177,35 @@ module ucie_tile
   // - user field: narrow = 5, wide = 1
   // - id field: narrow = look into noc fg, weird values.
   always_comb begin
-    axi_wide_in_req         = axi_wide_join_in_req;
-    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_join_in_req.aw.addr, ucie_id_i);
-    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_join_in_req.ar.addr, ucie_id_i);
+    axi_wide_in_req         = axi_wide_req_iw_conv;
+    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_req_iw_conv.aw.addr, ucie_id_i);
+    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_req_iw_conv.ar.addr, ucie_id_i);
   end
+
+  // ID Conveter from Slink to Chimney
+  axi_iw_converter #(
+    .AxiSlvPortIdWidth(AxiCfgNwJoin.OutIdWidth),  // Chimney Output ID
+    .AxiMstPortIdWidth(AxiCfgW.InIdWidth),  // ID of the chimney's input port
+    .AxiSlvPortMaxUniqIds(2 ** AxiCfgNwJoin.OutIdWidth),  // Max num of IDs
+    .AxiSlvPortMaxTxnsPerId(32),  // TODO: Probably overkilling, reduce if you have area issue
+    .AxiSlvPortMaxTxns(32),
+    .AxiMstPortMaxUniqIds(2 ** AxiCfgW.InIdWidth),
+    .AxiMstPortMaxTxnsPerId(32),
+    .AxiAddrWidth(AxiCfgW.AddrWidth),
+    .AxiDataWidth(AxiCfgW.DataWidth),
+    .AxiUserWidth(AxiCfgW.UserWidth),  // Convert after ID
+    .slv_req_t(gwaihir_pkg::axi_wide_join_req_t),
+    .slv_resp_t(gwaihir_pkg::axi_wide_join_rsp_t),
+    .mst_req_t(axi_wide_in_req_t),
+    .mst_resp_t(axi_wide_in_rsp_t)
+  ) i_slink2chim_wide_iw_converter (
+    .clk_i,
+    .rst_ni,
+    .slv_req_i (axi_wide_join_in_req),
+    .slv_resp_o(axi_wide_join_in_rsp),
+    .mst_req_o (axi_wide_req_iw_conv),
+    .mst_resp_i(axi_wide_rsp_iw_conv)
+  );
 
   /////////////////
   // Narrow XBAR //
@@ -370,14 +402,67 @@ module ucie_tile
   // NW Join Path //
   /////////////////
 
+  // Narrow axi with 1 ID bit and no user field
+  typedef logic no_outstanding_id_t;
+  typedef logic no_atop_user_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_narrow_iw_out, axi_narrow_iw_out_req_t, axi_narrow_iw_out_rsp_t,
+                      axi_narrow_out_addr_t, no_outstanding_id_t, axi_narrow_out_data_t,
+                      axi_narrow_out_strb_t, axi_narrow_out_user_t)
+
+  `AXI_TYPEDEF_ALL_CT(axi_narrow_noatop_out, axi_narrow_noatop_out_req_t,
+                      axi_narrow_noatop_out_rsp_t, axi_narrow_out_addr_t, no_outstanding_id_t,
+                      axi_narrow_out_data_t, axi_narrow_out_strb_t, no_atop_user_t)
+
+  axi_narrow_iw_out_req_t     axi_narrow_iw_out_req;
+  axi_narrow_iw_out_rsp_t     axi_narrow_iw_out_rsp;
+
+  axi_narrow_noatop_out_req_t axi_narrow_noatop_out_req;
+  axi_narrow_noatop_out_rsp_t axi_narrow_noatop_out_rsp;
+
+  // TODO: Add atop filter support to avoid software issues
+  // No Atomic support through UCIe
+  // Convert incoming narrow ID to 1 bit to avoid serialization deadlock in SLink
+  // and get rid of user bit as well, i.e. no ATOp support through UCIe
+  axi_iw_converter #(
+    .AxiSlvPortIdWidth     (AxiCfgN.OutIdWidth),               // Chimney Output ID
+    .AxiMstPortIdWidth     ($bits(no_outstanding_id_t)),       // ID of the chimney's input port
+    .AxiSlvPortMaxUniqIds  (2 ** AxiCfgN.OutIdWidth),          // Max num of IDs
+    .AxiSlvPortMaxTxnsPerId(32),
+    .AxiSlvPortMaxTxns     (32),
+    .AxiMstPortMaxUniqIds  (2 ** $bits(no_outstanding_id_t)),
+    .AxiMstPortMaxTxnsPerId(32),
+    .AxiAddrWidth          (AxiCfgN.AddrWidth),
+    .AxiDataWidth          (AxiCfgN.DataWidth),
+    .AxiUserWidth          (AxiCfgN.UserWidth),                // Convert after ID
+    .slv_req_t             (axi_narrow_out_req_t),
+    .slv_resp_t            (axi_narrow_out_rsp_t),
+    .mst_req_t             (axi_narrow_iw_out_req_t),
+    .mst_resp_t            (axi_narrow_iw_out_rsp_t)
+  ) i_chim2nw_narrow_iw_converter (
+    .clk_i,
+    .rst_ni,
+    .slv_req_i (axi_narrow_xbar_out_req[JOIN]),
+    .slv_resp_o(axi_narrow_xbar_out_rsp[JOIN]),
+    .mst_req_o (axi_narrow_iw_out_req),
+    .mst_resp_i(axi_narrow_iw_out_rsp)
+  );
+
+  // Strip the user field form the narrow AXI
+  // Reuse the AXI STRUCT ASSIGN macro. Since the dst user is a logic,
+  // the struct assign wil truncate the field.
+  `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_iw_out_req)
+  `AXI_ASSIGN_RESP_STRUCT(axi_narrow_iw_out_rsp, axi_narrow_noatop_out_rsp)
+
+
   floo_nw_join #(
-    .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
+    .AxiCfgN         (axi_cfg_swap_iw(AxiCfgNoAtop)),
     .AxiCfgW         (axi_cfg_swap_iw(AxiCfgW)),
     .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgNwJoin)),
     .EnAtopAdapter   (1'b0),
     .AtopUserAsId    (1'b1),
-    .axi_narrow_req_t(axi_narrow_out_req_t),
-    .axi_narrow_rsp_t(axi_narrow_out_rsp_t),
+    .axi_narrow_req_t(axi_narrow_noatop_out_req_t),
+    .axi_narrow_rsp_t(axi_narrow_noatop_out_rsp_t),
     .axi_wide_req_t  (axi_wide_out_req_t),
     .axi_wide_rsp_t  (axi_wide_out_rsp_t),
     .axi_req_t       (gwaihir_pkg::axi_wide_join_req_t),
@@ -386,8 +471,8 @@ module ucie_tile
     .clk_i           (clk_i),
     .rst_ni          (rst_ni),
     .test_enable_i   (test_enable_i),
-    .axi_narrow_req_i(axi_narrow_xbar_out_req[JOIN]),
-    .axi_narrow_rsp_o(axi_narrow_xbar_out_rsp[JOIN]),
+    .axi_narrow_req_i(axi_narrow_noatop_out_req),
+    .axi_narrow_rsp_o(axi_narrow_noatop_out_rsp),
     .axi_wide_req_i  (axi_wide_out_req),
     .axi_wide_rsp_o  (axi_wide_out_rsp),
     .axi_req_o       (axi_wide_join_out_req),
@@ -399,7 +484,6 @@ module ucie_tile
   /////////////////
 
   // TODO (lleone): Check all the parameters
-  // TODO (lleone): type mismatch with the chimney inputs. Check!!!
   slink_serializer #(
     .NumCredits            (8),
     .NumChannels           (NumChannels),
@@ -428,17 +512,21 @@ module ucie_tile
     .axi_out_rsp_i           (axi_wide_join_in_rsp),
     .hwif_out_i              (slink_reg2hw),
     .hwif_in_o               (slink_hw2reg),
-    // TODO (lleone): Connect at interface for dummy loopback
+    // Dummy loopback
     .phy_data_out_o,
     .phy_data_out_valid_o,
     .phy_data_out_ready_i,
     .phy_data_in_i,
     .phy_data_in_valid_i,
     .phy_data_in_ready_o,
-    // TODO (lleone): Check if this are needed
+    // Unused
     .tx_phy_clk_div_o        (  /* Unconnect */),
     .tx_phy_clk_shift_start_o(  /* Unconnect */),
-    .tx_phy_clk_shift_end_o  (  /* Unconnect */)
+    .tx_phy_clk_shift_end_o  (  /* Unconnect */),
+    .isolated_i              ('0),
+    .isolate_o               (  /* Unconnect */),
+    .clk_ena_o               (  /* Unconnect */),
+    .reset_no                (  /* Unconnect */)
   );
 
 endmodule : ucie_tile
