@@ -51,8 +51,10 @@ sources:
       - .generated/floo_gwaihir_noc_pkg.sv
       - .generated/gw_tile_regs_pkg.sv
       - .generated/gw_addrmap_pkg.sv
+      - .generated/ucie_slink_reg_pkg.sv
       # Level 0.1
       - .generated/gw_tile_regs.sv
+      - .generated/ucie_slink_reg.sv
 
   # Level 1
   - hw/gwaihir_pkg.sv

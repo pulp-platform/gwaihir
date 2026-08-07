@@ -15,6 +15,8 @@ package gwaihir_pkg;
   import floo_gwaihir_noc_pkg::*;
   import cheshire_pkg::*;
   import snitch_cluster_wrapper_pkg::*;
+  import ucie_slink_reg_pkg::*;
+
 
   typedef axi_narrow_in_addr_t addr_t;
 
@@ -479,6 +481,8 @@ package gwaihir_pkg;
   ////////////////
 
   localparam int unsigned UcieNumAddrRules = Ucie1SamIdx - Ucie0SamIdx;
+  localparam int unsigned NumBitsPerCycle = NumLanes * (1 + EnDdr);
+
 
   function automatic addr_t alias_clear_mask();
     addr_t ucie0_base, ucie1_base, canonical_base;
