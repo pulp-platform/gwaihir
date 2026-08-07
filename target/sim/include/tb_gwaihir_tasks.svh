@@ -166,11 +166,12 @@ task automatic headless_offload(output logic [31:0] exit_code);
   localparam longint IMG_PA     = L2_BASE + 'h10000;                // job-descriptor offset within the image
   string img_path;
   int    fp, i, cl, core, iter, ndone, nfail, expect_done;
-  longint stream_pa, c_off, c_len, b;
-  logic [31:0] word, rc, bcount;
+  logic [31:0] word, rc;
   realtime t_wake;
 
-  // 1) optional: preload a command-stream job image + zero its output (plain apps like summa_gemm carry their own data)
+  // 1) optional: preload a command-stream job image (plain apps like summa_gemm carry their own data).
+  // Output buffers are initialised by the image itself (or the kernel's fill), so the tb stays
+  // agnostic to the command-stream layout.
   if ($value$plusargs("OFFLOAD_IMAGE=%s", img_path)) begin
     fp = $fopen(img_path, "r");
     if (fp == 0) $fatal(1, "[OFFLOAD] cannot open image %s", img_path);
@@ -178,12 +179,6 @@ task automatic headless_offload(output logic [31:0] exit_code);
     while ($fscanf(fp, "%h", word) == 1) begin fastmode_write_word(IMG_PA + i*4, word); i++; end
     $fclose(fp);
     $display("[OFFLOAD] loaded %0d words @0x%h from %s", i, IMG_PA, img_path);
-    fastmode_read_word(IMG_PA + 'h28, word);                       stream_pa = L2_BASE + word;   // descriptor.cmd_stream_ptr
-    fastmode_read_word(stream_pa + 'h3c, bcount);                                                 // dispatch.binding_count
-    fastmode_read_word(stream_pa + 'h40 + (bcount-1)*16,     word); c_off = word;                 // last binding device_ptr
-    fastmode_read_word(stream_pa + 'h40 + (bcount-1)*16 + 8, word); c_len = word;                 //              length
-    for (b = 0; b < c_len; b += 4) fastmode_write_word(L2_BASE + c_off + b, 32'h0);
-    $display("[OFFLOAD] zeroed output binding @0x%h (%0d bytes)", L2_BASE + c_off, c_len);
   end else begin
     $display("[OFFLOAD] no image -- plain bare-metal offload (firmware carries its own data)");
   end
