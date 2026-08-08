@@ -30,6 +30,7 @@ L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) "endpoints.l2_spm.addr
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
+SERIAL_LINK_ROOT ?= $(shell $(BENDER) path serial_link)
 
 # Bender prerequisites
 BENDER_YML = $(GW_ROOT)/Bender.yml
@@ -47,28 +48,20 @@ SIM_TARGS += -t simulation -t test -t idma_test
 #############
 SLINK_NUM_LANES ?= 8
 PEAKRDL_PARAMS   += -P SlinkNumLanes=$(SLINK_NUM_LANES)
-
-# TODO(lleone): Too much verbose, to review and integrate better in the flow
-UCIE_SLINK_ROOT  ?= $(GW_ROOT)/working_dir/serial_link
-UCIE_SLINK_RDL   ?= $(UCIE_SLINK_ROOT)/src/regs/slink_reg.rdl
-UCIE_SLINK_NUM_CHANNELS ?= 1
-UCIE_SLINK_NUM_LANES    ?= 256
-UCIE_SLINK_EN_DDR       ?= 0
-UCIE_SLINK_LOG2_MAX_CLK_DIV ?= 10
-UCIE_SLINK_LOG2_RAW_MODE_TX_FIFO_DEPTH ?= 3
-UCIE_SLINK_PEAKRDL_PARAMS += -P NumChannels=$(UCIE_SLINK_NUM_CHANNELS)
-UCIE_SLINK_PEAKRDL_PARAMS += -P NumLanes=$(UCIE_SLINK_NUM_LANES)
-UCIE_SLINK_PEAKRDL_PARAMS += -P EnDdr=$(UCIE_SLINK_EN_DDR)
-UCIE_SLINK_PEAKRDL_PARAMS += -P Log2MaxClkDiv=$(UCIE_SLINK_LOG2_MAX_CLK_DIV)
-UCIE_SLINK_PEAKRDL_PARAMS += -P Log2RawModeTXFifoDepth=$(UCIE_SLINK_LOG2_RAW_MODE_TX_FIFO_DEPTH)
 DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
+
+UCIE_SLINK_REG_CFG ?= $(GW_ROOT)/cfg/ucie_slink_reg.mk
+include $(UCIE_SLINK_REG_CFG)
+
+UCIE_SLINK_RDL             = $(SERIAL_LINK_ROOT)/src/regs/slink_reg.rdl
 
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/chiplet.rdl
+GW_RDL_ALL += $(GW_GEN_DIR)/ucie_slink_reg.rdl
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
 GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_64b.rdl
@@ -77,6 +70,7 @@ GW_RDL_SN_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_32b.rdl
 PEAKRDL_INCLUDES += -I $(GW_ROOT)/cfg/rdl
 PEAKRDL_INCLUDES += -I $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster_peripheral
 PEAKRDL_INCLUDES += -I $(CHS_ROOT)/hw
+PEAKRDL_INCLUDES += -I $(dir $(UCIE_SLINK_RDL))
 PEAKRDL_INCLUDES += $(CHS_PEAKRDL_INCLUDES)
 
 PEAKRDL_INCLUDES += -I $(GW_GEN_DIR)
@@ -86,8 +80,14 @@ $(GW_GEN_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
 	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n
 
 # UCIe SLink registers
-$(GW_GEN_DIR)/ucie_slink_reg.sv $(GW_GEN_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL)
-	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n --module-name ucie_slink_reg --package-name ucie_slink_reg_pkg $(UCIE_SLINK_PEAKRDL_PARAMS)
+$(GW_GEN_DIR)/ucie_slink_reg.rdl: $(GW_ROOT)/cfg/rdl/ucie_slink_reg.rdl.tpl $(UCIE_SLINK_RDL) $(UCIE_SLINK_REG_CFG)
+	sed -e 's/@UCIE_SLINK_NUM_LANES@/$(UCIE_SLINK_NUM_LANES)/g' \
+	    -e 's/@UCIE_SLINK_EN_DDR@/$(UCIE_SLINK_EN_DDR)/g' \
+	    $< > $@
+
+$(GW_GEN_DIR)/ucie_slink_reg.sv: $(GW_GEN_DIR)/ucie_slink_reg_pkg.sv
+$(GW_GEN_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL) $(UCIE_SLINK_REG_CFG)
+	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n --module-name ucie_slink_reg --package-name ucie_slink_reg_pkg $(UCIE_SLINK_RDL_PARAMS)
 
 $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
@@ -124,8 +124,8 @@ GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_64b.svh
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_pkg.sv
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/ucie_slink_reg.sv
 GW_RDL_HW_ALL += $(GW_GEN_DIR)/ucie_slink_reg_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_DIR)/ucie_slink_reg.sv
 
 .PHONY: docs docs-build docs-serve docs-clean rdl-markdown
 
