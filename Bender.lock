@@ -1,6 +1,6 @@
 packages:
   apb:
-    revision: 6a2bd0fe9f0822322104ac602fac5739fb063aa0
+    revision: 6ae8bf8d5eab5dc70d032231c01ab95e1c5774b9
     version: null
     source:
       Git: https://github.com/pulp-platform/apb.git
@@ -234,6 +234,17 @@ packages:
     source:
       Path: pd
     dependencies: []
+  gwaihir_lpddr:
+    revision: null
+    version: null
+    source:
+      Path: .deps/lpddr
+    dependencies:
+    - apb
+    - axi
+    - common_cells
+    - register_interface
+    - tech_cells_generic
   idma:
     revision: 28a36e5e07705549e59fc33db96ab681bc1ca88e
     version: 0.6.5
