@@ -416,12 +416,12 @@ module ucie_tile
 
   axi_narrow_iw_out_req_t     axi_narrow_iw_out_req;
   axi_narrow_iw_out_rsp_t     axi_narrow_iw_out_rsp;
+  axi_narrow_iw_out_req_t     axi_narrow_atop_filtered_req;
+  axi_narrow_iw_out_rsp_t     axi_narrow_atop_filtered_rsp;
 
   axi_narrow_noatop_out_req_t axi_narrow_noatop_out_req;
   axi_narrow_noatop_out_rsp_t axi_narrow_noatop_out_rsp;
 
-  // TODO: Add atop filter support to avoid software issues
-  // No Atomic support through UCIe
   // Convert incoming narrow ID to 1 bit to avoid serialization deadlock in SLink
   // and get rid of user bit as well, i.e. no ATOp support through UCIe
   axi_iw_converter #(
@@ -448,11 +448,27 @@ module ucie_tile
     .mst_resp_i(axi_narrow_iw_out_rsp)
   );
 
+  // UCIe/serial-link transport supports ordinary AXI traffic only. Reject any
+  // narrow ATOPs in a protocol-compliant way before stripping the user field.
+  axi_atop_filter #(
+    .AxiIdWidth     ($bits(no_outstanding_id_t)),
+    .AxiMaxWriteTxns(32),
+    .axi_req_t      (axi_narrow_iw_out_req_t),
+    .axi_resp_t     (axi_narrow_iw_out_rsp_t)
+  ) i_chim2nw_narrow_atop_filter (
+    .clk_i,
+    .rst_ni,
+    .slv_req_i (axi_narrow_iw_out_req),
+    .slv_resp_o(axi_narrow_iw_out_rsp),
+    .mst_req_o (axi_narrow_atop_filtered_req),
+    .mst_resp_i(axi_narrow_atop_filtered_rsp)
+  );
+
   // Strip the user field form the narrow AXI
   // Reuse the AXI STRUCT ASSIGN macro. Since the dst user is a logic,
   // the struct assign wil truncate the field.
-  `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_iw_out_req)
-  `AXI_ASSIGN_RESP_STRUCT(axi_narrow_iw_out_rsp, axi_narrow_noatop_out_rsp)
+  `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_atop_filtered_req)
+  `AXI_ASSIGN_RESP_STRUCT(axi_narrow_atop_filtered_rsp, axi_narrow_noatop_out_rsp)
 
 
   floo_nw_join #(
