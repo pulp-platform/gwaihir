@@ -19,10 +19,12 @@ jobs:
   ###############
   # Runs the same hooks as the local pre-commit install, so .pre-commit-config.yaml
   # is the single source of truth for SV linting, formatting, REUSE and tool versions.
+  # The reuse-lint-file hook is skipped because it only checks staged files, which is not relevant in CI.
   pre-commit:
     name: Run pre-commit hooks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v9.0.0
-      - run: uvx prek@0.4.11 run --all-files --show-diff-on-failure
+      - run: uvx prek@0.4.11 run --all-files --skip reuse-lint-file --show-diff-on-failure
+      - run: uvx prek@0.4.11 run --all-files --hook-stage manual --show-diff-on-failure
