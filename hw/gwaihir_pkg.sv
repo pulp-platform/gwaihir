@@ -476,6 +476,15 @@ package gwaihir_pkg;
 
   localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
 
+  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+
+  typedef logic [AxiCfgMemJoin.OutIdWidth-1:0] mtile_nw_join_id_t;
+  typedef logic [AxiCfgMemJoin.UserWidth-1:0] mtile_nw_join_user_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_mtile_nw_join, axi_mtile_nw_join_req_t, axi_mtile_nw_join_rsp_t,
+                      axi_wide_out_addr_t, mtile_nw_join_id_t, axi_wide_out_data_t,
+                      axi_wide_out_strb_t, mtile_nw_join_user_t)
+
   ////////////////
   // UCIe Tile  //
   ////////////////
@@ -525,13 +534,14 @@ package gwaihir_pkg;
   };
 
   // Narrow/wide join types for `floo_nw_join`
-  localparam axi_cfg_t AxiCfgNwJoin = floo_pkg::axi_join_cfg(AxiCfgNoAtop, AxiCfgW);
+  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg(AxiCfgNoAtop, AxiCfgW);
 
-  typedef logic [AxiCfgNwJoin.OutIdWidth-1:0] nw_join_id_t;
-  typedef logic [AxiCfgNwJoin.UserWidth-1:0] nw_join_user_t;
+  typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] utile_nw_join_id_t;
+  typedef logic [AxiCfgUcieJoin.UserWidth-1:0] utile_nw_join_user_t;
 
-  `AXI_TYPEDEF_ALL_CT(axi_wide_join, axi_wide_join_req_t, axi_wide_join_rsp_t, axi_wide_in_addr_t,
-                      nw_join_id_t, axi_wide_in_data_t, axi_wide_in_strb_t, nw_join_user_t)
+  `AXI_TYPEDEF_ALL_CT(axi_utile_nw_join, axi_utile_nw_join_req_t, axi_utile_nw_join_rsp_t,
+                      axi_wide_in_addr_t, utile_nw_join_id_t, axi_wide_in_data_t,
+                      axi_wide_in_strb_t, utile_nw_join_user_t)
 
 
   localparam int unsigned UcieCfgRegDataWidth = UCIE_SLINK_REG_DATA_WIDTH;

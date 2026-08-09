@@ -50,10 +50,10 @@ module ucie_tile
   floo_wide_t                          [Eject:North] router_floo_wide_out;
 
   // NW Join AXI interface
-  gwaihir_pkg::axi_wide_join_req_t                   axi_wide_join_out_req;
-  gwaihir_pkg::axi_wide_join_rsp_t                   axi_wide_join_out_rsp;
-  gwaihir_pkg::axi_wide_join_req_t                   axi_wide_join_in_req;
-  gwaihir_pkg::axi_wide_join_rsp_t                   axi_wide_join_in_rsp;
+  gwaihir_pkg::axi_utile_nw_join_req_t               axi_utile_nw_join_out_req;
+  gwaihir_pkg::axi_utile_nw_join_rsp_t               axi_utile_nw_join_out_rsp;
+  gwaihir_pkg::axi_utile_nw_join_req_t               axi_utile_nw_join_in_req;
+  gwaihir_pkg::axi_utile_nw_join_rsp_t               axi_utile_nw_join_in_rsp;
 
   // SLink configuration registers.
   ucie_slink_reg_pkg::slink_reg__in_t                slink_hw2reg;
@@ -184,9 +184,9 @@ module ucie_tile
 
   // ID Conveter from Slink to Chimney
   axi_iw_converter #(
-    .AxiSlvPortIdWidth(AxiCfgNwJoin.OutIdWidth),  // Chimney Output ID
+    .AxiSlvPortIdWidth(AxiCfgUcieJoin.OutIdWidth),  // Chimney Output ID
     .AxiMstPortIdWidth(AxiCfgW.InIdWidth),  // ID of the chimney's input port
-    .AxiSlvPortMaxUniqIds(2 ** AxiCfgNwJoin.OutIdWidth),  // Max num of IDs
+    .AxiSlvPortMaxUniqIds(2 ** AxiCfgUcieJoin.OutIdWidth),  // Max num of IDs
     .AxiSlvPortMaxTxnsPerId(32),  // TODO: Probably overkilling, reduce if you have area issue
     .AxiSlvPortMaxTxns(32),
     .AxiMstPortMaxUniqIds(2 ** AxiCfgW.InIdWidth),
@@ -194,15 +194,15 @@ module ucie_tile
     .AxiAddrWidth(AxiCfgW.AddrWidth),
     .AxiDataWidth(AxiCfgW.DataWidth),
     .AxiUserWidth(AxiCfgW.UserWidth),  // Convert after ID
-    .slv_req_t(gwaihir_pkg::axi_wide_join_req_t),
-    .slv_resp_t(gwaihir_pkg::axi_wide_join_rsp_t),
+    .slv_req_t(gwaihir_pkg::axi_utile_nw_join_req_t),
+    .slv_resp_t(gwaihir_pkg::axi_utile_nw_join_rsp_t),
     .mst_req_t(axi_wide_in_req_t),
     .mst_resp_t(axi_wide_in_rsp_t)
   ) i_slink2chim_wide_iw_converter (
     .clk_i,
     .rst_ni,
-    .slv_req_i (axi_wide_join_in_req),
-    .slv_resp_o(axi_wide_join_in_rsp),
+    .slv_req_i (axi_utile_nw_join_in_req),
+    .slv_resp_o(axi_utile_nw_join_in_rsp),
     .mst_req_o (axi_wide_req_iw_conv),
     .mst_resp_i(axi_wide_rsp_iw_conv)
   );
@@ -474,15 +474,15 @@ module ucie_tile
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgNoAtop)),
     .AxiCfgW         (axi_cfg_swap_iw(AxiCfgW)),
-    .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgNwJoin)),
+    .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgUcieJoin)),
     .EnAtopAdapter   (1'b0),
     .AtopUserAsId    (1'b1),
     .axi_narrow_req_t(axi_narrow_noatop_out_req_t),
     .axi_narrow_rsp_t(axi_narrow_noatop_out_rsp_t),
     .axi_wide_req_t  (axi_wide_out_req_t),
     .axi_wide_rsp_t  (axi_wide_out_rsp_t),
-    .axi_req_t       (gwaihir_pkg::axi_wide_join_req_t),
-    .axi_rsp_t       (gwaihir_pkg::axi_wide_join_rsp_t)
+    .axi_req_t       (gwaihir_pkg::axi_utile_nw_join_req_t),
+    .axi_rsp_t       (gwaihir_pkg::axi_utile_nw_join_rsp_t)
   ) i_floo_nw_join (
     .clk_i           (clk_i),
     .rst_ni          (rst_ni),
@@ -491,8 +491,8 @@ module ucie_tile
     .axi_narrow_rsp_o(axi_narrow_noatop_out_rsp),
     .axi_wide_req_i  (axi_wide_out_req),
     .axi_wide_rsp_o  (axi_wide_out_rsp),
-    .axi_req_o       (axi_wide_join_out_req),
-    .axi_rsp_i       (axi_wide_join_out_rsp)
+    .axi_req_o       (axi_utile_nw_join_out_req),
+    .axi_rsp_i       (axi_utile_nw_join_out_rsp)
   );
 
   //////////////////
@@ -508,13 +508,13 @@ module ucie_tile
     .Log2MaxClkDiv         (Log2MaxClkDiv),
     .Log2RawModeTXFifoDepth(Log2RawModeTXFifoDepth),
     .EnChAlloc             (EnChAlloc),
-    .axi_req_t             (gwaihir_pkg::axi_wide_join_req_t),
-    .axi_rsp_t             (gwaihir_pkg::axi_wide_join_rsp_t),
-    .aw_chan_t             (gwaihir_pkg::axi_wide_join_aw_chan_t),
-    .ar_chan_t             (gwaihir_pkg::axi_wide_join_ar_chan_t),
-    .r_chan_t              (gwaihir_pkg::axi_wide_join_r_chan_t),
-    .w_chan_t              (gwaihir_pkg::axi_wide_join_w_chan_t),
-    .b_chan_t              (gwaihir_pkg::axi_wide_join_b_chan_t),
+    .axi_req_t             (gwaihir_pkg::axi_utile_nw_join_req_t),
+    .axi_rsp_t             (gwaihir_pkg::axi_utile_nw_join_rsp_t),
+    .aw_chan_t             (gwaihir_pkg::axi_utile_nw_join_aw_chan_t),
+    .ar_chan_t             (gwaihir_pkg::axi_utile_nw_join_ar_chan_t),
+    .r_chan_t              (gwaihir_pkg::axi_utile_nw_join_r_chan_t),
+    .w_chan_t              (gwaihir_pkg::axi_utile_nw_join_w_chan_t),
+    .b_chan_t              (gwaihir_pkg::axi_utile_nw_join_b_chan_t),
     .hwif_in_t             (ucie_slink_reg_pkg::slink_reg__in_t),
     .hwif_out_t            (ucie_slink_reg_pkg::slink_reg__out_t)
   ) i_ucie_slink_serializer (
@@ -522,10 +522,10 @@ module ucie_tile
     .rst_ni                  (rst_ni),
     .clk_sl_i                (clk_i),
     .rst_sl_ni               (rst_ni),
-    .axi_in_req_i            (axi_wide_join_out_req),
-    .axi_in_rsp_o            (axi_wide_join_out_rsp),
-    .axi_out_req_o           (axi_wide_join_in_req),
-    .axi_out_rsp_i           (axi_wide_join_in_rsp),
+    .axi_in_req_i            (axi_utile_nw_join_out_req),
+    .axi_in_rsp_o            (axi_utile_nw_join_out_rsp),
+    .axi_out_req_o           (axi_utile_nw_join_in_req),
+    .axi_out_rsp_i           (axi_utile_nw_join_in_rsp),
     .hwif_out_i              (slink_reg2hw),
     .hwif_in_o               (slink_hw2reg),
     // Dummy loopback
