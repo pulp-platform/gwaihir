@@ -17,11 +17,6 @@ repos:
     hooks:
       # Local commits: check only staged files.
       - id: reuse-lint-file
-        stages: [pre-commit]
-
-      # Full repository compliance: CI only.
-      - id: reuse
-        stages: [manual]
 
   ##################
   # Verible Format #
