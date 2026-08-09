@@ -19,7 +19,6 @@ jobs:
   ###############
   # Runs the same hooks as the local pre-commit install, so .pre-commit-config.yaml
   # is the single source of truth for SV linting, formatting, REUSE and tool versions.
-  # The reuse-lint-file hook is skipped because it only checks staged files, which is not relevant in CI.
   pre-commit:
     name: Run pre-commit hooks
     runs-on: ubuntu-latest
