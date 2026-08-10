@@ -15,7 +15,8 @@ repos:
   - repo: https://github.com/fsfe/reuse-tool
     rev: v6.2.0
     hooks:
-      - id: reuse
+      # Local commits: check only staged files.
+      - id: reuse-lint-file
 
   ##################
   # Verible Format #
