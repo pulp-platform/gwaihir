@@ -21,7 +21,7 @@ dependencies:
   snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main" }
   mxcore:             { git: "git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git",         rev: "common-cells-v2"                          }
   datamover:          { git: "https://github.com/pulp-platform/datamover.git",          rev: "5df9c9bd9e10ad020763c4291c571adf35ef4ae2" }
-  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir-common-cells-v2"                  }
+  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir" }
   obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "common-cells-v2" }
   axi_obi:            { git: "https://github.com/pulp-platform/axi_obi.git",            rev: "common-cells-v2"                          }
   pcie:               { path: ".deps/pcie"                                                                                              }
