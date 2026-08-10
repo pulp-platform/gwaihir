@@ -159,11 +159,12 @@ endtask
 task automatic headless_offload(output logic [31:0] exit_code);
   import floo_gwaihir_noc_pkg::*;
   // HW counts + L2 aperture come from the SoC cfg/addrmap, never hardcoded.
-  localparam int     NR_CLUSTERS = NumClusters;
-  localparam int     NR_CORES    = snitch_cluster_pkg::NrCores;      // 8 compute + 1 DM
-  localparam longint L2_BASE     = Sam[L2Spm0SamIdx].start_addr;
-  localparam longint RC_BASE     = Sam[L2Spm0SamIdx + 2*NumMemTiles - 2].end_addr - 'h1000; // return_code page = top 4K
-  localparam longint IMG_PA     = L2_BASE + 'h10000;                // job-descriptor offset within the image
+  localparam int     NrClusters = NumClusters;
+  localparam int     NrCores    = snitch_cluster_pkg::NrCores;      // 8 compute + 1 DM
+  localparam longint L2Base     = Sam[L2Spm0SamIdx].start_addr;
+  localparam longint RcBase     = Sam[L2Spm0SamIdx + 2*NumMemTiles - 2].end_addr - 'h1000; // return_code page = top 4K
+  localparam longint ImgPa     = L2Base + 'h10000;                // job-descriptor offset within the image
+  localparam int     PollIters = 200000;                          // #1us poll steps -> 200 ms wall timeout
   string img_path;
   int    fp, i, cl, core, iter, ndone, nfail, expect_done;
   logic [31:0] word, rc;
@@ -176,38 +177,38 @@ task automatic headless_offload(output logic [31:0] exit_code);
     fp = $fopen(img_path, "r");
     if (fp == 0) $fatal(1, "[OFFLOAD] cannot open image %s", img_path);
     i = 0;
-    while ($fscanf(fp, "%h", word) == 1) begin fastmode_write_word(IMG_PA + i*4, word); i++; end
+    while ($fscanf(fp, "%h", word) == 1) begin fastmode_write_word(ImgPa + i*4, word); i++; end
     $fclose(fp);
-    $display("[OFFLOAD] loaded %0d words @0x%h from %s", i, IMG_PA, img_path);
+    $display("[OFFLOAD] loaded %0d words @0x%h from %s", i, ImgPa, img_path);
   end else begin
     $display("[OFFLOAD] no image -- plain bare-metal offload (firmware carries its own data)");
   end
 
   // 2) zero the return-code page
-  for (i = 0; i < NR_CLUSTERS*NR_CORES; i++)
-    fastmode_write_word(RC_BASE + i*4, 32'h0);
+  for (i = 0; i < NrClusters*NrCores; i++)
+    fastmode_write_word(RcBase + i*4, 32'h0);
 
   // 3) per-cluster scratch: [1]=firmware entry (L2 base), [0]=&return_code_array[cl][0]
-  for (cl = 0; cl < NR_CLUSTERS; cl++) begin
-    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1),     L2_BASE[31:0], 1'b0);
+  for (cl = 0; cl < NrClusters; cl++) begin
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1),     L2Base[31:0], 1'b0);
     fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1) + 4, 32'h0,         1'b0);
-    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0),     (RC_BASE + cl*NR_CORES*4), 1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0),     (RcBase + cl*NrCores*4), 1'b0);
     fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0) + 4, 32'h0,         1'b0);
   end
 
   // 4) wake cluster 0 (snRuntime fans out to the others through the world barrier); start the timer
-  expect_done = NR_CLUSTERS*NR_CORES;
+  expect_done = NrClusters*NrCores;
   t_wake = $realtime;
-  fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR(0), 32'h1FF, 1'b0);
+  fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR(0), ((32'h1 << NrCores) - 1), 1'b0);
   $display("[OFFLOAD] woke cluster 0, polling %0d return-code slots ...", expect_done);
 
   // 5) poll return codes (bit0=done, bits[31:1]=rc) until all done or timeout
-  for (iter = 0; iter < 200000; iter++) begin
+  for (iter = 0; iter < PollIters; iter++) begin
     #1us;
     ndone = 0; nfail = 0;
-    for (cl = 0; cl < NR_CLUSTERS; cl++)
-      for (core = 0; core < NR_CORES; core++) begin
-        fastmode_read_word(RC_BASE + (cl*NR_CORES + core)*4, rc);
+    for (cl = 0; cl < NrClusters; cl++)
+      for (core = 0; core < NrCores; core++) begin
+        fastmode_read_word(RcBase + (cl*NrCores + core)*4, rc);
         if (rc[0]) begin ndone++; if (rc[31:1] != 0) nfail++; end
       end
     if (ndone == expect_done) begin

@@ -99,7 +99,7 @@ module tb_gwaihir_top;
           headless_offload(exit_code);
         end
         default: begin
-          $fatal(1, "Unsupported preload mode %d (reserved)!", boot_mode);
+          $fatal(1, "Unsupported preload mode %d (reserved)!", preload_mode);
         end
       endcase
     end else if (boot_mode == 1) begin
