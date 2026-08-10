@@ -6,7 +6,7 @@
 
 module tb_gwaihir_top;
 
-  `define L2_SRAM_PATH fix.dut.gen_memtile[i].gen_memtile_impl.i_mem_tile.\
+  `define L2_SRAM_PATH fix.dut.gen_memtile[i].gen_memtile_impl.i_mem_tile.i_mem_tile.\
                        gen_sram_banks[j].gen_sram_macros[k].i_mem.sram
 
   `include "tb_gwaihir_tasks.svh"

@@ -60,6 +60,7 @@ sources:
   - hw/cluster_tile.sv
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
+  - hw/mem_tile.sv
   - hw/mem_tile_small.sv
   - hw/mem_tile_large.sv
   - hw/dummy_tile.sv

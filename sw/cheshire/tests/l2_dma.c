@@ -376,7 +376,7 @@ int main(void) {
         // Verify the DMA result (DST_TILE) and the concurrent reads (SRC_TILE).
         for (uint32_t i = 0; i < n_words; i++) {
             if (dst[dst_w + i] != (src_w + i)) {
-                return BAD_CODE(6, dst_w + i); // STAGE 6 = concurrent
+                return BAD_CODE(5, dst_w + i); // STAGE 5 = concurrent
             }
         }
     }
