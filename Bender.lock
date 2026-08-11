@@ -318,7 +318,7 @@ packages:
     revision: 044b6d5001b7ee225882d367b275189741bded15
     version: null
     source:
-      Git: https://iis-git.ee.ethz.ch/mx/mxcore/mxcore-rtl.git
+      Git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
     dependencies:
     - fpnew
     - hci

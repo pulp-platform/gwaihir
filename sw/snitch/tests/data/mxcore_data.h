@@ -1,3 +1,7 @@
+// Copyright 2024 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
 #pragma once
 
 #define inf INFINITY
@@ -5252,4 +5256,3 @@ uint8_t golden_scale_result_mx[SCALE_RESULT_SIZE] = {
 };
 
 uint8_t scale_result_mx[SCALE_RESULT_SIZE];
-
