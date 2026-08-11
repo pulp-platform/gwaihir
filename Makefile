@@ -23,7 +23,7 @@ PLIC_CFG  ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
 SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 
 # L2 SPM base address, queried from the FlooNoC config so it stays in sync with FLOO_CFG
-L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) "endpoints.l2_spm.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
+L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) "endpoints.l2_spm_0.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
 
 # Root directories of dependencies
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
@@ -185,7 +185,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 885f002bc3a1282bae3fd7343dc0fd77e807d6d4
+PD_COMMIT ?= 6089301f56f3b31051e6a492572eada5bc592d56
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
