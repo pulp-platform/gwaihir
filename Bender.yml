@@ -61,6 +61,8 @@ sources:
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
+  - hw/mem_tile_small.sv
+  - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
   - hw/ucie_tile.sv
 

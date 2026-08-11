@@ -9,16 +9,18 @@
 
 <%
 cluster = next(ep for ep in endpoints if ep["name"] == "cluster")
-l2      = next(ep for ep in endpoints if ep["name"] == "l2_spm")
+# L2 SPM is now four individual, heterogeneously-sized endpoints (l2_spm_0..3)
+# instead of one uniform array, so mirror each tile separately in the window.
+l2_tiles = sorted(
+    (ep for ep in endpoints if ep["name"].startswith("l2_spm_")),
+    key=lambda ep: int(ep["name"].rsplit("_", 1)[1]),
+)
 ucie    = next(ep for ep in endpoints if ep["name"] == "ucie0")
 
 win_mask  = ucie["addr_range"]["size"] - 1
 
 cluster_tile = cluster["addr_range"][0]
 n_cluster    = int(cluster["array"][0]) * int(cluster["array"][1])
-
-l2r       = l2["addr_range"][0]
-n_l2      = int(l2["array"][0])
 %>\
 `ifndef __CHIPLET_RDL__
 `define __CHIPLET_RDL__
@@ -27,7 +29,9 @@ n_l2      = int(l2["array"][0])
 
 addrmap chiplet {
   snitch_cluster cluster[${n_cluster}] @${hex(cluster_tile["base"] & win_mask)} += ${hex(cluster_tile["size"])};
-  external mem { mementries = ${hex(l2r["size"] // 4)}; memwidth = 32; } l2_spm[${n_l2}] @${hex(l2r["base"] & win_mask)} += ${hex(l2r["size"])};
+% for ep in l2_tiles:
+  external mem { mementries = ${hex(ep["addr_range"][0]["size"] // 4)}; memwidth = 32; } ${ep["name"]} @${hex(ep["addr_range"][0]["base"] & win_mask)};
+% endfor
 };
 
 `endif // __CHIPLET_RDL__

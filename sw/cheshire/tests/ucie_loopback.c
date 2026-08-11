@@ -9,15 +9,16 @@
 #include "util.h"
 #include "gw_addrmap_64b.h"
 #include "gw_raw_addrmap_64b.h"
+#include "gw_memtile.h"
 
 #define TRANSFER_DATA 0xdeadbeef
 
 int main() {
 
   // Write to chiplet1's L2 through the ucie0 alias window (routed via UCIe).
-  volatile uint32_t *alias_wr = (volatile uint32_t *)&gwaihir_addrmap_64b.ucie0.l2_spm[0];
+  volatile uint32_t *alias_wr = (volatile uint32_t *)&gwaihir_addrmap_64b.ucie0.l2_spm_0;
   // Read back through the canonical address (routed via the local NoC).
-  volatile uint32_t *local_rd = (volatile uint32_t *)&gwaihir_addrmap_64b.l2_spm[2];
+  volatile uint32_t *local_rd = (volatile uint32_t *)&gwaihir_addrmap_64b.l2_spm_2;
 
   (*alias_wr) = TRANSFER_DATA;
 
