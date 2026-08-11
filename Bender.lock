@@ -166,7 +166,7 @@ packages:
     - fpnew
     - reqrsp_interface
   core_v_xif:
-    revision: 3b541fd19b79e18f9e1d5e177778107cbe279007
+    revision: fad32c62f07ec7304a7169640eaf946da3727f77
     version: null
     source:
       Git: https://github.com/pulp-platform/core-v-xif.git

@@ -252,7 +252,7 @@ module cluster_tile
     .x_issue_req_o         (),
     .x_issue_resp_i        ('0),
     .x_issue_valid_o       (),
-    .x_issue_ready_i       ('0),
+    .x_issue_ready_i       ('1),
     .x_register_o          (),
     .x_register_valid_o    (),
     .x_register_ready_i    ('0),

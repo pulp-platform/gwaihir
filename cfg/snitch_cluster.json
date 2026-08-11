@@ -27,7 +27,8 @@
         wide_trans: 32,
         enable_narrow_collectives: true,
         enable_wide_collectives: true,
-        enable_dca: true,
+        enable_xif: false,
+        enable_dca: false,
         dca_data_width: 512,
         cluster_base_expose: true,
         alias_region_enable: true,
@@ -69,13 +70,6 @@
                 },
                 cores: [
                     { $ref: "#/compute_core_template" },
-                    { $ref: "#/compute_core_template" },
-                    { $ref: "#/compute_core_template" },
-                    { $ref: "#/compute_core_template" },
-                    { $ref: "#/compute_core_template" },
-                    { $ref: "#/compute_core_template" },
-                    { $ref: "#/compute_core_template" },
-                    { $ref: "#/compute_core_template" },
                     { $ref: "#/dma_core_template" },
                 ]
             }
@@ -101,10 +95,10 @@
     ],
     // Templates.
     compute_core_template: {
-        isa: "rv32imafd",
-        xssr: true,
-        xfrep: true,
-        xcopift: true,
+        isa: "rv32imafdv",
+        xssr: false,
+        xfrep: false,
+        xcopift: false,
         xdma: false,
         zfh: true,
         xf16alt: true,
@@ -112,23 +106,26 @@
         xf8alt: true,
         xfdotp: true,
         xfvec: true,
-        ssr_nr_credits: 4,
         num_int_outstanding_loads: 4,
         num_int_outstanding_mem: 4,
         num_fp_outstanding_loads: 4,
         num_fp_outstanding_mem: 4,
-        num_sequencer_instructions: 16,
-        num_sequencer_loops: 2,
         num_dtlb_entries: 1,
         num_itlb_entries: 1,
-        // SSSR configuration below
-        ssr_intersection: true,
-        ssr_intersection_triple: [0, 1, 2],
-        ssrs: [
-            {indirection: true},    // Master 0
-            {indirection: true},    // Master 1
-            {},                     // Slave
-        ],
+        // Spatz Configuration
+        spatz: {
+            num_outstanding_loads: 8,
+            n_ipu: 1,
+            n_fpu: 8,
+            vlen: 512,
+            spatz_nports: 8,
+            double_bw: false,
+            spatz_fpu: true,
+            mempool: false,
+            buf_fpu: 1,
+            rvf: true,
+            rvd: true
+        }
     },
     dma_core_template: {
         isa: "rv32imafd",
@@ -136,7 +133,7 @@
         xssr: false,
         xfrep: false,
         xcopift: false,
-        zfh: false,
+        zfh: true,
         xf16alt: false,
         xf8: false,
         xf8alt: false,
