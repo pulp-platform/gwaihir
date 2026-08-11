@@ -16,23 +16,26 @@ module cluster_tile
   input logic rst_ni,
   input logic test_enable_i,
   input logic clk_rst_bypass_i,
+
   // Cluster ports
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] debug_req_i,
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] meip_i,
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] mtip_i,
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] msip_i,
-  input logic [9:0] hart_base_id_i,
-  input snitch_cluster_wrapper_pkg::addr_t cluster_base_addr_i,
-  input snitch_cluster_wrapper_pkg::addr_t cluster_base_offset_i,
+
+  input logic                              [9:0] hart_base_id_i,
+  input snitch_cluster_wrapper_pkg::addr_t       cluster_base_addr_i,
+  input snitch_cluster_wrapper_pkg::addr_t       cluster_base_offset_i,
   // Chimney ports
-  input id_t id_i,
+  input id_t                                     id_i,
+
   // Router ports
-  output floo_req_t [West:North] floo_req_o,
-  input floo_rsp_t [West:North] floo_rsp_i,
+  output floo_req_t  [West:North] floo_req_o,
+  input  floo_rsp_t  [West:North] floo_rsp_i,
   output floo_wide_t [West:North] floo_wide_o,
-  input floo_req_t [West:North] floo_req_i,
-  output floo_rsp_t [West:North] floo_rsp_o,
-  input floo_wide_t [West:North] floo_wide_i
+  input  floo_req_t  [West:North] floo_req_i,
+  output floo_rsp_t  [West:North] floo_rsp_o,
+  input  floo_wide_t [West:North] floo_wide_i
 );
 
   // Tile-specific reset and clock signals
@@ -70,49 +73,49 @@ module cluster_tile
 
   logic aw_select, ar_select;
 
-  snitch_cluster_wrapper_pkg::narrow_in_req_t         chimney_narrow_out_req;
-  snitch_cluster_wrapper_pkg::narrow_in_resp_t        chimney_narrow_out_rsp;
-  snitch_cluster_wrapper_pkg::narrow_in_req_t   [1:0] axi_demux_out_req;
-  snitch_cluster_wrapper_pkg::narrow_in_resp_t  [1:0] axi_demux_out_rsp;
+  snitch_cluster_wrapper_pkg::narrow_in_req_t        chimney_narrow_out_req;
+  snitch_cluster_wrapper_pkg::narrow_in_resp_t       chimney_narrow_out_rsp;
+  snitch_cluster_wrapper_pkg::narrow_in_req_t  [1:0] axi_demux_out_req;
+  snitch_cluster_wrapper_pkg::narrow_in_resp_t [1:0] axi_demux_out_rsp;
 
-  gw_tile_regs_pkg::gw_tile_regs__out_t               hwif_out;
+  gw_tile_regs_pkg::gw_tile_regs__out_t hwif_out;
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t          tile_cfg_demux_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t          tile_cfg_demux_rsp;
-  tile_cfg_axi_lite_req_t                             tile_cfg_axi_lite_req;
-  tile_cfg_axi_lite_resp_t                            tile_cfg_axi_lite_rsp;
-  tile_cfg_axi_lite_32_req_t                          tile_cfg_axi_lite_32_req;
-  tile_cfg_axi_lite_32_resp_t                         tile_cfg_axi_lite_32_rsp;
-  tile_cfg_apb_req_t                                  tile_cfg_apb_req;
-  tile_cfg_apb_resp_t                                 tile_cfg_apb_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t tile_cfg_demux_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t tile_cfg_demux_rsp;
+  tile_cfg_axi_lite_req_t                    tile_cfg_axi_lite_req;
+  tile_cfg_axi_lite_resp_t                   tile_cfg_axi_lite_rsp;
+  tile_cfg_axi_lite_32_req_t                 tile_cfg_axi_lite_32_req;
+  tile_cfg_axi_lite_32_resp_t                tile_cfg_axi_lite_32_rsp;
+  tile_cfg_apb_req_t                         tile_cfg_apb_req;
+  tile_cfg_apb_resp_t                        tile_cfg_apb_rsp;
 
   ////////////////////
   // Snitch Cluster //
   ////////////////////
 
-  snitch_cluster_wrapper_pkg::narrow_in_req_t         cluster_narrow_in_req;
-  snitch_cluster_wrapper_pkg::narrow_in_resp_t        cluster_narrow_in_rsp;
-  snitch_cluster_wrapper_pkg::narrow_out_req_t        cluster_narrow_out_req;
-  snitch_cluster_wrapper_pkg::narrow_out_resp_t       cluster_narrow_out_rsp;
-  snitch_cluster_wrapper_pkg::wide_out_req_t          cluster_wide_out_req;
-  snitch_cluster_wrapper_pkg::wide_out_resp_t         cluster_wide_out_rsp;
-  snitch_cluster_wrapper_pkg::wide_in_req_t           cluster_wide_in_req;
-  snitch_cluster_wrapper_pkg::wide_in_resp_t          cluster_wide_in_rsp;
+  snitch_cluster_wrapper_pkg::narrow_in_req_t   cluster_narrow_in_req;
+  snitch_cluster_wrapper_pkg::narrow_in_resp_t  cluster_narrow_in_rsp;
+  snitch_cluster_wrapper_pkg::narrow_out_req_t  cluster_narrow_out_req;
+  snitch_cluster_wrapper_pkg::narrow_out_resp_t cluster_narrow_out_rsp;
+  snitch_cluster_wrapper_pkg::wide_out_req_t    cluster_wide_out_req;
+  snitch_cluster_wrapper_pkg::wide_out_resp_t   cluster_wide_out_rsp;
+  snitch_cluster_wrapper_pkg::wide_in_req_t     cluster_wide_in_req;
+  snitch_cluster_wrapper_pkg::wide_in_resp_t    cluster_wide_in_rsp;
 
-  snitch_cluster_wrapper_pkg::narrow_out_req_t        cluster_narrow_ext_req;
-  snitch_cluster_wrapper_pkg::narrow_out_resp_t       cluster_narrow_ext_rsp;
-  snitch_cluster_wrapper_pkg::tcdm_dma_req_t          cluster_tcdm_ext_req_aligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_req_t          cluster_tcdm_ext_req_misaligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t          cluster_tcdm_ext_rsp_aligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t          cluster_tcdm_ext_rsp_misaligned;
+  snitch_cluster_wrapper_pkg::narrow_out_req_t  cluster_narrow_ext_req;
+  snitch_cluster_wrapper_pkg::narrow_out_resp_t cluster_narrow_ext_rsp;
+  snitch_cluster_wrapper_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_aligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_misaligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_aligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_misaligned;
 
   cluster_narrow_out_dw_conv_req_t cluster_narrow_out_dw_conv_req, cluster_narrow_out_cut_req;
   cluster_narrow_out_dw_conv_resp_t cluster_narrow_out_dw_conv_rsp, cluster_narrow_out_cut_rsp;
 
-  hwpectrl_req_t               hwpectrl_req;
-  hwpectrl_rsp_t               hwpectrl_rsp;
+  hwpectrl_req_t hwpectrl_req;
+  hwpectrl_rsp_t hwpectrl_rsp;
 
-  logic          [NrCores-1:0] mxip;
+  logic [NrCores-1:0] mxip;
 
 
   ////////////////////////
@@ -139,7 +142,7 @@ module cluster_tile
     // Parse the FPU Request
     always_comb begin
       // Init default values
-      offload_dca_req.q.operands     = '0;
+      offload_dca_req.q.operands = '0;
 
       // Set default Values
       offload_dca_req.q.src_fmt      = fpnew_pkg::FP64;

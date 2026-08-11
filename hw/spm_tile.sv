@@ -61,11 +61,13 @@ module spm_tile
   parameter bit IsNarrow = 1'b1  // Narrow tile
 
 ) (
-  input  logic                    clk_i,
-  input  logic                    rst_ni,
-  input  logic                    test_enable_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic test_enable_i,
+
   // Chimney ports
-  input  id_t                     id_i,
+  input id_t id_i,
+
   // Router ports
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,

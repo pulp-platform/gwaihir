@@ -129,8 +129,8 @@ module fixture_gwaihir_top;
   //  Tristate Adapter  //
   ////////////////////////
 
-  wire                 i2c_sda;
-  wire                 i2c_scl;
+  wire i2c_sda;
+  wire i2c_scl;
 
   wire                 spih_sck;
   wire [SpihNumCs-1:0] spih_csb;

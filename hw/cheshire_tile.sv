@@ -17,77 +17,89 @@ module cheshire_tile
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
 (
-  input logic clk_i,
-  input logic rst_ni,
-  input logic test_mode_i,
+  input logic       clk_i,
+  input logic       rst_ni,
+  input logic       test_mode_i,
   input logic [1:0] boot_mode_i,
-  input logic rtc_i,
+  input logic       rtc_i,
+
   // Interrupt requests to external harts
   output logic [iomsb(NumIrqCtxts*CheshireCfg.NumExtIrqHarts):0] xeip_ext_o,
-  output logic [iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext_o,
-  output logic [iomsb(CheshireCfg.NumExtIrqHarts):0] msip_ext_o,
+  output logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext_o,
+  output logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] msip_ext_o,
+
   // JTAG
-  input logic jtag_tck_i,
-  input logic jtag_trst_ni,
-  input logic jtag_tms_i,
-  input logic jtag_tdi_i,
+  input  logic jtag_tck_i,
+  input  logic jtag_trst_ni,
+  input  logic jtag_tms_i,
+  input  logic jtag_tdi_i,
   output logic jtag_tdo_o,
   output logic jtag_tdo_oe_o,
+
   // UART interface
   output logic uart_tx_o,
-  input logic uart_rx_i,
+  input  logic uart_rx_i,
+
   // UART modem flow control
   output logic uart_rts_no,
   output logic uart_dtr_no,
-  input logic uart_cts_ni,
-  input logic uart_dsr_ni,
-  input logic uart_dcd_ni,
-  input logic uart_rin_ni,
+  input  logic uart_cts_ni,
+  input  logic uart_dsr_ni,
+  input  logic uart_dcd_ni,
+  input  logic uart_rin_ni,
+
   // I2C interface
   output logic i2c_sda_o,
-  input logic i2c_sda_i,
+  input  logic i2c_sda_i,
   output logic i2c_sda_en_o,
   output logic i2c_scl_o,
-  input logic i2c_scl_i,
+  input  logic i2c_scl_i,
   output logic i2c_scl_en_o,
+
   // SPI host interface
-  output logic spih_sck_o,
-  output logic spih_sck_en_o,
+  output logic                 spih_sck_o,
+  output logic                 spih_sck_en_o,
   output logic [SpihNumCs-1:0] spih_csb_o,
   output logic [SpihNumCs-1:0] spih_csb_en_o,
-  output logic [3:0] spih_sd_o,
-  output logic [3:0] spih_sd_en_o,
-  input logic [3:0] spih_sd_i,
+  output logic [          3:0] spih_sd_o,
+  output logic [          3:0] spih_sd_en_o,
+  input  logic [          3:0] spih_sd_i,
+
   // GPIO interface
-  input logic [31:0] gpio_i,
+  input  logic [31:0] gpio_i,
   output logic [31:0] gpio_o,
   output logic [31:0] gpio_en_o,
+
   // APB configuration interfaces
-  output csh_apb_req_t [CshRegExtNumSlv-1:0] apb_req_o,
-  input csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
+  output csh_apb_req_t  [CshRegExtNumSlv-1:0] apb_req_o,
+  input  csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
+
   // Serial link interface
-  input logic [SlinkNumChan-1:0] slink_rcv_clk_i,
-  output logic [SlinkNumChan-1:0] slink_rcv_clk_o,
-  input logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
+  input  logic [SlinkNumChan-1:0]                    slink_rcv_clk_i,
+  output logic [SlinkNumChan-1:0]                    slink_rcv_clk_o,
+  input  logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
   output logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
+
   // AXI ports to DRAM
   output csh_axi_llc_req_t axi_llc_mst_req_o,
-  input csh_axi_llc_rsp_t axi_llc_mst_rsp_i,
+  input  csh_axi_llc_rsp_t axi_llc_mst_rsp_i,
+
   // Chimney ports
   input id_t id_i,
+
   // Router ports
-  output floo_req_t floo_req_west_o,
-  input floo_rsp_t floo_rsp_west_i,
+  output floo_req_t  floo_req_west_o,
+  input  floo_rsp_t  floo_rsp_west_i,
   output floo_wide_t floo_wide_west_o,
-  input floo_req_t floo_req_west_i,
-  output floo_rsp_t floo_rsp_west_o,
-  input floo_wide_t floo_wide_west_i,
-  output floo_req_t floo_req_south_o,
-  input floo_rsp_t floo_rsp_south_i,
+  input  floo_req_t  floo_req_west_i,
+  output floo_rsp_t  floo_rsp_west_o,
+  input  floo_wide_t floo_wide_west_i,
+  output floo_req_t  floo_req_south_o,
+  input  floo_rsp_t  floo_rsp_south_i,
   output floo_wide_t floo_wide_south_o,
-  input floo_req_t floo_req_south_i,
-  output floo_rsp_t floo_rsp_south_o,
-  input floo_wide_t floo_wide_south_i
+  input  floo_req_t  floo_req_south_i,
+  output floo_rsp_t  floo_rsp_south_o,
+  input  floo_wide_t floo_wide_south_i
 );
 
   ////////////

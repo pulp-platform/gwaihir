@@ -27,3 +27,4 @@
 --port_declarations_right_align_unpacked_dimensions=false
 --expand_coverpoints=false
 --compact_indexing_and_selections=true
+--alignment_group_boundary=blank-lines
