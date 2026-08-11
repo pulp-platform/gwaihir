@@ -30,7 +30,6 @@ L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) "endpoints.l2_spm.addr
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
-SERIAL_LINK_ROOT ?= $(shell $(BENDER) path serial_link)
 
 # Bender prerequisites
 BENDER_YML = $(GW_ROOT)/Bender.yml
@@ -43,10 +42,27 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync
 SIM_TARGS += -t simulation -t test -t idma_test
 
+############
+# Cheshire #
+############
+
+SLINK_NUM_LANES ?= 8
+
+CLINTCORES ?= 17
+AXIRT_NUM_MGRS ?= 7
+include $(CHS_ROOT)/cheshire.mk
+
+$(CHS_ROOT)/hw/rv_plic.cfg.hjson: $(OTPROOT)/.generated2
+$(OTPROOT)/.generated2: $(PLIC_CFG)
+	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
+
+$(CHS_ROOT)/hw/serial_link.hjson: $(CHS_SLINK_DIR)/.generated2
+$(CHS_SLINK_DIR)/.generated2:	$(SLINK_CFG)
+	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
+
 #############
 # systemRDL #
 #############
-SLINK_NUM_LANES ?= 8
 PEAKRDL_PARAMS   += -P SlinkNumLanes=$(SLINK_NUM_LANES)
 DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
@@ -55,7 +71,7 @@ DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 UCIE_SLINK_REG_CFG ?= $(GW_ROOT)/cfg/ucie_slink_reg.mk
 include $(UCIE_SLINK_REG_CFG)
 
-UCIE_SLINK_RDL             = $(SERIAL_LINK_ROOT)/src/regs/slink_reg.rdl
+UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/lpddr.rdl
@@ -87,7 +103,8 @@ $(GW_GEN_DIR)/ucie_slink_reg.rdl: $(GW_ROOT)/cfg/rdl/ucie_slink_reg.rdl.tpl $(UC
 
 $(GW_GEN_DIR)/ucie_slink_reg.sv: $(GW_GEN_DIR)/ucie_slink_reg_pkg.sv
 $(GW_GEN_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL) $(UCIE_SLINK_REG_CFG)
-	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n --module-name ucie_slink_reg --package-name ucie_slink_reg_pkg $(UCIE_SLINK_RDL_PARAMS)
+	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n --module-name ucie_slink_reg \
+		--package-name ucie_slink_reg_pkg  -P NumLanes=$(UCIE_SLINK_NUM_LANES) -P EnDdr=$(UCIE_SLINK_EN_DDR)
 
 $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
@@ -144,22 +161,6 @@ docs-serve: $(DOCS_ADDRMAP_MD)
 
 docs-clean:
 	rm -rf $(DOCS_ADDRMAP_MD) $(GW_GEN_DIR)/docs-site
-
-############
-# Cheshire #
-############
-
-CLINTCORES ?= 17
-AXIRT_NUM_MGRS ?= 7
-include $(CHS_ROOT)/cheshire.mk
-
-$(CHS_ROOT)/hw/rv_plic.cfg.hjson: $(OTPROOT)/.generated2
-$(OTPROOT)/.generated2: $(PLIC_CFG)
-	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
-
-$(CHS_ROOT)/hw/serial_link.hjson: $(CHS_SLINK_DIR)/.generated2
-$(CHS_SLINK_DIR)/.generated2:	$(SLINK_CFG)
-	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
 
 ##################
 # Snitch Cluster #
@@ -258,6 +259,7 @@ gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
 
 gwaihir-hw-clean: sn-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)
+	rm -f $(GW_GEN_DIR)/*.rdl
 
 clean: gwaihir-hw-clean docs-clean
 	rm -rf $(BENDER_ROOT)
