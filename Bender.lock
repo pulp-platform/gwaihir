@@ -346,7 +346,7 @@ packages:
     dependencies:
     - tech_cells_generic
   serial_link:
-    revision: 4d5b0b120114344cb53141a012501b5347c1ee43
+    revision: cf901b257fccf03de976e1e569036ff7f74519b2
     version: null
     source:
       Git: https://github.com/pulp-platform/serial_link.git
