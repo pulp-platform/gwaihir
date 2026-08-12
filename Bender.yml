@@ -42,7 +42,7 @@ dependencies:
     path: .deps/lpddr
   iDMA:
     git: https://github.com/pulp-platform/iDMA.git
-    rev: c31df75db7e8525d18c4ecb97bee3dbe96741703
+    rev: 39bc2571766079a0711b80b7a62e6ad2b41b23e9
   mxcore:
     git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
     rev: common-cells-v2

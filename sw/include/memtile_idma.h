@@ -17,6 +17,7 @@
 #include "gw_addrmap_64b.h"
 #include "gw_raw_addrmap_64b.h"
 #include "gw_memtile.h"
+#include "idma_compute.h"
 
 // Mem-tile iDMA helpers. The leading `tile` argument is the SAM index of the
 // target mem tile; it selects which tile's iDMA register is configured.
@@ -78,28 +79,16 @@ static inline void memtile_dma_blk_memcpy(uint32_t tile, uint64_t dst,
 _Static_assert(sizeof(idma_reg64_2d_t) <= sizeof(gwaihir_addrmap.l2_spm_dma[0].mem),
                "iDMA reg file exceeds the Gwaihir l2_spm_dma window");
 
-// On-the-fly compute ops for the compute_cfg.compute_op field. Mirrors
-// idma_pkg::compute_op_e by hand: peakrdl-cheader does not emit SystemRDL field
-// enums, so this cannot be derived from the generated header (yet).
-enum {
-    MEMTILE_DMA_COMPUTE_NONE           = 0,
-    MEMTILE_DMA_COMPUTE_TRANSPOSE      = 1,  // not elaborated in the mem tile
-    MEMTILE_DMA_COMPUTE_MXQUANT        = 2,  // FP32 -> MXFP8 (33B inline blocks)
-    MEMTILE_DMA_COMPUTE_MXQUANT_FP16   = 3,  // FP16 -> MXFP8
-    MEMTILE_DMA_COMPUTE_MXDEQUANT      = 4,  // MXFP8 -> FP32
-    MEMTILE_DMA_COMPUTE_MXDEQUANT_FP16 = 5,  // MXFP8 -> FP16
-};
-
 // Program the tile's compute_cfg register (sticky; sampled when next_id is read
 // to launch a transfer, so set it before issuing).
 static inline void memtile_dma_set_compute(uint32_t tile, uint32_t op) {
     uintptr_t base = (uintptr_t)&gwaihir_addrmap.l2_spm_dma[tile].mem[0];
     idma_reg64_2d__compute_cfg_t c = { .w = 0 };
-    c.f.compute_enable = (op != (uint32_t)MEMTILE_DMA_COMPUTE_NONE);
+    c.f.compute_enable = (op != (uint32_t)COMPUTE_OP__NONE);
     c.f.compute_op     = op;
     *(volatile uint32_t *)(base + offsetof(idma_reg64_2d_t, compute_cfg)) = c.w;
 }
 
 static inline void memtile_dma_passthrough(uint32_t tile) {
-    memtile_dma_set_compute(tile, MEMTILE_DMA_COMPUTE_NONE);
+    memtile_dma_set_compute(tile, COMPUTE_OP__NONE);
 }
