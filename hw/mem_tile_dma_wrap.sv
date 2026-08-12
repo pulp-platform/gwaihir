@@ -31,12 +31,14 @@ module mem_tile_dma_wrap #(
   parameter bit          RAWCouplingAvail = 0,
   parameter bit          IsTwoD           = 0,
 
+  parameter bit                        EnableCompute = 0,
+  parameter idma_pkg::compute_enable_t ComputeOps    = '0,
   // iDMA transfer req/resp type
-  parameter type axi_mst_req_t = logic,
-  parameter type axi_mst_rsp_t = logic,
+  parameter type                       axi_mst_req_t = logic,
+  parameter type                       axi_mst_rsp_t = logic,
   // iDMA configuration req/resp type
-  parameter type axi_slv_req_t = logic,
-  parameter type axi_slv_rsp_t = logic
+  parameter type                       axi_slv_req_t = logic,
+  parameter type                       axi_slv_rsp_t = logic
 ) (
   input logic clk_i,
   input logic rst_ni,
@@ -312,6 +314,8 @@ module mem_tile_dma_wrap #(
   end
 
   idma_backend_rw_axi #(
+    .EnableCompute       (EnableCompute),
+    .ComputeOps          (ComputeOps),
     .CombinedShifter     (1'b0),
     .DataWidth           (AxiDataWidth),
     .AddrWidth           (AxiAddrWidth),
