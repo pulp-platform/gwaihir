@@ -26,11 +26,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "gw_addrmap.h"
-#include "gw_raw_addrmap.h"   // GW_L2_SPM_NUM
-#include "memtile_idma.h"
+#include "memtile_idma.h"   // gw_addrmap_64b.h, gw_memtile.h, regs/idma.h
 #include "idma_mx_golden.h"
-#include "regs/idma.h"
 
 // ---- Topology --------------------------------------------------------------
 #define SRC_TILE     3   // FP16 source S (offset 0) and FP32 result D (offset D_OFF)
@@ -45,24 +42,24 @@
 // (multiple of 33*StrbWidth). Corner bands (subnormal/flush/saturation/Inf-NaN)
 // live in the LAST 6 blocks (see mx_stim_fp16).
 enum { kBlockSize = 32, kTotalBlocks = 64 };
-#define MX_BLOCK_OUT_BYTES 33u   // [1B E8M0 scale][32B E5M2]
+enum { kMxBlockOutBytes = 33 };   // [1B E8M0 scale][32B E5M2]
 
 // ============================================================================
 
 int main(void) {
-    volatile uint16_t *S = (volatile uint16_t *)gwaihir_addrmap.l2_spm[SRC_TILE].mem;
-    volatile uint8_t  *M = (volatile uint8_t  *)gwaihir_addrmap.l2_spm[MID_TILE].mem;
-    volatile uint32_t *D = (volatile uint32_t *)((uintptr_t)gwaihir_addrmap.l2_spm[SRC_TILE].mem + D_OFF);
+    volatile uint16_t *S = (volatile uint16_t *)GW_L2_SPM_BASE_ADDR(SRC_TILE);
+    volatile uint8_t  *M = (volatile uint8_t  *)GW_L2_SPM_BASE_ADDR(MID_TILE);
+    volatile uint32_t *D = (volatile uint32_t *)(GW_L2_SPM_BASE_ADDR(SRC_TILE) + D_OFF);
 
     const uint32_t s_elems = (uint32_t)kTotalBlocks * kBlockSize;                            // 2048
     const uint32_t s_bytes = (uint32_t)kTotalBlocks * kBlockSize * (uint32_t)sizeof(uint16_t); // 4096
-    const uint32_t m_bytes = (uint32_t)kTotalBlocks * MX_BLOCK_OUT_BYTES;                       // 2112
+    const uint32_t m_bytes = (uint32_t)kTotalBlocks * kMxBlockOutBytes;                       // 2112
     const uint32_t d_words = (uint32_t)kTotalBlocks * kBlockSize;                               // 2048 (8192 B)
 
     // 1) Fill FP16 source.
     for (size_t b = 0; b < (size_t)kTotalBlocks; ++b)
         for (size_t lane = 0; lane < (size_t)kBlockSize; ++lane)
-            S[b * kBlockSize + lane] = mx_stim_fp16((uint32_t)(b * kBlockSize + lane), s_elems);
+            S[b * kBlockSize + lane] = mx_stim_fp16((uint32_t)(b * kBlockSize + lane), s_elems, 0);
 
     // Poison M and D so a no-op transform cannot masquerade as a pass (64-bit stores).
     volatile uint64_t *M64 = (volatile uint64_t *)M;
@@ -89,7 +86,7 @@ int main(void) {
         uint8_t scale = block_scale_e5m2(scratch, kBlockSize);
         int scaled = (int)(int8_t)scale;
 
-        volatile uint8_t *mblk = M + b * MX_BLOCK_OUT_BYTES;
+        volatile uint8_t *mblk = M + b * kMxBlockOutBytes;
         if (mblk[0] != scale)
             return (int)(1000000u + (uint32_t)b);                        // quant scale
 
