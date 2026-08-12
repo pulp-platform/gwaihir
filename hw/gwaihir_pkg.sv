@@ -418,7 +418,7 @@ package gwaihir_pkg;
   `AXI_LITE_TYPEDEF_ALL(tile_cfg_axi_lite_32, addr_t, tile_cfg_reg_data_t, tile_cfg_reg_strb_t)
   `APB_TYPEDEF_ALL(tile_cfg_apb, addr_t, tile_cfg_reg_data_t, tile_cfg_reg_strb_t)
 
-  localparam int unsigned HWPECtrlAddrWidth = 32;
+  localparam int unsigned HWPECtrlAddrWidth = snitch_cluster_wrapper_pkg::AddrWidth;
   localparam int unsigned HWPECtrlDataWidth = 32;
   typedef logic [HWPECtrlAddrWidth-1:0] addr_hwpe_ctrl_t;
   typedef logic [HWPECtrlDataWidth-1:0] data_hwpe_ctrl_t;
@@ -428,7 +428,8 @@ package gwaihir_pkg;
                    snitch_cluster_wrapper_pkg::narrow_out_id_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t,
                    snitch_cluster_wrapper_pkg::user_narrow_t)
 
-  `TCDM_TYPEDEF_ALL(hwpectrl, HWPECtrlDataWidth, HWPECtrlAddrWidth, 1)
+  `TCDM_TYPEDEF_ALL(hwpectrl, HWPECtrlDataWidth, HWPECtrlAddrWidth,
+                    snitch_cluster_wrapper_pkg::NarrowUserWidth)
 
   ////////////////
   //  Mem Tile  //
