@@ -65,7 +65,7 @@ int main(void) {
     for (uint32_t i = (dst_bytes / 8u) * 8u; i < dst_bytes; ++i) dst[i] = 0xA5u;
 
     // 2) Select the FP16 MX-quant op on the driver tile (sticky compute_cfg).
-    memtile_dma_set_compute(DRIVER_TILE, MEMTILE_DMA_COMPUTE_MXQUANT_FP16);
+    memtile_dma_set_compute(DRIVER_TILE, COMPUTE_OP__MXQUANT_FP16);
 
     // 3) Issue the transfer: read src_bytes of FP16 from SRC_TILE, quantize
     //    on the fly, write the 33B-inline MXFP8 blocks to DST_TILE. The reg64
