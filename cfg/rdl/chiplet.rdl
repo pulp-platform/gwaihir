@@ -1,0 +1,39 @@
+// Copyright 2026 ETH Zurich and University of Bologna.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+// Internal addrmap of the chiplet alias windows (ucie0/ucie1). The offset of each
+// region inside the window equals the low bits of its canonical address, so the
+// parameters below are bound from the endpoints in `gwaihir_noc.yml` through the
+// `rdl_params` of the `ucie*` address ranges. The defaults mirror that config.
+// Only the cluster tiles and the L2 SPM are exposed through the alias windows.
+
+`ifndef __CHIPLET_RDL__
+`define __CHIPLET_RDL__
+
+`include "snitch_cluster.rdl"
+
+addrmap chiplet #(
+    longint unsigned NumClusters    = 16,
+    longint unsigned ClusterOffset  = 0x0000_0000,
+    longint unsigned ClusterSize    = 0x0004_0000,
+    longint unsigned L2SpmOffset    = 0x0120_0000,
+    longint unsigned L2SpmStride    = 0x0020_0000,
+    longint unsigned L2SpmSizeLarge = 0x0020_0000,
+    longint unsigned L2SpmSizeSmall = 0x0010_0000
+) {
+    snitch_cluster cluster[NumClusters] @ClusterOffset += ClusterSize;
+
+    // The L2 SPM tiles sit on a uniform stride but alternate in size: the even
+    // tiles are large, the odd ones small.
+    external mem { mementries = L2SpmSizeLarge / 4; memwidth = 32; }
+        l2_spm_0 @(L2SpmOffset);
+    external mem { mementries = L2SpmSizeSmall / 4; memwidth = 32; }
+        l2_spm_1 @(L2SpmOffset + L2SpmStride);
+    external mem { mementries = L2SpmSizeLarge / 4; memwidth = 32; }
+        l2_spm_2 @(L2SpmOffset + 2 * L2SpmStride);
+    external mem { mementries = L2SpmSizeSmall / 4; memwidth = 32; }
+        l2_spm_3 @(L2SpmOffset + 3 * L2SpmStride);
+};
+
+`endif // __CHIPLET_RDL__

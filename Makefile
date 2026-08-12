@@ -7,7 +7,6 @@
 GW_ROOT ?= $(shell pwd -P)
 GW_GEN_DIR = $(GW_ROOT)/.generated
 BENDER_ROOT ?= $(GW_ROOT)/.bender
-UTIL_DIR = $(GW_ROOT)/util
 
 # Executables — must be defined before dependency paths that call $(BENDER)
 BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
@@ -23,7 +22,7 @@ PLIC_CFG  ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
 SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 
 # L2 SPM base address, queried from the FlooNoC config so it stays in sync with FLOO_CFG
-L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) "endpoints.l2_spm_0.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
+L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) "endpoints.l2_spm_0.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
 
 # Root directories of dependencies
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
@@ -44,8 +43,6 @@ SIM_TARGS += -t simulation -t test -t idma_test
 #############
 # systemRDL #
 #############
-SLINK_NUM_LANES ?= 8
-PEAKRDL_PARAMS   += -P SlinkNumLanes=$(SLINK_NUM_LANES)
 DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
@@ -53,7 +50,6 @@ DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
-GW_RDL_ALL += $(GW_GEN_DIR)/chiplet.rdl
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
 GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_64b.rdl
@@ -71,15 +67,11 @@ $(GW_GEN_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
 	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n
 
 $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
-	$(FLOO_GEN) rdl -c $(FLOO_CFG) -o $(GW_GEN_DIR) --as-mem --memwidth=32
+	$(FLOO_GEN) rdl -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_DIR) --as-mem --memwidth=32
 
 # Those are dummy RDL files, for generation without access to the PD repository.
 $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl $(GW_GEN_DIR)/lpddr.rdl: | $(GW_GEN_DIR)
 	@touch $@
-
-# Internal addrmap of the chiplet alias windows, derived from the NoC config
-$(GW_GEN_DIR)/chiplet.rdl: $(GW_ROOT)/cfg/rdl/chiplet.rdl.tpl $(FLOO_CFG) $(UTIL_DIR)/mako_render.py
-	$(UTIL_DIR)/mako_render.py -t $< -y $(FLOO_CFG) -o $@
 
 $(GW_GEN_DIR)/gw_addrmap_pkg.sv: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svpkg --no-prefix
@@ -130,6 +122,8 @@ docs-clean:
 
 CLINTCORES ?= 17
 AXIRT_NUM_MGRS ?= 7
+SLINK_NUM_LANES ?= 8
+FLOO_PARAMS += -P csh_slink_num_lanes=$(SLINK_NUM_LANES)
 include $(CHS_ROOT)/cheshire.mk
 
 $(CHS_ROOT)/hw/rv_plic.cfg.hjson: $(OTPROOT)/.generated2
@@ -149,7 +143,7 @@ include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/toolchain.mk
 include $(SN_ROOT)/make/rtl.mk
 
-$(SN_CFG): SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.cluster.num 2>/dev/null)
+$(SN_CFG): SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) endpoints.cluster.num 2>/dev/null)
 $(SN_CFG): $(FLOO_CFG)
 	@sed -i 's/nr_clusters: .*/nr_clusters: $(SN_CLUSTERS),/' $@
 
@@ -173,7 +167,7 @@ endif
 
 floo-hw-all: $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv
 $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv: $(FLOO_CFG)
-	$(FLOO_GEN) pkg -c $(FLOO_CFG) -o $(GW_GEN_DIR) $(FLOO_GEN_FLAGS)
+	$(FLOO_GEN) pkg -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_DIR) $(FLOO_GEN_FLAGS)
 
 
 floo-clean:

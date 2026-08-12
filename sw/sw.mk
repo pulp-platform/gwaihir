@@ -52,8 +52,8 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
 
 SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 
-$(GW_GEN_DIR)/gw_noc_cfg.h: $(UTIL_DIR)/mako_render.py $(FLOO_CFG)
-	 $< -t $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl -y $(FLOO_CFG) -o $@
+$(GW_GEN_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
+	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_DIR) --no-format $<
 
 include $(SN_ROOT)/make/sw.mk
 
