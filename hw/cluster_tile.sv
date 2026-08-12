@@ -312,13 +312,10 @@ module cluster_tile
     );
 
     axi_to_tcdm #(
-      .axi_req_t (cluster_narrow_out_dw_conv_req_t),
-      .axi_rsp_t (cluster_narrow_out_dw_conv_resp_t),
-      .tcdm_req_t(hwpectrl_req_t),
-      .tcdm_rsp_t(hwpectrl_rsp_t),
-      .IdWidth   (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .AddrWidth (HWPECtrlAddrWidth),
-      .DataWidth (HWPECtrlDataWidth)
+      .AddrWidth(HWPECtrlAddrWidth),
+      .DataWidth(HWPECtrlDataWidth),
+      .IdWidth  (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
+      .UserWidth(snitch_cluster_wrapper_pkg::NarrowUserWidth)
     ) i_axi_to_hwpe_ctrl (
       .clk_i     (tile_clk),
       .rst_ni    (tile_rst_n),

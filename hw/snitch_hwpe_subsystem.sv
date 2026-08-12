@@ -5,7 +5,7 @@
 module snitch_hwpe_subsystem
   import hci_package::*;
   import hwpe_ctrl_package::*;
-  import reqrsp_pkg::amo_op_e;
+  import lsu_pkg::amo_op_e;
 #(
   parameter type tcdm_req_t   = logic,
   parameter type tcdm_rsp_t   = logic,
@@ -87,7 +87,7 @@ module snitch_hwpe_subsystem
   assign tcdm_req_o.q.write = ~tcdm.wen;
   assign tcdm_req_o.q.strb  = tcdm.be;
   assign tcdm_req_o.q.data  = tcdm.data;
-  assign tcdm_req_o.q.amo   = reqrsp_pkg::AMONone;
+  assign tcdm_req_o.q.amo   = lsu_pkg::AMONone;
   assign tcdm_req_o.q.user  = '0;
   // response channel
   assign tcdm.gnt           = tcdm_rsp_i.q_ready;
