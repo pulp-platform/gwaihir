@@ -76,13 +76,13 @@ static inline void memtile_dma_blk_memcpy(uint32_t tile, uint64_t dst,
 
 // The reg file (SystemRDL-generated, same source as the RTL reg block) must fit
 // the l2_spm_dma window carved in the Gwaihir address map.
-_Static_assert(sizeof(idma_reg64_2d_t) <= sizeof(gwaihir_addrmap.l2_spm_dma[0].mem),
+_Static_assert(sizeof(idma_reg64_2d_t) <= GW_L2_SPM_0_DMA_SIZE,
                "iDMA reg file exceeds the Gwaihir l2_spm_dma window");
 
 // Program the tile's compute_cfg register (sticky; sampled when next_id is read
 // to launch a transfer, so set it before issuing).
 static inline void memtile_dma_set_compute(uint32_t tile, uint32_t op) {
-    uintptr_t base = (uintptr_t)&gwaihir_addrmap.l2_spm_dma[tile].mem[0];
+    uintptr_t base = (uintptr_t)GW_L2_SPM_DMA_BASE_ADDR(tile);
     idma_reg64_2d__compute_cfg_t c = { .w = 0 };
     c.f.compute_enable = (op != (uint32_t)COMPUTE_OP__NONE);
     c.f.compute_op     = op;

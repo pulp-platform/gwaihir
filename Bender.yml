@@ -25,7 +25,7 @@ dependencies:
     rev: common-cells-v2
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
-    rev: gwaihir-common-cells-v2
+    rev: dk/idma070
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: c63eada47c050f78b320d0e854a24a9cd9c1cc80
@@ -40,9 +40,7 @@ dependencies:
     path: ./pd
   gwaihir_lpddr:
     path: .deps/lpddr
-  iDMA:
-    git: https://github.com/pulp-platform/iDMA.git
-    rev: 39bc2571766079a0711b80b7a62e6ad2b41b23e9
+  iDMA: 0.7.0
   mxcore:
     git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
     rev: common-cells-v2
@@ -60,8 +58,8 @@ dependencies:
     git: https://github.com/pulp-platform/serial_link.git
     rev: main
   snitch_cluster:
-    git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: dca
+    git: https://github.com/DanielKellerM/snitch_cluster.git
+    rev: dk/idma070
 
 workspace:
   package_links:

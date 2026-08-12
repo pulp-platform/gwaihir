@@ -342,7 +342,6 @@ module mem_tile_dma_wrap #(
   ) i_idma_backend (
     .clk_i,
     .rst_ni,
-    .testmode_i,
     .idma_req_i     (burst_req),
     .req_valid_i    (be_valid),
     .req_ready_o    (be_ready),

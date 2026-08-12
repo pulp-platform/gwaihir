@@ -24,11 +24,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "gw_addrmap.h"
-#include "gw_raw_addrmap.h"   // GW_L2_SPM_NUM
-#include "memtile_idma.h"
+#include "memtile_idma.h"   // gw_addrmap_64b.h, gw_memtile.h, regs/idma.h
 #include "idma_mx_golden.h"
-#include "regs/idma.h"
 
 // ---- Topology --------------------------------------------------------------
 #define SRC_TILE     3   // FP16 source buffer
@@ -41,22 +38,22 @@
 // small run exercises subnormal / flush / saturation / Inf-NaN. Raise for a more
 // exhaustive normal-band sweep (cost is ~linear in CVA6 NoC round-trips).
 enum { kBlockSize = 32, kTotalBlocks = 64 };  // 64*33=2112 B dst (64-B beat-aligned)
-#define MX_BLOCK_OUT_BYTES 33u   // [1B E8M0 scale][32B E5M2]
+enum { kMxBlockOutBytes = 33 };   // [1B E8M0 scale][32B E5M2]
 
 // ============================================================================
 
 int main(void) {
-    volatile uint16_t *src = (volatile uint16_t *)gwaihir_addrmap.l2_spm[SRC_TILE].mem;
-    volatile uint8_t  *dst = (volatile uint8_t  *)gwaihir_addrmap.l2_spm[DST_TILE].mem;
+    volatile uint16_t *src = (volatile uint16_t *)GW_L2_SPM_BASE_ADDR(SRC_TILE);
+    volatile uint8_t  *dst = (volatile uint8_t  *)GW_L2_SPM_BASE_ADDR(DST_TILE);
 
     const uint32_t src_elems = (uint32_t)kTotalBlocks * kBlockSize;                            // 2048
     const uint32_t src_bytes = (uint32_t)kTotalBlocks * kBlockSize * (uint32_t)sizeof(uint16_t); // 4096
-    const uint32_t dst_bytes = (uint32_t)kTotalBlocks * MX_BLOCK_OUT_BYTES;                       // 2112
+    const uint32_t dst_bytes = (uint32_t)kTotalBlocks * kMxBlockOutBytes;                       // 2112
 
     // 1) Fill the FP16 source in SRC_TILE's L2 SPM.
     for (size_t b = 0; b < (size_t)kTotalBlocks; ++b)
         for (size_t lane = 0; lane < (size_t)kBlockSize; ++lane)
-            src[b * kBlockSize + lane] = mx_stim_fp16((uint32_t)(b * kBlockSize + lane), src_elems);
+            src[b * kBlockSize + lane] = mx_stim_fp16((uint32_t)(b * kBlockSize + lane), src_elems, 0);
 
     // Poison the destination so a no-op DMA cannot masquerade as a pass.
     // 64-bit stores keep the NoC round-trip count low (dst_bytes is 8-aligned here).
@@ -87,7 +84,7 @@ int main(void) {
         for (size_t i = 0; i < (size_t)kBlockSize; ++i)
             scratch[i] = fp16_to_fp32_bits(src[b * kBlockSize + i]);
         uint8_t scale = block_scale_e5m2(scratch, kBlockSize);
-        volatile uint8_t *oblk = dst + b * MX_BLOCK_OUT_BYTES;
+        volatile uint8_t *oblk = dst + b * kMxBlockOutBytes;
         if (oblk[0] != scale)
             return (int)(1000000u + (uint32_t)b);                  // inline scale mismatch
         for (size_t i = 0; i < (size_t)kBlockSize; ++i) {
