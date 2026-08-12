@@ -348,7 +348,6 @@ package gwaihir_pkg;
   // Define function to derive configuration from Cheshire defaults.
   function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
     cheshire_pkg::cheshire_cfg_t ret = cheshire_pkg::DefaultCfg;
-    ret.Dma = 1'b0;
     // Enable the external AXI master and slave interfaces
     ret.AxiExtNumMst   = 1;
     ret.AxiExtNumSlv   = 1;
@@ -499,6 +498,14 @@ package gwaihir_pkg;
   localparam int unsigned DmaJobFifoDepth = 2;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
+  localparam bit DmaEnableCompute = 1;
+  // MX quant/dequant only; the transpose engine is not elaborated in the mem tile.
+  localparam idma_pkg::compute_enable_t DmaComputeOps = '{
+      transpose: 1'b0,
+      mxquant: 1'b1,
+      mxdequant: 1'b1,
+      mxfp16: 1'b1
+  };
 
   localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
 
