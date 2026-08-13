@@ -46,7 +46,7 @@ module obi_to_axi #(
   input  logic [ObiCfg.OptionalCfg.RUserWidth-1:0] obi_rsp_user_i        // If unused tie to '0
 );
 
-  localparam int unsigned AxiSize = axi_pkg::size_t'($unsigned($clog2(ObiCfg.DataWidth / 8)));
+  localparam int unsigned AxiSize = $clog2(ObiCfg.DataWidth / 8);
   localparam bit [2:0] DefaultProt = 3'b100;  // OBI default is 3'b111
 
   typedef logic [AxiAddrWidth-1:0] axi_addr_t;

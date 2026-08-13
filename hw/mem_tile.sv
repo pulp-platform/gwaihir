@@ -8,6 +8,7 @@
 `include "axi/typedef.svh"
 `include "obi/typedef.svh"
 `include "common_cells/assertions.svh"
+`include "floo_noc/typedef.svh"
 
 module mem_tile
   import floo_pkg::*;
@@ -18,7 +19,8 @@ module mem_tile
   parameter bit          AxiUserAtop    = 1'b1,
   parameter int unsigned AxiUserAtopMsb = 3,
   parameter int unsigned AxiUserAtopLsb = 0,
-  parameter int unsigned MemTileId      = 0
+  parameter int unsigned MemTileId      = 0,
+  parameter bit UseInterleaving = 1'b0
 ) (
   input  logic                    clk_i,
   input  logic                    rst_ni,
@@ -62,7 +64,8 @@ module mem_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .Use4BitSize     (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -102,14 +105,17 @@ module mem_tile
 
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_mem_tile_req_t   axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_mem_tile_rsp_t   axi_wide_rsp;
+  localparam axi_cfg_t AxiCfgWide = UseInterleaving ? AxiCfgWMemTile : AxiCfgW;
+
+  localparam chimney_cfg_t ChimneyCfg  = UseInterleaving ? ChimneyMemTileInterleaveCfg : ChimneyDefaultCfg;
 
   floo_nw_chimney #(
     .AxiCfgN             (AxiCfgN),
-    .AxiCfgW             (AxiCfgW),
+    .AxiCfgW             (AxiCfgWide),
     .ChimneyCfgN         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b0)),
-    .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b0)),
+    .ChimneyCfgW         (set_ports(ChimneyCfg, 1'b1, 1'b0)),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
     .WideRwDecouple      (WideRwDecouple),
@@ -126,11 +132,13 @@ module mem_tile
     .axi_narrow_out_rsp_t(axi_narrow_out_rsp_t),
     .axi_wide_in_req_t   (axi_wide_in_req_t),
     .axi_wide_in_rsp_t   (axi_wide_in_rsp_t),
-    .axi_wide_out_req_t  (axi_wide_out_req_t),
-    .axi_wide_out_rsp_t  (axi_wide_out_rsp_t),
+    .axi_wide_out_req_t  (axi_wide_out_mem_tile_req_t),
+    .axi_wide_out_rsp_t  (axi_wide_out_mem_tile_rsp_t),
     .floo_req_t          (floo_req_t),
     .floo_rsp_t          (floo_rsp_t),
-    .floo_wide_t         (floo_wide_t)
+    .floo_wide_t         (floo_wide_t),
+    .Use4BitSize         (floo_gwaihir_noc_pkg::Use4BitSize),
+    .UseInterleaving     (UseInterleaving)  
   ) i_chimney (
     .clk_i               (tile_clk),
     .rst_ni              (tile_rst_n),
@@ -158,29 +166,70 @@ module mem_tile
   // NW Join //
   /////////////
 
-  localparam axi_cfg_t AxiCfgJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+  localparam axi_cfg_t AxiCfgJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgWide);
 
   typedef logic [AxiCfgJoin.OutIdWidth-1:0] nw_join_id_t;
   typedef logic [AxiCfgJoin.UserWidth-1:0] nw_join_user_t;
 
-  `AXI_TYPEDEF_ALL_CT(axi_nw_join, axi_nw_join_req_t, axi_nw_join_rsp_t, axi_wide_out_addr_t,
-                      nw_join_id_t, axi_wide_out_data_t, axi_wide_out_strb_t, nw_join_user_t)
+  typedef logic [(floo_gwaihir_noc_pkg::Use4BitSize ? 3 : 2):0] axi_nw_join_size_t;
+
+  `FLOO_WIDE_AXI_TYPEDEF_ALL_CT(axi_nw_join, axi_nw_join_req_t, axi_nw_join_rsp_t, axi_wide_out_addr_t,
+                      nw_join_id_t, axi_wide_out_data_t, axi_wide_out_strb_t, nw_join_user_t, axi_nw_join_size_t)
 
   axi_nw_join_req_t axi_req;
   axi_nw_join_rsp_t axi_rsp;
 
+//   `ifndef SYNTHESIS
+//   // AXI Monitor dumper to improvce debiugging
+//   axi_dumper #(
+//     .BusName   ($sformatf("mem_tile_%d_axi_narrow_prejoin", MemTileId)),
+//     .LogAW     (1'b1),
+//     .LogAR     (1'b1),
+//     .LogW      (1'b1),
+//     .LogB      (1'b1),
+//     .LogR      (1'b1),
+//     .axi_req_t (axi_narrow_out_req_t),
+//     .axi_resp_t(axi_narrow_out_rsp_t)
+//   ) i_axi_monitor_mem_tile_narrow_prejoin (
+//     .clk_i,
+//     .rst_ni,
+//     .axi_req_i (axi_narrow_req),
+//     .axi_resp_i(axi_narrow_rsp)
+//   );
+// `endif
+
+// `ifndef SYNTHESIS
+//   // AXI Monitor dumper to improvce debiugging
+//   axi_dumper #(
+//     .BusName   ($sformatf("mem_tile_%d_axi_wide_prejoin", MemTileId)),
+//     .LogAW     (1'b1),
+//     .LogAR     (1'b1),
+//     .LogW      (1'b1),
+//     .LogB      (1'b1),
+//     .LogR      (1'b1),
+//     .axi_req_t (axi_wide_out_mem_tile_req_t),
+//     .axi_resp_t(axi_wide_out_mem_tile_rsp_t)
+//   ) i_axi_monitor_mem_tile_wide_prejoin (
+//     .clk_i,
+//     .rst_ni,
+//     .axi_req_i (axi_wide_req),
+//     .axi_resp_i(axi_wide_rsp)
+//   );
+// `endif
+
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
-    .AxiCfgW         (axi_cfg_swap_iw(AxiCfgW)),
+    .AxiCfgW         (axi_cfg_swap_iw(AxiCfgWMemTile)),
     .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgJoin)),
     .EnAtopAdapter   (1'b0),
     .AtopUserAsId    (1'b1),
     .axi_narrow_req_t(axi_narrow_out_req_t),
     .axi_narrow_rsp_t(axi_narrow_out_rsp_t),
-    .axi_wide_req_t  (axi_wide_out_req_t),
-    .axi_wide_rsp_t  (axi_wide_out_rsp_t),
+    .axi_wide_req_t  (axi_wide_out_mem_tile_req_t),
+    .axi_wide_rsp_t  (axi_wide_out_mem_tile_rsp_t),
     .axi_req_t       (axi_nw_join_req_t),
-    .axi_rsp_t       (axi_nw_join_rsp_t)
+    .axi_rsp_t       (axi_nw_join_rsp_t),
+    .Use4BitSize     (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_floo_nw_join (
     .clk_i           (tile_clk),
     .rst_ni          (tile_rst_n),
@@ -293,24 +342,24 @@ module mem_tile
     end
   end
 
-`ifndef SYNTHESIS
-  // AXI Monitor dumper to improvce debiugging
-  axi_dumper #(
-    .BusName   ($sformatf("mem_tile_%d", MemTileId)),
-    .LogAW     (1'b1),
-    .LogAR     (1'b1),
-    .LogW      (1'b1),
-    .LogB      (1'b1),
-    .LogR      (1'b1),
-    .axi_req_t (axi_nw_join_req_t),
-    .axi_resp_t(axi_nw_join_rsp_t)
-  ) i_axi_monitor (
-    .clk_i,
-    .rst_ni,
-    .axi_req_i (axi_req),
-    .axi_resp_i(axi_rsp)
-  );
-`endif
+// `ifndef SYNTHESIS
+//   // AXI Monitor dumper to improvce debiugging
+//   axi_dumper #(
+//     .BusName   ($sformatf("mem_tile_%d", MemTileId)),
+//     .LogAW     (1'b1),
+//     .LogAR     (1'b1),
+//     .LogW      (1'b1),
+//     .LogB      (1'b1),
+//     .LogR      (1'b1),
+//     .axi_req_t (axi_nw_join_req_t),
+//     .axi_resp_t(axi_nw_join_rsp_t)
+//   ) i_axi_monitor (
+//     .clk_i,
+//     .rst_ni,
+//     .axi_req_i (axi_req),
+//     .axi_resp_i(axi_rsp)
+//   );
+// `endif
 
   axi_to_obi #(
     .ObiCfg      (MgrObiCfg),
@@ -324,7 +373,8 @@ module mem_tile
     .AxiUserWidth(AxiCfgJoin.UserWidth),
     .MaxTrans    (ObiLatency),
     .axi_req_t   (axi_nw_join_req_t),
-    .axi_rsp_t   (axi_nw_join_rsp_t)
+    .axi_rsp_t   (axi_nw_join_rsp_t),
+    .UseInterleaving(UseInterleaving)
   ) i_axi_to_obi (
     .clk_i     (tile_clk),
     .rst_ni    (tile_rst_n),
@@ -369,9 +419,9 @@ module mem_tile
   logic                            mem_req;
   logic                            mem_we;
   logic [AxiCfgJoin.AddrWidth-1:0] mem_addr;
-  logic [   AxiCfgW.DataWidth-1:0] mem_wdata;
-  logic [ AxiCfgW.DataWidth/8-1:0] mem_be;
-  logic [   AxiCfgW.DataWidth-1:0] mem_rdata;
+  logic [   AxiCfgWMemTile.DataWidth-1:0] mem_wdata;
+  logic [ AxiCfgWMemTile.DataWidth/8-1:0] mem_be;
+  logic [   AxiCfgWMemTile.DataWidth-1:0] mem_rdata;
 
 
   obi_atop_resolver #(

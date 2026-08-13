@@ -3,7 +3,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 {
-    "n_tiles": 5,
-    "n": 2560,
+    "n_tiles": 2,
+    "n":  2048,
+    "repetitions": 4,
+    // "n_tiles": 4,
+    // "n":  8192,
+    // "n_tiles": 1,
+    // "n":  2048,
     "funcptr": "axpy_opt"
 }
+
+
+// {
+//     "n_tiles": 8,
+//     "n": 10240,
+//     "funcptr": "axpy_opt"
+// }
+
+// {
+//     "n_tiles": 10,
+//     "n": 10240,
+//     "n_clusters": 16,
+//     "n_spm_tiles": 1,
+//     "funcptr": "axpy_opt"
+// }

@@ -29,6 +29,11 @@ module axi_to_obi #(
   parameter type axi_req_t = logic,
   /// The response struct of the AXI port
   parameter type axi_rsp_t = logic,
+  /// AXI size field width: 3 for standard AXI4 (DataWidth <= 1024), 4 for extended.
+  /// Propagated to axi_to_detailed_mem_user. Defaults based on AxiDataWidth.
+  parameter int unsigned SizeWidth = AxiDataWidth > 1024 ? 4 : 3,
+
+  parameter bit UseInterleaving = 1'b0, // If 1, interleaving is used for both read and write requests. If 0, interleaving is disabled for both read and write requests. If 1, interleaving is used for read requests and disabled for write requests.
   // Dependent Parameters, *DO NOT OVERWRITE*
   parameter int unsigned NumBanks = AxiDataWidth / ObiCfg.DataWidth,
   parameter int unsigned       AUserWidthAdjusted = ObiCfg.OptionalCfg.AUserWidth ?
@@ -134,57 +139,114 @@ module axi_to_obi #(
     .mst_resps_i    ({axi_write_rsp, axi_read_rsp})
   );
 
-  axi_to_detailed_mem_user #(
-    .axi_req_t     (axi_req_t),
-    .axi_resp_t    (axi_rsp_t),
-    .AddrWidth     (AxiAddrWidth),
-    .DataWidth     (AxiDataWidth),
-    .IdWidth       (AxiIdWidth),
-    .UserWidth     (AxiUserWidth),
-    .NumBanks      (NumBanks),
-    .BufDepth      (MaxTrans),
-    .HideStrb      (1'b0),
-    .OutFifoDepth  (2),
-    .PropagateWUser(1'b0),
-    .RUserExtra    (IdRuserWidth)
-  ) i_axi_to_mem_read (
-    .clk_i,
-    .rst_ni,
+  if(UseInterleaving) begin : gen_interleaving
+    axi_to_detailed_mem_user_rr #(
+      .axi_req_t     (axi_req_t),
+      .axi_resp_t    (axi_rsp_t),
+      .AddrWidth     (AxiAddrWidth),
+      .DataWidth     (AxiDataWidth),
+      .IdWidth       (AxiIdWidth),
+      .UserWidth     (AxiUserWidth),
+      .NumBanks      (NumBanks),
+      .BufDepth      (MaxTrans),
+      .HideStrb      (1'b0),
+      .OutFifoDepth  (2),
+      .PropagateWUser(1'b0),
+      .RUserExtra    (IdRuserWidth),
+      .SizeWidth     (SizeWidth)
+    ) i_axi_to_mem_read (
+      .clk_i,
+      .rst_ni,
 
-    .busy_o(),
+      .busy_o(),
 
-    .axi_req_i (axi_read_req),
-    .axi_resp_o(axi_read_rsp),
+      .axi_req_i (axi_read_req),
+      .axi_resp_o(axi_read_rsp),
 
-    .mem_req_o   (bank_mem_req[NumBanks-1:0]),
-    .mem_gnt_i   (bank_mem_gnt[NumBanks-1:0]),
-    .mem_addr_o  (bank_mem_addr[NumBanks-1:0]),
-    .mem_wdata_o (bank_mem_wdata[NumBanks-1:0]),
-    .mem_strb_o  (bank_mem_strb[NumBanks-1:0]),
-    .mem_atop_o  (bank_mem_atop[NumBanks-1:0]),
-    .mem_lock_o  (bank_mem_lock[NumBanks-1:0]),
-    .mem_we_o    (),                               // bank_mem_we    [NumBanks-1:0] ),
-    .mem_id_o    (req_ar_id_o),                    // bank_mem_id    [NumBanks-1:0] ),
-    .mem_user_o  (req_ar_user_o),                  // bank_mem_user  [NumBanks-1:0] ),
-    .mem_cache_o (bank_mem_cache[NumBanks-1:0]),
-    .mem_prot_o  (bank_mem_prot[NumBanks-1:0]),
-    .mem_qos_o   (),
-    .mem_region_o(),
-    .mem_rvalid_i(bank_mem_rvalid[NumBanks-1:0]),
-    .mem_rdata_i (bank_mem_rdata[NumBanks-1:0]),
-    .mem_err_i   (bank_mem_err[NumBanks-1:0]),
-    .mem_exokay_i(bank_mem_exokay[NumBanks-1:0]),
-    .mem_ruser_i (bank_mem_ruser[NumBanks-1:0]),
+      .mem_req_o   (bank_mem_req[NumBanks-1:0]),
+      .mem_gnt_i   (bank_mem_gnt[NumBanks-1:0]),
+      .mem_addr_o  (bank_mem_addr[NumBanks-1:0]),
+      .mem_wdata_o (bank_mem_wdata[NumBanks-1:0]),
+      .mem_strb_o  (bank_mem_strb[NumBanks-1:0]),
+      .mem_atop_o  (bank_mem_atop[NumBanks-1:0]),
+      .mem_lock_o  (bank_mem_lock[NumBanks-1:0]),
+      .mem_we_o    (),                               // bank_mem_we    [NumBanks-1:0] ),
+      .mem_id_o    (req_ar_id_o),                    // bank_mem_id    [NumBanks-1:0] ),
+      .mem_user_o  (req_ar_user_o),                  // bank_mem_user  [NumBanks-1:0] ),
+      .mem_cache_o (bank_mem_cache[NumBanks-1:0]),
+      .mem_prot_o  (bank_mem_prot[NumBanks-1:0]),
+      .mem_qos_o   (),
+      .mem_region_o(),
+      .mem_rvalid_i(bank_mem_rvalid[NumBanks-1:0]),
+      .mem_rdata_i (bank_mem_rdata[NumBanks-1:0]),
+      .mem_err_i   (bank_mem_err[NumBanks-1:0]),
+      .mem_exokay_i(bank_mem_exokay[NumBanks-1:0]),
+      .mem_ruser_i (bank_mem_ruser[NumBanks-1:0]),
 
-    .ruser_req_user_o       (rsp_read_ar_user_o),
-    .ruser_req_bank_strb_o  (),
-    .ruser_req_size_enable_o(rsp_read_size_enable_o),
-    .ruser_rsp_extra_o      (rsp_ruser[NumBanks-1:0]),
-    .ruser_req_write_o      (),
-    .ruser_req_last_o       (),
-    .ruser_rsp_hs_o         (),
-    .ruser_i                (rsp_r_user_i)
-  );
+      .ruser_req_user_o       (rsp_read_ar_user_o),
+      .ruser_req_bank_strb_o  (),
+      .ruser_req_size_enable_o(rsp_read_size_enable_o),
+      .ruser_rsp_extra_o      (rsp_ruser[NumBanks-1:0]),
+      .ruser_req_write_o      (),
+      .ruser_req_last_o       (),
+      .ruser_rsp_hs_o         (),
+      .ruser_i                (rsp_r_user_i)
+    );
+  end else begin : gen_no_interleaving
+    axi_to_detailed_mem_user #(
+      .axi_req_t     (axi_req_t),
+      .axi_resp_t    (axi_rsp_t),
+      .AddrWidth     (AxiAddrWidth),
+      .DataWidth     (AxiDataWidth),
+      .IdWidth       (AxiIdWidth),
+      .UserWidth     (AxiUserWidth),
+      .NumBanks      (NumBanks),
+      .BufDepth      (MaxTrans),
+      .HideStrb      (1'b0),
+      .OutFifoDepth  (2),
+      .PropagateWUser(1'b0),
+      .RUserExtra    (IdRuserWidth),
+      .SizeWidth     (SizeWidth)
+    ) i_axi_to_mem_read (
+      .clk_i,
+      .rst_ni,
+
+      .busy_o(),
+
+      .axi_req_i (axi_read_req),
+      .axi_resp_o(axi_read_rsp),
+
+      .mem_req_o   (bank_mem_req[NumBanks-1:0]),
+      .mem_gnt_i   (bank_mem_gnt[NumBanks-1:0]),
+      .mem_addr_o  (bank_mem_addr[NumBanks-1:0]),
+      .mem_wdata_o (bank_mem_wdata[NumBanks-1:0]),
+      .mem_strb_o  (bank_mem_strb[NumBanks-1:0]),
+      .mem_atop_o  (bank_mem_atop[NumBanks-1:0]),
+      .mem_lock_o  (bank_mem_lock[NumBanks-1:0]),
+      .mem_we_o    (),                               // bank_mem_we    [NumBanks-1:0] ),
+      .mem_id_o    (req_ar_id_o),                    // bank_mem_id    [NumBanks-1:0] ),
+      .mem_user_o  (req_ar_user_o),                  // bank_mem_user  [NumBanks-1:0] ),
+      .mem_cache_o (bank_mem_cache[NumBanks-1:0]),
+      .mem_prot_o  (bank_mem_prot[NumBanks-1:0]),
+      .mem_qos_o   (),
+      .mem_region_o(),
+      .mem_rvalid_i(bank_mem_rvalid[NumBanks-1:0]),
+      .mem_rdata_i (bank_mem_rdata[NumBanks-1:0]),
+      .mem_err_i   (bank_mem_err[NumBanks-1:0]),
+      .mem_exokay_i(bank_mem_exokay[NumBanks-1:0]),
+      .mem_ruser_i (bank_mem_ruser[NumBanks-1:0]),
+
+      .ruser_req_user_o       (rsp_read_ar_user_o),
+      .ruser_req_bank_strb_o  (),
+      .ruser_req_size_enable_o(rsp_read_size_enable_o),
+      .ruser_rsp_extra_o      (rsp_ruser[NumBanks-1:0]),
+      .ruser_req_write_o      (),
+      .ruser_req_last_o       (),
+      .ruser_rsp_hs_o         (),
+      .ruser_i                (rsp_r_user_i)
+    );
+  end
+
   assign bank_mem_we[NumBanks-1:0]   = '0;
   assign bank_mem_id[NumBanks-1:0]   = req_read_aid_i;
   assign bank_mem_user[NumBanks-1:0] = req_read_auser_i;
@@ -201,7 +263,8 @@ module axi_to_obi #(
     .HideStrb      (1'b0),
     .OutFifoDepth  (2),
     .PropagateWUser(1'b1),
-    .RUserExtra    (IdRuserWidth)
+    .RUserExtra    (IdRuserWidth),
+    .SizeWidth     (SizeWidth)
   ) i_axi_to_mem_write (
     .clk_i,
     .rst_ni,

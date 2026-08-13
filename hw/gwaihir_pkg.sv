@@ -383,8 +383,10 @@ package gwaihir_pkg;
 
   // Wide SPM tile
   localparam int unsigned SpmWideTileSize = ep_addr_size(TopSpmWideSamIdx);
-  // Wide SPM number words per bank
-  localparam int unsigned SpmWideWordsPerBank = 1024;  // in #words
+  // Wide SPM number words per bank: derived from tile size and AXI data width so that
+  // the tile capacity exactly equals SpmWideTileSize regardless of AxiCfgW.DataWidth.
+  // For 2048-bit: 262144/(2048/8)=1024; for 4096-bit: 262144/(4096/8)=512.
+  localparam int unsigned SpmWideWordsPerBank = SpmWideTileSize / (AxiCfgW.DataWidth / 8);
   // Wide SPM dataWidth
   localparam int unsigned SpmWideDataWidth = 128;  // in bits
 

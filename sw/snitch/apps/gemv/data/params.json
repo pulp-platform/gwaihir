@@ -1,0 +1,11 @@
+// Copyright 2024 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+{
+    alpha: 2,
+    trans: false,
+    m: 80,
+    n: 80,
+    repetitions: 5
+}

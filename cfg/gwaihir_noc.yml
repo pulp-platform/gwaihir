@@ -43,7 +43,7 @@ protocols:
   - name: "wide_in"
     type: "wide"
     protocol: "AXI4"
-    data_width: 512
+    data_width: 4096
     addr_width: 48
     id_width: 3
     user_width:
@@ -52,9 +52,18 @@ protocols:
   - name: "wide_out"
     type: "wide"
     protocol: "AXI4"
-    data_width: 512
+    data_width: 4096
     addr_width: 48
     id_width: 1
+    user_width:
+      collective_mask: 48
+      collective_op: 4
+  - name: "wide_out_mem_tile"
+    type: "wide"
+    protocol: "AXI4"
+    data_width: 4096
+    addr_width: 48
+    id_width: 5 # set to 5 for interleaving, 1 otherwise
     user_width:
       collective_mask: 48
       collective_op: 4

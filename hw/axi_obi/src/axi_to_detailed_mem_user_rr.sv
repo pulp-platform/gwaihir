@@ -10,7 +10,9 @@
 /// AXI4+ATOP slave module which translates AXI bursts into a memory stream.
 /// If both read and write channels of the AXI4+ATOP are active, both will have an
 /// utilization of 50%.
-module axi_to_detailed_mem_user #(
+
+// Adapted to utilize RR arbitration between axi ARs (in the furutre also AWs), with different AXI IDs<
+module axi_to_detailed_mem_user_rr #(
   /// AXI4+ATOP request type. See `include/axi/typedef.svh`.
   parameter  type         axi_req_t      = logic,
   /// AXI4+ATOP response type. See `include/axi/typedef.svh`.
@@ -40,6 +42,7 @@ module axi_to_detailed_mem_user #(
   /// AXI size field width: 3 for standard AXI4 (DataWidth <= 1024), 4 for extended (DataWidth > 1024).
   /// Defaults to the correct value derived from DataWidth; override only if needed.
   parameter  int unsigned SizeWidth      = DataWidth > 1024 ? 4 : 3,
+  parameter  int unsigned NumAxiID      =  16,
   /// Dependent parameter, do not override. Memory address type.
   localparam type         addr_t         = logic [                                 AddrWidth-1:0],
   /// Dependent parameter, do not override. Memory data type.
@@ -163,7 +166,9 @@ module axi_to_detailed_mem_user #(
   } mem_rsp_t;
 
   mem_rsp_t mem_rdata, m2s_resp;
-  axi_pkg::len_t r_cnt_d, r_cnt_q, w_cnt_d, w_cnt_q;
+  axi_pkg::len_t w_cnt_d, w_cnt_q;
+  localparam int unsigned RdSlotIdxWidth = NumAxiID > 1 ? $clog2(NumAxiID) : 1;
+  typedef logic [RdSlotIdxWidth-1:0] rd_slot_idx_t;
   logic
       arb_valid,
       arb_ready,
@@ -193,57 +198,161 @@ module axi_to_detailed_mem_user #(
       m2s_resp_ready,
       mem_req_valid,
       mem_req_ready,
-      mem_rvalid;
+      mem_rvalid,
+      rd_slots_active;
   mem_req_t m2s_req, mem_req;
-  meta_t rd_meta, rd_meta_d, rd_meta_q, wr_meta, wr_meta_d, wr_meta_q, meta, meta_buf;
+  meta_t rd_meta, wr_meta, wr_meta_d, wr_meta_q, meta, meta_buf;
 
+  logic [NumAxiID-1:0] rd_slot_valid_q, rd_slot_valid_d;
+  addr_t [NumAxiID-1:0] rd_slot_addr_q, rd_slot_addr_d;
+  axi_id_t [NumAxiID-1:0] rd_slot_id_q, rd_slot_id_d;
+  axi_size_t [NumAxiID-1:0] rd_slot_size_q, rd_slot_size_d;
+  mem_user_t [NumAxiID-1:0] rd_slot_user_q, rd_slot_user_d;
+  axi_pkg::cache_t [NumAxiID-1:0] rd_slot_cache_q, rd_slot_cache_d;
+  axi_pkg::prot_t [NumAxiID-1:0] rd_slot_prot_q, rd_slot_prot_d;
+  axi_pkg::region_t [NumAxiID-1:0] rd_slot_region_q, rd_slot_region_d;
+  axi_pkg::qos_t [NumAxiID-1:0] rd_slot_qos_q, rd_slot_qos_d;
+  logic [NumAxiID-1:0] rd_slot_lock_q, rd_slot_lock_d;
+  axi_pkg::len_t [NumAxiID-1:0] rd_slot_beats_left_q, rd_slot_beats_left_d;
+  // pending: slot is accepted but must wait for a same-ID active slot to finish first
+  logic [NumAxiID-1:0] rd_slot_pending_q, rd_slot_pending_d;
+
+  logic [NumAxiID-1:0] rd_slot_req, rd_slot_gnt;
+  logic [NumAxiID-1:0] rd_slot_free_mask;
+  logic rd_arb_req;
+  logic rd_slot_free_empty;
+  rd_slot_idx_t rd_arb_idx;
+  rd_slot_idx_t rd_slot_free_idx;
+  meta_t [NumAxiID-1:0] rd_slot_meta;
+  logic free_found, id_has_active, id_has_pending;
+  rd_slot_idx_t free_idx;
+  // True when the slot currently being served is finishing its last beat for the same AR ID
+  // that is simultaneously being accepted — used to avoid spuriously marking it pending.
+  logic same_id_finishing;
+  assign same_id_finishing = rd_arb_req && rd_ready &&
+                             (rd_slot_beats_left_q[rd_arb_idx] == axi_pkg::len_t'(1)) &&
+                             (rd_slot_id_q[rd_arb_idx] == axi_req_i.ar.id);
+
+  assign rd_slot_free_mask = ~rd_slot_valid_q;
+
+  lzc #(
+    .WIDTH ( NumAxiID ),
+    .MODE  ( 1'b0     )
+  ) i_rd_slot_free_lzc (
+    .in_i    ( rd_slot_free_mask ),
+    .cnt_o   ( rd_slot_free_idx  ),
+    .empty_o ( rd_slot_free_empty)
+  );
+
+  rr_arb_tree #(
+    .NumIn    ( NumAxiID ),
+    .DataType ( meta_t   ),
+    .AxiVldRdy( 1'b1     ),
+    .LockIn   ( 1'b1     ),
+    .FairArb  ( 1'b1     ),
+    .ExtPrio  ( 1'b0     )
+  ) i_rr_ar_arbiter (
+    .clk_i,
+    .rst_ni,
+    .flush_i ( 1'b0      ),
+    .rr_i    ( '0        ),
+    .req_i   ( rd_slot_req  ),
+    .gnt_o   ( rd_slot_gnt  ),
+    .data_i  ( rd_slot_meta ),
+    .req_o   ( rd_arb_req   ),
+    .gnt_i   ( rd_ready     ),
+    .data_o  ( rd_meta      ),
+    .idx_o   ( rd_arb_idx   )
+  );
+
+  assign rd_slots_active = |rd_slot_valid_q;
   assign busy_o = axi_req_i.aw_valid | axi_req_i.ar_valid | axi_req_i.w_valid |
                     axi_resp_o.b_valid | axi_resp_o.r_valid |
-                    (r_cnt_q > 0) | (w_cnt_q > 0);
+                    rd_slots_active | (w_cnt_q > 0);
 
-  // Handle reads.
+  // Handle reads with a simple slot-based RR scheduler
   always_comb begin
-    // Default assignments
     axi_resp_o.ar_ready = 1'b0;
-    rd_meta_d           = rd_meta_q;
-    rd_meta             = meta_t'{default: '0};
-    rd_valid            = 1'b0;
-    r_cnt_d             = r_cnt_q;
-    // Handle R burst in progress.
-    if (r_cnt_q > '0) begin
-      rd_meta_d.last = (r_cnt_q == 8'd1);
-      rd_meta        = rd_meta_d;
-      rd_meta.addr   = rd_meta_q.addr + num_bytes_local(rd_meta_q.size);
-      rd_valid       = 1'b1;
-      if (rd_ready) begin
-        r_cnt_d--;
-        rd_meta_d.addr = rd_meta.addr;
-      end
-      // Handle new AR if there is one.
-    end else if (axi_req_i.ar_valid) begin
-      rd_meta_d = '{
-          addr: addr_t'(aligned_addr_local(axi_req_i.ar.addr, axi_req_i.ar.size)),
-          atop: '0,
-          lock: axi_req_i.ar.lock,
-          strb: '0,
-          id: axi_req_i.ar.id,
-          last: (axi_req_i.ar.len == '0),
-          qos: axi_req_i.ar.qos,
-          size: axi_req_i.ar.size,
-          write: 1'b0,
-          user: (PropagateWUser ? {{UserWidth{1'b0}}, axi_req_i.ar.user} : axi_req_i.ar.user),
-          cache: axi_req_i.ar.cache,
-          prot: axi_req_i.ar.prot,
-          region: axi_req_i.ar.region
-      };
-      rd_meta = rd_meta_d;
-      rd_meta.addr = addr_t'(axi_req_i.ar.addr);
-      rd_valid = 1'b1;
-      if (rd_ready) begin
-        r_cnt_d             = axi_req_i.ar.len;
-        axi_resp_o.ar_ready = 1'b1;
+    rd_slot_valid_d = rd_slot_valid_q;
+    rd_slot_addr_d = rd_slot_addr_q;
+    rd_slot_id_d = rd_slot_id_q;
+    rd_slot_size_d = rd_slot_size_q;
+    rd_slot_user_d = rd_slot_user_q;
+    rd_slot_cache_d = rd_slot_cache_q;
+    rd_slot_prot_d = rd_slot_prot_q;
+    rd_slot_region_d = rd_slot_region_q;
+    rd_slot_qos_d   = rd_slot_qos_q;
+    rd_slot_lock_d = rd_slot_lock_q;
+    rd_slot_beats_left_d = rd_slot_beats_left_q;
+    rd_valid = rd_arb_req;
+    free_found = !rd_slot_free_empty;
+    id_has_active  = 1'b0;
+    id_has_pending = 1'b0;
+    free_idx = rd_slot_free_idx;
+    rd_slot_pending_d = rd_slot_pending_q;
+
+    for (int unsigned i = 0; i < NumAxiID; i++) begin
+      if (rd_slot_valid_q[i] && (rd_slot_id_q[i] == axi_req_i.ar.id) && !rd_slot_pending_q[i])
+        id_has_active = 1'b1;
+      if (rd_slot_valid_q[i] && (rd_slot_id_q[i] == axi_req_i.ar.id) &&  rd_slot_pending_q[i])
+        id_has_pending = 1'b1;
+    end
+
+    // Accept the next AR from the same source even while one is already active.
+    // Only block if a pending slot for this ID already exists (cap at 2 in-flight per ID).
+    axi_resp_o.ar_ready = free_found && !id_has_pending;
+
+    if (axi_req_i.ar_valid && axi_resp_o.ar_ready) begin
+      rd_slot_valid_d[free_idx] = 1'b1;
+      rd_slot_addr_d[free_idx] = addr_t'(axi_req_i.ar.addr);
+      rd_slot_id_d[free_idx] = axi_req_i.ar.id;
+      rd_slot_size_d[free_idx] = axi_req_i.ar.size;
+      rd_slot_user_d[free_idx] = (PropagateWUser ? {{UserWidth{1'b0}}, axi_req_i.ar.user} : axi_req_i.ar.user);
+      rd_slot_cache_d[free_idx] = axi_req_i.ar.cache;
+      rd_slot_prot_d[free_idx] = axi_req_i.ar.prot;
+      rd_slot_region_d[free_idx] = axi_req_i.ar.region;
+      rd_slot_qos_d[free_idx] = axi_req_i.ar.qos;
+      rd_slot_lock_d[free_idx] = axi_req_i.ar.lock;
+      rd_slot_beats_left_d[free_idx] = axi_pkg::len_t'(axi_req_i.ar.len + 1'b1);
+      // Mark pending if an active same-ID slot is present and not simultaneously finishing.
+      rd_slot_pending_d[free_idx] = id_has_active && !same_id_finishing;
+    end
+
+    if (rd_arb_req && rd_ready) begin
+      if (rd_slot_beats_left_q[rd_arb_idx] == axi_pkg::len_t'(1)) begin
+        rd_slot_valid_d[rd_arb_idx] = 1'b0;
+        rd_slot_beats_left_d[rd_arb_idx] = '0;
+        // Unblock any pending slot that was waiting for this slot's ID to finish.
+        for (int unsigned i = 0; i < NumAxiID; i++) begin
+          if (rd_slot_valid_q[i] && rd_slot_pending_q[i] &&
+              (rd_slot_id_q[i] == rd_slot_id_q[rd_arb_idx]))
+            rd_slot_pending_d[i] = 1'b0;
+        end
+      end else begin
+        rd_slot_addr_d[rd_arb_idx] = rd_slot_addr_q[rd_arb_idx] + num_bytes_local(rd_slot_size_q[rd_arb_idx]);
+        rd_slot_beats_left_d[rd_arb_idx] = rd_slot_beats_left_q[rd_arb_idx] - 1'b1;
       end
     end
+  end
+
+  for (genvar i = 0; i < NumAxiID; i++) begin : gen_rr_slots
+    // Pending slots are excluded from arbitration until their predecessor finishes.
+    assign rd_slot_req[i] = rd_slot_valid_q[i] && (rd_slot_beats_left_q[i] != '0) && !rd_slot_pending_q[i];
+    assign rd_slot_meta[i] = '{
+      addr: rd_slot_addr_q[i],
+      atop: '0,
+      lock: rd_slot_lock_q[i],
+      strb: '0,
+      id: rd_slot_id_q[i],
+      last: (rd_slot_beats_left_q[i] == axi_pkg::len_t'(1)),
+      qos: rd_slot_qos_q[i],
+      size: rd_slot_size_q[i],
+      write: 1'b0,
+      user: rd_slot_user_q[i],
+      cache: rd_slot_cache_q[i],
+      prot: rd_slot_prot_q[i],
+      region: rd_slot_region_q[i]
+    };
   end
 
   // Handle writes.
@@ -342,7 +451,7 @@ module axi_to_detailed_mem_user #(
             // Rationale: Stalled bursts create back-pressure or require costly buffers.
           end else if (w_cnt_q > '0) begin
             meta_sel_d = 1'b1;
-          end else if (r_cnt_q > '0) begin
+          end else if (rd_slots_active) begin
             meta_sel_d = 1'b0;
             // 3. Otherwise arbitrate round robin to prevent starvation.
           end else begin
@@ -644,12 +753,40 @@ module axi_to_detailed_mem_user #(
   // Registers
   `FFARN(meta_sel_q, meta_sel_d, 1'b0, clk_i, rst_ni)
   `FFARN(sel_lock_q, sel_lock_d, 1'b0, clk_i, rst_ni)
-  `FFARN(rd_meta_q, rd_meta_d, meta_t'{default: '0}, clk_i, rst_ni)
   `FFARN(wr_meta_q, wr_meta_d, meta_t'{default: '0}, clk_i, rst_ni)
-  `FFARN(r_cnt_q, r_cnt_d, '0, clk_i, rst_ni)
   `FFARN(w_cnt_q, w_cnt_d, '0, clk_i, rst_ni)
   `FFARN(collect_b_err_q, collect_b_err_d, '0, clk_i, rst_ni)
   `FFARN(collect_b_exokay_q, collect_b_exokay_d, 1'b1, clk_i, rst_ni)
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      rd_slot_valid_q <= '0;
+      rd_slot_addr_q <= '0;
+      rd_slot_id_q <= '0;
+      rd_slot_size_q <= '0;
+      rd_slot_user_q <= '0;
+      rd_slot_cache_q <= '0;
+      rd_slot_prot_q <= '0;
+      rd_slot_region_q <= '0;
+      rd_slot_qos_q <= '0;
+      rd_slot_lock_q <= '0;
+      rd_slot_beats_left_q <= '0;
+      rd_slot_pending_q <= '0;
+    end else begin
+      rd_slot_valid_q <= rd_slot_valid_d;
+      rd_slot_addr_q <= rd_slot_addr_d;
+      rd_slot_id_q <= rd_slot_id_d;
+      rd_slot_size_q <= rd_slot_size_d;
+      rd_slot_user_q <= rd_slot_user_d;
+      rd_slot_cache_q <= rd_slot_cache_d;
+      rd_slot_prot_q <= rd_slot_prot_d;
+      rd_slot_region_q <= rd_slot_region_d;
+      rd_slot_qos_q <= rd_slot_qos_d;
+      rd_slot_lock_q <= rd_slot_lock_d;
+      rd_slot_beats_left_q <= rd_slot_beats_left_d;
+      rd_slot_pending_q <= rd_slot_pending_d;
+    end
+  end
 
   // Assertions
   // pragma translate_off

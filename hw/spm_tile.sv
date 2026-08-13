@@ -98,7 +98,8 @@ module spm_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .Use4BitSize     (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -169,7 +170,8 @@ module spm_tile
     .axi_wide_out_rsp_t  (axi_wide_out_rsp_t),
     .floo_req_t          (floo_req_t),
     .floo_rsp_t          (floo_rsp_t),
-    .floo_wide_t         (floo_wide_t)
+    .floo_wide_t         (floo_wide_t),
+    .Use4BitSize          (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_chimney (
     .clk_i,
     .rst_ni,
@@ -204,6 +206,45 @@ module spm_tile
     assign axi_wide_rsp         = axi_to_chimney_rsp;
     assign axi_narrow_rsp       = '0;
   end
+
+
+
+  `ifndef SYNTHESIS
+    // AXI Monitor dumper to improvce debiugging
+    if(IsNarrow) begin : gen_axi_monitor_narrow
+      axi_dumper #(
+        .BusName   ($sformatf("narrow_spm_tile")),
+        .LogAW     (1'b1),
+        .LogAR     (1'b1),
+        .LogW      (1'b1),
+        .LogB      (1'b1),
+        .axi_req_t (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
+        .axi_resp_t(floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t)
+      ) i_axi_dumper_narrow (
+        .clk_i,
+        .rst_ni,
+        .axi_req_i (axi_narrow_req),
+        .axi_resp_i(axi_narrow_rsp)
+      );
+    end else begin : gen_axi_monitor_wide
+      axi_dumper #(
+        .BusName   ("wide_spm_tile"),
+        .LogAW     (1'b1),
+        .LogAR     (1'b1),
+        .LogW      (1'b1),
+        .LogB      (1'b1),
+        .LogR      (1'b1),
+        .axi_req_t (floo_gwaihir_noc_pkg::axi_wide_out_req_t),
+        .axi_resp_t(floo_gwaihir_noc_pkg::axi_wide_out_rsp_t)
+      ) i_axi_dumper_wide(
+        .clk_i,
+        .rst_ni,
+        .axi_req_i (axi_wide_req),
+        .axi_resp_i(axi_wide_rsp)
+      );
+    end
+  `endif
+
 
   /////////////////
   // ATOP Filter //

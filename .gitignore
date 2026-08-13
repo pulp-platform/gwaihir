@@ -49,6 +49,8 @@ modelsim.ini
 # log files
 transcript
 logs
+logs*
+plots_and*
 **/*.log
 
 # dvt files

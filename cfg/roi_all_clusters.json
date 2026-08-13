@@ -1,0 +1,81 @@
+<%
+# ── index helper functions ────────────────────────────────────────────────────
+#
+# DOUBLE_BUFFER=1, AXPY with n_tiles tiles.  iterations = n_tiles + 2.
+#
+# DMA-manager hart (snrt_is_dm_core):
+#   iteration i: dma_in  when i < n_tiles  → 2 mcycle calls
+#                dma_out when i >  1        → 2 mcycle calls
+#   → total 4*n_tiles mcycles, plus 1 boot region at list-index 0
+#   → dma_in  tile k:  idx = 2k+1           (k=0,1)
+#                      idx = 4k-3           (k≥2)
+#   → dma_out tile j:  idx = 4j+7           (j ≤ n_tiles-3)
+#                      idx = 4*n_tiles-3    (j == n_tiles-2)
+#                      idx = 4*n_tiles-1    (j == n_tiles-1)
+#
+# DMA-engine (dma_N): indexes into transfers list (11 boot transfers before loop)
+#   dma_in  tile k: x = 11+2k,  y = 11+2k+1     (k=0,1)
+#                   x = 3k+9,   y = 3k+10         (k≥2)
+#   dma_out tile j: z = 3j+17                    (j ≤ n_tiles-3)
+#                   z = 3*n_tiles+9               (j == n_tiles-2)
+#                   z = 3*n_tiles+10              (j == n_tiles-1)
+
+def dma_hart_in_idx(k, nt):
+    return 2*k+1 if k <= 1 else 4*k-3
+
+def dma_hart_out_idx(j, nt):
+    if   j <= nt-3:    return 4*j+7
+    elif j == nt-2:    return 4*nt-3
+    else:              return 4*nt-1
+
+def dma_eng_in_x(k):
+    return 11+2*k if k <= 1 else 3*k+9
+
+def dma_eng_out_z(j, nt):
+    if   j <= nt-3:    return 3*j+17
+    elif j == nt-2:    return 3*nt+9
+    else:              return 3*nt+10
+
+n_tiles = 0
+%>
+
+[
+% for c in range(0, 16):
+<%
+    base     = 1 + c * 9
+    dma_hart = base + 8
+%>
+    // ===== Cluster ${c} =====
+% for j in range(0, 8):
+    { "thread": "${f'hart_{base + j}'}", "roi": [
+% for t in range(0, n_tiles):
+        {"idx": ${2*t+1}, "label": "${f'C{c}_core{j}_tile{t}'}"},
+% endfor
+    ]},
+% endfor
+
+    { "thread": "${f'hart_{dma_hart}'}", "roi": [
+% for i in range(0, n_tiles + 2):
+% if i < n_tiles:
+        {"idx": ${dma_hart_in_idx(i, n_tiles)},  "label": "${f'C{c}_dma_in_tile{i}'}"},
+% endif
+% if i >= 2:
+        {"idx": ${dma_hart_out_idx(i-2, n_tiles)}, "label": "${f'C{c}_dma_out_tile{i-2}'}"},
+% endif
+% endfor
+    ]},
+
+    { "thread": "${f'dma_{dma_hart}'}", "roi": [
+% for i in range(0, n_tiles + 2):
+% if i < n_tiles:
+        {"idx": ${dma_eng_in_x(i)},   "label": "${f'C{c}_in_x_tile{i}'}"},
+        {"idx": ${dma_eng_in_x(i)+1}, "label": "${f'C{c}_in_y_tile{i}'}"},
+% endif
+% if i >= 2:
+        {"idx": ${dma_eng_out_z(i-2, n_tiles)}, "label": "${f'C{c}_out_z_tile{i-2}'}"},
+% endif
+% endfor
+    ]},
+
+% endfor
+]

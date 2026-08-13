@@ -14,5 +14,6 @@ dependencies:
 
 sources:
   - src/axi_to_detailed_mem_user.sv
+  - src/axi_to_detailed_mem_user_rr.sv
   - src/axi_to_obi.sv
   - src/obi_to_axi.sv

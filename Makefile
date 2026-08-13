@@ -10,7 +10,7 @@ BENDER_ROOT ?= $(GW_ROOT)/.bender
 
 # Executables — must be defined before dependency paths that call $(BENDER)
 BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
-FLOO_GEN         ?= floogen
+
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
@@ -26,6 +26,8 @@ CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
 
+FLOO_GEN         ?= PYTHONPATH=$(FLOO_ROOT) python3 $(FLOO_ROOT)/floogen/cli.py
+
 # Tiles configuration
 SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.cluster.num 2>/dev/null)
 L2_TILES = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.l2_spm.num 2>/dev/null)
@@ -40,6 +42,17 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 
 COMMON_TARGS += -t rtl -t cva6 -t cv64a6_imafdchsclic_sv39_wb -t snitch_cluster -t gw_gen_rtl
 SIM_TARGS += -t simulation -t test -t idma_test
+
+# Set WIDE_AXI=1 when the NoC link width exceeds 1024 bits. This activates the
+# `wide_axi` Bender target, which compiles axi_pkg_wide.sv after the standard
+# axi_pkg.sv and overrides `package axi_pkg` with a 4-bit size field.
+# All `axi_pkg::` references in FlooNoC resolve to the extended version
+# automatically — no source changes needed.
+# Example: make vsim-compile WIDE_AXI=1
+WIDE_AXI ?= 0
+ifeq ($(WIDE_AXI),1)
+  COMMON_TARGS += -t wide_axi
+endif
 
 #############
 # systemRDL #

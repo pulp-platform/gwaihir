@@ -45,7 +45,8 @@ module dummy_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .Use4BitSize    (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_router (
     .clk_i,
     .rst_ni,

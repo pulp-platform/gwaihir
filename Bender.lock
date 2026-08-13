@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 703de67b50d2fc53fe833eb18a9269058b39dd46
+    revision: 2d40a3bd0c83ed3244edb4bf690bedf1bf51936f
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -171,10 +171,10 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: c61284906a0c4d5a4955f35e693e8cc6c93689a0
-    version: 0.8.1
+    revision: 4fef3f49618d372265c1a7c3d7f20a829312c5bb
+    version: null
     source:
-      Git: https://github.com/pulp-platform/FlooNoC.git
+      Git: https://github.com/lkroeger1/FlooNoC.git
     dependencies:
     - axi
     - axi_riscv_atomics
@@ -187,7 +187,7 @@ packages:
     revision: null
     version: null
     source:
-      Path: .bender/git/checkouts/floo_noc-e85a4cce70333e4d/pd
+      Path: .bender/git/checkouts/floo_noc-8215e8c5ccce24ec/./pd
     dependencies: []
   fpnew:
     revision: e5aa6a01b5bbe1675c3aa8872e1203413ded83d1
@@ -292,10 +292,10 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: 06426b0632814cd0acdba5e0eef3dd342bf42c71
+    revision: e3daa27f4ece3b12270d2882490b4c689332b48e
     version: null
     source:
-      Git: https://github.com/pulp-platform/snitch_cluster.git
+      Git: https://github.com/lkroeger1/snitch_cluster.git
     dependencies:
     - apb
     - axi

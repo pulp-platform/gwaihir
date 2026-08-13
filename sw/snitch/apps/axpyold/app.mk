@@ -7,11 +7,9 @@
 APP              := axpy
 $(APP)_BUILD_DIR ?= $(GW_SNITCH_SW_DIR)/apps/$(APP)/build
 $(APP)_DATA_CFG  := $(GW_SNITCH_SW_DIR)/apps/$(APP)/data/params.json
-SRC_DIR          := $(GW_SNITCH_SW_DIR)/apps/$(APP)/src
+SRC_DIR          := $(SN_ROOT)/sw/kernels/blas/$(APP)/src
 SRCS             := $(SRC_DIR)/main.c
-$(APP)_INCDIRS   := $(SRC_DIR) \
-                    $(SN_ROOT)/sw/kernels/blas \
-                    $(SN_ROOT)/sw/kernels/blas/$(APP)/src
+$(APP)_INCDIRS   := $(SN_ROOT)/sw/kernels/blas
 
 include $(SN_ROOT)/sw/kernels/datagen.mk
 include $(SN_ROOT)/sw/kernels/common.mk

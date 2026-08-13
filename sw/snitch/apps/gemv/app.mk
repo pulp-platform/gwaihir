@@ -1,10 +1,10 @@
-# Copyright 2025 ETH Zurich and University of Bologna.
+# Copyright 2023 ETH Zurich and University of Bologna.
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Luca Colagrande <colluca@iis.ee.ethz.ch>
 
-APP              := axpy
+APP              := gemv
 $(APP)_BUILD_DIR ?= $(GW_SNITCH_SW_DIR)/apps/$(APP)/build
 $(APP)_DATA_CFG  := $(GW_SNITCH_SW_DIR)/apps/$(APP)/data/params.json
 SRC_DIR          := $(GW_SNITCH_SW_DIR)/apps/$(APP)/src

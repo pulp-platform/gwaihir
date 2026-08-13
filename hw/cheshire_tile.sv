@@ -17,6 +17,7 @@ module cheshire_tile
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
   import gw_soc_regs_pkg::*;
+  import snitch_cluster_pkg::*;
 (
   input logic clk_i,
   input logic rst_ni,
@@ -115,7 +116,8 @@ module cheshire_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .Use4BitSize    (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -201,7 +203,8 @@ module cheshire_tile
     .axi_wide_out_rsp_t  (axi_wide_out_rsp_t),
     .floo_req_t          (floo_req_t),
     .floo_rsp_t          (floo_rsp_t),
-    .floo_wide_t         (floo_wide_t)
+    .floo_wide_t         (floo_wide_t),
+    .Use4BitSize          (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_chimney (
     .clk_i,
     .rst_ni,
@@ -250,12 +253,14 @@ module cheshire_tile
     .FilterWideAtops (1'b1),
     // We don't need it since there is one in Cheshire
     .EnAtopAdapter   (1'b0),
+        .AxiWideMaxTxns     (1),
     .axi_narrow_req_t(axi_narrow_out_req_t),
     .axi_narrow_rsp_t(axi_narrow_out_rsp_t),
     .axi_wide_req_t  (axi_wide_out_req_t),
     .axi_wide_rsp_t  (axi_wide_out_rsp_t),
     .axi_req_t       (nw_join_in_req_t),
-    .axi_rsp_t       (nw_join_in_rsp_t)
+    .axi_rsp_t       (nw_join_in_rsp_t),
+    .Use4BitSize      (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_floo_nw_join (
     .clk_i,
     .rst_ni,
@@ -281,10 +286,68 @@ module cheshire_tile
   csh_reg_req_t     [CheshireCfg.RegExtNumSlv-1:0] reg_ext_req;
   csh_reg_rsp_t     [CheshireCfg.RegExtNumSlv-1:0] reg_ext_rsp;
 
-  `AXI_ASSIGN_REQ_STRUCT(axi_ext_mst_req_in[0], nw_join_req)
+  // Need to truncate the 4th bit in the size field from the join output
+
+  // Subordinate path: converter → cluster  (truncate size to 3-bit; always safe
+  //   since AxiMstPortMaxSize = $clog2(AxiCfgWExt.DataWidth/8) <= 6 for cluster)
+  always_comb begin
+    axi_ext_mst_req_in[0]            = '0;
+    axi_ext_mst_req_in[0].aw_valid   = nw_join_req.aw_valid;
+    axi_ext_mst_req_in[0].aw         = '0;
+    `AXI_SET_AW_STRUCT(axi_ext_mst_req_in[0].aw, nw_join_req.aw)
+    axi_ext_mst_req_in[0].w_valid    = nw_join_req.w_valid;
+    axi_ext_mst_req_in[0].w.data     = nw_join_req.w.data;
+    axi_ext_mst_req_in[0].w.strb     = nw_join_req.w.strb;
+    axi_ext_mst_req_in[0].w.last     = nw_join_req.w.last;
+    axi_ext_mst_req_in[0].w.user     = nw_join_req.w.user;
+    axi_ext_mst_req_in[0].b_ready    = nw_join_req.b_ready;
+    axi_ext_mst_req_in[0].ar_valid   = nw_join_req.ar_valid;
+    axi_ext_mst_req_in[0].ar         = '0;
+    `AXI_SET_AR_STRUCT(axi_ext_mst_req_in[0].ar, nw_join_req.ar)
+    axi_ext_mst_req_in[0].r_ready    = nw_join_req.r_ready;
+  end
+  
+ // `AXI_ASSIGN_REQ_STRUCT(axi_ext_mst_req_in[0], nw_join_req)
   `AXI_ASSIGN_RESP_STRUCT(nw_join_rsp, axi_ext_mst_rsp_out[0])
   `AXI_ASSIGN_REQ_STRUCT(narrow_in_req, axi_ext_slv_req_out[0])
   `AXI_ASSIGN_RESP_STRUCT(axi_ext_slv_rsp_in[0], narrow_in_rsp)
+
+// `ifndef SYNTHESIS
+
+//   // Monitor post-join traffic into Cheshire external master port.
+//   axi_dumper #(
+//     .BusName   ("cheshire_axi_joined_to_ext_mst"),
+//     .LogAW     (1'b1),
+//     .LogAR     (1'b1),
+//     .LogW      (1'b1),
+//     .LogB      (1'b1),
+//     .LogR      (1'b1),
+//     .axi_req_t (csh_axi_mst_req_t),
+//     .axi_resp_t(csh_axi_mst_rsp_t)
+//   ) i_axi_monitor_cheshire_ext_mst (
+//     .clk_i,
+//     .rst_ni,
+//     .axi_req_i (axi_ext_mst_req_in[0]),
+//     .axi_resp_i(axi_ext_mst_rsp_out[0])
+//   );
+
+//   // Monitor Cheshire external slave traffic returned to the narrow path.
+//   axi_dumper #(
+//     .BusName   ("cheshire_axi_ext_slv_to_narrow"),
+//     .LogAW     (1'b1),
+//     .LogAR     (1'b1),
+//     .LogW      (1'b1),
+//     .LogB      (1'b1),
+//     .LogR      (1'b1),
+//     .axi_req_t (csh_axi_slv_req_t),
+//     .axi_resp_t(csh_axi_slv_rsp_t)
+//   ) i_axi_monitor_cheshire_ext_slv (
+//     .clk_i,
+//     .rst_ni,
+//     .axi_req_i (axi_ext_slv_req_out[0]),
+//     .axi_resp_i(axi_ext_slv_rsp_in[0])
+//   );
+// `endif
 
   cheshire_soc #(
     .Cfg              (CheshireCfg),
