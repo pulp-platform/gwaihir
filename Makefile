@@ -179,11 +179,11 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= bfff5a00cf483918dad1dd8544335caa4c09d6bd
+PD_COMMIT ?= 2cd98e1f3ab252b6ae210c81a1aebd74f46e3e64
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
-PCIE_COMMIT ?= 020c8085a2acaf298d34ab6c8d2d237095bf3998
+PCIE_COMMIT ?= 06022572de018f128ad2d21cc6a33e460bbe85df
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
@@ -192,21 +192,18 @@ LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 .PHONY: init-pd clean-pd update-pd-commit
 
-# Based on teh repos `.git`instead of the checkout dir themselves
-# this is necessary for CI jobs tha tneed artifacts from earlier stages.
-init-pd: $(PD_DIR)/.git $(PCIE_DIR)/.git $(LPDDR_DIR)/.git
-$(PD_DIR)/.git:
-	rm -rf $(PD_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
+$(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
 
-$(PCIE_DIR)/.git:
-	rm -rf $(PCIE_DIR)
+$(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
+	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
-$(LPDDR_DIR)/.git:
-	rm -rf $(LPDDR_DIR)
+
+$(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
 	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT)
 
