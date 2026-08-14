@@ -179,44 +179,6 @@ module mem_tile
   axi_nw_join_req_t axi_req;
   axi_nw_join_rsp_t axi_rsp;
 
-//   `ifndef SYNTHESIS
-//   // AXI Monitor dumper to improvce debiugging
-//   axi_dumper #(
-//     .BusName   ($sformatf("mem_tile_%d_axi_narrow_prejoin", MemTileId)),
-//     .LogAW     (1'b1),
-//     .LogAR     (1'b1),
-//     .LogW      (1'b1),
-//     .LogB      (1'b1),
-//     .LogR      (1'b1),
-//     .axi_req_t (axi_narrow_out_req_t),
-//     .axi_resp_t(axi_narrow_out_rsp_t)
-//   ) i_axi_monitor_mem_tile_narrow_prejoin (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i (axi_narrow_req),
-//     .axi_resp_i(axi_narrow_rsp)
-//   );
-// `endif
-
-// `ifndef SYNTHESIS
-//   // AXI Monitor dumper to improvce debiugging
-//   axi_dumper #(
-//     .BusName   ($sformatf("mem_tile_%d_axi_wide_prejoin", MemTileId)),
-//     .LogAW     (1'b1),
-//     .LogAR     (1'b1),
-//     .LogW      (1'b1),
-//     .LogB      (1'b1),
-//     .LogR      (1'b1),
-//     .axi_req_t (axi_wide_out_mem_tile_req_t),
-//     .axi_resp_t(axi_wide_out_mem_tile_rsp_t)
-//   ) i_axi_monitor_mem_tile_wide_prejoin (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i (axi_wide_req),
-//     .axi_resp_i(axi_wide_rsp)
-//   );
-// `endif
-
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
     .AxiCfgW         (axi_cfg_swap_iw(AxiCfgWMemTile)),
@@ -341,25 +303,6 @@ module mem_tile
                                                         obi_in_rsp_write_rid : '0;
     end
   end
-
-// `ifndef SYNTHESIS
-//   // AXI Monitor dumper to improvce debiugging
-//   axi_dumper #(
-//     .BusName   ($sformatf("mem_tile_%d", MemTileId)),
-//     .LogAW     (1'b1),
-//     .LogAR     (1'b1),
-//     .LogW      (1'b1),
-//     .LogB      (1'b1),
-//     .LogR      (1'b1),
-//     .axi_req_t (axi_nw_join_req_t),
-//     .axi_resp_t(axi_nw_join_rsp_t)
-//   ) i_axi_monitor (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i (axi_req),
-//     .axi_resp_i(axi_rsp)
-//   );
-// `endif
 
   axi_to_obi #(
     .ObiCfg      (MgrObiCfg),

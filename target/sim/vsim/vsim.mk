@@ -54,10 +54,6 @@ vsim-run:
 vsim-run-batch:
 	cd $(SIM_DIR) && $(VSIM) -c $(VSIM_FLAGS) $(TB_DUT) -do "run -all; quit"
 
-
-vsim-run-batch-log:
-	cd $(SIM_DIR) && $(VSIM) -c -wlf vsim.wlf $(VSIM_FLAGS) $(TB_DUT) -do "log -r /*; run -all; quit"
-
 vsim-run-batch-verify: vsim-run-batch
 ifdef VERIFY_PY
 	cd $(SIM_DIR) && $(VERIFY_PY) placeholder $(SN_BINARY) --no-ipc --memdump l2mem.bin --memaddr 0x70000000

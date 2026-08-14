@@ -32,6 +32,9 @@ init-deps:
   extends:
     - .init-env
     - .init-deps-tpl
+  artifacts:
+    paths:
+      - pd/ci.yml
 
 ########################################
 # Generate RTL Sources and Addressmaps #
@@ -174,3 +177,17 @@ sim-exps:
   artifacts:
     expire_in: 2 days
 
+###################
+# Physical Design #
+###################
+
+subpipe:
+  stage: build
+  interruptible: true
+  needs:
+    - init-deps
+  trigger:
+    include:
+      - artifact: pd/ci.yml
+        job: init-deps
+    strategy: depend

@@ -10,7 +10,7 @@ BENDER_ROOT ?= $(GW_ROOT)/.bender
 
 # Executables — must be defined before dependency paths that call $(BENDER)
 BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
-
+FLOO_GEN         ?= floogen
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
@@ -25,8 +25,6 @@ SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
-
-FLOO_GEN         ?= PYTHONPATH=$(FLOO_ROOT) python3 $(FLOO_ROOT)/floogen/cli.py
 
 # Tiles configuration
 SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) endpoints.cluster.num 2>/dev/null)

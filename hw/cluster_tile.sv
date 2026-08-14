@@ -39,16 +39,6 @@ module cluster_tile
   input  floo_wide_t                [ West:North] floo_wide_i
 );
 
-  initial begin
-    $display("floo_req_o width = %0d bits", $bits(floo_req_o));
-    $display("floo_rsp_o width = %0d bits", $bits(floo_rsp_o));
-    $display("floo_wide_o width = %0d bits", $bits(floo_wide_o));
-    $display("floo_wide_i width = %0d bits", $bits(floo_wide_i));
-    $display("floo_req_i width = %0d bits", $bits(floo_req_i));
-    $display("floo_rsp_i width = %0d bits", $bits(floo_rsp_i));
-  end
-
-
   // Tile-specific reset and clock signals
   logic                                 tile_clk;
   logic                                 tile_rst_n;
@@ -521,16 +511,6 @@ module cluster_tile
     .axi_narrow_out_req_o(cluster_narrow_in_req),
     .axi_narrow_out_rsp_i(cluster_narrow_in_rsp),
 
-
-
-    // .axi_wide_in_req_i   (cluster_wide_out_req),
-    // .axi_wide_in_rsp_o   (cluster_wide_out_rsp),
-    // .axi_wide_out_req_o  (cluster_wide_in_req),
-    // .axi_wide_out_rsp_i  (cluster_wide_in_rsp),
-      
-
-
-
     .axi_wide_in_req_i   (chimney_wide_in_req),
     .axi_wide_in_rsp_o   (chimney_wide_in_rsp),
     .axi_wide_out_req_o  (chimney_wide_out_req),
@@ -543,107 +523,6 @@ module cluster_tile
     .floo_rsp_i          (router_floo_rsp_out[Eject]),
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
-
-
-// `ifndef SYNTHESIS
-//   // Cluster side (512-bit): what the DMA engine sends/receives
-//   axi_dumper #(
-//     .BusName    ($sformatf("cluster_wide_out_%0d", TileId)),
-//     .LogAW      (1'b1),
-//     .LogAR      (1'b1),
-//     .LogW       (1'b1),
-//     .LogB       (1'b1),
-//     .LogR       (1'b1),
-//     .axi_req_t  (snitch_cluster_pkg::wide_out_req_t),
-//     .axi_resp_t (snitch_cluster_pkg::wide_out_resp_t)
-//   ) i_axi_monitor_cluster_wide_out (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i  (cluster_wide_out_req),
-//     .axi_resp_i (cluster_wide_out_rsp)
-//   );
-
-//   axi_dumper #(
-//     .BusName    ($sformatf("cluster_wide_in_%0d", TileId)),
-//     .LogAW      (1'b1),
-//     .LogAR      (1'b1),
-//     .LogW       (1'b1),
-//     .LogB       (1'b1),
-//     .LogR       (1'b1),
-//     .axi_req_t  (snitch_cluster_pkg::wide_in_req_t),
-//     .axi_resp_t (snitch_cluster_pkg::wide_in_resp_t)
-//   ) i_axi_monitor_cluster_wide_in (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i  (cluster_wide_in_req),
-//     .axi_resp_i (cluster_wide_in_rsp)
-//   );
-
-//   // Chimney side (1024-bit): what the adapter produces / the chimney returns
-//   axi_dumper #(
-//     .BusName    ($sformatf("chimney_wide_in_%0d", TileId)),
-//     .LogAW      (1'b1),
-//     .LogAR      (1'b1),
-//     .LogW       (1'b1),
-//     .LogB       (1'b1),
-//     .LogR       (1'b1),
-//     .axi_req_t  (floo_gwaihir_noc_pkg::axi_wide_in_req_t),
-//     .axi_resp_t (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t)
-//   ) i_axi_monitor_chimney_wide_in (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i  (chimney_wide_in_req),
-//     .axi_resp_i (chimney_wide_in_rsp)
-//   );
-
-//   axi_dumper #(
-//     .BusName    ($sformatf("chimney_wide_out_%0d", TileId)),
-//     .LogAW      (1'b1),
-//     .LogAR      (1'b1),
-//     .LogW       (1'b1),
-//     .LogB       (1'b1),
-//     .LogR       (1'b1),
-//     .axi_req_t  (floo_gwaihir_noc_pkg::axi_wide_out_req_t),
-//     .axi_resp_t (floo_gwaihir_noc_pkg::axi_wide_out_rsp_t)
-//   ) i_axi_monitor_chimney_wide_out (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i  (chimney_wide_out_req),
-//     .axi_resp_i (chimney_wide_out_rsp)
-//   );
-
-//    axi_dumper #(
-//     .BusName    ($sformatf("cluster_narrow_out_%0d", TileId)),
-//     .LogAW      (1'b1),
-//     .LogAR      (1'b1),
-//     .LogW       (1'b1),
-//     .LogB       (1'b1),
-//     .LogR       (1'b1),
-//     .axi_req_t  (snitch_cluster_pkg::narrow_out_req_t),
-//     .axi_resp_t (snitch_cluster_pkg::narrow_out_resp_t)
-//   ) i_axi_monitor_cluster_narrow_out (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i  (cluster_narrow_out_req),
-//     .axi_resp_i (cluster_narrow_out_rsp)
-//   );
-
-//   axi_dumper #(
-//     .BusName    ($sformatf("cluster_narrow_in_%0d", TileId)),
-//     .LogAW      (1'b1),
-//     .LogAR      (1'b1),
-//     .LogW       (1'b1),
-//     .LogB       (1'b1),
-//     .LogR       (1'b1),
-//     .axi_req_t  (snitch_cluster_pkg::narrow_in_req_t),
-//     .axi_resp_t (snitch_cluster_pkg::narrow_in_resp_t)
-//   ) i_axi_monitor_cluster_narrow_in (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i  (cluster_narrow_in_req),
-//     .axi_resp_i (cluster_narrow_in_rsp)
-//   );
-// `endif
 
   //////////////////////////
   // Clock Gating & Reset //

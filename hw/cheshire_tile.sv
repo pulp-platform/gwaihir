@@ -312,43 +312,6 @@ module cheshire_tile
   `AXI_ASSIGN_REQ_STRUCT(narrow_in_req, axi_ext_slv_req_out[0])
   `AXI_ASSIGN_RESP_STRUCT(axi_ext_slv_rsp_in[0], narrow_in_rsp)
 
-// `ifndef SYNTHESIS
-
-//   // Monitor post-join traffic into Cheshire external master port.
-//   axi_dumper #(
-//     .BusName   ("cheshire_axi_joined_to_ext_mst"),
-//     .LogAW     (1'b1),
-//     .LogAR     (1'b1),
-//     .LogW      (1'b1),
-//     .LogB      (1'b1),
-//     .LogR      (1'b1),
-//     .axi_req_t (csh_axi_mst_req_t),
-//     .axi_resp_t(csh_axi_mst_rsp_t)
-//   ) i_axi_monitor_cheshire_ext_mst (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i (axi_ext_mst_req_in[0]),
-//     .axi_resp_i(axi_ext_mst_rsp_out[0])
-//   );
-
-//   // Monitor Cheshire external slave traffic returned to the narrow path.
-//   axi_dumper #(
-//     .BusName   ("cheshire_axi_ext_slv_to_narrow"),
-//     .LogAW     (1'b1),
-//     .LogAR     (1'b1),
-//     .LogW      (1'b1),
-//     .LogB      (1'b1),
-//     .LogR      (1'b1),
-//     .axi_req_t (csh_axi_slv_req_t),
-//     .axi_resp_t(csh_axi_slv_rsp_t)
-//   ) i_axi_monitor_cheshire_ext_slv (
-//     .clk_i,
-//     .rst_ni,
-//     .axi_req_i (axi_ext_slv_req_out[0]),
-//     .axi_resp_i(axi_ext_slv_rsp_in[0])
-//   );
-// `endif
-
   cheshire_soc #(
     .Cfg              (CheshireCfg),
     .axi_ext_llc_req_t(csh_axi_llc_req_t),

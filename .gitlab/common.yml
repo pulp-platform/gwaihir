@@ -4,7 +4,7 @@
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PD_COMMIT: "9b27b53a6c58fba6d7b02bd6f4caba7b9d4e60cd"
+  PD_COMMIT: "9dc9435b5f6be06ea7dd52bcc0760a2c49f8e649"
 
 # Check the cache for bender and python dependencies
 .cache-deps:
@@ -19,6 +19,8 @@ variables:
 # Update the cache with bender and python dependencies
 .init-deps-tpl:
   script:
+    # Initialize the PD repository
+    - make init-pd
     # Collect bender sources
     - bender checkout
   cache:

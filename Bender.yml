@@ -16,7 +16,6 @@ dependencies:
   axi: "0.39.9"
   apb_fll_if: "0.3.0"
   floo_noc: { git: "https://github.com/lkroeger1/FlooNoC.git",     rev: "main"                                     }
-  #floo_noc: { path: "./FlooNoC" }
   apb: "0.2.4"
   common_cells: "1.39.0"
   snitch_cluster:     { git: "https://github.com/lkroeger1/snitch_cluster.git",     rev: "main"                                     }
