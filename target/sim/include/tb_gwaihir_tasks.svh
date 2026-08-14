@@ -27,7 +27,7 @@ import gwaihir_pkg::*;
 `CHESHIRE_TYPEDEF_ALL(, fix.vip.DutCfg)
 
 task automatic jtag_enable_tiles();
-  $display("Resetting tiles and enabling clock...");
+  $display("Resetting cluster tiles and enabling clock...");
   fix.vip.jtag_init();
   for (int i = 0; i < NumClusters; i++) begin
     fix.vip.jtag_write_reg32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
@@ -41,10 +41,17 @@ task automatic jtag_enable_tiles();
     fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
     fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_CLK_BASE_ADDR(i), 1'b1, 1'b0);
   end
+  `ifdef HTILE_CONFIG_RST_BASE_ADDR
+    $display("Resetting H tile and enabling clock...");
+    fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1, 1'b0);
+    fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b0, 1'b0);
+    fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1, 1'b0);
+    fix.vip.jtag_write_reg32(`HTILE_CONFIG_CLK_BASE_ADDR, 1'b1, 1'b0);
+  `endif
 endtask
 
 task automatic slink_enable_tiles();
-  $display("[SLINK] Resetting tiles and enabling clock...");
+  $display("[SLINK] Resetting cluster tiles and enabling clock...");
   for (int i = 0; i < NumClusters; i++) begin
     fix.vip.slink_write_32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b1);
     fix.vip.slink_write_32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b0);
@@ -57,6 +64,13 @@ task automatic slink_enable_tiles();
     fix.vip.slink_write_32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1);
     fix.vip.slink_write_32(`L2_SPM_CONFIG_CLK_BASE_ADDR(i), 1'b1);
   end
+  `ifdef HTILE_CONFIG_RST_BASE_ADDR
+    $display("[SLINK] Resetting H tile and enabling clock...");
+    fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1);
+    fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b0);
+    fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1);
+    fix.vip.slink_write_32(`HTILE_CONFIG_CLK_BASE_ADDR, 1'b1);
+  `endif
 endtask
 
 // FAST_PRELOAD mode trick with virtual class to write directly to L2 sram module inside various for generate
