@@ -243,7 +243,7 @@ endpoints:
   - name: "pcie"
     addr_range:
       - base: 0x1_0000_0000
-        size: 0x1000_0000
+        size: 0x1_0000_0000
         rdl_addrmap_grp: "64b"
     mgr_port_protocol:
       - "narrow_in"
