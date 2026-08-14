@@ -35,6 +35,8 @@ dependencies:
     upstream_name: FlooNoC
   gwaihir-pd:
     path: ./pd
+  gwaihir_lpddr:
+    path: .deps/lpddr
   iDMA: 0.6.5
   obi:
     git: https://github.com/pulp-platform/obi.git
@@ -70,6 +72,7 @@ sources:
       # Level 0.0
       - .generated/floo_gwaihir_noc_pkg.sv
       - .generated/gw_tile_regs_pkg.sv
+      - .generated/gw_addrmap_pkg.sv
       # Level 0.1
       - .generated/gw_tile_regs.sv
 
@@ -80,6 +83,8 @@ sources:
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
+  - hw/mem_tile_small.sv
+  - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
   - hw/ucie_tile.sv
 

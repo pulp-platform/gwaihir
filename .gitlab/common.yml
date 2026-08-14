@@ -55,6 +55,7 @@ variables:
   artifacts:
     paths:
       - sw/cheshire/tests/*.elf
+      - .deps/pcie/sw/tests/*.elf
     expire_in: 1 day
 
 .check-simulation:
