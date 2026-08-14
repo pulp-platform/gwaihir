@@ -25,6 +25,7 @@ dependencies:
   pcie:               { path: ".deps/pcie"                                                                                              }
   iDMA:               { git: "https://github.com/pulp-platform/iDMA.git",               version: 0.6.5  }
   gwaihir-pd:         { path: "./pd"                                                                                                    }
+  serial_link:        { git: "https://github.com/pulp-platform/serial_link.git",        rev: "main" }
   # This is not a direct dependency of Gwaihir, but tcdm_interface (snitch_cluster) needs it and Bender
   # does not transitively export incdirs (see https://github.com/pulp-platform/bender/issues/340).
   reqrsp_interface: 0.1.0
