@@ -103,6 +103,7 @@ sources:
 
   # Level 3
   - hw/cluster_tile.sv
+  - hw/h_tile.sv
   - hw/gwaihir_top.sv
 
   - target: any(simulation, test)
