@@ -25,6 +25,9 @@ Bender.local
 # Physical design repository
 pd
 
+# Nonfree pcie sw test sources, vendored into sw/cheshire/tests/ by `make init-pd` (see Makefile)
+sw/cheshire/tests/pcie_*.c
+
 # Software
 *build
 

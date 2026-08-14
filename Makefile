@@ -179,11 +179,11 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= bfff5a00cf483918dad1dd8544335caa4c09d6bd
+PD_COMMIT ?= e6a85faf8d740a10f4cf12efcd5784940357a3e4
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
-PCIE_COMMIT ?= 020c8085a2acaf298d34ab6c8d2d237095bf3998
+PCIE_COMMIT ?= 06022572de018f128ad2d21cc6a33e460bbe85df
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
@@ -197,9 +197,14 @@ $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
 
+PCIE_SW_TESTS = $(wildcard $(PCIE_DIR)/sw/tests/*.c)
+PCIE_SW_TESTS_VENDORED = $(patsubst $(PCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshire/tests/%,$(PCIE_SW_TESTS))
+
 $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
+	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
+
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
@@ -211,6 +216,7 @@ update-pd-commit:
 	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
+	rm -f $(PCIE_SW_TESTS_VENDORED)
 	rm -rf $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
 
 -include $(PD_DIR)/pd.mk
