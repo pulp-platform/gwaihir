@@ -22,12 +22,12 @@ module cluster_tile
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] meip_i,
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] mtip_i,
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] msip_i,
+  input logic [9:0] hart_base_id_i,
+  input snitch_cluster_wrapper_pkg::addr_t cluster_base_addr_i,
+  input snitch_cluster_wrapper_pkg::addr_t cluster_base_offset_i,
 
-  input logic                              [9:0] hart_base_id_i,
-  input snitch_cluster_wrapper_pkg::addr_t       cluster_base_addr_i,
-  input snitch_cluster_wrapper_pkg::addr_t       cluster_base_offset_i,
   // Chimney ports
-  input id_t                                     id_i,
+  input id_t id_i,
 
   // Router ports
   output floo_req_t  [West:North] floo_req_o,

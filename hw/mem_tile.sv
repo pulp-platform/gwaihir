@@ -24,8 +24,9 @@ module mem_tile
   input logic rst_ni,
   input logic test_enable_i,
   input logic clk_rst_bypass_i,
+
   // Chimney ports
-  input id_t  id_i,
+  input id_t id_i,
 
   // Sam idx
   input logic [$bits(sam_idx_e)-1:0] samidx_i,
