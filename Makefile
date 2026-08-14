@@ -74,7 +74,6 @@ UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
-GW_RDL_ALL += $(GW_GEN_DIR)/chiplet.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/ucie_slink_reg.rdl
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
