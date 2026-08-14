@@ -197,10 +197,13 @@ $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
 
+PCIE_SW_TESTS = $(wildcard $(PCIE_DIR)/sw/tests/*.c)
+PCIE_SW_TESTS_VENDORED = $(patsubst $(PCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshire/tests/%,$(PCIE_SW_TESTS))
+
 $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
-	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
+	cp $(PCIE_SW_TESTS) $(GW_ROOT)/sw/cheshire/tests/
 
 
 $(LPDDR_DIR):
@@ -213,6 +216,7 @@ update-pd-commit:
 	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
+	rm -f $(PCIE_SW_TESTS_VENDORED)
 	rm -rf $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
 
 -include $(PD_DIR)/pd.mk
