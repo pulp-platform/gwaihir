@@ -43,7 +43,7 @@ members = [
 [tool.uv.sources]
 # To locally edit floogen, also uncomment:
 # floogen = { workspace = true, editable = true }
-floogen = { git = "https://github.com/pulp-platform/FlooNoC.git", rev = "floogen-params" }
+floogen = { git = "https://github.com/pulp-platform/FlooNoC.git", rev = "main" }
 snitch = { workspace = true, editable = true }
 cheshire = { workspace = true }
 tsunami-wave = { git = "https://github.com/zarubaf/tsunami.git", rev = "4a2d5c02462875fcebaef6f4e84563eb28b99cf8" }
