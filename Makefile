@@ -192,16 +192,21 @@ LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
-$(PD_DIR):
+# Based on teh repos `.git`instead of the checkout dir themselves
+# this is necessary for CI jobs tha tneed artifacts from earlier stages.
+init-pd: $(PD_DIR)/.git $(PCIE_DIR)/.git $(LPDDR_DIR)/.git
+$(PD_DIR)/.git:
+	rm -rf $(PD_DIR)
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
 
-$(PCIE_DIR):
+$(PCIE_DIR)/.git:
+	rm -rf $(PCIE_DIR)
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
 
-$(LPDDR_DIR):
+$(LPDDR_DIR)/.git:
+	rm -rf $(LPDDR_DIR)
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
 	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT)
 
