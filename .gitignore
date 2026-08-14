@@ -30,6 +30,7 @@ sw/cheshire/tests/pcie_*.c
 
 # Software
 *build
+*build_htile
 
 # Simulation files
 work
