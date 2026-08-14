@@ -203,7 +203,7 @@ PCIE_SW_TESTS_VENDORED = $(patsubst $(PCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshir
 $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
-	cp $(PCIE_SW_TESTS) $(GW_ROOT)/sw/cheshire/tests/
+	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
 
 $(LPDDR_DIR):
