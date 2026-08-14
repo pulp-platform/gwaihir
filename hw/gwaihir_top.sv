@@ -227,25 +227,60 @@ module gwaihir_top
     localparam id_t MemTilePhysicalId = SamPhysical[MemTileSamIdx].idx;
     localparam int MemTileX = int'(MemTilePhysicalId.x);
     localparam int MemTileY = int'(MemTilePhysicalId.y);
+    // Per-tile L2 SPM size
+    localparam int unsigned MemTileSpmSize = mem_tile_size(m);
 
-    mem_tile #(
+    if (MemTileSpmSize == MemTileSizeSmall) begin : gen_memtile_impl
+      mem_tile_small #(
 `ifndef TARGET_SYNTHESIS
-      .MemTileId(int'(m))
+        .MemTileId(int'(m))
 `endif
-    ) i_mem_tile (
-      .clk_i,
-      .rst_ni,
-      .test_enable_i   (test_mode_i),
-      .clk_rst_bypass_i(clk_rst_bypass_i),
-      .id_i            (MemTileId),
-      .samidx_i        (MemTileSamIdx),
-      .floo_req_o      (floo_req_out[MemTileX][MemTileY]),
-      .floo_rsp_i      (floo_rsp_in[MemTileX][MemTileY]),
-      .floo_wide_o     (floo_wide_out[MemTileX][MemTileY]),
-      .floo_req_i      (floo_req_in[MemTileX][MemTileY]),
-      .floo_rsp_o      (floo_rsp_out[MemTileX][MemTileY]),
-      .floo_wide_i     (floo_wide_in[MemTileX][MemTileY])
-    );
+      ) i_mem_tile (
+        .clk_i,
+        .rst_ni,
+        .test_enable_i   (test_mode_i),
+        .clk_rst_bypass_i(clk_rst_bypass_i),
+        .id_i            (MemTileId),
+        .samidx_i        (MemTileSamIdx),
+        .floo_req_o      (floo_req_out[MemTileX][MemTileY]),
+        .floo_rsp_i      (floo_rsp_in[MemTileX][MemTileY]),
+        .floo_wide_o     (floo_wide_out[MemTileX][MemTileY]),
+        .floo_req_i      (floo_req_in[MemTileX][MemTileY]),
+        .floo_rsp_o      (floo_rsp_out[MemTileX][MemTileY]),
+        .floo_wide_i     (floo_wide_in[MemTileX][MemTileY])
+      );
+    end else if (MemTileSpmSize == MemTileSizeLarge) begin : gen_memtile_impl
+      mem_tile_large #(
+`ifndef TARGET_SYNTHESIS
+        .MemTileId(int'(m))
+`endif
+      ) i_mem_tile (
+        .clk_i,
+        .rst_ni,
+        .test_enable_i   (test_mode_i),
+        .clk_rst_bypass_i(clk_rst_bypass_i),
+        .id_i            (MemTileId),
+        .samidx_i        (MemTileSamIdx),
+        .floo_req_o      (floo_req_out[MemTileX][MemTileY]),
+        .floo_rsp_i      (floo_rsp_in[MemTileX][MemTileY]),
+        .floo_wide_o     (floo_wide_out[MemTileX][MemTileY]),
+        .floo_req_i      (floo_req_in[MemTileX][MemTileY]),
+        .floo_rsp_o      (floo_rsp_out[MemTileX][MemTileY]),
+        .floo_wide_i     (floo_wide_in[MemTileX][MemTileY])
+      );
+    end else begin : gen_memtile_impl
+      // Only the two hard-coded mem tile flavours exist, so a SAM window whose
+      // size matches neither has no implementation to instantiate. Fail at
+      // elaboration instead of silently leaving the tile out of the NoC.
+      $fatal(
+          1,
+          "[gwaihir_top] Mem tile %0d has unsupported SPM size 0x%0h (expected 0x%0h or 0x%0h).",
+          m,
+          MemTileSpmSize,
+          MemTileSizeSmall,
+          MemTileSizeLarge
+      );
+    end
   end
 
   ////////////////

@@ -90,7 +90,7 @@ package gwaihir_pkg;
   localparam mesh_dim_t MeshDim = get_mesh_dim();
   localparam int unsigned NumTiles = MeshDim.x * MeshDim.y;
   localparam int unsigned NumClusters = NumClusterX * NumClusterY;
-  localparam int unsigned NumMemTiles = NumL2Spm;
+  localparam int unsigned NumMemTiles = 4;
   localparam int unsigned NumUcieTiles = 2;
 
   localparam int unsigned NumDummyTiles = NumTiles - $countones(MeshMap);
@@ -357,7 +357,7 @@ package gwaihir_pkg;
     // TODO(fischeti): Inherit these from generated SV/RDL.
     ret.AxiExtRegionIdx[0]                   = 0;
     ret.AxiExtRegionStart[0]                 = 'h2000_0000;
-    ret.AxiExtRegionEnd[0]                   = 'h8000_0000;
+    ret.AxiExtRegionEnd[0]                   = 'h6_0000_0000;
     ret.RegExtRegionIdx[CshRegExtFLL]        = CshRegExtFLL;
     ret.RegExtRegionStart[CshRegExtFLL]      = 'h1800_1000;
     ret.RegExtRegionEnd[CshRegExtFLL]        = 'h1800_2000;
@@ -382,7 +382,7 @@ package gwaihir_pkg;
     // We do not need/want USB
     ret.Usb                                  = 1'b0;
     ret.LlcOutRegionStart                    = 'h8000_0000;
-    ret.LlcOutRegionEnd                      = 'h12_0000_0000;
+    ret.LlcOutRegionEnd                      = 'h1_0000_0000;
     ret.SlinkRegionStart                     = 'h100_0000_0000;
     ret.SlinkRegionEnd                       = 'h200_0000_0000;
     // RT features
@@ -436,8 +436,6 @@ package gwaihir_pkg;
   //  Mem Tile  //
   ////////////////
 
-  // The L2 SPM memory size of every mem tile
-  localparam int unsigned MemTileSize = ep_addr_size(L2Spm0SamIdx);
   // The maximum data width of the instantiated SRAMs
   localparam int unsigned SramDataWidth = 128;  // in bits
   // The number of words in the instantiated SRAMs
@@ -445,8 +443,6 @@ package gwaihir_pkg;
 
   // The number of banks required to store a wide word
   localparam int unsigned NumBanksPerWord = AxiCfgW.DataWidth / SramDataWidth;
-  // The number of macros required to store the entire memory
-  localparam int unsigned NumBankRows = (MemTileSize / (AxiCfgW.DataWidth / 8)) / SramNumWords;
 
   // The number of LSBs to address the bytes in an SRAM word
   localparam int unsigned SramByteOffsetWidth = $clog2(SramDataWidth / 8);
@@ -454,13 +450,41 @@ package gwaihir_pkg;
   localparam int unsigned SramBankSelWidth = $clog2(NumBanksPerWord);
   // The number of bits for the SRAM address
   localparam int unsigned SramAddrWidth = $clog2(SramNumWords);
-  // The number of bits to index the SRAM macro
-  localparam int unsigned SramMacroSelWidth = $clog2(NumBankRows);
 
   // Various offsets for the SRAM address
   localparam int unsigned SramBankSelOffset = SramByteOffsetWidth;
   localparam int unsigned SramAddrWidthOffset = SramBankSelOffset + SramBankSelWidth;
   localparam int unsigned SramMacroSelOffset = SramAddrWidthOffset + SramAddrWidth;
+
+  // SAM enum entries per L2 mem tile (idma, config, spm).
+  localparam int unsigned L2SpmIdxStride = int'(L2Spm1SamIdx) - int'(L2Spm0SamIdx);
+
+  // Function to get the memory size.
+  function automatic int unsigned mem_tile_size(int unsigned t);
+    return ep_addr_size(sam_idx_e'(int'(L2Spm0SamIdx) + L2SpmIdxStride * t));
+  endfunction
+
+  // Number of SRAM macro rows of mem tile `t`.
+  function automatic int unsigned mem_tile_num_bank_rows(int unsigned t);
+    return (mem_tile_size(t) / (AxiCfgW.DataWidth / 8)) / SramNumWords;
+  endfunction
+
+  // Largest row count across all mem tiles, for statically sizing arrays used in tb_gwaihir_tasks.svh.
+  function automatic int unsigned get_max_num_bank_rows();
+    int unsigned max_rows = 0;
+    for (int t = 0; t < NumMemTiles; t++) begin
+      if (mem_tile_num_bank_rows(t) > max_rows) max_rows = mem_tile_num_bank_rows(t);
+    end
+    return max_rows;
+  endfunction
+  //Heterogeneous memory tile size
+  localparam int unsigned MemTileSizeLarge = mem_tile_size(0);
+  localparam int unsigned MemTileSizeSmall = mem_tile_size(1);
+
+  localparam int unsigned MaxNumBankRows = get_max_num_bank_rows();
+  // Macro-row select width of the largest tile. Also a safe extraction width
+  // for smaller tiles: their windows are size-aligned, so the extra MSB is 0.
+  localparam int unsigned MaxSramMacroSelWidth = $clog2(MaxNumBankRows);
 
   // DMA-related parameters
   localparam int unsigned DmaNumAxInFlight = 16;
@@ -507,7 +531,12 @@ package gwaihir_pkg;
     localparam addr_t TcdmHalfShift = addr_t'((NumClusters / 2) * ClusterTileSize);
     localparam addr_t TcdmExposedEnd = TcdmExposedBase + TcdmHalfShift;
     localparam addr_t L2ExposedBase = addr_t'(Sam[L2Spm0SamIdx].start_addr);
-    localparam addr_t L2HalfShift = addr_t'((NumMemTiles / 2) * MemTileSize);
+    // Base-address gap from tile 0 to tile (NumMemTiles/2). Tiles are heterogeneous
+    // but grid-aligned, so this is the exact lower->upper half shift. Replaces the
+    // old (NumMemTiles/2)*MemTileSize, which assumed a uniform tile size.
+    localparam addr_t L2HalfShift = addr_t'(
+        Sam[sam_idx_e'(int'(L2Spm0SamIdx) + L2SpmIdxStride * (NumMemTiles / 2))].start_addr)
+        - L2ExposedBase;
     localparam addr_t L2ExposedEnd = L2ExposedBase + L2HalfShift;
     if (addr >= TcdmExposedBase && addr < TcdmExposedEnd) return addr + TcdmHalfShift;
     else if (addr >= L2ExposedBase && addr < L2ExposedEnd) return addr + L2HalfShift;

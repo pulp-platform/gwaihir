@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 <%
-cluster = next(ep for ep in endpoints if ep["name"] == "cluster")
+cluster = next(ep for ep in noc.endpoints if ep.name == "cluster")
 
-cluster_per_row = int(cluster["array"][0])
-cluster_per_col = int(cluster["array"][1])
+cluster_per_row, cluster_per_col = (int(dim) for dim in cluster.array)
 
 log2_cluster_per_row = cluster_per_row.bit_length() - 1
 log2_cluster_per_col = cluster_per_col.bit_length() - 1

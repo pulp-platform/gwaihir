@@ -33,17 +33,17 @@ int main() {
   uint32_t vec_size = NUM_ELEM * sizeof(uint32_t);
 
   // Offsets of the L2 globals within the L2 SPM region
-  uintptr_t l2_base = (uintptr_t)&gwaihir_addrmap_32b.l2_spm[0];
+  uintptr_t l2_base = (uintptr_t)&gwaihir_addrmap_32b.l2_spm_0;
   uintptr_t vec_off = (uintptr_t)vec_inp - l2_base;
   uintptr_t flag_off = (uintptr_t)&flag - l2_base;
 
   // Chiplet1's copies as seen from chiplet0, through the ucie0 alias window
-  volatile uint32_t *vec_alias = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.ucie0.l2_spm[0] + vec_off);
-  volatile uint32_t *flag_alias = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.ucie0.l2_spm[0] + flag_off);
+  volatile uint32_t *vec_alias = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.ucie0.l2_spm_0 + vec_off);
+  volatile uint32_t *flag_alias = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.ucie0.l2_spm_0 + flag_off);
 
   // The physical locations the alias maps to, as seen from chiplet1 (half-shift: l2_spm[i] -> l2_spm[i+2])
-  volatile uint32_t *vec_phys = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.l2_spm[2] + vec_off);
-  volatile uint32_t *flag_phys = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.l2_spm[2] + flag_off);
+  volatile uint32_t *vec_phys = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.l2_spm_2 + vec_off);
+  volatile uint32_t *flag_phys = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.l2_spm_2 + flag_off);
 
   // The consumer's mailbox is uninitialized memory;
   // clear it before any cluster starts sending
