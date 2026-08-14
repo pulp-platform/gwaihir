@@ -27,6 +27,7 @@ pd
 
 # Software
 *build
+*build_htile
 
 # Simulation files
 work
