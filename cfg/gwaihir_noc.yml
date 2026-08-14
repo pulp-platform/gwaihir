@@ -19,9 +19,10 @@ params:
   l2_size_large: 0x0020_0000
   l2_size_small: 0x0010_0000
 
-  # Register regions, packed back to back: one block per cluster from 0x2100_0000,
-  # then one iDMA and one control block per L2 tile, indexed by the tile number.
+  # Register regions, packed back to back: one block per cluster, then one iDMA
+  # and one control block per L2 tile, indexed by the tile number.
   reg_size: 0x0000_1000
+  cluster_cfg_base: 0x2100_0000
   l2_dma_base: 0x2101_0000
   l2_cfg_base: 0x2101_4000
 
@@ -95,7 +96,7 @@ endpoints:
         rdl_name: "snitch_cluster"
         en_collective: true
         rdl_addrmap_grp: ["64b", "32b"]
-      - base: 0x2100_0000
+      - base: "${cluster_cfg_base}"
         size: "${reg_size}"
         desc: "config"
         rdl_name: "gw_tile_regs"
@@ -210,10 +211,15 @@ endpoints:
         NumClusters: "${cluster_x * cluster_y}"
         ClusterOffset: "${cluster_base & chiplet_win_mask}"
         ClusterSize: "${cluster_size}"
+        ClusterCfgOffset: "${cluster_cfg_base & chiplet_win_mask}"
+        NumL2Tiles: 4
+        L2DmaOffset: "${l2_dma_base & chiplet_win_mask}"
+        L2CfgOffset: "${l2_cfg_base & chiplet_win_mask}"
         L2SpmOffset: "${l2_base & chiplet_win_mask}"
         L2SpmStride: "${l2_stride}"
         L2SpmSizeLarge: "${l2_size_large}"
         L2SpmSizeSmall: "${l2_size_small}"
+        RegSize: "${reg_size}"
       rdl_addrmap_grp: ["64b", "32b"]
     mgr_port_protocol:
       - "narrow_in"

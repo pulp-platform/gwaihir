@@ -2,27 +2,43 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 
-// Internal addrmap of the chiplet alias windows (ucie0/ucie1). The offset of each
-// region inside the window equals the low bits of its canonical address, so the
+// Internal addrmap of the chiplet alias windows (ucie0/ucie1). Ingress clears the
+// alias bits (see `unalias_ucie_address` in `gwaihir_pkg`), so the offset of each
+// region inside the window equals the low bits of its canonical address. The
 // parameters below are bound from the endpoints in `gwaihir_noc.yml` through the
-// `rdl_params` of the `ucie*` address ranges. The defaults mirror that config.
-// Only the cluster tiles and the L2 SPM are exposed through the alias windows.
+// `rdl_params` of the `ucie*` address ranges; the defaults mirror that config.
+// This must cover every region the window aliases, otherwise software reaching a
+// remote chiplet has no symbol for it (see issue #55).
 
 `ifndef __CHIPLET_RDL__
 `define __CHIPLET_RDL__
 
+`include "gw_tile_regs.rdl"
 `include "snitch_cluster.rdl"
 
 addrmap chiplet #(
-    longint unsigned NumClusters    = 16,
-    longint unsigned ClusterOffset  = 0x0000_0000,
-    longint unsigned ClusterSize    = 0x0004_0000,
-    longint unsigned L2SpmOffset    = 0x0120_0000,
-    longint unsigned L2SpmStride    = 0x0020_0000,
-    longint unsigned L2SpmSizeLarge = 0x0020_0000,
-    longint unsigned L2SpmSizeSmall = 0x0010_0000
+    longint unsigned NumClusters      = 16,
+    longint unsigned ClusterOffset    = 0x0000_0000,
+    longint unsigned ClusterSize      = 0x0004_0000,
+    longint unsigned ClusterCfgOffset = 0x0100_0000,
+    longint unsigned NumL2Tiles       = 4,
+    longint unsigned L2DmaOffset      = 0x0101_0000,
+    longint unsigned L2CfgOffset      = 0x0101_4000,
+    longint unsigned L2SpmOffset      = 0x0120_0000,
+    longint unsigned L2SpmStride      = 0x0020_0000,
+    longint unsigned L2SpmSizeLarge   = 0x0020_0000,
+    longint unsigned L2SpmSizeSmall   = 0x0010_0000,
+    longint unsigned RegSize          = 0x0000_1000
 ) {
-    snitch_cluster cluster[NumClusters] @ClusterOffset += ClusterSize;
+    snitch_cluster cluster[NumClusters]        @ClusterOffset    += ClusterSize;
+    gw_tile_regs   cluster_config[NumClusters] @ClusterCfgOffset += RegSize;
+
+    // One iDMA and one control register block per L2 tile. The iDMA registers have
+    // no SystemRDL description, so they are exposed as memory here just as they are
+    // in the top-level address map.
+    external mem { mementries = RegSize / 4; memwidth = 32; }
+        l2_spm_dma[NumL2Tiles] @L2DmaOffset += RegSize;
+    gw_tile_regs l2_spm_config[NumL2Tiles] @L2CfgOffset += RegSize;
 
     // The L2 SPM tiles sit on a uniform stride but alternate in size: the even
     // tiles are large, the odd ones small.
