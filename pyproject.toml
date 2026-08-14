@@ -19,7 +19,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "mako>=1.3.10",
     "prek>=0.4.11",
     "pyyaml>=6.0.3",
     "reuse>=6.2.0",
@@ -44,7 +43,7 @@ members = [
 [tool.uv.sources]
 # To locally edit floogen, also uncomment:
 # floogen = { workspace = true, editable = true }
-floogen = { git = "https://github.com/pulp-platform/FlooNoC.git", rev = "c5e82fad0651fabd4c024095b31f22622932b08a" }
+floogen = { git = "https://github.com/pulp-platform/FlooNoC.git", rev = "main" }
 snitch = { workspace = true, editable = true }
 cheshire = { workspace = true }
 tsunami-wave = { git = "https://github.com/zarubaf/tsunami.git", rev = "4a2d5c02462875fcebaef6f4e84563eb28b99cf8" }

@@ -525,7 +525,7 @@ wheels = [
 [[package]]
 name = "floogen"
 version = "0.8.4"
-source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=c5e82fad0651fabd4c024095b31f22622932b08a#c5e82fad0651fabd4c024095b31f22622932b08a" }
+source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=main#2fa02eb23c1babef9a8f714715ea7c78de98c364" }
 dependencies = [
     { name = "mako" },
     { name = "networkx" },
@@ -654,7 +654,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "mako" },
     { name = "prek" },
     { name = "pyyaml" },
     { name = "reuse" },
@@ -669,7 +668,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
-    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=c5e82fad0651fabd4c024095b31f22622932b08a" },
+    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=main" },
     { name = "peakrdl", specifier = ">=1.5.0" },
     { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
     { name = "snitch", extras = ["kernels"], editable = ".deps/snitch_cluster" },
@@ -677,7 +676,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mako", specifier = ">=1.3.10" },
     { name = "prek", specifier = ">=0.4.11" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "reuse", specifier = ">=6.2.0" },
@@ -1571,15 +1569,15 @@ wheels = [
 
 [[package]]
 name = "peakrdl-rawheader"
-version = "0.2.6"
+version = "0.2.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mako" },
     { name = "systemrdl-compiler" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/22/83/26dbb3d17400f03d1dea16144070bae4774edb5d32c7b8e0d94261676f2c/peakrdl_rawheader-0.2.6.tar.gz", hash = "sha256:404a0b8c34f1b383c505ac12c35609b8ff72dc4c4e3c807b470d14a85f80a270", size = 10921, upload-time = "2026-07-06T10:11:06.068Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/65/ea/13ed2d46b0f570f495b0fbb52cb4b06bc92c31a032a7961f07ea9b710b82/peakrdl_rawheader-0.2.7.tar.gz", hash = "sha256:f33440827a1e63b7e95d6adcdace4ca23c73d985f48b44503d5ac143e2653b56", size = 11149, upload-time = "2026-08-11T10:13:49.337Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/5c/d18fa5c51957a5de47e13e780b2af5ce79fb34b189508280bcac9d71fa42/peakrdl_rawheader-0.2.6-py3-none-any.whl", hash = "sha256:4c01d841e86fc1d90926134b58c13d223afd3807298dc548e90f98ee7c3026ab", size = 14085, upload-time = "2026-07-06T10:11:05.014Z" },
+    { url = "https://files.pythonhosted.org/packages/97/ef/7dcd51ce0bd0755849772a6721bee89fbfbe7d2bfbd604b6dfc8c16b95ec/peakrdl_rawheader-0.2.7-py3-none-any.whl", hash = "sha256:e3f5328c1f1f0aaf0df83f7be82af47022c1fdcfc80235f50e313d0003f1e9f5", size = 14088, upload-time = "2026-08-11T10:13:48.34Z" },
 ]
 
 [[package]]
