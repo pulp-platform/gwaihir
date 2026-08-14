@@ -146,6 +146,43 @@ module gwaihir_top
     );
   end
 
+  // Temporary h-tile : replica of a cluster tile
+  logic [NrCores-1:0] htile_debug_req, htile_meip, htile_mtip, htile_msip;
+
+  assign htile_debug_req = '0;
+  assign htile_meip      = '0;
+  assign htile_mtip      = '0;
+  assign htile_msip      = '0;
+
+  localparam id_t HtileId = CollectiveSam[HtileSamIdx].idx.id;
+  localparam id_t HtilePhysicalId = SamPhysical[HtileSamIdx].idx;
+  localparam int HtileX = int'(HtilePhysicalId.x);
+  localparam int HtileY = int'(HtilePhysicalId.y);
+  localparam int unsigned HtileHartBaseId = NumClusters * NrCores + 1;  // Cheshire is hart 0
+  localparam axi_wide_in_addr_t HtileBaseAddr = Sam[HtileSamIdx].start_addr;
+  localparam axi_wide_in_addr_t HtileBaseOffset = Sam[HtileSamIdx].end_addr - HtileBaseAddr;
+
+  h_tile i_htile_cluster_tile (
+    .clk_i,
+    .rst_ni,
+    .test_enable_i        (test_mode_i),
+    .clk_rst_bypass_i     (clk_rst_bypass_i),
+    .debug_req_i          (htile_debug_req),
+    .meip_i               (htile_meip),
+    .mtip_i               (htile_mtip),
+    .msip_i               (htile_msip),
+    .hart_base_id_i       (HtileHartBaseId[9:0]),
+    .cluster_base_addr_i  (HtileBaseAddr),
+    .cluster_base_offset_i(HtileBaseOffset),
+    .id_i                 (HtileId),
+    .floo_req_o           (floo_req_out[HtileX][HtileY]),
+    .floo_rsp_i           (floo_rsp_in[HtileX][HtileY]),
+    .floo_wide_o          (floo_wide_out[HtileX][HtileY]),
+    .floo_req_i           (floo_req_in[HtileX][HtileY]),
+    .floo_rsp_o           (floo_rsp_out[HtileX][HtileY]),
+    .floo_wide_i          (floo_wide_in[HtileX][HtileY])
+  );
+
   ///////////////////
   // Cheshire tile //
   ///////////////////
