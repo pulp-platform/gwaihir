@@ -29,6 +29,7 @@ sw/cheshire/tests/*.map
 
 # Software
 *build
+*build_htile
 
 # Simulation files
 work
