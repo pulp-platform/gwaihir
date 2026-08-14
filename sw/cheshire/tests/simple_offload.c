@@ -5,12 +5,18 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 #include <stdint.h>
-#include "gw_addrmap.h"
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"
 
 #include "snitch_cluster_cfg.h"
 
+// Return code array placed at the last 4K page of the L2 SPM region.
+// This address scales automatically with the number and size of memory tiles.
+#define RETURN_CODE_ADDR \
+  (GW_L2_SPM_BASE_ADDR(0) + GW_L2_SPM_TOTAL_SIZE - 0x1000)
+
 // This needs to be in a region which is not cached
-volatile uint32_t (*return_code_array)[CFG_CLUSTER_NR_CORES] = (uint32_t (*)[CFG_CLUSTER_NR_CORES])0x707FF000;
+volatile uint32_t (*return_code_array)[CFG_CLUSTER_NR_CORES] = (uint32_t (*)[CFG_CLUSTER_NR_CORES])RETURN_CODE_ADDR;
 
 int main() {
 
@@ -18,15 +24,15 @@ int main() {
   // and return code address to scratch register 0
   // Initalize return address loaction before offloading.
   for (int i = 0; i < SNRT_CLUSTER_NUM; i++) {
-    *(volatile uint64_t *)&(gwaihir_addrmap.cluster[i].peripheral_reg.scratch[1].w) = (uintptr_t)&gwaihir_addrmap.l2_spm;
-    *(volatile uint64_t *)&(gwaihir_addrmap.cluster[i].peripheral_reg.scratch[0].w) = (uintptr_t)&return_code_array[i];
+    *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[i].peripheral_reg.scratch[1].w) = (uintptr_t)&gwaihir_addrmap_64b.l2_spm;
+    *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[i].peripheral_reg.scratch[0].w) = (uintptr_t)&return_code_array[i];
     for (int j = 0; j < CFG_CLUSTER_NR_CORES; j++) {
       return_code_array[i][j] = 0;
     }
   }
 
   // Start all cores in Cluster 0, which will wake up all other clusters
-  *(volatile uint64_t *)&(gwaihir_addrmap.cluster[0].peripheral_reg.cl_clint_set.w) = (1 << CFG_CLUSTER_NR_CORES) - 1;
+  *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[0].peripheral_reg.cl_clint_set.w) = (1 << CFG_CLUSTER_NR_CORES) - 1;
 
   // Wait until all cores have finished
   int all_finished = 0;

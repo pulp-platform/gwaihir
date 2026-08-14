@@ -12,7 +12,6 @@
 //   - All clusters except for cluster 0 check the multicast result
 
 #include <stdint.h>
-#include "gw_addrmap.h"
 #include "snrt.h"
 
 /* Parameters */

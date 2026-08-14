@@ -6,24 +6,23 @@
 
 module axi_to_obi #(
   /// The configuration of the OBI port (input port).
-  parameter obi_pkg::obi_cfg_t ObiCfg       = obi_pkg::ObiDefaultConfig,
+  parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig,
   /// The request struct of the OBI port
-  parameter type               obi_req_t    = logic,
+  parameter type obi_req_t = logic,
   /// The response struct of the OBI port
-  parameter type               obi_rsp_t    = logic,
+  parameter type obi_rsp_t = logic,
   /// The A struct of the OBI port
-  parameter type               obi_a_chan_t = logic,
+  parameter type obi_a_chan_t = logic,
   /// The R struct of the OBI port
-  parameter type               obi_r_chan_t = logic,
+  parameter type obi_r_chan_t = logic,
   /// AXI Address Width
-  parameter int unsigned       AxiAddrWidth = ObiCfg.AddrWidth,
+  parameter int unsigned AxiAddrWidth = ObiCfg.AddrWidth,
   /// AXI Data Width
-  parameter int unsigned       AxiDataWidth = ObiCfg.DataWidth,
+  parameter int unsigned AxiDataWidth = ObiCfg.DataWidth,
   /// AXI ID Width
-  parameter int unsigned       AxiIdWidth   = 0,
+  parameter int unsigned AxiIdWidth = 0,
   /// AXI User Width
-  parameter int unsigned       AxiUserWidth = 0,
-
+  parameter int unsigned AxiUserWidth = 0,
   parameter int unsigned MaxTrans = 0,
   /// The request struct of the AXI port
   parameter type axi_req_t = logic,
@@ -32,8 +31,10 @@ module axi_to_obi #(
   /// AXI size field width: 3 for standard AXI4 (DataWidth <= 1024), 4 for extended.
   /// Propagated to axi_to_detailed_mem_user. Defaults based on AxiDataWidth.
   parameter int unsigned SizeWidth = AxiDataWidth > 1024 ? 4 : 3,
-
-  parameter bit UseInterleaving = 1'b0, // If 1, interleaving is used for both read and write requests. If 0, interleaving is disabled for both read and write requests. If 1, interleaving is used for read requests and disabled for write requests.
+  // If 1, interleaving is used for both read and write requests.
+  // If 0, interleaving is disabled for both read and write requests.
+  // If 1, interleaving is used for read requests and disabled for write requests.
+  parameter bit UseInterleaving = 1'b0,
   // Dependent Parameters, *DO NOT OVERWRITE*
   parameter int unsigned NumBanks = AxiDataWidth / ObiCfg.DataWidth,
   parameter int unsigned       AUserWidthAdjusted = ObiCfg.OptionalCfg.AUserWidth ?
@@ -139,7 +140,7 @@ module axi_to_obi #(
     .mst_resps_i    ({axi_write_rsp, axi_read_rsp})
   );
 
-  if(UseInterleaving) begin : gen_interleaving
+  if (UseInterleaving) begin : gen_interleaving
     axi_to_detailed_mem_user_rr #(
       .axi_req_t     (axi_req_t),
       .axi_resp_t    (axi_rsp_t),

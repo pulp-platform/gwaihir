@@ -5,7 +5,6 @@
 #include <stdint.h>
 
 #include "snrt.h"
-#include "gw_addrmap.h"
 
 #include "data/datamover_data.h"
 

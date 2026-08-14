@@ -10,7 +10,7 @@
 
 // Transfer size in bytes
 #ifndef SIZE
-#define SIZE 1024
+#define SIZE 4096
 #endif
 
 // Batch size in bytes
@@ -25,7 +25,7 @@ typedef enum {
 } impl_t;
 
 #ifndef IMPL
-#define IMPL SEQ
+#define IMPL HW
 #endif
 
 #define N_BATCHES (SIZE / BATCH)
@@ -217,14 +217,14 @@ static inline void dma_reduction_seq(uintptr_t a, uintptr_t b, uintptr_t c,
         comp_src1 = c;
         comp_src2 = dst[0];
         comp_result = a;
-        
+
         // Iterations to cover all reductions in the first column
         n_iters = 1 + 2 * (N_ROWS - 2) + N_BATCHES;
         for (uint32_t i = 0; i < n_iters; i++) {
 
             uint32_t row_idx_inv, base_iter;
             char dma_active, compute_active;
-    
+
             // Determine which clusters need to send data at every iteration
             row_idx_inv = N_ROWS - row_idx - 1;
             base_iter = 2 * row_idx_inv;

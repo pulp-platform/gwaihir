@@ -7,9 +7,9 @@
 
 // `include "serial_link_single_channel.rdl"
 `include "cheshire.rdl"
-`include "gw_soc_regs.rdl"
 `include "fll.rdl"
 `include "gw_chip_regs.rdl"
+`include "lpddr.rdl"
 
 addrmap cheshire_tile #(
     longint unsigned SlinkNumLanes = 8
@@ -21,7 +21,9 @@ addrmap cheshire_tile #(
     fll          fll           @0x1800_1000;
     gw_chip_regs gw_chip_regs  @0x1800_2000;
 `endif
-    gw_soc_regs  gw_soc_regs   @0x1800_3000;
+`ifdef GW_LPDDR_RDL
+    lpddr        lpddr         @0x1900_0000;
+`endif
 };
 
 `endif // __CHESHIRE_TILE_RDL__

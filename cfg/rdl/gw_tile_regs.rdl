@@ -1,0 +1,29 @@
+// Copyright 2025 ETH Zurich and University of Bologna.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+`ifndef __GW_TILE_REGS_RDL__
+`define __GW_TILE_REGS_RDL__
+
+addrmap gw_tile_regs {
+    reg clock {
+        field {
+            desc = "Clock gate control for tile";
+            hw = r;
+            sw = rw;
+            reset = 0; // Clock is disabled by default
+        } en;
+    } clk;
+
+    reg reset {
+        desc = "Reset control for tile";
+        field {
+            desc = "active low reset signal for tile";
+            hw = r;
+            sw = rw;
+            reset = 0; // Tile is held in reset by default
+        } n;
+    } rst;
+};
+
+`endif // __GW_TILE_REGS_RDL__

@@ -44,7 +44,7 @@ static inline void dma_multicast_sequential(uintptr_t l1_buffer,
     uintptr_t l3_buffer, snrt_comm_t comm) {
     // Only DMA cores of clusters in the first row participate
     if (!snrt_is_dm_core() || !comm->is_participant) return;
-        
+
     // Compute address of source buffer:
     // - in memory tile for cluster 0
     // - in left neighbour for clusters in row 0
@@ -96,7 +96,7 @@ static inline void dma_multicast_sequential(uintptr_t l1_buffer,
             snrt_dma_wait_all();
             snrt_mcycle();
         }
-        
+
         // Perform inter-cluster barrier. Disable reduction before the fence
         // so it overlaps with the latency of the ongoing reduction operation.
         snrt_set_awuser_low(user);
@@ -132,7 +132,7 @@ static inline void dma_multicast_sequential(uintptr_t l1_buffer,
             snrt_dma_wait_all();
             snrt_mcycle();
         }
-        
+
         // Perform inter-cluster barrier. Disable reduction before the fence
         // so it overlaps with the latency of the ongoing reduction operation.
         snrt_set_awuser_low(user);
@@ -195,7 +195,7 @@ static inline void dma_multicast_tree(uintptr_t l1_buffer,
             snrt_dma_wait_all();
             snrt_mcycle();
         }
-        
+
         // Perform inter-cluster barrier. Disable reduction before the fence
         // so it overlaps with the latency of the ongoing reduction operation.
         snrt_set_awuser_low(user);
@@ -217,7 +217,7 @@ static inline void dma_multicast_tree(uintptr_t l1_buffer,
         // Every active cluster sends the data to a cluster above it
         if (is_sender) {
 
-            // Calculate destination 
+            // Calculate destination
             char receiver_offset = sender_stride / 2;
             uintptr_t dst_cluster = gw_calculate_cluster_idx(
                 gw_cluster_row_idx() + receiver_offset, gw_cluster_col_idx());
@@ -233,7 +233,7 @@ static inline void dma_multicast_tree(uintptr_t l1_buffer,
             snrt_dma_wait_all();
             snrt_mcycle();
         }
-        
+
         // Perform inter-cluster barrier. Disable reduction before the fence
         // so it overlaps with the latency of the ongoing reduction operation.
         snrt_set_awuser_low(user);

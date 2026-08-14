@@ -12,44 +12,44 @@
 /// utilization of 50%.
 module axi_to_detailed_mem_user #(
   /// AXI4+ATOP request type. See `include/axi/typedef.svh`.
-  parameter  type         axi_req_t      = logic,
+  parameter type axi_req_t = logic,
   /// AXI4+ATOP response type. See `include/axi/typedef.svh`.
-  parameter  type         axi_resp_t     = logic,
+  parameter type axi_resp_t = logic,
   /// Address width, has to be less or equal than the width off the AXI address field.
   /// Determines the width of `mem_addr_o`. Has to be wide enough to emit the memory region
   /// which should be accessible.
-  parameter  int unsigned AddrWidth      = 0,
+  parameter int unsigned AddrWidth = 0,
   /// AXI4+ATOP data width.
-  parameter  int unsigned DataWidth      = 0,
+  parameter int unsigned DataWidth = 0,
   /// AXI4+ATOP ID width.
-  parameter  int unsigned IdWidth        = 0,
+  parameter int unsigned IdWidth = 0,
   /// AXI4+ATOP user width.
-  parameter  int unsigned UserWidth      = 0,
+  parameter int unsigned UserWidth = 0,
   /// Number of banks at output, must evenly divide `DataWidth`.
-  parameter  int unsigned NumBanks       = 0,
+  parameter int unsigned NumBanks = 0,
   /// Depth of memory response buffer. This should be equal to the memory response latency.
-  parameter  int unsigned BufDepth       = 1,
+  parameter int unsigned BufDepth = 1,
   /// Hide write requests if the strb == '0
-  parameter  bit          HideStrb       = 1'b0,
+  parameter bit HideStrb = 1'b0,
   /// Depth of output fifo/fall_through_register. Increase for asymmetric backpressure (contention) on banks.
-  parameter  int unsigned OutFifoDepth   = 1,
+  parameter int unsigned OutFifoDepth = 1,
   /// Prepend W user to `mem_user_o`.
-  parameter  bit          PropagateWUser = 1'b0,
+  parameter bit PropagateWUser = 1'b0,
   /// Additional Signals for ruser calculation Width.
-  parameter  int unsigned RUserExtra     = 1,
+  parameter int unsigned RUserExtra = 1,
   /// AXI size field width: 3 for standard AXI4 (DataWidth <= 1024), 4 for extended (DataWidth > 1024).
   /// Defaults to the correct value derived from DataWidth; override only if needed.
-  parameter  int unsigned SizeWidth      = DataWidth > 1024 ? 4 : 3,
+  parameter int unsigned SizeWidth = DataWidth > 1024 ? 4 : 3,
   /// Dependent parameter, do not override. Memory address type.
-  localparam type         addr_t         = logic [                                 AddrWidth-1:0],
+  localparam type addr_t = logic [AddrWidth-1:0],
   /// Dependent parameter, do not override. Memory data type.
-  localparam type         mem_data_t     = logic [                        DataWidth/NumBanks-1:0],
+  localparam type mem_data_t = logic [DataWidth/NumBanks-1:0],
   /// Dependent parameter, do not override. Memory write strobe type.
-  localparam type         mem_strb_t     = logic [                      DataWidth/NumBanks/8-1:0],
+  localparam type mem_strb_t = logic [DataWidth/NumBanks/8-1:0],
   /// Dependent parameter, do not override. Memory id type.
-  localparam type         mem_id_t       = logic [                                   IdWidth-1:0],
+  localparam type mem_id_t = logic [IdWidth-1:0],
   /// Dependent parameter, do not override. Memory user type.
-  localparam type         mem_user_t     = logic [UserWidth+(PropagateWUser ? UserWidth : 0)-1:0]
+  localparam type mem_user_t = logic [UserWidth+(PropagateWUser ? UserWidth : 0)-1:0]
 ) (
   /// Clock input.
   input  logic                                             clk_i,
@@ -147,7 +147,7 @@ module axi_to_detailed_mem_user #(
     axi_id_t          id;
     logic             last;
     axi_pkg::qos_t    qos;
-    axi_size_t            size;
+    axi_size_t        size;
     logic             write;
     mem_user_t        user;
     axi_pkg::cache_t  cache;

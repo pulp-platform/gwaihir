@@ -39,7 +39,7 @@ extern inline uint32_t gw_cluster_east_neighbour();
 extern inline uint32_t gw_cluster_south_neighbour();
 
 extern inline uint32_t gw_cluster_west_neighbour();
-    
+
 extern inline uint32_t gw_closest_mem_tile(uint32_t cluster_idx);
 
 extern inline uint32_t gw_closest_mem_tile();

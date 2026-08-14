@@ -36,15 +36,6 @@ init-deps:
     paths:
       - pd/ci.yml
 
-########################################
-# Generate RTL Sources and Addressmaps #
-########################################
-
-generate-rtl:
-  stage: build
-  extends:
-    - .generate-rtl-tpl
-
 ########################
 # Build Software Tests #
 ########################
@@ -68,11 +59,8 @@ vsim-compile:
   extends:
     - .cache-deps
     - .init-env
-  needs:
-    - generate-rtl
-  extends:
-    - .init-env
   script:
+    - make gwaihir-hw-all
     - make vsim-compile | tee compile.log 2>&1
     - '! grep "\*\* Error" compile.log'
   artifacts:
@@ -85,9 +73,8 @@ vcs-compile:
   extends:
     - .cache-deps
     - .init-env
-  needs:
-    - generate-rtl
   script:
+    - make gwaihir-hw-all
     - make vcs-compile-batch | tee compile.log 2>&1
     - '! grep "Error-\[" compile.log'
   artifacts:
@@ -106,53 +93,41 @@ sim-vsim:
     - .init-env
     - .sw-tests
   variables:
-    LOG_FILE: target/sim/vsim/transcript
+    LOG_FILE: transcript
   needs:
     - chs-sw
     - sn-sw
     - vsim-compile
   script:
-    # Run the simulation
     - make vsim-run-batch-verify
-    # Check either success or failure for non-zero exit codes
-    - 'if [ -z "${NZ_EXIT_CODE}" ]; then grep "] SUCCESS" transcript || (exit 1); else grep "] FAILED: return code ${NZ_EXIT_CODE}" transcript || (exit 1); fi'
-    # Check for UART output
-    - 'if [ ! -z "${USTR}" ]; then (grep " \[UART\] ${USTR}" transcript); fi'
-    # Check for any fatal errors
-    - 'if grep "Fatal:" transcript; then exit 1; fi'
-    # Check for any non-fatal errors. One and only one error is expected with a non-zero exit code.
-    # Ignore all errors when using a separate verification script.
-    - 'if [ -z "${VERIFY_PY}" ]; then if [ ! -z "${NZ_EXIT_CODE}" ]; then count=$(grep -c "Error:" transcript); if [ "$count" -ne 1 ]; then exit 1; fi; else if grep -q "Error:" transcript; then exit 1; fi; fi; fi'
+    - !reference [.check-simulation, script]
   artifacts:
     paths:
-      - transcript
+      - ${LOG_FILE}
 
 sim-vcs:
   stage: run
   extends:
     - .cache-deps
     - .init-env
-    - .sw-tests
   variables:
-    LOG_FILE: target/sim/vcs/build/vcs.log
+    LOG_FILE: transcript
+    CHS_BINARY: sw/cheshire/tests/simple_offload.spm.elf
+    # TODO: use MHA again once the new toolchain supports -mno-fdiv or shared FDIV/FSQRT unit is added to the cluster
+    SN_BINARY: sw/snitch/apps/gemm/build/gemm.elf
+    VERIFY_PY: .deps/snitch_cluster/sw/kernels/blas/gemm/scripts/verify.py
+    PRELMODE: 3
   needs:
     - chs-sw
     - sn-sw
     - vcs-compile
   script:
-    # Run the simulation
-    - make vcs-run-batch-verify 2>&1 | tee target/sim/vcs/build/vcs.log
-    # Check either success or failure for non-zero exit codes
-    - 'if [ -z "${NZ_EXIT_CODE}" ]; then grep "] SUCCESS" target/sim/vcs/build/vcs.log || (exit 1); else grep "] FAILED: return code ${NZ_EXIT_CODE}" target/sim/vcs/build/vcs.log || (exit 1); fi'
-    # Check for UART output
-    - 'if [ ! -z "${USTR}" ]; then (grep "\[UART\] ${USTR}" target/sim/vcs/build/vcs.log); fi'
-    # Check for any fatal errors
-    - 'if grep "Fatal:" target/sim/vcs/build/vcs.log; then exit 1; fi'
-    # Check for any non-fatal errors
-    - 'if [ -z "${VERIFY_PY}" ]; then if [ ! -z "${NZ_EXIT_CODE}" ]; then count=$(grep -c "Error:" target/sim/vcs/build/vcs.log); if [ "$count" -ne 1 ]; then exit 1; fi; else if grep -q "Error:" target/sim/vcs/build/vcs.log; then exit 1; fi; fi; fi'
+    # Run the VCS simulation and capture the console output into a log file
+    - make vcs-run-batch-verify 2>&1 | tee ${LOG_FILE}
+    - !reference [.check-simulation, script]
   artifacts:
     paths:
-      - target/sim/vcs/build/vcs.log
+      - ${LOG_FILE}
 
 #####################
 # Run Experiments   #
@@ -170,7 +145,6 @@ sim-exps:
   parallel:
     matrix:
       - EXPERIMENT: multicast
-      - EXPERIMENT: reduction
       - EXPERIMENT: barrier
   script:
     - cd experiments/$EXPERIMENT && ./experiments.py --ci --actions sw run -j

@@ -5,13 +5,16 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 `include "cheshire/typedef.svh"
+`include "axi/typedef.svh"
+`include "apb/typedef.svh"
+`include "tcdm_interface/typedef.svh"
 
 package gwaihir_pkg;
 
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import cheshire_pkg::*;
-  import snitch_cluster_pkg::*;
+  import snitch_cluster_wrapper_pkg::*;
 
   typedef axi_narrow_in_addr_t addr_t;
 
@@ -84,8 +87,9 @@ package gwaihir_pkg;
 
   localparam mesh_dim_t MeshDim = get_mesh_dim();
   localparam int unsigned NumTiles = MeshDim.x * MeshDim.y;
-  localparam int unsigned NumClusters = Cheshire - ClusterX0Y0;
-  localparam int unsigned NumMemTiles = NumEndpoints - L2Spm0;
+  localparam int unsigned NumClusters = NumClusterX * NumClusterY;
+  localparam int unsigned NumMemTiles = NumL2Spm;
+  localparam int unsigned NumUcieTiles = 2;
 
   localparam int unsigned NumDummyTiles = NumTiles - $countones(MeshMap);
 
@@ -164,53 +168,129 @@ package gwaihir_pkg;
     return ret_sam;
   endfunction
 
+  // Mirrors align_x_coordinate for the Y axis: shifts each tile's Y coordinate down
+  // by the number of empty rows below it, collapsing any row gaps introduced by
+  // xy_id_offset in the NoC configuration.
+  function automatic sam_rule_t [SamNumRules-1:0] align_y_coordinate(
+      sam_rule_t [SamNumRules-1:0] sam_to_convert, bit [MaxId.y:0] empty_rows);
+
+    sam_rule_t   [SamNumRules-1:0] ret_sam;
+    int unsigned                   bottom_empty_rows;
+    int unsigned                   current_y;
+
+    for (int rule = 0; rule < SamNumRules; rule++) begin
+      current_y         = int'(sam_to_convert[rule].idx.y);
+      bottom_empty_rows = 0;
+
+      // Count how many empty rows are below the current tile
+      for (int row = 0; row < current_y; row++) begin
+        if (empty_rows[row] == 1'b1) begin
+          bottom_empty_rows++;
+        end
+      end
+
+      // Shift the Y coordinate if there are empty rows below
+      if (bottom_empty_rows > 0) begin
+        ret_sam[rule].idx.y = sam_to_convert[rule].idx.y - bottom_empty_rows;
+      end else begin
+        ret_sam[rule].idx.y = sam_to_convert[rule].idx.y;
+      end
+
+      // Copy the remaining fields of the rule
+      ret_sam[rule].idx.x       = sam_to_convert[rule].idx.x;
+      ret_sam[rule].idx.port_id = sam_to_convert[rule].idx.port_id;
+      ret_sam[rule].start_addr  = sam_to_convert[rule].start_addr;
+      ret_sam[rule].end_addr    = sam_to_convert[rule].end_addr;
+    end
+    return ret_sam;
+  endfunction
+
+  // Applies both X and Y coordinate alignment, collapsing all gaps introduced by
+  // xy_id_offset in both dimensions.
+  function automatic sam_rule_t [SamNumRules-1:0] align_coordinate(
+      sam_rule_t [SamNumRules-1:0] sam_to_convert, bit [MaxId.x:0] empty_cols,
+      bit [MaxId.y:0] empty_rows);
+    sam_rule_t [SamNumRules-1:0] ret_sam;
+    ret_sam = align_x_coordinate(sam_to_convert, empty_cols);
+    ret_sam = align_y_coordinate(ret_sam, empty_rows);
+    return ret_sam;
+  endfunction
+
   // To support multicast, the X and Y coordinates of the first tile in a multicast
   // group must be powers of two. For this reason, in the gwaihir system, the second
   // column begins with an offset to associate X = 4 with Cluster 0.
   //
-  // This offset introduces empty columns in the System Address Map (SAM). Therefore,
-  // to properly connect all the tiles, we need to regenerate the SAM to reflect the
-  // physical topology (i.e., 7×4), ensuring that the tiles are aligned and connected
-  // correctly within the adjusted coordinate space.
+  // This offset introduces empty columns in the System Address Map (SAM). Similarly,
+  // xy_id_offset on the Y axis may introduce empty rows. Therefore, to properly connect
+  // all tiles, we regenerate the SAM to reflect the physical topology, ensuring tiles
+  // are aligned and connected correctly within the adjusted coordinate space.
   localparam bit [MaxId.x:0] EmptyCols = get_empty_cols(MeshMap);
-  localparam sam_rule_t [SamNumRules-1:0] SamPhysical = align_x_coordinate(
-      floo_gwaihir_noc_pkg::Sam, EmptyCols
+  localparam bit [MaxId.y:0] EmptyRows = get_empty_rows(MeshMap);
+  localparam sam_rule_t [SamNumRules-1:0] SamPhysical = align_coordinate(
+      floo_gwaihir_noc_pkg::Sam, EmptyCols, EmptyRows
   );
 
   // Dummy tiles X, Y coordinates
   typedef id_t [NumDummyTiles-1:0] dummy_idx_t;
 
-  // This function is used to identify
-  function automatic dummy_idx_t get_dummy_idx(mesh_map_t MeshMap, int Dim_x, int Dim_y);
-    dummy_idx_t  dummy_idx;
-    int unsigned empty_tile = 0;
-    int unsigned found_tiles = 0;
+  // For each (col, row) in MeshMap: if the column is not fully empty (has at least one
+  // occupied tile), the row is not fully empty, but this specific position is unoccupied,
+  // insert a dummy tile there. Empty rows are skipped because they do not exist in the
+  // physical mesh and are not counted in NumDummyTiles.
+  // The returned indices are in SAM-space coordinates (matching MeshMap).
+  function automatic dummy_idx_t get_dummy_idx(mesh_map_t MeshMap);
+    dummy_idx_t              dummy_idx;
+    int unsigned             found_tiles;
+    bit          [MaxId.x:0] empty_cols;
+    bit          [MaxId.y:0] empty_rows;
 
-    // Count the number of columns that have at least one tile
+    found_tiles = 0;
+    empty_cols  = get_empty_cols(MeshMap);
+    empty_rows  = get_empty_rows(MeshMap);
+
     for (int col = 0; col <= MaxId.x; col++) begin
-      // Clear counter for the next column
-      empty_tile = 0;
-      for (int row = 0; row <= MaxId.y; row++) begin
-        if (MeshMap[row][col] == 1'b1) begin
-        end else if (empty_tile <= MaxId.y) begin
-          // If the tile is empty, we can add it to the dummy index
-          dummy_idx[found_tiles] = '{x : col, y : row, port_id: 0};
-          found_tiles++;
-          empty_tile++;
-        end else begin
-          // If the full column is empty, we don't need to insert dummy tiles
-          found_tiles -= empty_tile;
-          break;
+      if (!empty_cols[col]) begin
+        for (int row = 0; row <= MaxId.y; row++) begin
+          if (!empty_rows[row] && MeshMap[row][col] == 1'b0) begin
+            dummy_idx[found_tiles] = '{x: col, y: row, port_id: 0};
+            found_tiles++;
+          end
         end
       end
     end
     return dummy_idx;
   endfunction
 
-  // localparam dummy_idx_t DummyIdx = get_dummy_idx(MeshMap, MeshDim.x, MeshDim.y);
-  localparam dummy_idx_t DummyIdx = '{'{x: 9, y: 0, port_id: 0}};
-  localparam dummy_idx_t DummyPhysicalIdx = '{'{x: 6, y: 0, port_id: 0}};
+  // For each SAM-space dummy index, subtract the number of fully-empty columns to its
+  // left and fully-empty rows below it. This gives the physical array index used to
+  // connect floo_req/rsp signals, mirroring the transformation applied by align_coordinate.
+  function automatic dummy_idx_t get_dummy_physical_idx(dummy_idx_t dummy_idx);
+    dummy_idx_t  ret;
+    int unsigned left_empty_cols;
+    int unsigned bottom_empty_rows;
+    int unsigned current_x;
+    int unsigned current_y;
 
+    for (int d = 0; d < NumDummyTiles; d++) begin
+      current_x         = int'(dummy_idx[d].x);
+      current_y         = int'(dummy_idx[d].y);
+      left_empty_cols   = 0;
+      bottom_empty_rows = 0;
+      for (int col = 0; col < current_x; col++) begin
+        if (EmptyCols[col] == 1'b1) left_empty_cols++;
+      end
+      for (int row = 0; row < current_y; row++) begin
+        if (EmptyRows[row] == 1'b1) bottom_empty_rows++;
+      end
+      ret[d].x       = dummy_idx[d].x - left_empty_cols;
+      ret[d].y       = dummy_idx[d].y - bottom_empty_rows;
+      ret[d].port_id = dummy_idx[d].port_id;
+    end
+    return ret;
+  endfunction
+
+  localparam dummy_idx_t DummyIdx = get_dummy_idx(MeshMap);
+  localparam dummy_idx_t DummyPhysicalIdx = get_dummy_physical_idx(DummyIdx);
 
   // Whether the connection is a tie-off or a valid neighbor
   function automatic bit is_tie_off(int x, int y, route_direction_e dir);
@@ -249,7 +329,7 @@ package gwaihir_pkg;
     return ret;
   endfunction
 
-  // Define no multicast RouteCfg for Memory tiles, Chehsihre and FhG
+  // Define no multicast RouteCfg for Memory tiles, Cheshire and FhG
   localparam floo_pkg::route_cfg_t RouteCfgNoMcast = gen_nomcast_route_cfg();
 
   ////////////////
@@ -257,51 +337,66 @@ package gwaihir_pkg;
   ////////////////
 
   typedef enum bit [MaxExtRegSlvWidth-1:0] {
-    CshRegExtFLL          = 0,  // FLL registers
-    CshRegExtChipCtrl     = 1,  // Chip-level registers
-    CshRegExtClkGatingRst = 2,  // Tile-specific clock gating and reset control
-    CshRegExtNumSlv       = 3   // Number of external register slaves
+    CshRegExtFLL      = 0,  // FLL registers
+    CshRegExtChipCtrl = 1,  // Chip-level registers
+    CshRegLPDDR       = 2,  // LPDDR config
+    CshRegExtNumSlv   = 3   // Number of external register slaves
   } cheshire_reg_ext_e;
 
   // Define function to derive configuration from Cheshire defaults.
   function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
     cheshire_pkg::cheshire_cfg_t ret = cheshire_pkg::DefaultCfg;
     // Enable the external AXI master and slave interfaces
-    ret.AxiExtNumMst         = 1;
-    ret.AxiExtNumSlv         = 1;
-    ret.AxiExtNumRules       = 1;
-    ret.RegExtNumSlv         = CshRegExtNumSlv;
-    ret.RegExtNumRules       = CshRegExtNumSlv;
-    ret.AxiExtRegionIdx[0]   = 0;
-    ret.AxiExtRegionStart[0] = 'h2000_0000;
-    ret.AxiExtRegionEnd[0]   = 'h8000_0000;
-    ret.RegExtRegionIdx[0]   = CshRegExtFLL;
-    ret.RegExtRegionStart[0] = 'h1800_1000;
-    ret.RegExtRegionEnd[0]   = 'h1800_2000;
-    ret.RegExtRegionIdx[1]   = CshRegExtChipCtrl;
-    ret.RegExtRegionStart[1] = 'h1800_2000;
-    ret.RegExtRegionEnd[1]   = 'h1800_3000;
-    ret.RegExtRegionIdx[2]   = CshRegExtClkGatingRst;
-    ret.RegExtRegionStart[2] = 'h1800_3000;
-    ret.RegExtRegionEnd[2]   = 'h1800_4000;
+    ret.AxiExtNumMst                         = 1;
+    ret.AxiExtNumSlv                         = 1;
+    ret.AxiExtNumRules                       = 1;
+    ret.RegExtNumSlv                         = CshRegExtNumSlv;
+    ret.RegExtNumRules                       = CshRegExtNumSlv;
+    // TODO(fischeti): Inherit these from generated SV/RDL.
+    ret.AxiExtRegionIdx[0]                   = 0;
+    ret.AxiExtRegionStart[0]                 = 'h2000_0000;
+    ret.AxiExtRegionEnd[0]                   = 'h8000_0000;
+    ret.RegExtRegionIdx[CshRegExtFLL]        = CshRegExtFLL;
+    ret.RegExtRegionStart[CshRegExtFLL]      = 'h1800_1000;
+    ret.RegExtRegionEnd[CshRegExtFLL]        = 'h1800_2000;
+    ret.RegExtRegionIdx[CshRegExtChipCtrl]   = CshRegExtChipCtrl;
+    ret.RegExtRegionStart[CshRegExtChipCtrl] = 'h1800_2000;
+    ret.RegExtRegionEnd[CshRegExtChipCtrl]   = 'h1800_3000;
+    ret.RegExtRegionIdx[CshRegLPDDR]         = CshRegLPDDR;
+    ret.RegExtRegionStart[CshRegLPDDR]       = 'h1900_0000;
+    ret.RegExtRegionEnd[CshRegLPDDR]         = 'h1a00_1020;
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
-    ret.Cva6ExtCieOnTop      = 0;
-    ret.Cva6ExtCieLength     = 'h0;
-    ret.AddrWidth            = aw_bt'(AxiCfgN.AddrWidth);
-    ret.AxiDataWidth         = dw_bt'(AxiCfgN.DataWidth);
-    ret.AxiUserWidth         = dw_bt'(max(AxiCfgN.UserWidth, AxiCfgW.UserWidth));
-    ret.AxiMstIdWidth        = aw_bt'(max(AxiCfgN.OutIdWidth, AxiCfgW.OutIdWidth));
+    ret.Cva6ExtCieOnTop                      = 0;
+    ret.Cva6ExtCieLength                     = 'h0;
+    ret.AddrWidth                            = aw_bt'(AxiCfgN.AddrWidth);
+    ret.AxiDataWidth                         = dw_bt'(AxiCfgN.DataWidth);
+    ret.AxiUserWidth                         = dw_bt'(max(AxiCfgN.UserWidth, AxiCfgW.UserWidth));
+    ret.AxiMstIdWidth                        = aw_bt'(max(AxiCfgN.OutIdWidth, AxiCfgW.OutIdWidth));
     // TODO(fischeti): Check if we need external interrupts for each hart/cluster
-    ret.NumExtIrqHarts       = doub_bt'(NumClusters);
+    ret.NumExtIrqHarts                       = doub_bt'(NumClusters);
     // We do not need/want VGA
-    ret.Vga                  = 1'b0;
+    ret.Vga                                  = 1'b0;
     // We do not need/want USB
-    ret.Usb                  = 1'b0;
-    ret.LlcOutRegionStart    = 'h8000_0000;
-    ret.LlcOutRegionEnd      = 'h12_0000_0000;
-    ret.SlinkRegionStart     = 'h100_0000_0000;
-    ret.SlinkRegionEnd       = 'h200_0000_0000;
+    ret.Usb                                  = 1'b0;
+    ret.LlcOutRegionStart                    = 'h8000_0000;
+    ret.LlcOutRegionEnd                      = 'h12_0000_0000;
+    ret.SlinkRegionStart                     = 'h100_0000_0000;
+    ret.SlinkRegionEnd                       = 'h200_0000_0000;
+    // RT features
+    ret.Cva6InstrTlbEntries                  = 16;
+    ret.Cva6DataTlbEntries                   = 16;  // TODO: can be increased to 32.
+    ret.Cva6TlbColoring                      = 1;
+    ret.Cva6NumTlbColors                     = 16;
+    ret.Cva6LockableTlbWays                  = 8;
+    ret.Cva6UseSharedTlb                     = 0;
+    ret.AxiRt                                = 1;
+    ret.Clic                                 = 1;
+    ret.ClicVsclic                           = 1;
+    ret.ClicVsprio                           = 1;
+    ret.ClicNumVsctxts                       = 4;
+    ret.ClicPrioWidth                        = 1;
+    ret.LlcCachePartition                    = 1;
     return ret;
   endfunction
 
@@ -314,6 +409,26 @@ package gwaihir_pkg;
   ////////////////////
 
   localparam bit UseHWPE = 1'b0;
+  localparam int unsigned ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
+
+  typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH-1:0] tile_cfg_reg_data_t;
+  typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH/8-1:0] tile_cfg_reg_strb_t;
+
+  `AXI_LITE_TYPEDEF_ALL(tile_cfg_axi_lite, addr_t, axi_narrow_out_data_t, axi_narrow_out_strb_t)
+  `AXI_LITE_TYPEDEF_ALL(tile_cfg_axi_lite_32, addr_t, tile_cfg_reg_data_t, tile_cfg_reg_strb_t)
+  `APB_TYPEDEF_ALL(tile_cfg_apb, addr_t, tile_cfg_reg_data_t, tile_cfg_reg_strb_t)
+
+  localparam int unsigned HWPECtrlAddrWidth = 32;
+  localparam int unsigned HWPECtrlDataWidth = 32;
+  typedef logic [HWPECtrlAddrWidth-1:0] addr_hwpe_ctrl_t;
+  typedef logic [HWPECtrlDataWidth-1:0] data_hwpe_ctrl_t;
+  typedef logic [3:0] strb_hwpe_ctrl_t;
+
+  `AXI_TYPEDEF_ALL(cluster_narrow_out_dw_conv, snitch_cluster_wrapper_pkg::addr_t,
+                   snitch_cluster_wrapper_pkg::narrow_out_id_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t,
+                   snitch_cluster_wrapper_pkg::user_narrow_t)
+
+  `TCDM_TYPEDEF_ALL(hwpectrl, HWPECtrlDataWidth, HWPECtrlAddrWidth, 1)
 
   ////////////////
   //  Mem Tile  //
@@ -345,70 +460,46 @@ package gwaihir_pkg;
   localparam int unsigned SramAddrWidthOffset = SramBankSelOffset + SramBankSelWidth;
   localparam int unsigned SramMacroSelOffset = SramAddrWidthOffset + SramAddrWidth;
 
-  ////////////////////////
-  //  SPM Narrow Tiles  //
-  ////////////////////////
+  // DMA-related parameters
+  localparam int unsigned DmaNumAxInFlight = 16;
+  localparam int unsigned DmaMemSysDepth = 8;
+  localparam int unsigned DmaJobFifoDepth = 2;
+  localparam int unsigned DmaRAWCouplingAvail = 1;
+  localparam int unsigned DmaConfEnableTwoD = 1;
 
-  // Narrow SPM tile size
-  localparam int unsigned SpmNarrowTileSize = ep_addr_size(TopSpmNarrowSamIdx);
-  // Narrow SPM number words per bank
-  localparam int unsigned SpmNarrowWordsPerBank = 2048;  // in #words
-  // Narrow SPM dataWidth
-  localparam int unsigned SpmNarrowDataWidth = 64;  // in bits
+  ////////////////
+  // UCIe Tile  //
+  ////////////////
 
-  // Narrow SPM number of banks per word
-  localparam int unsigned SpmNarrowNumBanksPerWord = AxiCfgN.DataWidth / SpmNarrowDataWidth;
-  // Narrow SPM number of bank rows
-  localparam int unsigned SpmNarrowNumBankRows = (SpmNarrowTileSize / (AxiCfgN.DataWidth / 8)
-                                                 / SpmNarrowWordsPerBank);
+  function automatic addr_t alias_clear_mask();
+    addr_t ucie0_base, ucie1_base, canonical_base;
+    ucie0_base     = addr_t'(Sam[Ucie0SamIdx].start_addr);
+    ucie1_base     = addr_t'(Sam[Ucie1SamIdx].start_addr);
+    canonical_base = addr_t'(Sam[ClusterX0Y0SamIdx].start_addr);
+    return (ucie0_base | ucie1_base) & ~canonical_base;
+  endfunction
 
-  // The number of LSBs to address the bytes in an SRAM word
-  localparam int unsigned SpmNarrowByteOffsetWidth = $clog2(SpmNarrowDataWidth / 8);
-  // The number of bits required to select the subbank for a Narrow word
-  localparam int unsigned SpmNarrowBankSelWidth = $clog2(SpmNarrowNumBanksPerWord);
-  // The number of bits for the SpmNarrow address
-  localparam int unsigned SpmNarrowAddrWidth = $clog2(SpmNarrowWordsPerBank);
-  // The number of bits to index the SpmNarrow macro
-  localparam int unsigned SpmNarrowMacroSelWidth = $clog2(SpmNarrowNumBankRows);
+  // Shift alias addr according to whether it's cluster or l2.
+  function automatic addr_t ingress_half_shift(input addr_t addr);
+    localparam addr_t TcdmExposedBase = addr_t'(Sam[ClusterX0Y0SamIdx].start_addr);
+    localparam addr_t TcdmHalfShift = addr_t'((NumClusters / 2) * ClusterTileSize);
+    localparam addr_t TcdmExposedEnd = TcdmExposedBase + TcdmHalfShift;
+    localparam addr_t L2ExposedBase = addr_t'(Sam[L2Spm0SamIdx].start_addr);
+    localparam addr_t L2HalfShift = addr_t'((NumMemTiles / 2) * MemTileSize);
+    localparam addr_t L2ExposedEnd = L2ExposedBase + L2HalfShift;
+    if (addr >= TcdmExposedBase && addr < TcdmExposedEnd) return addr + TcdmHalfShift;
+    else if (addr >= L2ExposedBase && addr < L2ExposedEnd) return addr + L2HalfShift;
+    else return addr;
+  endfunction
 
-  // Various offsets for the SpmNarrow address
-  localparam int unsigned SpmNarrowBankSelOffset = SpmNarrowByteOffsetWidth;
-  localparam int unsigned SpmNarrowAddrWidthOffset = SpmNarrowBankSelOffset + SpmNarrowBankSelWidth;
-  localparam int unsigned SpmNarrowMacroSelOffset = SpmNarrowAddrWidthOffset + SpmNarrowAddrWidth;
-
-
-  //////////////////////
-  //  SPM Wide Tiles  //
-  //////////////////////
-
-  // Wide SPM tile
-  localparam int unsigned SpmWideTileSize = ep_addr_size(TopSpmWideSamIdx);
-  // Wide SPM number words per bank: derived from tile size and AXI data width so that
-  // the tile capacity exactly equals SpmWideTileSize regardless of AxiCfgW.DataWidth.
-  // For 2048-bit: 262144/(2048/8)=1024; for 4096-bit: 262144/(4096/8)=512.
-  localparam int unsigned SpmWideWordsPerBank = SpmWideTileSize / (AxiCfgW.DataWidth / 8);
-  // Wide SPM dataWidth
-  localparam int unsigned SpmWideDataWidth = 128;  // in bits
-
-  // Wide SPM number of banks per word
-  localparam int unsigned SpmWideNumBanksPerWord = AxiCfgW.DataWidth / SpmWideDataWidth;
-  // Wide SPM number of bank rows
-  localparam int unsigned SpmWideNumBankRows = (SpmWideTileSize / (AxiCfgW.DataWidth / 8)
-                                               / SpmWideWordsPerBank);
-
-  // The number of LSBs to address the bytes in an SRAM word
-  localparam int unsigned SpmWideByteOffsetWidth = $clog2(SpmWideDataWidth / 8);
-  // The number of bits required to select the subbank for a wide word
-  localparam int unsigned SpmWideBankSelWidth = $clog2(SpmWideNumBanksPerWord);
-  // The number of bits for the SpmWide address
-  localparam int unsigned SpmWideAddrWidth = $clog2(SpmWideWordsPerBank);
-  // The number of bits to index the SpmWide macro
-  localparam int unsigned SpmWideMacroSelWidth = $clog2(SpmWideNumBankRows);
-
-  // Various offsets for the SpmWide address
-  localparam int unsigned SpmWideBankSelOffset = SpmWideByteOffsetWidth;
-  localparam int unsigned SpmWideAddrWidthOffset = SpmWideBankSelOffset + SpmWideBankSelWidth;
-  localparam int unsigned SpmWideMacroSelOffset = SpmWideAddrWidthOffset + SpmWideAddrWidth;
-
+  // Translate an ingress UCIe address to its canonical form: clear the alias
+  // bits, then, if `en_half_shift` is set (i.e. on the chiplet owning the
+  // upper half of the exposed regions), apply the half shift.
+  function automatic addr_t unalias_ucie_address(input addr_t addr, input logic en_half_shift);
+    localparam addr_t AliasClearMask = alias_clear_mask();
+    addr_t cleared;
+    cleared = addr & ~AliasClearMask;
+    return en_half_shift ? ingress_half_shift(cleared) : cleared;
+  endfunction
 
 endpackage

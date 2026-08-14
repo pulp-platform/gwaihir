@@ -4,46 +4,35 @@
 //
 // Cyrill Durrer <cdurrer@iis.ee.ethz.ch>
 
-#include "gw_addrmap.h"
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"
+
+// The clock-gating and reset control are now per-tile registers, exposed via
+// the per-tile config blocks. Each tile holds a single clock-enable bit
+// (clk.en) and a single active-low reset bit (rst.n).
 
 int main(void) {
 
-    uint32_t n_errors = 3 * 4; // 3 tests, 4 registers each
+    uint32_t n_errors = 2 * (GW_CLUSTER_NUM + GW_L2_SPM_NUM);
 
-    volatile gw_soc_regs_t *gw_soc_regs = &gwaihir_addrmap.cheshire_internal.gw_soc_regs;
+    volatile gw_tile_regs__stride1000_t *cluster_cfg = gwaihir_addrmap_64b.cluster_config;
+    volatile gw_tile_regs__stride1000_t *mem_cfg = gwaihir_addrmap_64b.l2_spm_config;
 
-    // Write all 0s and check
-    gw_soc_regs->cluster_clk_enables.f.clk_en = 0x00000000;
-    gw_soc_regs->mem_tile_clk_enables.f.clk_en = 0x00000000;
-    gw_soc_regs->cluster_rsts.f.rst = 0x00000000;
-    gw_soc_regs->mem_tile_rsts.f.rst = 0x00000000;
+    // Write and read back the clock-enable and reset bits of every cluster tile
+    for (int i = 0; i < GW_CLUSTER_NUM; i++) {
+        cluster_cfg[i].clk.f.en = 0x1;
+        cluster_cfg[i].rst.f.n = 0x1;
+        n_errors -= (cluster_cfg[i].clk.f.en == 0x1);
+        n_errors -= (cluster_cfg[i].rst.f.n == 0x1);
+    }
 
-    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == 0x00000000);
-    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == 0x00000000);
-    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == 0x00000000);
-    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == 0x00000000);
-
-    // Write all 1s and check again
-    gw_soc_regs->cluster_clk_enables.f.clk_en = 0x0000FFFF;
-    gw_soc_regs->mem_tile_clk_enables.f.clk_en = 0x000000FF;
-    gw_soc_regs->cluster_rsts.f.rst = 0x0000FFFF;
-    gw_soc_regs->mem_tile_rsts.f.rst = 0x000000FF;
-
-    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == 0x0000FFFF);
-    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == 0x000000FF);
-    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == 0x0000FFFF);
-    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == 0x000000FF);
-
-    // Write all 1s and check again
-    gw_soc_regs->cluster_clk_enables.f.clk_en = 0x0000AAAA;
-    gw_soc_regs->mem_tile_clk_enables.f.clk_en = 0x000000AA;
-    gw_soc_regs->cluster_rsts.f.rst = 0x00005555;
-    gw_soc_regs->mem_tile_rsts.f.rst = 0x00000055;
-
-    n_errors -= (gw_soc_regs->cluster_clk_enables.f.clk_en == 0x0000AAAA);
-    n_errors -= (gw_soc_regs->mem_tile_clk_enables.f.clk_en == 0x000000AA);
-    n_errors -= (gw_soc_regs->cluster_rsts.f.rst == 0x00005555);
-    n_errors -= (gw_soc_regs->mem_tile_rsts.f.rst == 0x00000055);
+    // Write and read back the clock-enable and reset bits of every memory tile
+    for (int i = 0; i < GW_L2_SPM_NUM; i++) {
+        mem_cfg[i].clk.f.en = 0x1;
+        mem_cfg[i].rst.f.n = 0x1;
+        n_errors -= (mem_cfg[i].clk.f.en == 0x1);
+        n_errors -= (mem_cfg[i].rst.f.n == 0x1);
+    }
 
     return n_errors;
 }

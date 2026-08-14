@@ -16,7 +16,6 @@ module cheshire_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
-  import gw_soc_regs_pkg::*;
   import snitch_cluster_pkg::*;
 (
   input logic clk_i,
@@ -64,14 +63,17 @@ module cheshire_tile
   input logic [31:0] gpio_i,
   output logic [31:0] gpio_o,
   output logic [31:0] gpio_en_o,
-  // register interfaces
-  output csh_reg_req_t [CshRegExtChipCtrl:CshRegExtFLL] reg_req_o,
-  input csh_reg_rsp_t [CshRegExtChipCtrl:CshRegExtFLL] reg_rsp_i,
+  // APB configuration interfaces
+  output csh_apb_req_t [CshRegExtNumSlv-1:0] apb_req_o,
+  input csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
   // Serial link interface
   input logic [SlinkNumChan-1:0] slink_rcv_clk_i,
   output logic [SlinkNumChan-1:0] slink_rcv_clk_o,
   input logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
   output logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
+  // AXI ports to DRAM
+  output csh_axi_llc_req_t axi_llc_mst_req_o,
+  input csh_axi_llc_rsp_t axi_llc_mst_rsp_i,
   // Chimney ports
   input id_t id_i,
   // Router ports
@@ -86,12 +88,7 @@ module cheshire_tile
   output floo_wide_t floo_wide_south_o,
   input floo_req_t floo_req_south_i,
   output floo_rsp_t floo_rsp_south_o,
-  input floo_wide_t floo_wide_south_i,
-  // Tile-specific clock gating and reset
-  output logic [NumClusters-1:0] cluster_rst_no,
-  output logic [NumClusters-1:0] cluster_clk_en_o,
-  output logic [NumMemTiles-1:0] mem_tile_rst_no,
-  output logic [NumMemTiles-1:0] mem_tile_clk_en_o
+  input floo_wide_t floo_wide_south_i
 );
 
   ////////////
@@ -117,7 +114,7 @@ module cheshire_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
-    .Use4BitSize    (floo_gwaihir_noc_pkg::Use4BitSize)
+    .Use4BitSize   (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -204,7 +201,7 @@ module cheshire_tile
     .floo_req_t          (floo_req_t),
     .floo_rsp_t          (floo_rsp_t),
     .floo_wide_t         (floo_wide_t),
-    .Use4BitSize          (floo_gwaihir_noc_pkg::Use4BitSize)
+    .Use4BitSize         (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_chimney (
     .clk_i,
     .rst_ni,
@@ -253,14 +250,14 @@ module cheshire_tile
     .FilterWideAtops (1'b1),
     // We don't need it since there is one in Cheshire
     .EnAtopAdapter   (1'b0),
-        .AxiWideMaxTxns     (1),
+    .AxiWideMaxTxns  (1),
     .axi_narrow_req_t(axi_narrow_out_req_t),
     .axi_narrow_rsp_t(axi_narrow_out_rsp_t),
     .axi_wide_req_t  (axi_wide_out_req_t),
     .axi_wide_rsp_t  (axi_wide_out_rsp_t),
     .axi_req_t       (nw_join_in_req_t),
     .axi_rsp_t       (nw_join_in_rsp_t),
-    .Use4BitSize      (floo_gwaihir_noc_pkg::Use4BitSize)
+    .Use4BitSize     (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_floo_nw_join (
     .clk_i,
     .rst_ni,
@@ -277,8 +274,6 @@ module cheshire_tile
   // Cheshire //
   //////////////
 
-  csh_axi_llc_req_t                                axi_llc_req;
-  csh_axi_llc_rsp_t                                axi_llc_rsp;
   csh_axi_mst_req_t [CheshireCfg.AxiExtNumMst-1:0] axi_ext_mst_req_in;
   csh_axi_mst_rsp_t [CheshireCfg.AxiExtNumMst-1:0] axi_ext_mst_rsp_out;
   csh_axi_slv_req_t [CheshireCfg.AxiExtNumSlv-1:0] axi_ext_slv_req_out;
@@ -291,23 +286,22 @@ module cheshire_tile
   // Subordinate path: converter → cluster  (truncate size to 3-bit; always safe
   //   since AxiMstPortMaxSize = $clog2(AxiCfgWExt.DataWidth/8) <= 6 for cluster)
   always_comb begin
-    axi_ext_mst_req_in[0]            = '0;
-    axi_ext_mst_req_in[0].aw_valid   = nw_join_req.aw_valid;
-    axi_ext_mst_req_in[0].aw         = '0;
+    axi_ext_mst_req_in[0]          = '0;
+    axi_ext_mst_req_in[0].aw_valid = nw_join_req.aw_valid;
+    axi_ext_mst_req_in[0].aw       = '0;
     `AXI_SET_AW_STRUCT(axi_ext_mst_req_in[0].aw, nw_join_req.aw)
-    axi_ext_mst_req_in[0].w_valid    = nw_join_req.w_valid;
-    axi_ext_mst_req_in[0].w.data     = nw_join_req.w.data;
-    axi_ext_mst_req_in[0].w.strb     = nw_join_req.w.strb;
-    axi_ext_mst_req_in[0].w.last     = nw_join_req.w.last;
-    axi_ext_mst_req_in[0].w.user     = nw_join_req.w.user;
-    axi_ext_mst_req_in[0].b_ready    = nw_join_req.b_ready;
-    axi_ext_mst_req_in[0].ar_valid   = nw_join_req.ar_valid;
-    axi_ext_mst_req_in[0].ar         = '0;
+    axi_ext_mst_req_in[0].w_valid  = nw_join_req.w_valid;
+    axi_ext_mst_req_in[0].w.data   = nw_join_req.w.data;
+    axi_ext_mst_req_in[0].w.strb   = nw_join_req.w.strb;
+    axi_ext_mst_req_in[0].w.last   = nw_join_req.w.last;
+    axi_ext_mst_req_in[0].w.user   = nw_join_req.w.user;
+    axi_ext_mst_req_in[0].b_ready  = nw_join_req.b_ready;
+    axi_ext_mst_req_in[0].ar_valid = nw_join_req.ar_valid;
+    axi_ext_mst_req_in[0].ar       = '0;
     `AXI_SET_AR_STRUCT(axi_ext_mst_req_in[0].ar, nw_join_req.ar)
-    axi_ext_mst_req_in[0].r_ready    = nw_join_req.r_ready;
+    axi_ext_mst_req_in[0].r_ready = nw_join_req.r_ready;
   end
-  
- // `AXI_ASSIGN_REQ_STRUCT(axi_ext_mst_req_in[0], nw_join_req)
+
   `AXI_ASSIGN_RESP_STRUCT(nw_join_rsp, axi_ext_mst_rsp_out[0])
   `AXI_ASSIGN_REQ_STRUCT(narrow_in_req, axi_ext_slv_req_out[0])
   `AXI_ASSIGN_RESP_STRUCT(axi_ext_slv_rsp_in[0], narrow_in_rsp)
@@ -328,8 +322,8 @@ module cheshire_tile
     .test_mode_i,
     .boot_mode_i,
     .rtc_i,
-    .axi_llc_mst_req_o(axi_llc_req),
-    .axi_llc_mst_rsp_i(axi_llc_rsp),
+    .axi_llc_mst_req_o,
+    .axi_llc_mst_rsp_i,
     .axi_ext_mst_req_i(axi_ext_mst_req_in),
     .axi_ext_mst_rsp_o(axi_ext_mst_rsp_out),
     .axi_ext_slv_req_o(axi_ext_slv_req_out),
@@ -397,75 +391,22 @@ module cheshire_tile
     .usb_dp_oe_o      ()
   );
 
-  // Connect to the chip-level register interfaces
-  assign reg_req_o                                   = reg_ext_req[CshRegExtChipCtrl:CshRegExtFLL];
-  assign reg_ext_rsp[CshRegExtChipCtrl:CshRegExtFLL] = reg_rsp_i;
-
-  // LLC master port tied to an error slave (no external DRAM via serial link)
-  axi_err_slv #(
-    .AxiIdWidth(CheshireCfg.AxiMstIdWidth + $clog2(
-        csh_axi__AxiIn.num_in
-    ) + CheshireCfg.LlcNotBypass),
-    .axi_req_t(csh_axi_llc_req_t),
-    .axi_resp_t(csh_axi_llc_rsp_t),
-    .Resp(axi_pkg::RESP_DECERR),
-    .RespWidth(CheshireCfg.AxiDataWidth),
-    .RespData(64'hCA11AB1EBADCAB1E),
-    .ATOPs(1'b1),
-    .MaxTrans(4)  // TODO maybe tune, but this block should never be used.
-  ) i_llc_err_slv (
-    .clk_i,
-    .rst_ni,
-    .test_i    (test_mode_i),
-    .slv_req_i (axi_llc_req),
-    .slv_resp_o(axi_llc_rsp)
-  );
-
-  // to apb bus (declare type for req and resp)
-  `APB_TYPEDEF_ALL(apb, logic[CheshireCfg.AddrWidth-1:0], logic[31:0], logic[3:0])
-
-  apb_req_t                           csh_apb_req;
-  apb_resp_t                          csh_apb_rsp;
-  gw_soc_regs_pkg::gw_soc_regs__out_t control_reg;
-
-  reg_to_apb #(
-    .reg_req_t(csh_reg_req_t),
-    .reg_rsp_t(csh_reg_rsp_t),
-    .apb_req_t(apb_req_t),
-    .apb_rsp_t(apb_resp_t)
-  ) i_reg_to_apb (
-    .clk_i,
-    .rst_ni,
-    .reg_req_i(reg_ext_req[CshRegExtClkGatingRst]),
-    .reg_rsp_o(reg_ext_rsp[CshRegExtClkGatingRst]),
-    .apb_req_o(csh_apb_req),
-    .apb_rsp_i(csh_apb_rsp)
-  );
-
-  gw_soc_regs i_gw_soc_regs (
-    .clk          (clk_i),
-    .arst_n       (rst_ni),
-    .s_apb_paddr  (csh_apb_req.paddr[GW_SOC_REGS_MIN_ADDR_WIDTH-1:0]),
-    .s_apb_penable(csh_apb_req.penable),
-    .s_apb_psel   (csh_apb_req.psel),
-    .s_apb_pwrite (csh_apb_req.pwrite),
-    .s_apb_pprot  (csh_apb_req.pprot),
-    .s_apb_pwdata (csh_apb_req.pwdata),
-    .s_apb_pstrb  (csh_apb_req.pstrb),
-    .s_apb_prdata (csh_apb_rsp.prdata),
-    .s_apb_pready (csh_apb_rsp.pready),
-    .s_apb_pslverr(csh_apb_rsp.pslverr),
-    .hwif_out     (control_reg)
-  );
-
-  for (genvar i = 0; i < NumClusters; i++) begin : gen_cluster_ctrl_out
-    assign cluster_rst_no[i]   = control_reg.cluster_rsts.rst.value[i];
-    assign cluster_clk_en_o[i] = control_reg.cluster_clk_enables.clk_en.value[i];
+  for (genvar i = 0; i < CheshireCfg.RegExtNumSlv; i++) begin : gen_reg_to_apb
+    reg_to_apb #(
+      .reg_req_t(csh_reg_req_t),
+      .reg_rsp_t(csh_reg_rsp_t),
+      .apb_req_t(csh_apb_req_t),
+      .apb_rsp_t(csh_apb_resp_t)
+    ) i_fll_reg_to_apb (
+      .clk_i,
+      .rst_ni,
+      .reg_req_i(reg_ext_req[i]),
+      .reg_rsp_o(reg_ext_rsp[i]),
+      .apb_req_o(apb_req_o[i]),
+      .apb_rsp_i(apb_rsp_i[i])
+    );
   end
-  for (genvar i = 0; i < NumMemTiles; i++) begin : gen_mem_tile_ctrl_out
-    assign mem_tile_rst_no[i]   = control_reg.mem_tile_rsts.rst.value[i];
-    assign mem_tile_clk_en_o[i] = control_reg.mem_tile_clk_enables.clk_en.value[i];
-  end
+
   // Add Assertion that no multicast / reduction can enter this tile!
   for (genvar r = 0; r < 4; r++) begin : gen_virt
     `ASSERT(NoCollectivOperation_NReq_In,

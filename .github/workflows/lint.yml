@@ -14,48 +14,15 @@ on:
 
 jobs:
 
-  ################
-  # Verible Lint #
-  ################
-  verible-lint:
-    name: Lint SV sources
+  ###############
+  # Pre-commit  #
+  ###############
+  # Runs the same hooks as the local pre-commit install, so .pre-commit-config.yaml
+  # is the single source of truth for SV linting, formatting, REUSE and tool versions.
+  pre-commit:
+    name: Run pre-commit hooks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: chipsalliance/verible-linter-action@main
-        with:
-          paths: |
-            ./hw
-            ./target/sim/src
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          fail_on_error: true
-          reviewdog_reporter: github-check
-
-  ##################
-  # Verible Format #
-  ##################
-
-  lint-sv-format:
-    name: Format SV sources
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - uses: chipsalliance/verible-formatter-action@main
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          parameters:
-            --flagfile .verilog_format
-          fail_on_formatting_suggestions: true
-
-  #################
-  # Check License #
-  #################
-  lint-license:
-    name: Lint License Headers
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: REUSE Compliance Check
-        uses: fsfe/reuse-action@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v9.0.0
+      - run: uvx prek@0.4.11 run --all-files --show-diff-on-failure

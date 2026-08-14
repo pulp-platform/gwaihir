@@ -5,78 +5,109 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 `include "axi/assign.svh"
-`include "axi/typedef.svh"
-`include "tcdm_interface/typedef.svh"
 
 module cluster_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
-  import snitch_cluster_pkg::*;
+  import snitch_cluster_wrapper_pkg::*;
   import gwaihir_pkg::*;
 (
-  input  logic                                    clk_i,
-  input  logic                                    rst_ni,
-  input  logic                                    test_enable_i,
-  input  logic                                    tile_clk_en_i,
-  input  logic                                    tile_rst_ni,
-  input  logic                                    clk_rst_bypass_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic test_enable_i,
+  input logic clk_rst_bypass_i,
   // Cluster ports
-  input  logic                      [NrCores-1:0] debug_req_i,
-  input  logic                      [NrCores-1:0] meip_i,
-  input  logic                      [NrCores-1:0] mtip_i,
-  input  logic                      [NrCores-1:0] msip_i,
-  input  logic                      [        9:0] hart_base_id_i,
-  input  snitch_cluster_pkg::addr_t               cluster_base_addr_i,
-  input  snitch_cluster_pkg::addr_t               cluster_base_offset_i,
+  input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] debug_req_i,
+  input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] meip_i,
+  input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] mtip_i,
+  input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] msip_i,
+  input logic [9:0] hart_base_id_i,
+  input snitch_cluster_wrapper_pkg::addr_t cluster_base_addr_i,
+  input snitch_cluster_wrapper_pkg::addr_t cluster_base_offset_i,
   // Chimney ports
-  input  id_t                                     id_i,
+  input id_t id_i,
   // Router ports
-  output floo_req_t                 [ West:North] floo_req_o,
-  input  floo_rsp_t                 [ West:North] floo_rsp_i,
-  output floo_wide_t                [ West:North] floo_wide_o,
-  input  floo_req_t                 [ West:North] floo_req_i,
-  output floo_rsp_t                 [ West:North] floo_rsp_o,
-  input  floo_wide_t                [ West:North] floo_wide_i
+  output floo_req_t [West:North] floo_req_o,
+  input floo_rsp_t [West:North] floo_rsp_i,
+  output floo_wide_t [West:North] floo_wide_o,
+  input floo_req_t [West:North] floo_req_i,
+  output floo_rsp_t [West:North] floo_rsp_o,
+  input floo_wide_t [West:North] floo_wide_i
 );
 
   // Tile-specific reset and clock signals
-  logic                                 tile_clk;
-  logic                                 tile_rst_n;
+  logic tile_clk;
+  logic tile_rst_n;
+
+  typedef enum int unsigned {
+    Cluster       = 'd0,
+    TileCfg       = 'd1,
+    NumDemuxPorts = 'd2
+  } axi_demux_sel_e;
+
+  typedef logic [AxiCfgN.AddrWidth-1:0] addr_t;
+  typedef struct packed {
+    int unsigned idx;
+    addr_t       start_addr;
+    addr_t       end_addr;
+  } addr_rule_t;
+
+  // NOTE(fischeti): This is approximate since it does not include the
+  // actual address range for this exact tile, but it is sufficient since
+  // the NoC will take care of routing the request to the correct tile.
+  localparam int unsigned NumTileAddrMapRules = 1;
+  addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
+      '{
+          idx: TileCfg,
+          start_addr: Sam[ClusterConfigX0Y0SamIdx].start_addr,
+          end_addr: Sam[ClusterConfigX3Y3SamIdx].end_addr
+      }
+  };
+  localparam int unsigned NumTileApbAddrMapRules = 1;
+  addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
+      '{idx: 0, start_addr: '0, end_addr: '1}
+  };
+
+  logic aw_select, ar_select;
+
+  snitch_cluster_wrapper_pkg::narrow_in_req_t         chimney_narrow_out_req;
+  snitch_cluster_wrapper_pkg::narrow_in_resp_t        chimney_narrow_out_rsp;
+  snitch_cluster_wrapper_pkg::narrow_in_req_t   [1:0] axi_demux_out_req;
+  snitch_cluster_wrapper_pkg::narrow_in_resp_t  [1:0] axi_demux_out_rsp;
+
+  gw_tile_regs_pkg::gw_tile_regs__out_t               hwif_out;
+
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t          tile_cfg_demux_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t          tile_cfg_demux_rsp;
+  tile_cfg_axi_lite_req_t                             tile_cfg_axi_lite_req;
+  tile_cfg_axi_lite_resp_t                            tile_cfg_axi_lite_rsp;
+  tile_cfg_axi_lite_32_req_t                          tile_cfg_axi_lite_32_req;
+  tile_cfg_axi_lite_32_resp_t                         tile_cfg_axi_lite_32_rsp;
+  tile_cfg_apb_req_t                                  tile_cfg_apb_req;
+  tile_cfg_apb_resp_t                                 tile_cfg_apb_rsp;
 
   ////////////////////
   // Snitch Cluster //
   ////////////////////
 
-  snitch_cluster_pkg::narrow_in_req_t   cluster_narrow_in_req;
-  snitch_cluster_pkg::narrow_in_resp_t  cluster_narrow_in_rsp;
-  snitch_cluster_pkg::narrow_out_req_t  cluster_narrow_out_req;
-  snitch_cluster_pkg::narrow_out_resp_t cluster_narrow_out_rsp;
-  snitch_cluster_pkg::wide_out_req_t    cluster_wide_out_req;
-  snitch_cluster_pkg::wide_out_resp_t   cluster_wide_out_rsp;
-  snitch_cluster_pkg::wide_in_req_t     cluster_wide_in_req;
-  snitch_cluster_pkg::wide_in_resp_t    cluster_wide_in_rsp;
+  snitch_cluster_wrapper_pkg::narrow_in_req_t         cluster_narrow_in_req;
+  snitch_cluster_wrapper_pkg::narrow_in_resp_t        cluster_narrow_in_rsp;
+  snitch_cluster_wrapper_pkg::narrow_out_req_t        cluster_narrow_out_req;
+  snitch_cluster_wrapper_pkg::narrow_out_resp_t       cluster_narrow_out_rsp;
+  snitch_cluster_wrapper_pkg::wide_out_req_t          cluster_wide_out_req;
+  snitch_cluster_wrapper_pkg::wide_out_resp_t         cluster_wide_out_rsp;
+  snitch_cluster_wrapper_pkg::wide_in_req_t           cluster_wide_in_req;
+  snitch_cluster_wrapper_pkg::wide_in_resp_t          cluster_wide_in_rsp;
 
-  snitch_cluster_pkg::narrow_out_req_t  cluster_narrow_ext_req;
-  snitch_cluster_pkg::narrow_out_resp_t cluster_narrow_ext_rsp;
-  snitch_cluster_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_aligned;
-  snitch_cluster_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_misaligned;
-  snitch_cluster_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_aligned;
-  snitch_cluster_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_misaligned;
-
-  localparam int unsigned HWPECtrlAddrWidth = 32;
-  localparam int unsigned HWPECtrlDataWidth = 32;
-  typedef logic [HWPECtrlAddrWidth-1:0] addr_hwpe_ctrl_t;
-  typedef logic [HWPECtrlDataWidth-1:0] data_hwpe_ctrl_t;
-  typedef logic [3:0] strb_hwpe_ctrl_t;
-
-  `AXI_TYPEDEF_ALL(cluster_narrow_out_dw_conv, snitch_cluster_pkg::addr_t,
-                   snitch_cluster_pkg::narrow_out_id_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t,
-                   snitch_cluster_pkg::user_narrow_t)
+  snitch_cluster_wrapper_pkg::narrow_out_req_t        cluster_narrow_ext_req;
+  snitch_cluster_wrapper_pkg::narrow_out_resp_t       cluster_narrow_ext_rsp;
+  snitch_cluster_wrapper_pkg::tcdm_dma_req_t          cluster_tcdm_ext_req_aligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_req_t          cluster_tcdm_ext_req_misaligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t          cluster_tcdm_ext_rsp_aligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t          cluster_tcdm_ext_rsp_misaligned;
 
   cluster_narrow_out_dw_conv_req_t cluster_narrow_out_dw_conv_req, cluster_narrow_out_cut_req;
   cluster_narrow_out_dw_conv_resp_t cluster_narrow_out_dw_conv_rsp, cluster_narrow_out_cut_rsp;
-
-  `TCDM_TYPEDEF_ALL(hwpectrl, addr_hwpe_ctrl_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t, logic)
 
   hwpectrl_req_t               hwpectrl_req;
   hwpectrl_rsp_t               hwpectrl_rsp;
@@ -89,8 +120,8 @@ module cluster_tile
   ////////////////////////
 
   // Snitch cluster DCA interface
-  snitch_cluster_pkg::dca_req_t offload_dca_req, offload_dca_req_cut;
-  snitch_cluster_pkg::dca_rsp_t offload_dca_rsp, offload_dca_rsp_cut;
+  snitch_cluster_wrapper_pkg::dca_req_t offload_dca_req, offload_dca_req_cut;
+  snitch_cluster_wrapper_pkg::dca_rsp_t offload_dca_rsp, offload_dca_rsp_cut;
 
   // Signals to connect the NW router to the wide parser
   red_wide_req_t offload_wide_req;
@@ -159,9 +190,9 @@ module cluster_tile
     // TODO(raroth): move these spill register inside FlooNoC and make them configurable.
     // Insert a reqrsp-cut to avoid timing violations
     //If teh CutOffloadIntf is enabled, the cut is already in the offload controller, you can bypass teh one below
-    generic_reqrsp_cut #(
-      .req_chan_t(snitch_cluster_pkg::dca_req_chan_t),
-      .rsp_chan_t(snitch_cluster_pkg::dca_rsp_chan_t),
+    reqrsp_cut #(
+      .req_chan_t(snitch_cluster_wrapper_pkg::dca_req_chan_t),
+      .rsp_chan_t(snitch_cluster_wrapper_pkg::dca_rsp_chan_t),
       .BypassReq (RouteCfg.CollectiveCfg.WideRedCfg.CutOffloadIntf),
       .BypassRsp (RouteCfg.CollectiveCfg.WideRedCfg.CutOffloadIntf)
     ) i_dca_router_cut (
@@ -190,44 +221,46 @@ module cluster_tile
 
 
   snitch_cluster_wrapper i_cluster (
-    .clk_i             (tile_clk),
-    .rst_ni            (tile_rst_n),
+    .clk_i                 (tile_clk),
+    .rst_ni                (tile_rst_n),
     .debug_req_i,
     .meip_i,
     .mtip_i,
     .msip_i,
-    .hart_base_id_i,
+    .hart_base_id_i        (snitch_pkg::hart_id_t'(hart_base_id_i)),
     .cluster_base_addr_i,
     .cluster_base_offset_i,
-    .mxip_i            (mxip),
-    .clk_d2_bypass_i   ('0),
-    .sram_cfgs_i       ('0),
-    .narrow_in_req_i   (cluster_narrow_in_req),
-    .narrow_in_resp_o  (cluster_narrow_in_rsp),
-    .narrow_out_req_o  (cluster_narrow_out_req),
-    .narrow_out_resp_i (cluster_narrow_out_rsp),
-    .wide_out_req_o    (cluster_wide_out_req),
-    .wide_out_resp_i   (cluster_wide_out_rsp),
-    .wide_in_req_i     (cluster_wide_in_req),
-    .wide_in_resp_o    (cluster_wide_in_rsp),
-    .narrow_ext_req_o  (cluster_narrow_ext_req),
-    .narrow_ext_resp_i (cluster_narrow_ext_rsp),
-    .tcdm_ext_req_i    (cluster_tcdm_ext_req_aligned),
-    .tcdm_ext_resp_o   (cluster_tcdm_ext_rsp_aligned),
-    .dca_req_i         (offload_dca_req_cut),
-    .dca_rsp_o         (offload_dca_rsp_cut),
-    .x_issue_req_o     (),
-    .x_issue_resp_i    ('0),
-    .x_issue_valid_o   (),
-    .x_issue_ready_i   ('0),
-    .x_register_o      (),
-    .x_register_valid_o(),
-    .x_register_ready_i('0),
-    .x_commit_o        (),
-    .x_commit_valid_o  (),
-    .x_result_i        ('0),
-    .x_result_valid_i  ('0),
-    .x_result_ready_o  ()
+    .mxip_i                (mxip),
+    .clk_d2_bypass_i       ('0),
+    .sram_cfg_tcdm_i       ('0),
+    .sram_cfg_icache_tag_i ('0),
+    .sram_cfg_icache_data_i('0),
+    .narrow_in_req_i       (cluster_narrow_in_req),
+    .narrow_in_resp_o      (cluster_narrow_in_rsp),
+    .narrow_out_req_o      (cluster_narrow_out_req),
+    .narrow_out_resp_i     (cluster_narrow_out_rsp),
+    .wide_out_req_o        (cluster_wide_out_req),
+    .wide_out_resp_i       (cluster_wide_out_rsp),
+    .wide_in_req_i         (cluster_wide_in_req),
+    .wide_in_resp_o        (cluster_wide_in_rsp),
+    .narrow_ext_req_o      (cluster_narrow_ext_req),
+    .narrow_ext_resp_i     (cluster_narrow_ext_rsp),
+    .tcdm_ext_req_i        (cluster_tcdm_ext_req_aligned),
+    .tcdm_ext_resp_o       (cluster_tcdm_ext_rsp_aligned),
+    .dca_req_i             (offload_dca_req_cut),
+    .dca_rsp_o             (offload_dca_rsp_cut),
+    .x_issue_req_o         (),
+    .x_issue_resp_i        ('0),
+    .x_issue_valid_o       (),
+    .x_issue_ready_i       ('0),
+    .x_register_o          (),
+    .x_register_valid_o    (),
+    .x_register_ready_i    ('0),
+    .x_commit_o            (),
+    .x_commit_valid_o      (),
+    .x_result_i            ('0),
+    .x_result_valid_i      ('0),
+    .x_result_ready_o      ()
   );
 
   if (UseHWPE) begin : gen_hwpe
@@ -235,21 +268,21 @@ module cluster_tile
     // Convert narrow AXI's 64 bit DW down to 32
     axi_dw_converter #(
       .AxiMaxReads        (1),
-      .AxiSlvPortDataWidth(snitch_cluster_pkg::NarrowDataWidth),
+      .AxiSlvPortDataWidth(snitch_cluster_wrapper_pkg::NarrowDataWidth),
       .AxiMstPortDataWidth(HWPECtrlDataWidth),
-      .AxiAddrWidth       (snitch_cluster_pkg::AddrWidth),
-      .AxiIdWidth         (snitch_cluster_pkg::NarrowIdWidthOut),
-      .aw_chan_t          (snitch_cluster_pkg::narrow_out_aw_chan_t),
+      .AxiAddrWidth       (snitch_cluster_wrapper_pkg::AddrWidth),
+      .AxiIdWidth         (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
+      .aw_chan_t          (snitch_cluster_wrapper_pkg::narrow_out_aw_chan_t),
       .mst_w_chan_t       (cluster_narrow_out_dw_conv_w_chan_t),
-      .slv_w_chan_t       (snitch_cluster_pkg::narrow_out_w_chan_t),
-      .b_chan_t           (snitch_cluster_pkg::narrow_out_b_chan_t),
-      .ar_chan_t          (snitch_cluster_pkg::narrow_out_ar_chan_t),
+      .slv_w_chan_t       (snitch_cluster_wrapper_pkg::narrow_out_w_chan_t),
+      .b_chan_t           (snitch_cluster_wrapper_pkg::narrow_out_b_chan_t),
+      .ar_chan_t          (snitch_cluster_wrapper_pkg::narrow_out_ar_chan_t),
       .mst_r_chan_t       (cluster_narrow_out_dw_conv_r_chan_t),
-      .slv_r_chan_t       (snitch_cluster_pkg::narrow_out_r_chan_t),
+      .slv_r_chan_t       (snitch_cluster_wrapper_pkg::narrow_out_r_chan_t),
       .axi_mst_req_t      (cluster_narrow_out_dw_conv_req_t),
       .axi_mst_resp_t     (cluster_narrow_out_dw_conv_resp_t),
-      .axi_slv_req_t      (snitch_cluster_pkg::narrow_out_req_t),
-      .axi_slv_resp_t     (snitch_cluster_pkg::narrow_out_resp_t)
+      .axi_slv_req_t      (snitch_cluster_wrapper_pkg::narrow_out_req_t),
+      .axi_slv_resp_t     (snitch_cluster_wrapper_pkg::narrow_out_resp_t)
     ) i_axi_dw_hwpe (
       .clk_i     (tile_clk),
       .rst_ni    (tile_rst_n),
@@ -261,10 +294,10 @@ module cluster_tile
 
     axi_cut #(
       .Bypass    (0),
-      .aw_chan_t (snitch_cluster_pkg::narrow_out_aw_chan_t),
+      .aw_chan_t (snitch_cluster_wrapper_pkg::narrow_out_aw_chan_t),
       .w_chan_t  (cluster_narrow_out_dw_conv_w_chan_t),
-      .b_chan_t  (snitch_cluster_pkg::narrow_out_b_chan_t),
-      .ar_chan_t (snitch_cluster_pkg::narrow_out_ar_chan_t),
+      .b_chan_t  (snitch_cluster_wrapper_pkg::narrow_out_b_chan_t),
+      .ar_chan_t (snitch_cluster_wrapper_pkg::narrow_out_ar_chan_t),
       .r_chan_t  (cluster_narrow_out_dw_conv_r_chan_t),
       .axi_req_t (cluster_narrow_out_dw_conv_req_t),
       .axi_resp_t(cluster_narrow_out_dw_conv_resp_t)
@@ -282,7 +315,7 @@ module cluster_tile
       .axi_rsp_t (cluster_narrow_out_dw_conv_resp_t),
       .tcdm_req_t(hwpectrl_req_t),
       .tcdm_rsp_t(hwpectrl_rsp_t),
-      .IdWidth   (snitch_cluster_pkg::NarrowIdWidthOut),
+      .IdWidth   (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
       .AddrWidth (HWPECtrlAddrWidth),
       .DataWidth (HWPECtrlDataWidth)
     ) i_axi_to_hwpe_ctrl (
@@ -295,11 +328,11 @@ module cluster_tile
     );
 
     snitch_tcdm_aligner #(
-      .tcdm_req_t   (snitch_cluster_pkg::tcdm_dma_req_t),
-      .tcdm_rsp_t   (snitch_cluster_pkg::tcdm_dma_rsp_t),
-      .DataWidth    (snitch_cluster_pkg::WideDataWidth),
-      .TCDMDataWidth(snitch_cluster_pkg::NarrowDataWidth),
-      .AddrWidth    (snitch_cluster_pkg::TcdmAddrWidth)
+      .tcdm_req_t   (snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
+      .tcdm_rsp_t   (snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
+      .DataWidth    (snitch_cluster_wrapper_pkg::WideDataWidth),
+      .TCDMDataWidth(snitch_cluster_wrapper_pkg::NarrowDataWidth),
+      .AddrWidth    (snitch_cluster_wrapper_pkg::TcdmAddrWidth)
     ) i_snitch_tcdm_aligner (
       .clk_i                (tile_clk),
       .rst_ni               (tile_rst_n),
@@ -310,14 +343,14 @@ module cluster_tile
     );
 
     snitch_hwpe_subsystem #(
-      .tcdm_req_t   (snitch_cluster_pkg::tcdm_dma_req_t),
-      .tcdm_rsp_t   (snitch_cluster_pkg::tcdm_dma_rsp_t),
+      .tcdm_req_t   (snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
+      .tcdm_rsp_t   (snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
       .periph_req_t (hwpectrl_req_t),
       .periph_rsp_t (hwpectrl_rsp_t),
-      .HwpeDataWidth(snitch_cluster_pkg::WideDataWidth),
-      .IdWidth      (snitch_cluster_pkg::NarrowIdWidthOut),
+      .HwpeDataWidth(snitch_cluster_wrapper_pkg::WideDataWidth),
+      .IdWidth      (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
       .NrCores      (NrCores),
-      .TCDMDataWidth(snitch_cluster_pkg::NarrowDataWidth)
+      .TCDMDataWidth(snitch_cluster_wrapper_pkg::NarrowDataWidth)
     ) i_snitch_hwpe_subsystem (
       .clk_i          (tile_clk),
       .rst_ni         (tile_rst_n),
@@ -340,14 +373,14 @@ module cluster_tile
 
   floo_req_t [Eject:North] router_floo_req_out, router_floo_req_in;
   floo_rsp_t [Eject:North] router_floo_rsp_out, router_floo_rsp_in;
-  floo_wide_t [Eject:North] router_floo_wide_in;
-  floo_wide_t [Eject:North] router_floo_wide_out;
+  floo_wide_t                              [Eject:North] router_floo_wide_in;
+  floo_wide_t                              [Eject:North] router_floo_wide_out;
 
   // Intermediate signals for wide AXI between adapter and chimney
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t  chimney_wide_in_req;
-  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t  chimney_wide_in_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t chimney_wide_out_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t chimney_wide_out_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t                chimney_wide_in_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t                chimney_wide_in_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t               chimney_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t               chimney_wide_out_rsp;
 
 
   floo_nw_router #(
@@ -368,7 +401,7 @@ module cluster_tile
     .red_wide_req_t(red_wide_req_t),
     .red_wide_rsp_t(red_wide_rsp_t),
     .CollectiveCfg (RouteCfg.CollectiveCfg),
-    .Use4BitSize    (floo_gwaihir_noc_pkg::Use4BitSize)
+    .Use4BitSize   (floo_gwaihir_noc_pkg::Use4BitSize)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -397,7 +430,8 @@ module cluster_tile
   assign floo_wide_o[West:North]         = router_floo_wide_out[West:North];
 
 
-  localparam bit Use_Extender = (snitch_cluster_pkg::WideDataWidth < floo_gwaihir_noc_pkg::AxiCfgW.DataWidth) ? 1'b1 : 1'b0;
+  localparam bit UseExtender =
+    (snitch_cluster_pkg::WideDataWidth < floo_gwaihir_noc_pkg::AxiCfgW.DataWidth) ? 1'b1 : 1'b0;
   // Derived from the generated NoC package — true when AxiCfgW.DataWidth > 1024 bits.
   // This is the single source of truth; upsizer and downsizer receive it as a parameter.
   localparam bit Use4BitSize = floo_gwaihir_noc_pkg::Use4BitSize;
@@ -406,38 +440,40 @@ module cluster_tile
   // Wide Data-Width Adapter //
   ////////////////////////////
 
-  if(Use_Extender) begin : gen_extender
+  if (UseExtender) begin : gen_extender
     // If the cluster's wide data width is smaller than the NoC's wide data width, we need to add an extender to convert between them
 
+    localparam floo_pkg::axi_cfg_t AxiCfgWExt = '{
+        AddrWidth: floo_gwaihir_noc_pkg::AxiCfgW.AddrWidth,
+        DataWidth: snitch_cluster_pkg::WideDataWidth,
+        UserWidth: snitch_cluster_pkg::WideUserWidth,
+        InIdWidth: floo_gwaihir_noc_pkg::AxiCfgW.InIdWidth,
+        OutIdWidth: floo_gwaihir_noc_pkg::AxiCfgW.OutIdWidth
+    };
+
     floo_wide_ext_adapter #(
-      .AxiCfgW              (floo_gwaihir_noc_pkg::AxiCfgW),
-      .AxiCfgWExt           (floo_pkg::axi_cfg_t'{
-                              AddrWidth:  floo_gwaihir_noc_pkg::AxiCfgW.AddrWidth,
-                              DataWidth:  snitch_cluster_pkg::WideDataWidth,
-                              UserWidth:  snitch_cluster_pkg::WideUserWidth,
-                              InIdWidth:  floo_gwaihir_noc_pkg::AxiCfgW.InIdWidth,
-                              OutIdWidth: floo_gwaihir_noc_pkg::AxiCfgW.OutIdWidth
-                            }),
-      .axi_wide_ext_in_req_t  (snitch_cluster_pkg::wide_out_req_t),
-      .axi_wide_ext_in_rsp_t  (snitch_cluster_pkg::wide_out_resp_t),
-      .axi_wide_ext_out_req_t (snitch_cluster_pkg::wide_in_req_t),
-      .axi_wide_ext_out_rsp_t (snitch_cluster_pkg::wide_in_resp_t),
-      .axi_wide_in_req_t      (floo_gwaihir_noc_pkg::axi_wide_in_req_t),
-      .axi_wide_in_rsp_t      (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t),
-      .axi_wide_out_req_t     (floo_gwaihir_noc_pkg::axi_wide_out_req_t),
-      .axi_wide_out_rsp_t     (floo_gwaihir_noc_pkg::axi_wide_out_rsp_t),
+      .AxiCfgW               (floo_gwaihir_noc_pkg::AxiCfgW),
+      .AxiCfgWExt            (AxiCfgWExt),
+      .axi_wide_ext_in_req_t (snitch_cluster_pkg::wide_out_req_t),
+      .axi_wide_ext_in_rsp_t (snitch_cluster_pkg::wide_out_resp_t),
+      .axi_wide_ext_out_req_t(snitch_cluster_pkg::wide_in_req_t),
+      .axi_wide_ext_out_rsp_t(snitch_cluster_pkg::wide_in_resp_t),
+      .axi_wide_in_req_t     (floo_gwaihir_noc_pkg::axi_wide_in_req_t),
+      .axi_wide_in_rsp_t     (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t),
+      .axi_wide_out_req_t    (floo_gwaihir_noc_pkg::axi_wide_out_req_t),
+      .axi_wide_out_rsp_t    (floo_gwaihir_noc_pkg::axi_wide_out_rsp_t),
       .Use4BitSize           (Use4BitSize)
     ) i_floo_wide_ext_adapter (
-      .clk_i                  (tile_clk),
-      .rst_ni                 (tile_rst_n),
-      .axi_wide_ext_in_req_i  (cluster_wide_out_req),
-      .axi_wide_ext_in_rsp_o  (cluster_wide_out_rsp),
-      .axi_wide_ext_out_req_o (cluster_wide_in_req),
-      .axi_wide_ext_out_rsp_i (cluster_wide_in_rsp),
-      .axi_wide_in_req_o      (chimney_wide_in_req),
-      .axi_wide_in_rsp_i      (chimney_wide_in_rsp),
-      .axi_wide_out_req_i     (chimney_wide_out_req),
-      .axi_wide_out_rsp_o     (chimney_wide_out_rsp)
+      .clk_i                 (tile_clk),
+      .rst_ni                (tile_rst_n),
+      .axi_wide_ext_in_req_i (cluster_wide_out_req),
+      .axi_wide_ext_in_rsp_o (cluster_wide_out_rsp),
+      .axi_wide_ext_out_req_o(cluster_wide_in_req),
+      .axi_wide_ext_out_rsp_i(cluster_wide_in_rsp),
+      .axi_wide_in_req_o     (chimney_wide_in_req),
+      .axi_wide_in_rsp_i     (chimney_wide_in_rsp),
+      .axi_wide_out_req_i    (chimney_wide_out_req),
+      .axi_wide_out_rsp_o    (chimney_wide_out_rsp)
     );
 
   end else begin : gen_no_extender
@@ -449,10 +485,10 @@ module cluster_tile
     // independently from all other fields.
     //
     // Manager path: cluster drives the request; chimney drives the response back.
-    `AXI_ASSIGN_REQ_STRUCT(chimney_wide_in_req,  cluster_wide_out_req)
+    `AXI_ASSIGN_REQ_STRUCT(chimney_wide_in_req, cluster_wide_out_req)
     `AXI_ASSIGN_RESP_STRUCT(cluster_wide_out_rsp, chimney_wide_in_rsp)
     // Subordinate path: chimney drives the request; cluster drives the response back.
-    `AXI_ASSIGN_REQ_STRUCT(cluster_wide_in_req,  chimney_wide_out_req)
+    `AXI_ASSIGN_REQ_STRUCT(cluster_wide_in_req, chimney_wide_out_req)
     `AXI_ASSIGN_RESP_STRUCT(chimney_wide_out_rsp, cluster_wide_in_rsp)
   end
   ////////////////////////////
@@ -462,6 +498,7 @@ module cluster_tile
   /////////////
   // Chimney //
   /////////////
+
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
@@ -480,14 +517,10 @@ module cluster_tile
     .sam_rule_t          (floo_gwaihir_noc_pkg::collective_sam_rule_t),
     .sam_idx_t           (floo_gwaihir_noc_pkg::collective_idx_t),
     .mask_sel_t          (floo_gwaihir_noc_pkg::collective_mask_sel_t),
-    .axi_narrow_in_req_t (snitch_cluster_pkg::narrow_out_req_t),
-    .axi_narrow_in_rsp_t (snitch_cluster_pkg::narrow_out_resp_t),
-    .axi_narrow_out_req_t(snitch_cluster_pkg::narrow_in_req_t),
-    .axi_narrow_out_rsp_t(snitch_cluster_pkg::narrow_in_resp_t),
-    // .axi_wide_in_req_t   (snitch_cluster_pkg::wide_out_req_t),
-    // .axi_wide_in_rsp_t   (snitch_cluster_pkg::wide_out_resp_t),
-    // .axi_wide_out_req_t  (snitch_cluster_pkg::wide_in_req_t),
-    // .axi_wide_out_rsp_t  (snitch_cluster_pkg::wide_in_resp_t),
+    .axi_narrow_in_req_t (snitch_cluster_wrapper_pkg::narrow_out_req_t),
+    .axi_narrow_in_rsp_t (snitch_cluster_wrapper_pkg::narrow_out_resp_t),
+    .axi_narrow_out_req_t(snitch_cluster_wrapper_pkg::narrow_in_req_t),
+    .axi_narrow_out_rsp_t(snitch_cluster_wrapper_pkg::narrow_in_resp_t),
     .axi_wide_in_req_t   (floo_gwaihir_noc_pkg::axi_wide_in_req_t),
     .axi_wide_in_rsp_t   (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t),
     .axi_wide_out_req_t  (floo_gwaihir_noc_pkg::axi_wide_out_req_t),
@@ -495,27 +528,25 @@ module cluster_tile
     .floo_req_t          (floo_gwaihir_noc_pkg::floo_req_t),
     .floo_rsp_t          (floo_gwaihir_noc_pkg::floo_rsp_t),
     .floo_wide_t         (floo_gwaihir_noc_pkg::floo_wide_t),
-    .sram_cfg_t          (snitch_cluster_pkg::sram_cfg_t),
+    .sram_cfg_t          (snitch_cluster_wrapper_pkg::sram_cfg_t),
     .user_narrow_struct_t(floo_gwaihir_noc_pkg::collective_axi_narrow_in_user_t),
     .user_wide_struct_t  (floo_gwaihir_noc_pkg::collective_axi_wide_in_user_t),
     .Use4BitSize         (Use4BitSize)
   ) i_chimney (
-    .clk_i               (tile_clk),
-    .rst_ni              (tile_rst_n),
+    .clk_i               (clk_i),
+    .rst_ni              (rst_ni),
     .test_enable_i,
     .id_i,
     .route_table_i       ('0),
     .sram_cfg_i          ('0),
     .axi_narrow_in_req_i (cluster_narrow_out_req),
     .axi_narrow_in_rsp_o (cluster_narrow_out_rsp),
-    .axi_narrow_out_req_o(cluster_narrow_in_req),
-    .axi_narrow_out_rsp_i(cluster_narrow_in_rsp),
-
+    .axi_narrow_out_req_o(chimney_narrow_out_req),
+    .axi_narrow_out_rsp_i(chimney_narrow_out_rsp),
     .axi_wide_in_req_i   (chimney_wide_in_req),
     .axi_wide_in_rsp_o   (chimney_wide_in_rsp),
     .axi_wide_out_req_o  (chimney_wide_out_req),
     .axi_wide_out_rsp_i  (chimney_wide_out_rsp),
-
     .floo_req_o          (router_floo_req_in[Eject]),
     .floo_rsp_o          (router_floo_rsp_in[Eject]),
     .floo_wide_o         (router_floo_wide_in[Eject]),
@@ -524,13 +555,160 @@ module cluster_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
+  addr_decode #(
+    .NoIndices(NumDemuxPorts),
+    .NoRules  (NumTileAddrMapRules),
+    .addr_t   (addr_t),
+    .rule_t   (addr_rule_t)
+  ) i_addr_decode_aw (
+    .addr_i          (chimney_narrow_out_req.aw.addr),
+    .addr_map_i      (TileAddrMap),
+    .idx_o           (aw_select),
+    .dec_valid_o     (),
+    .dec_error_o     (),
+    .en_default_idx_i(1'b1),
+    .default_idx_i   ('0)
+  );
+
+  addr_decode #(
+    .NoIndices(NumDemuxPorts),
+    .NoRules  (NumTileAddrMapRules),
+    .addr_t   (addr_t),
+    .rule_t   (addr_rule_t)
+  ) i_addr_decode_ar (
+    .addr_i          (chimney_narrow_out_req.ar.addr),
+    .addr_map_i      (TileAddrMap),
+    .idx_o           (ar_select),
+    .dec_valid_o     (),
+    .dec_error_o     (),
+    .en_default_idx_i(1'b1),
+    .default_idx_i   ('0)
+  );
+
+  axi_demux #(
+    .AxiIdWidth (AxiCfgN.OutIdWidth),
+    .AtopSupport(1'b1),
+    .aw_chan_t  (snitch_cluster_wrapper_pkg::narrow_in_aw_chan_t),
+    .w_chan_t   (snitch_cluster_wrapper_pkg::narrow_in_w_chan_t),
+    .b_chan_t   (snitch_cluster_wrapper_pkg::narrow_in_b_chan_t),
+    .ar_chan_t  (snitch_cluster_wrapper_pkg::narrow_in_ar_chan_t),
+    .r_chan_t   (snitch_cluster_wrapper_pkg::narrow_in_r_chan_t),
+    .axi_req_t  (snitch_cluster_wrapper_pkg::narrow_in_req_t),
+    .axi_resp_t (snitch_cluster_wrapper_pkg::narrow_in_resp_t),
+    .NoMstPorts (NumDemuxPorts),
+    .MaxTrans   (floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .AxiLookBits(AxiCfgN.OutIdWidth),
+    .SpillAr    (1'b0),
+    .SpillAw    (1'b0)
+  ) i_axi_demux (
+    .clk_i          (clk_i),
+    .rst_ni         (rst_ni),
+    .slv_req_i      (chimney_narrow_out_req),
+    .slv_aw_select_i(aw_select),
+    .slv_ar_select_i(ar_select),
+    .slv_resp_o     (chimney_narrow_out_rsp),
+    .mst_reqs_o     (axi_demux_out_req),
+    .mst_resps_i    (axi_demux_out_rsp)
+  );
+
+  assign cluster_narrow_in_req      = axi_demux_out_req[Cluster];
+  assign axi_demux_out_rsp[Cluster] = cluster_narrow_in_rsp;
+
+  // The configuration register path does not make use of the wide collective
+  // `user` field (it is only relevant for the collective/multicast path into
+  // the cluster). Down-convert the demuxed request to the plain narrow AXI
+  // type before the AXI-Lite conversion; the struct assign truncates the
+  // collective `user` payload down to the plain AXI user width.
+  `AXI_ASSIGN_REQ_STRUCT(tile_cfg_demux_req, axi_demux_out_req[TileCfg])
+  `AXI_ASSIGN_RESP_STRUCT(axi_demux_out_rsp[TileCfg], tile_cfg_demux_rsp)
+
+  axi_to_axi_lite #(
+    .AxiAddrWidth   (AxiCfgN.AddrWidth),
+    .AxiDataWidth   (AxiCfgN.DataWidth),
+    .AxiIdWidth     (AxiCfgN.OutIdWidth),
+    .AxiUserWidth   (AxiCfgN.UserWidth),
+    .AxiMaxWriteTxns(floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .AxiMaxReadTxns (floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .full_req_t     (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
+    .full_resp_t    (floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t),
+    .lite_req_t     (tile_cfg_axi_lite_req_t),
+    .lite_resp_t    (tile_cfg_axi_lite_resp_t)
+  ) i_axi_to_axi_lite_tile_cfg (
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
+    .slv_req_i (tile_cfg_demux_req),
+    .slv_resp_o(tile_cfg_demux_rsp),
+    .mst_req_o (tile_cfg_axi_lite_req),
+    .mst_resp_i(tile_cfg_axi_lite_rsp)
+  );
+
+  axi_lite_dw_converter #(
+    .AxiAddrWidth       (AxiCfgN.AddrWidth),
+    .AxiSlvPortDataWidth(AxiCfgN.DataWidth),
+    .AxiMstPortDataWidth(gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
+    .axi_lite_aw_t      (tile_cfg_axi_lite_aw_chan_t),
+    .axi_lite_slv_w_t   (tile_cfg_axi_lite_w_chan_t),
+    .axi_lite_mst_w_t   (tile_cfg_axi_lite_32_w_chan_t),
+    .axi_lite_b_t       (tile_cfg_axi_lite_b_chan_t),
+    .axi_lite_ar_t      (tile_cfg_axi_lite_ar_chan_t),
+    .axi_lite_slv_r_t   (tile_cfg_axi_lite_r_chan_t),
+    .axi_lite_mst_r_t   (tile_cfg_axi_lite_32_r_chan_t),
+    .axi_lite_slv_req_t (tile_cfg_axi_lite_req_t),
+    .axi_lite_slv_res_t (tile_cfg_axi_lite_resp_t),
+    .axi_lite_mst_req_t (tile_cfg_axi_lite_32_req_t),
+    .axi_lite_mst_res_t (tile_cfg_axi_lite_32_resp_t)
+  ) i_axi_lite_dw_converter_tile_cfg (
+    .clk_i    (clk_i),
+    .rst_ni   (rst_ni),
+    .slv_req_i(tile_cfg_axi_lite_req),
+    .slv_res_o(tile_cfg_axi_lite_rsp),
+    .mst_req_o(tile_cfg_axi_lite_32_req),
+    .mst_res_i(tile_cfg_axi_lite_32_rsp)
+  );
+
+  axi_lite_to_apb #(
+    .NoApbSlaves    (1),
+    .NoRules        (NumTileApbAddrMapRules),
+    .AddrWidth      (AxiCfgN.AddrWidth),
+    .DataWidth      (gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH),
+    .axi_lite_req_t (tile_cfg_axi_lite_32_req_t),
+    .axi_lite_resp_t(tile_cfg_axi_lite_32_resp_t),
+    .apb_req_t      (tile_cfg_apb_req_t),
+    .apb_resp_t     (tile_cfg_apb_resp_t),
+    .rule_t         (addr_rule_t)
+  ) i_axi_lite_to_apb_tile_cfg (
+    .clk_i          (clk_i),
+    .rst_ni         (rst_ni),
+    .axi_lite_req_i (tile_cfg_axi_lite_32_req),
+    .axi_lite_resp_o(tile_cfg_axi_lite_32_rsp),
+    .apb_req_o      (tile_cfg_apb_req),
+    .apb_resp_i     (tile_cfg_apb_rsp),
+    .addr_map_i     (TileApbAddrMap)
+  );
+
+  gw_tile_regs i_gw_tile_regs (
+    .clk          (clk_i),
+    .arst_n       (rst_ni),
+    .s_apb_paddr  (tile_cfg_apb_req.paddr[gw_tile_regs_pkg::GW_TILE_REGS_MIN_ADDR_WIDTH-1:0]),
+    .s_apb_penable(tile_cfg_apb_req.penable),
+    .s_apb_psel   (tile_cfg_apb_req.psel),
+    .s_apb_pwrite (tile_cfg_apb_req.pwrite),
+    .s_apb_pprot  (tile_cfg_apb_req.pprot),
+    .s_apb_pwdata (tile_cfg_apb_req.pwdata),
+    .s_apb_pstrb  (tile_cfg_apb_req.pstrb),
+    .s_apb_prdata (tile_cfg_apb_rsp.prdata),
+    .s_apb_pready (tile_cfg_apb_rsp.pready),
+    .s_apb_pslverr(tile_cfg_apb_rsp.pslverr),
+    .hwif_out     (hwif_out)
+  );
+
   //////////////////////////
   // Clock Gating & Reset //
   //////////////////////////
 
   tc_clk_gating i_tc_clk_gating_cluster (
     .clk_i,
-    .en_i     (tile_clk_en_i),
+    .en_i     (hwif_out.clk.en.value),
     .test_en_i(clk_rst_bypass_i),
     .clk_o    (tile_clk)
   );
@@ -540,7 +718,7 @@ module cluster_tile
   assign tile_rst_n = (clk_rst_bypass_i) ? rst_ni : tile_rst_ni;
 `else
   tc_clk_mux2 i_tc_reset_mux (
-    .clk0_i   (tile_rst_ni),
+    .clk0_i   (hwif_out.rst.n.value),
     .clk1_i   (rst_ni),
     .clk_sel_i(clk_rst_bypass_i),
     .clk_o    (tile_rst_n)
