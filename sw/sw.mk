@@ -60,6 +60,55 @@ $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 
 include $(SN_ROOT)/make/sw.mk
 
+########################
+## H-tile Snitch Test ##
+########################
+
+# The h-tile executes the Snitch runtime as a standalone tile, not as one of the
+# regular Gwaihir Snitch clusters. Build a separate runtime so GW_HTILE_RUNTIME
+# reaches snrt.S/snrt.cc without changing the normal cluster test binaries.
+SN_HTILE_RUNTIME_BUILDDIR     = $(GW_SNITCH_SW_DIR)/runtime/build_htile
+SN_HTILE_RUNTIME_RISCV_CFLAGS = $(SN_RUNTIME_RISCV_CFLAGS) -DGW_HTILE_RUNTIME
+SN_HTILE_RUNTIME_OBJS         = $(addprefix $(SN_HTILE_RUNTIME_BUILDDIR)/,$(addsuffix .o,$(notdir $(SN_RUNTIME_S_SRCS) $(SN_RUNTIME_C_SRCS))))
+SN_HTILE_RUNTIME_DEPS         = $(addprefix $(SN_HTILE_RUNTIME_BUILDDIR)/,$(addsuffix .d,$(notdir $(SN_RUNTIME_S_SRCS) $(SN_RUNTIME_C_SRCS))))
+SN_HTILE_RUNTIME_LIB          = $(SN_HTILE_RUNTIME_BUILDDIR)/libsnRuntime.a
+
+SN_HTILE_TEST_RISCV_LDFLAGS  = $(SN_RISCV_LDFLAGS)
+SN_HTILE_TEST_RISCV_LDFLAGS += -L$(dir $(SN_RUNTIME_MEMORY_LD))
+SN_HTILE_TEST_RISCV_LDFLAGS += -T$(SN_RUNTIME_BASE_LD)
+SN_HTILE_TEST_RISCV_LDFLAGS += -L$(SN_HTILE_RUNTIME_BUILDDIR)
+SN_HTILE_TEST_RISCV_LDFLAGS += -lsnRuntime
+
+.PHONY: sn-htile-runtime sn-clean-htile-runtime
+
+sn-htile-runtime: $(SN_HTILE_RUNTIME_LIB)
+
+sn-clean-htile-runtime:
+	rm -rf $(SN_HTILE_RUNTIME_BUILDDIR)
+
+$(SN_HTILE_RUNTIME_BUILDDIR):
+	mkdir -p $@
+
+$(SN_HTILE_RUNTIME_OBJS): $(SN_HTILE_RUNTIME_BUILDDIR)/%.o: $(SN_RUNTIME_SRCDIR)/% $(SN_HTILE_RUNTIME_BUILDDIR)/%.d | $(SN_HTILE_RUNTIME_BUILDDIR)
+	$(SN_RISCV_CXX) $(SN_HTILE_RUNTIME_RISCV_CFLAGS) -c $< -o $@
+
+$(SN_HTILE_RUNTIME_DEPS): $(SN_HTILE_RUNTIME_BUILDDIR)/%.d: $(SN_RUNTIME_SRCDIR)/% | $(SN_HTILE_RUNTIME_BUILDDIR)
+	$(SN_RISCV_CXX) $(SN_HTILE_RUNTIME_RISCV_CFLAGS) -MM -MT '$(@:.d=.o)' $< > $@
+
+$(SN_HTILE_RUNTIME_LIB): $(SN_HTILE_RUNTIME_OBJS) | $(SN_HTILE_RUNTIME_BUILDDIR)
+	$(SN_RISCV_AR) $(SN_RISCV_ARFLAGS) $@ $^
+
+$(SN_HTILE_RUNTIME_DEPS): | $(SN_RUNTIME_HAL_HDRS)
+
+$(SN_TESTS_BUILDDIR)/simple_htile.d: SN_TESTS_RISCV_CFLAGS += -DGW_HTILE_RUNTIME
+$(SN_TESTS_BUILDDIR)/simple_htile.elf: SN_TESTS_RISCV_CFLAGS += -DGW_HTILE_RUNTIME
+$(SN_TESTS_BUILDDIR)/simple_htile.elf: SN_TESTS_RISCV_LDFLAGS = $(SN_HTILE_TEST_RISCV_LDFLAGS)
+$(SN_TESTS_BUILDDIR)/simple_htile.elf: $(SN_HTILE_RUNTIME_LIB)
+
+sn-clean-runtime: sn-clean-htile-runtime
+
+SN_DEPS += $(SN_HTILE_RUNTIME_DEPS)
+
 ##############
 ## Cheshire ##
 ##############
