@@ -28,7 +28,7 @@
         enable_narrow_collectives: true,
         enable_wide_collectives: true,
         enable_xif: false,
-        enable_dca: false,
+        enable_dca: true,
         dca_data_width: 512,
         cluster_base_expose: true,
         alias_region_enable: true,
