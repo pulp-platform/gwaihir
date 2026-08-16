@@ -9,26 +9,48 @@ package:
     - "Lorenzo Leone <lleone@iis.ee.ethz.ch>"
 
 remotes:
-  pulp: "https://github.com/pulp-platform"
+  pulp: https://github.com/pulp-platform
 
 dependencies:
-  register_interface: "0.4.5"
-  axi: { git: "https://github.com/colluca/axi.git", rev: "multicast" }
-  apb_fll_if: "0.3.0"
-  floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "main", upstream_name: "FlooNoC" }
-  apb:                { git: "https://github.com/pulp-platform/apb.git",                rev: "common-cells-v2"                          }
-  common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",       rev: "c63eada47c050f78b320d0e854a24a9cd9c1cc80" }
-  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "dca" }
-  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir-common-cells-v2"                  }
-  obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "common-cells-v2" }
-  axi_obi:            { git: "https://github.com/pulp-platform/axi_obi.git",            rev: "common-cells-v2"                          }
-  pcie:               { path: ".deps/pcie"                                                                                              }
-  iDMA:               { git: "https://github.com/pulp-platform/iDMA.git",               version: 0.6.5  }
-  gwaihir-pd:         { path: "./pd"                                                                                                    }
-  # This is not a direct dependency of Gwaihir, but tcdm_interface (snitch_cluster) needs it and Bender
-  # does not transitively export incdirs (see https://github.com/pulp-platform/bender/issues/340).
+  # Alphabetically ordered
+  apb:
+    git: https://github.com/pulp-platform/apb.git
+    rev: common-cells-v2
+  apb_fll_if: 0.3.0
+  axi:
+    git: https://github.com/colluca/axi.git
+    rev: multicast
+  axi_obi:
+    git: https://github.com/pulp-platform/axi_obi.git
+    rev: common-cells-v2
+  cheshire:
+    git: https://github.com/pulp-platform/cheshire.git
+    rev: gwaihir-common-cells-v2
+  common_cells:
+    git: https://github.com/pulp-platform/common_cells.git
+    rev: c63eada47c050f78b320d0e854a24a9cd9c1cc80
+  floo_noc:
+    git: https://github.com/pulp-platform/FlooNoC.git
+    rev: main
+    upstream_name: FlooNoC
+  gwaihir-pd:
+    path: ./pd
+  gwaihir_lpddr:
+    path: .deps/lpddr
+  iDMA: 0.6.5
+  obi:
+    git: https://github.com/pulp-platform/obi.git
+    rev: common-cells-v2
+  pcie:
+    path: .deps/pcie
+  register_interface: 0.4.5
+  # reqrsp_interface is not a direct dependency of Gwaihir, but tcdm_interface (snitch_cluster)
+  # needs it and Bender does not transitively export incdirs (see
+  # https://github.com/pulp-platform/bender/issues/340).
   reqrsp_interface: 0.1.0
-  gwaihir_lpddr:      { path: "./.deps/lpddr"                                                                                           }
+  snitch_cluster:
+    git: https://github.com/pulp-platform/snitch_cluster.git
+    rev: dca
 
 workspace:
   package_links:
@@ -61,6 +83,8 @@ sources:
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
+  - hw/mem_tile_small.sv
+  - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
   - hw/ucie_tile.sv
 
