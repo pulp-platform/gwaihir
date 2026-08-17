@@ -236,8 +236,8 @@ module cheshire_tile
 
   `FLOO_TYPEDEF_AXI_FROM_CFG(nw_join, AxiCfgJoin)
 
-  nw_join_in_req_t nw_join_req;
-  nw_join_in_rsp_t nw_join_rsp;
+  nw_join_out_req_t nw_join_req;
+  nw_join_out_rsp_t nw_join_rsp;
 
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
@@ -251,8 +251,8 @@ module cheshire_tile
     .axi_narrow_rsp_t(axi_narrow_out_rsp_t),
     .axi_wide_req_t  (axi_wide_out_req_t),
     .axi_wide_rsp_t  (axi_wide_out_rsp_t),
-    .axi_req_t       (nw_join_in_req_t),
-    .axi_rsp_t       (nw_join_in_rsp_t)
+    .axi_req_t       (nw_join_out_req_t),
+    .axi_rsp_t       (nw_join_out_rsp_t)
   ) i_floo_nw_join (
     .clk_i,
     .rst_ni,
