@@ -9,10 +9,11 @@ module snitch_hwpe_subsystem
   import hwpe_ctrl_package::*;
   import reqrsp_pkg::amo_op_e;
 #(
-  parameter type         tcdm_req_t    = logic,
-  parameter type         tcdm_rsp_t    = logic,
-  parameter type         periph_req_t  = logic,
-  parameter type         periph_rsp_t  = logic,
+  parameter type tcdm_req_t   = logic,
+  parameter type tcdm_rsp_t   = logic,
+  parameter type periph_req_t = logic,
+  parameter type periph_rsp_t = logic,
+
   parameter int unsigned HwpeDataWidth = 256,
   parameter int unsigned IdWidth       = 8,
   parameter int unsigned NrCores       = 8,
@@ -47,9 +48,9 @@ module snitch_hwpe_subsystem
   };
   // verilog_format: on
 
-  logic [1:0]                   hwpe_clk;
-  logic [1:0]                   clk_en;
-  logic                         mux_sel;
+  logic [1:0] hwpe_clk;
+  logic [1:0] clk_en;
+  logic       mux_sel;
 
   // Currently unused
   logic [1:0][NrCores-1:0][1:0] evt;
@@ -116,16 +117,16 @@ module snitch_hwpe_subsystem
     hwpe_ctrl_rsp_o.p_valid = '0;
 
     // independent of selector
-    periph[0].add           = {24'h0, hwpe_ctrl_req_i.q.addr[7:0]};
-    periph[0].wen           = ~hwpe_ctrl_req_i.q.write;
-    periph[0].be            = hwpe_ctrl_req_i.q.strb;
-    periph[0].data          = hwpe_ctrl_req_i.q.data;
-    periph[0].id            = hwpe_ctrl_req_i.q.user;
-    periph[1].add           = {24'h0, hwpe_ctrl_req_i.q.addr[7:0]};
-    periph[1].wen           = ~hwpe_ctrl_req_i.q.write;
-    periph[1].be            = hwpe_ctrl_req_i.q.strb;
-    periph[1].data          = hwpe_ctrl_req_i.q.data;
-    periph[1].id            = hwpe_ctrl_req_i.q.user;
+    periph[0].add  = {24'h0, hwpe_ctrl_req_i.q.addr[7:0]};
+    periph[0].wen  = ~hwpe_ctrl_req_i.q.write;
+    periph[0].be   = hwpe_ctrl_req_i.q.strb;
+    periph[0].data = hwpe_ctrl_req_i.q.data;
+    periph[0].id   = hwpe_ctrl_req_i.q.user;
+    periph[1].add  = {24'h0, hwpe_ctrl_req_i.q.addr[7:0]};
+    periph[1].wen  = ~hwpe_ctrl_req_i.q.write;
+    periph[1].be   = hwpe_ctrl_req_i.q.strb;
+    periph[1].data = hwpe_ctrl_req_i.q.data;
+    periph[1].id   = hwpe_ctrl_req_i.q.user;
 
     if ((hwpe_ctrl_req_i.q.addr[7:0] == 'h9C || hwpe_ctrl_req_i.q.addr[7:0] == 'h98 ||
          hwpe_ctrl_req_i.q.addr[7:0] == 'h94)) begin

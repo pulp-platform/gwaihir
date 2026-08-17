@@ -21,21 +21,24 @@ module mem_tile
   parameter int unsigned MemTileId      = 0,
   parameter int unsigned MemTileSize    = MemTileSizeLarge  // Memory size in total in bytes
 ) (
-  input  logic                              clk_i,
-  input  logic                              rst_ni,
-  input  logic                              test_enable_i,
-  input  logic                              clk_rst_bypass_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic test_enable_i,
+  input logic clk_rst_bypass_i,
+
   // Chimney ports
-  input  id_t                               id_i,
+  input id_t id_i,
+
   // Sam idx
-  input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
+  input logic [$bits(sam_idx_e)-1:0] samidx_i,
+
   // Router ports
-  output floo_req_t  [          West:North] floo_req_o,
-  input  floo_rsp_t  [          West:North] floo_rsp_i,
-  output floo_wide_t [          West:North] floo_wide_o,
-  input  floo_req_t  [          West:North] floo_req_i,
-  output floo_rsp_t  [          West:North] floo_rsp_o,
-  input  floo_wide_t [          West:North] floo_wide_i
+  output floo_req_t  [West:North] floo_req_o,
+  input  floo_rsp_t  [West:North] floo_rsp_i,
+  output floo_wide_t [West:North] floo_wide_o,
+  input  floo_req_t  [West:North] floo_req_i,
+  output floo_rsp_t  [West:North] floo_rsp_o,
+  input  floo_wide_t [West:North] floo_wide_i
 );
 
   // Tile-specific reset and clock signals
@@ -107,14 +110,14 @@ module mem_tile
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumDemuxPorts-1:0] axi_demux_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumDemuxPorts-1:0] axi_demux_out_rsp;
 
-  gw_tile_regs_pkg::gw_tile_regs__out_t                          hwif_out;
+  gw_tile_regs_pkg::gw_tile_regs__out_t hwif_out;
 
-  tile_cfg_axi_lite_req_t                                        tile_cfg_axi_lite_req;
-  tile_cfg_axi_lite_resp_t                                       tile_cfg_axi_lite_rsp;
-  tile_cfg_axi_lite_32_req_t                                     tile_cfg_reg_lite_req;
-  tile_cfg_axi_lite_32_resp_t                                    tile_cfg_reg_lite_rsp;
-  tile_cfg_apb_req_t                                             tile_cfg_apb_req;
-  tile_cfg_apb_resp_t                                            tile_cfg_apb_rsp;
+  tile_cfg_axi_lite_req_t     tile_cfg_axi_lite_req;
+  tile_cfg_axi_lite_resp_t    tile_cfg_axi_lite_rsp;
+  tile_cfg_axi_lite_32_req_t  tile_cfg_reg_lite_req;
+  tile_cfg_axi_lite_32_resp_t tile_cfg_reg_lite_rsp;
+  tile_cfg_apb_req_t          tile_cfg_apb_req;
+  tile_cfg_apb_resp_t         tile_cfg_apb_rsp;
 
   ////////////
   // Router //
@@ -188,8 +191,8 @@ module mem_tile
   floo_gwaihir_noc_pkg::axi_wide_out_rsp_t axi_wide_rsp;
 
   // DMA req/resp, supposed to access LPDDR tile, we also keep the option to access other tiles
-  axi_wide_in_req_t                        axi_dma_req;
-  axi_wide_in_rsp_t                        axi_dma_rsp;
+  axi_wide_in_req_t axi_dma_req;
+  axi_wide_in_rsp_t axi_dma_rsp;
 
   floo_nw_chimney #(
     .AxiCfgN             (AxiCfgN),
@@ -685,18 +688,18 @@ module mem_tile
     .rdata_i  (dma_mem_rdata)
   );
 
-  logic [NumBankRows-1:0]                                         payload_dma_gnt;
+  logic [NumBankRows-1:0] payload_dma_gnt;
 
   // Read data (direct output from SRAM memory macro)
   logic [NumBankRows-1:0][NumBanksPerWord-1:0][SramDataWidth-1:0] arb_sram_rdata_split;
 
   logic dma_sram_req, dma_sram_gnt, dma_sram_we;
   logic [NumBanksPerWord-1:0][SramMacroSelWidth-1:0] dma_sram_macro_sel, dma_sram_macro_sel_q;
-  logic [  NumBanksPerWord-1:0][  SramAddrWidth-1:0] dma_sram_addr;
-  logic [AxiCfgW.DataWidth-1:0]                      dma_sram_rdata;
+  logic [  NumBanksPerWord-1:0][SramAddrWidth-1:0] dma_sram_addr;
+  logic [AxiCfgW.DataWidth-1:0]                    dma_sram_rdata;
 
-  logic [  NumBanksPerWord-1:0][  SramDataWidth-1:0] dma_sram_wdata;
-  logic [  NumBanksPerWord-1:0][SramDataWidth/8-1:0] dma_sram_be;
+  logic [NumBanksPerWord-1:0][  SramDataWidth-1:0] dma_sram_wdata;
+  logic [NumBanksPerWord-1:0][SramDataWidth/8-1:0] dma_sram_be;
 
   assign dma_sram_req  = dma_mem_req;
   assign dma_mem_gnt   = dma_sram_gnt;
@@ -958,11 +961,11 @@ module mem_tile
 
   logic sram_req, sram_gnt, sram_we;
   logic [NumBanksPerWord-1:0][SramMacroSelWidth-1:0] sram_macro_sel, sram_macro_sel_q;
-  logic [  NumBanksPerWord-1:0][  SramAddrWidth-1:0] sram_addr;
-  logic [AxiCfgW.DataWidth-1:0]                      sram_rdata;
+  logic [  NumBanksPerWord-1:0][SramAddrWidth-1:0] sram_addr;
+  logic [AxiCfgW.DataWidth-1:0]                    sram_rdata;
 
-  logic [  NumBanksPerWord-1:0][  SramDataWidth-1:0] sram_wdata;
-  logic [  NumBanksPerWord-1:0][SramDataWidth/8-1:0] sram_be;
+  logic [NumBanksPerWord-1:0][  SramDataWidth-1:0] sram_wdata;
+  logic [NumBanksPerWord-1:0][SramDataWidth/8-1:0] sram_be;
 
   assign sram_req  = mem_req;
   assign mem_gnt   = sram_gnt;
@@ -1009,8 +1012,8 @@ module mem_tile
 
   for (genvar row = 0; row < NumBankRows; row++) begin : gen_sram_row_arbitor
     // Memory request from external tiles and DMA
-    assign payload_ext_req[row]  = sram_req && (sram_macro_sel[0] == row);
-    assign payload_dma_req[row]  = dma_sram_req && (dma_sram_macro_sel[0] == row);
+    assign payload_ext_req[row] = sram_req && (sram_macro_sel[0] == row);
+    assign payload_dma_req[row] = dma_sram_req && (dma_sram_macro_sel[0] == row);
 
     assign payload_ext[row].addr = sram_addr[0];
     assign payload_ext[row].we   = sram_we && (sram_macro_sel[0] == row);

@@ -17,27 +17,31 @@ module mem_tile_dma_wrap #(
   parameter int unsigned AxiNarrowDataWidth = 0,
   parameter int unsigned AxiNarrowIdWidth   = 0,
   parameter int unsigned AxiNarrowUserWidth = 0,
+
   // iDMA transfer type (wide)
-  parameter int unsigned AxiAddrWidth       = 0,
-  parameter int unsigned AxiDataWidth       = 0,
-  parameter int unsigned AxiIdWidth         = 0,
-  parameter int unsigned AxiUserWidth       = 0,
+  parameter int unsigned AxiAddrWidth = 0,
+  parameter int unsigned AxiDataWidth = 0,
+  parameter int unsigned AxiIdWidth   = 0,
+  parameter int unsigned AxiUserWidth = 0,
+
   // iDMA parameters
-  parameter int unsigned NumAxInFlight      = 0,
-  parameter int unsigned MemSysDepth        = 0,
-  parameter int unsigned JobFifoDepth       = 0,
-  parameter bit          RAWCouplingAvail   = 0,
-  parameter bit          IsTwoD             = 0,
+  parameter int unsigned NumAxInFlight    = 0,
+  parameter int unsigned MemSysDepth      = 0,
+  parameter int unsigned JobFifoDepth     = 0,
+  parameter bit          RAWCouplingAvail = 0,
+  parameter bit          IsTwoD           = 0,
+
   // iDMA transfer req/resp type
-  parameter type         axi_mst_req_t      = logic,
-  parameter type         axi_mst_rsp_t      = logic,
+  parameter type axi_mst_req_t = logic,
+  parameter type axi_mst_rsp_t = logic,
   // iDMA configuration req/resp type
-  parameter type         axi_slv_req_t      = logic,
-  parameter type         axi_slv_rsp_t      = logic
+  parameter type axi_slv_req_t = logic,
+  parameter type axi_slv_rsp_t = logic
 ) (
-  input  logic         clk_i,
-  input  logic         rst_ni,
-  input  logic         testmode_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic testmode_i,
+
   // iDMA transfer req/resp
   output axi_mst_req_t axi_mst_req_o,
   input  axi_mst_rsp_t axi_mst_rsp_i,
@@ -94,33 +98,33 @@ module mem_tile_dma_wrap #(
   dma_regs_rsp_t dma_reg_rsp;
 
   // 1D FE signals
-  idma_req_t     burst_req_d;
-  logic          be_valid_d;
-  logic          be_ready_d;
+  idma_req_t burst_req_d;
+  logic      be_valid_d;
+  logic      be_ready_d;
 
   // ND FE signals
-  idma_nd_req_t  idma_nd_req_d;
-  logic          idma_nd_req_valid_d;
-  logic          idma_nd_req_ready_d;
+  idma_nd_req_t idma_nd_req_d;
+  logic         idma_nd_req_valid_d;
+  logic         idma_nd_req_ready_d;
 
   // ND ME signals
-  idma_nd_req_t  idma_nd_req;
-  logic          idma_nd_req_valid;
-  logic          idma_nd_req_ready;
-  logic          idma_nd_rsp_valid;
-  logic          idma_nd_rsp_ready;
+  idma_nd_req_t idma_nd_req;
+  logic         idma_nd_req_valid;
+  logic         idma_nd_req_ready;
+  logic         idma_nd_rsp_valid;
+  logic         idma_nd_rsp_ready;
 
   // BE signals
-  idma_req_t     burst_req;
-  logic          be_valid;
-  logic          be_ready;
-  idma_rsp_t     idma_rsp;
-  logic          idma_rsp_valid;
-  logic          idma_rsp_ready;
+  idma_req_t burst_req;
+  logic      be_valid;
+  logic      be_ready;
+  idma_rsp_t idma_rsp;
+  logic      idma_rsp_valid;
+  logic      idma_rsp_ready;
 
   // ID signals
-  logic          issue_id;
-  logic          retire_id;
+  logic issue_id;
+  logic retire_id;
   logic [IdCounterWidth-1:0] done_id, next_id;
 
   // Status signals

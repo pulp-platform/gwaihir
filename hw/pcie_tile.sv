@@ -9,32 +9,38 @@ module pcie_tile
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
 (
-  input  logic                    clk_i,
-  input  logic                    rst_ni,
-  input  logic                    test_enable_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic test_enable_i,
+
   // Ref clk
-  inout  wire                     pcie_refclk_n,
-  inout  wire                     pcie_refclk_p,
-  input  logic                    pcie_button_rst_ni,
+  inout wire  pcie_refclk_n,
+  inout wire  pcie_refclk_p,
+  input logic pcie_button_rst_ni,
+
   // Serdes
-  inout  wire        [       1:0] pcie_rx_p,
-  inout  wire        [       1:0] pcie_rx_n,
-  inout  wire        [       1:0] pcie_tx_p,
-  inout  wire        [       1:0] pcie_tx_n,
+  inout wire [1:0] pcie_rx_p,
+  inout wire [1:0] pcie_rx_n,
+  inout wire [1:0] pcie_tx_p,
+  inout wire [1:0] pcie_tx_n,
+
   // Test
-  input  logic                    test_clk_en_i,
-  input  logic                    test_coreclk_i,
-  input  logic                    test_rst_en_i,
-  input  logic                    test_rst_n_i,
-  input  logic                    test_phy_rst_n_i,
+  input logic test_clk_en_i,
+  input logic test_coreclk_i,
+  input logic test_rst_en_i,
+  input logic test_rst_n_i,
+  input logic test_phy_rst_n_i,
+
   // JTAG
-  input  logic                    jtag_phys_tdi_i,
-  input  logic                    jtag_phys_tck_i,
-  input  logic                    jtag_phys_tms_i,
-  input  logic                    jtag_phys_trst_ni,
-  output logic                    jtag_phys_tdo_o,
+  input  logic jtag_phys_tdi_i,
+  input  logic jtag_phys_tck_i,
+  input  logic jtag_phys_tms_i,
+  input  logic jtag_phys_trst_ni,
+  output logic jtag_phys_tdo_o,
+
   // Router ID
-  input  id_t                     id_i,
+  input id_t id_i,
+
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,
@@ -94,9 +100,9 @@ module pcie_tile
   assign router_floo_wide_in[West:North] = floo_wide_i;
 
   // Eject port: no real endpoint yet, tied to zero
-  assign router_floo_req_in[Eject]       = '0;
-  assign router_floo_rsp_in[Eject]       = '0;
-  assign router_floo_wide_in[Eject]      = '0;
-  assign jtag_phys_tdo_o                 = 1'b0;
+  assign router_floo_req_in[Eject]  = '0;
+  assign router_floo_rsp_in[Eject]  = '0;
+  assign router_floo_wide_in[Eject] = '0;
+  assign jtag_phys_tdo_o            = 1'b0;
 
 endmodule : pcie_tile

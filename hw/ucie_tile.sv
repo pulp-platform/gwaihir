@@ -10,12 +10,14 @@ module ucie_tile
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
 (
-  input  logic                    clk_i,
-  input  logic                    rst_ni,
-  input  logic                    test_enable_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic test_enable_i,
+
   // Router ID
-  input  id_t                     id_i,
-  input  logic                    ucie_id_i,
+  input id_t  id_i,
+  input logic ucie_id_i,
+
   // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,
@@ -29,11 +31,12 @@ module ucie_tile
   input  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_out_rsp_i,
   input  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  axi_narrow_in_req_i,
   output floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  axi_narrow_in_rsp_o,
+
   // AXI wide channels
-  output floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req_o,
-  input  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_out_rsp_i,
-  input  floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req_i,
-  output floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    axi_wide_in_rsp_o
+  output floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_out_req_o,
+  input  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t axi_wide_out_rsp_i,
+  input  floo_gwaihir_noc_pkg::axi_wide_in_req_t  axi_wide_in_req_i,
+  output floo_gwaihir_noc_pkg::axi_wide_in_rsp_t  axi_wide_in_rsp_o
 );
 
   ////////////
@@ -153,9 +156,9 @@ module ucie_tile
     axi_narrow_in_req.aw.addr = unalias_ucie_address(axi_narrow_in_req_i.aw.addr, ucie_id_i);
     axi_narrow_in_req.ar.addr = unalias_ucie_address(axi_narrow_in_req_i.ar.addr, ucie_id_i);
 
-    axi_wide_in_req           = axi_wide_in_req_i;
-    axi_wide_in_req.aw.addr   = unalias_ucie_address(axi_wide_in_req_i.aw.addr, ucie_id_i);
-    axi_wide_in_req.ar.addr   = unalias_ucie_address(axi_wide_in_req_i.ar.addr, ucie_id_i);
+    axi_wide_in_req         = axi_wide_in_req_i;
+    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_in_req_i.aw.addr, ucie_id_i);
+    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_in_req_i.ar.addr, ucie_id_i);
   end
 
 endmodule : ucie_tile
