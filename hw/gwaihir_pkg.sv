@@ -349,11 +349,12 @@ package gwaihir_pkg;
   function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
     cheshire_pkg::cheshire_cfg_t ret = cheshire_pkg::DefaultCfg;
     // Enable the external AXI master and slave interfaces
-    ret.AxiExtNumMst                         = 1;
-    ret.AxiExtNumSlv                         = 1;
-    ret.AxiExtNumRules                       = 1;
-    ret.RegExtNumSlv                         = CshRegExtNumSlv;
-    ret.RegExtNumRules                       = CshRegExtNumSlv;
+    ret.AxiExtNumMst   = 1;
+    ret.AxiExtNumSlv   = 1;
+    ret.AxiExtNumRules = 1;
+    ret.RegExtNumSlv   = CshRegExtNumSlv;
+    ret.RegExtNumRules = CshRegExtNumSlv;
+
     // TODO(fischeti): Inherit these from generated SV/RDL.
     ret.AxiExtRegionIdx[0]                   = 0;
     ret.AxiExtRegionStart[0]                 = 'h2000_0000;
@@ -367,38 +368,42 @@ package gwaihir_pkg;
     ret.RegExtRegionIdx[CshRegLPDDR]         = CshRegLPDDR;
     ret.RegExtRegionStart[CshRegLPDDR]       = 'h1900_0000;
     ret.RegExtRegionEnd[CshRegLPDDR]         = 'h1a00_1020;
+
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
-    ret.Cva6ExtCieOnTop                      = 0;
-    ret.Cva6ExtCieLength                     = 'h0;
-    ret.AddrWidth                            = aw_bt'(AxiCfgN.AddrWidth);
-    ret.AxiDataWidth                         = dw_bt'(AxiCfgN.DataWidth);
-    ret.AxiUserWidth                         = dw_bt'(max(AxiCfgN.UserWidth, AxiCfgW.UserWidth));
-    ret.AxiMstIdWidth                        = aw_bt'(max(AxiCfgN.OutIdWidth, AxiCfgW.OutIdWidth));
+    ret.Cva6ExtCieOnTop  = 0;
+    ret.Cva6ExtCieLength = 'h0;
+    ret.AddrWidth        = aw_bt'(AxiCfgN.AddrWidth);
+    ret.AxiDataWidth     = dw_bt'(AxiCfgN.DataWidth);
+    ret.AxiUserWidth     = dw_bt'(max(AxiCfgN.UserWidth, AxiCfgW.UserWidth));
+    ret.AxiMstIdWidth    = aw_bt'(max(AxiCfgN.OutIdWidth, AxiCfgW.OutIdWidth));
+
     // TODO(fischeti): Check if we need external interrupts for each hart/cluster
-    ret.NumExtIrqHarts                       = doub_bt'(NumClusters);
+    ret.NumExtIrqHarts = doub_bt'(NumClusters);
     // We do not need/want VGA
-    ret.Vga                                  = 1'b0;
+    ret.Vga            = 1'b0;
     // We do not need/want USB
-    ret.Usb                                  = 1'b0;
-    ret.LlcOutRegionStart                    = 'h8000_0000;
-    ret.LlcOutRegionEnd                      = 'h1_0000_0000;
-    ret.SlinkRegionStart                     = 'h100_0000_0000;
-    ret.SlinkRegionEnd                       = 'h200_0000_0000;
+    ret.Usb            = 1'b0;
+
+    ret.LlcOutRegionStart = 'h8000_0000;
+    ret.LlcOutRegionEnd   = 'h1_0000_0000;
+    ret.SlinkRegionStart  = 'h100_0000_0000;
+    ret.SlinkRegionEnd    = 'h200_0000_0000;
+
     // RT features
-    ret.Cva6InstrTlbEntries                  = 16;
-    ret.Cva6DataTlbEntries                   = 16;  // TODO: can be increased to 32.
-    ret.Cva6TlbColoring                      = 1;
-    ret.Cva6NumTlbColors                     = 16;
-    ret.Cva6LockableTlbWays                  = 8;
-    ret.Cva6UseSharedTlb                     = 0;
-    ret.AxiRt                                = 1;
-    ret.Clic                                 = 1;
-    ret.ClicVsclic                           = 1;
-    ret.ClicVsprio                           = 1;
-    ret.ClicNumVsctxts                       = 4;
-    ret.ClicPrioWidth                        = 1;
-    ret.LlcCachePartition                    = 1;
+    ret.Cva6InstrTlbEntries = 16;
+    ret.Cva6DataTlbEntries  = 16;  // TODO: can be increased to 32.
+    ret.Cva6TlbColoring     = 1;
+    ret.Cva6NumTlbColors    = 16;
+    ret.Cva6LockableTlbWays = 8;
+    ret.Cva6UseSharedTlb    = 0;
+    ret.AxiRt               = 1;
+    ret.Clic                = 1;
+    ret.ClicVsclic          = 1;
+    ret.ClicVsprio          = 1;
+    ret.ClicNumVsctxts      = 4;
+    ret.ClicPrioWidth       = 1;
+    ret.LlcCachePartition   = 1;
     return ret;
   endfunction
 

@@ -14,9 +14,10 @@ module ucie_tile
   import gwaihir_pkg::*;
   import ucie_slink_reg_pkg::*;
 (
-  input  logic                              clk_i,
-  input  logic                              rst_ni,
-  input  logic                              test_enable_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic test_enable_i,
+
   // Router ID
   input  id_t                               id_i,
   input  logic                              ucie_id_i,
@@ -46,18 +47,18 @@ module ucie_tile
   // Router interfaces
   floo_req_t [Eject:North] router_floo_req_out, router_floo_req_in;
   floo_rsp_t [Eject:North] router_floo_rsp_out, router_floo_rsp_in;
-  floo_wide_t                          [Eject:North] router_floo_wide_in;
-  floo_wide_t                          [Eject:North] router_floo_wide_out;
+  floo_wide_t [Eject:North] router_floo_wide_in;
+  floo_wide_t [Eject:North] router_floo_wide_out;
 
   // NW Join AXI interface
-  gwaihir_pkg::axi_utile_nw_join_req_t               axi_utile_nw_join_out_req;
-  gwaihir_pkg::axi_utile_nw_join_rsp_t               axi_utile_nw_join_out_rsp;
-  gwaihir_pkg::axi_utile_nw_join_req_t               axi_utile_nw_join_in_req;
-  gwaihir_pkg::axi_utile_nw_join_rsp_t               axi_utile_nw_join_in_rsp;
+  gwaihir_pkg::axi_utile_nw_join_req_t axi_utile_nw_join_out_req;
+  gwaihir_pkg::axi_utile_nw_join_rsp_t axi_utile_nw_join_out_rsp;
+  gwaihir_pkg::axi_utile_nw_join_req_t axi_utile_nw_join_in_req;
+  gwaihir_pkg::axi_utile_nw_join_rsp_t axi_utile_nw_join_in_rsp;
 
   // SLink configuration registers.
-  ucie_slink_reg_pkg::slink_reg__in_t                slink_hw2reg;
-  ucie_slink_reg_pkg::slink_reg__out_t               slink_reg2hw;
+  ucie_slink_reg_pkg::slink_reg__in_t  slink_hw2reg;
+  ucie_slink_reg_pkg::slink_reg__out_t slink_reg2hw;
 
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
@@ -113,8 +114,8 @@ module ucie_tile
   floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_out_rsp;
 
   // From IW Converter to chimney
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_req_iw_conv;
-  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    axi_wide_rsp_iw_conv;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_req_iw_conv;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t axi_wide_rsp_iw_conv;
 
 
   floo_nw_chimney #(
@@ -357,7 +358,7 @@ module ucie_tile
       '{idx: 0, start_addr: '0, end_addr: '1}
   };
 
-  ucie_cfg_apb_req_t ucie_cfg_apb_req;
+  ucie_cfg_apb_req_t  ucie_cfg_apb_req;
   ucie_cfg_apb_resp_t ucie_cfg_apb_rsp;
 
   axi_lite_to_apb #(
@@ -414,10 +415,10 @@ module ucie_tile
                       axi_narrow_noatop_out_rsp_t, axi_narrow_out_addr_t, no_outstanding_id_t,
                       axi_narrow_out_data_t, axi_narrow_out_strb_t, no_atop_user_t)
 
-  axi_narrow_iw_out_req_t     axi_narrow_iw_out_req;
-  axi_narrow_iw_out_rsp_t     axi_narrow_iw_out_rsp;
-  axi_narrow_iw_out_req_t     axi_narrow_atop_filtered_req;
-  axi_narrow_iw_out_rsp_t     axi_narrow_atop_filtered_rsp;
+  axi_narrow_iw_out_req_t axi_narrow_iw_out_req;
+  axi_narrow_iw_out_rsp_t axi_narrow_iw_out_rsp;
+  axi_narrow_iw_out_req_t axi_narrow_atop_filtered_req;
+  axi_narrow_iw_out_rsp_t axi_narrow_atop_filtered_rsp;
 
   axi_narrow_noatop_out_req_t axi_narrow_noatop_out_req;
   axi_narrow_noatop_out_rsp_t axi_narrow_noatop_out_rsp;
