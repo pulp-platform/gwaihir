@@ -38,7 +38,6 @@ $(eval $(call add_vsim_flag,CHS_BINARY))
 $(eval $(call add_vsim_flag,SN_BINARY))
 $(eval $(call add_vsim_flag,BOOTMODE))
 $(eval $(call add_vsim_flag,PRELMODE))
-$(eval $(call add_vsim_flag,OFFLOAD_IMAGE))
 
 .PHONY: vsim-compile vsim-clean vsim-run vsim-vcd vsim-fst
 

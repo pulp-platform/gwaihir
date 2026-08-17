@@ -197,35 +197,20 @@ task automatic headless_offload(output logic [31:0] exit_code);
   import floo_gwaihir_noc_pkg::*;
   // HW counts + L2 aperture come from the SoC cfg/addrmap, never hardcoded.
   localparam int     NrClusters = NumClusters;
-  localparam int     NrCores    = snitch_cluster_pkg::NrCores;      // 8 compute + 1 DM
+  localparam int     NrCores    = snitch_cluster_wrapper_pkg::NrCores;  // 8 compute + 1 DM
   localparam longint L2Base     = Sam[L2Spm0SamIdx].start_addr;
-  localparam longint RcBase     = Sam[L2Spm0SamIdx + 2*NumMemTiles - 2].end_addr - 'h1000; // return_code page = top 4K
-  localparam longint ImgPa     = L2Base + 'h10000;                // job-descriptor offset within the image
-  localparam int     PollIters = 200000;                          // #1us poll steps -> 200 ms wall timeout
-  string img_path;
-  int    fp, i, cl, core, iter, ndone, nfail, expect_done;
-  logic [31:0] word, rc;
+  localparam longint RcBase     = Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr - 'h1000; // return_code page = top 4K
+  localparam int     PollCycles = 1000;                           // poll every PollCycles clock cycles
+  localparam int     PollIters  = 20000;                          // -> 20 M cycles before giving up
+  int    i, cl, core, iter, ndone, nfail, expect_done;
+  logic [31:0] rc;
   realtime t_wake;
 
-  // 1) optional: preload a command-stream job image (plain apps like summa_gemm carry their own data).
-  // Output buffers are initialised by the image itself (or the kernel's fill), so the tb stays
-  // agnostic to the command-stream layout.
-  if ($value$plusargs("OFFLOAD_IMAGE=%s", img_path)) begin
-    fp = $fopen(img_path, "r");
-    if (fp == 0) $fatal(1, "[OFFLOAD] cannot open image %s", img_path);
-    i = 0;
-    while ($fscanf(fp, "%h", word) == 1) begin fastmode_write_word(ImgPa + i*4, word); i++; end
-    $fclose(fp);
-    $display("[OFFLOAD] loaded %0d words @0x%h from %s", i, ImgPa, img_path);
-  end else begin
-    $display("[OFFLOAD] no image -- plain bare-metal offload (firmware carries its own data)");
-  end
-
-  // 2) zero the return-code page
+  // 1) zero the return-code page
   for (i = 0; i < NrClusters*NrCores; i++)
     fastmode_write_word(RcBase + i*4, 32'h0);
 
-  // 3) per-cluster scratch: [1]=firmware entry (L2 base), [0]=&return_code_array[cl][0]
+  // 2) per-cluster scratch: [1]=firmware entry (L2 base), [0]=&return_code_array[cl][0]
   for (cl = 0; cl < NrClusters; cl++) begin
     fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1),     L2Base[31:0], 1'b0);
     fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1) + 4, 32'h0,         1'b0);
@@ -233,15 +218,15 @@ task automatic headless_offload(output logic [31:0] exit_code);
     fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0) + 4, 32'h0,         1'b0);
   end
 
-  // 4) wake cluster 0 (snRuntime fans out to the others through the world barrier); start the timer
+  // 3) wake cluster 0 (snRuntime fans out to the others through the world barrier); start the timer
   expect_done = NrClusters*NrCores;
   t_wake = $realtime;
   fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR(0), ((32'h1 << NrCores) - 1), 1'b0);
   $display("[OFFLOAD] woke cluster 0, polling %0d return-code slots ...", expect_done);
 
-  // 5) poll return codes (bit0=done, bits[31:1]=rc) until all done or timeout
+  // 4) poll return codes (bit0=done, bits[31:1]=rc) until all done or timeout
   for (iter = 0; iter < PollIters; iter++) begin
-    #1us;
+    repeat (PollCycles) @(posedge fix.clk);
     ndone = 0; nfail = 0;
     for (cl = 0; cl < NrClusters; cl++)
       for (core = 0; core < NrCores; core++) begin

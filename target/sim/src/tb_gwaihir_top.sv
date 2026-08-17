@@ -94,8 +94,10 @@ module tb_gwaihir_top;
           if (snitch_preload) fastmode_read();
         end
         5: begin  // headless offload: run a cluster job with no host (tb-driven simple_offload)
+          if (!snitch_preload)
+            $fatal(1, "Preload mode %d (headless offload) requires SN_BINARY!", preload_mode);
           jtag_enable_tiles();
-          if (snitch_preload) fastmode_elf_preload(snitch_elf, snitch_entry);
+          fastmode_elf_preload(snitch_elf, snitch_entry);
           headless_offload(exit_code);
         end
         default: begin
