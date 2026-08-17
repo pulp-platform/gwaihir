@@ -68,6 +68,9 @@ UCIE_SLINK_EN_DDR    ?= 0
 
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
+$(GW_GEN_HW_DIR) $(GW_GEN_SW_DIR):
+	@mkdir -p $@
+
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/snitch_cluster.rdl
