@@ -20,7 +20,6 @@ PEAKRDL          ?= peakrdl
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
 SN_CFG	  ?= $(GW_ROOT)/cfg/snitch_cluster.json
 PLIC_CFG  ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
-SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 
 # L2 SPM base address, queried from the FlooNoC config so it stays in sync with FLOO_CFG
 L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) "endpoints.l2_spm_0.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
@@ -55,10 +54,6 @@ $(CHS_ROOT)/hw/rv_plic.cfg.hjson: $(OTPROOT)/.generated2
 $(OTPROOT)/.generated2: $(PLIC_CFG)
 	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
 
-$(CHS_ROOT)/hw/serial_link.hjson: $(CHS_SLINK_DIR)/.generated2
-$(CHS_SLINK_DIR)/.generated2:	$(SLINK_CFG)
-	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
-
 #############
 # systemRDL #
 #############
@@ -66,15 +61,15 @@ DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
-UCIE_SLINK_REG_CFG ?= $(GW_ROOT)/cfg/ucie_slink_reg.mk
-include $(UCIE_SLINK_REG_CFG)
+UCIE_SLINK_NUM_LANES ?= 256
+UCIE_SLINK_EN_DDR    ?= 0
 
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
 GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
-GW_RDL_ALL += $(GW_GEN_DIR)/ucie_slink_reg.rdl
+GW_RDL_ALL += $(UCIE_SLINK_RDL)
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
 GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_64b.rdl
@@ -93,13 +88,8 @@ $(GW_GEN_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
 	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n
 
 # UCIe SLink registers
-$(GW_GEN_DIR)/ucie_slink_reg.rdl: $(GW_ROOT)/cfg/rdl/ucie_slink_reg.rdl.tpl $(UCIE_SLINK_RDL) $(UCIE_SLINK_REG_CFG)
-	sed -e 's/@UCIE_SLINK_NUM_LANES@/$(UCIE_SLINK_NUM_LANES)/g' \
-	    -e 's/@UCIE_SLINK_EN_DDR@/$(UCIE_SLINK_EN_DDR)/g' \
-	    $< > $@
-
 $(GW_GEN_DIR)/ucie_slink_reg.sv: $(GW_GEN_DIR)/ucie_slink_reg_pkg.sv
-$(GW_GEN_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL) $(UCIE_SLINK_REG_CFG)
+$(GW_GEN_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL)
 	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n --module-name ucie_slink_reg \
 		--package-name ucie_slink_reg_pkg  -P NumLanes=$(UCIE_SLINK_NUM_LANES) -P EnDdr=$(UCIE_SLINK_EN_DDR)
 

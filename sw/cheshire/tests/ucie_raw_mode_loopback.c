@@ -36,7 +36,6 @@ static void slink_raw_configure_tx(slink_regs_t *regs) {
   regs->raw_mode_out_ch_mask[0].w = 1;
   // Clear TX FIFO before transmitting
   regs->raw_mode_out_data_fifo_ctrl.w = 1;
-  regs->raw_mode_out_en.w = 1;
   fence();
 }
 
@@ -65,8 +64,8 @@ int main() {
   uint32_t tx_sample[RAW_WORDS_PER_SAMPLE];
   uint32_t rx_sample[RAW_WORDS_PER_SAMPLE];
 
-  slink_regs_t *ucie0_slink = &gwaihir_addrmap_64b.ucie0_axi_serial_cfg.regs;
-  slink_regs_t *ucie1_slink = &gwaihir_addrmap_64b.ucie1_axi_serial_cfg.regs;
+  slink_regs_t *ucie0_slink = &gwaihir_addrmap_64b.ucie0_axi_serial_cfg;
+  slink_regs_t *ucie1_slink = &gwaihir_addrmap_64b.ucie1_axi_serial_cfg;
 
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     tx_sample[i] = PATTERN_SEED + i;
@@ -76,11 +75,11 @@ int main() {
   slink_raw_configure_rx(ucie1_slink);
   slink_raw_configure_tx(ucie0_slink);
 
-  // Write the 8 registers to push a payload on teh other side
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     ucie0_slink->raw_mode_out_data_fifo[i].w = tx_sample[i];
   }
   ucie0_slink->raw_mode_push.w = 1;
+  ucie0_slink->raw_mode_out_en.w = 1;
   fence();
 
   // RX: wait for a valid read data
