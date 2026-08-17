@@ -15,6 +15,8 @@ package gwaihir_pkg;
   import floo_gwaihir_noc_pkg::*;
   import cheshire_pkg::*;
   import snitch_cluster_wrapper_pkg::*;
+  import ucie_slink_reg_pkg::*;
+
 
   typedef axi_narrow_in_addr_t addr_t;
 
@@ -496,9 +498,24 @@ package gwaihir_pkg;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
 
+  localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
+
+  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+
+  typedef logic [AxiCfgMemJoin.OutIdWidth-1:0] mtile_nw_join_id_t;
+  typedef logic [AxiCfgMemJoin.UserWidth-1:0] mtile_nw_join_user_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_mtile_nw_join, axi_mtile_nw_join_req_t, axi_mtile_nw_join_rsp_t,
+                      axi_wide_out_addr_t, mtile_nw_join_id_t, axi_wide_out_data_t,
+                      axi_wide_out_strb_t, mtile_nw_join_user_t)
+
   ////////////////
   // UCIe Tile  //
   ////////////////
+
+  localparam int unsigned UcieNumAddrRules = Ucie1SamIdx - Ucie0SamIdx;
+  localparam int unsigned NumBitsPerCycle = NumLanes * (1 + EnDdr);
+
 
   function automatic addr_t alias_clear_mask();
     addr_t ucie0_base, ucie1_base, canonical_base;
@@ -535,5 +552,34 @@ package gwaihir_pkg;
     cleared = addr & ~AliasClearMask;
     return en_half_shift ? ingress_half_shift(cleared) : cleared;
   endfunction
+
+  // Narrow config without ATOP support
+  localparam axi_cfg_t AxiCfgNoAtop = '{
+      AddrWidth: AxiCfgN.AddrWidth,
+      DataWidth: AxiCfgN.DataWidth,
+      InIdWidth: 1,
+      OutIdWidth: 1,
+      UserWidth: 1
+  };
+
+  // Narrow/wide join types for `floo_nw_join`
+  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg(AxiCfgNoAtop, AxiCfgW);
+
+  typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] utile_nw_join_id_t;
+  typedef logic [AxiCfgUcieJoin.UserWidth-1:0] utile_nw_join_user_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_utile_nw_join, axi_utile_nw_join_req_t, axi_utile_nw_join_rsp_t,
+                      axi_wide_in_addr_t, utile_nw_join_id_t, axi_wide_in_data_t,
+                      axi_wide_in_strb_t, utile_nw_join_user_t)
+
+
+  localparam int unsigned UcieCfgRegDataWidth = UCIE_SLINK_REG_DATA_WIDTH;
+
+  typedef logic [UcieCfgRegDataWidth-1:0] ucie_cfg_reg_data_t;
+  typedef logic [UcieCfgRegDataWidth/8-1:0] ucie_cfg_reg_strb_t;
+
+  `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite, addr_t, axi_narrow_out_data_t, axi_narrow_out_strb_t)
+  `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite_32, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
+  `APB_TYPEDEF_ALL(ucie_cfg_apb, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
 
 endpackage
