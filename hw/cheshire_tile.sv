@@ -7,6 +7,7 @@
 `include "apb/typedef.svh"
 `include "cheshire/typedef.svh"
 `include "floo_noc/typedef.svh"
+`include "axi/typedef.svh"
 `include "axi/assign.svh"
 `include "common_cells/assertions.svh"
 
@@ -248,8 +249,16 @@ module cheshire_tile
 
   `FLOO_TYPEDEF_AXI_FROM_CFG(nw_join, AxiCfgJoin)
 
-  nw_join_in_req_t nw_join_req;
-  nw_join_in_rsp_t nw_join_rsp;
+  // The joined bus carries the `axi_mux` slave select in the MSB of the ID, so it is
+  // AxiCfgJoin.OutIdWidth wide. Derive it explicitly, as `mem_tile` does: the `_in_` family is
+  // sized from InIdWidth, which is unused here, and would silently truncate the select bit.
+  typedef logic [AxiCfgJoin.OutIdWidth-1:0] nw_join_mux_id_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_nw_join, axi_nw_join_req_t, axi_nw_join_rsp_t, nw_join_addr_t,
+                      nw_join_mux_id_t, nw_join_data_t, nw_join_strb_t, nw_join_user_t)
+
+  axi_nw_join_req_t nw_join_req;
+  axi_nw_join_rsp_t nw_join_rsp;
 
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
@@ -263,8 +272,8 @@ module cheshire_tile
     .axi_narrow_rsp_t(axi_narrow_out_rsp_t),
     .axi_wide_req_t  (axi_wide_out_req_t),
     .axi_wide_rsp_t  (axi_wide_out_rsp_t),
-    .axi_req_t       (nw_join_in_req_t),
-    .axi_rsp_t       (nw_join_in_rsp_t)
+    .axi_req_t       (axi_nw_join_req_t),
+    .axi_rsp_t       (axi_nw_join_rsp_t)
   ) i_floo_nw_join (
     .clk_i,
     .rst_ni,
