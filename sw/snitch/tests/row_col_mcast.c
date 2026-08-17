@@ -9,7 +9,6 @@
 // Each cluster in row 0 sends a multicast request to all clusters in the same column.
 
 #include <stdint.h>
-#include "gw_addrmap.h"
 #include "snrt.h"
 
 /* Parameters */

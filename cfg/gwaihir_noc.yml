@@ -6,8 +6,36 @@ name: gwaihir
 description: "gwaihir NoC configuration"
 network_type: "narrow-wide"
 
+params:
+  cluster_x: 4
+  cluster_y: 4
+  cluster_base: 0x2000_0000
+  cluster_size: 0x0004_0000
+
+  # L2 SPM tiles, evenly spaced but heterogeneously sized: even tiles are large,
+  # odd tiles are small (the upper half of their slot stays unmapped).
+  l2_base: 0x2120_0000
+  l2_stride: 0x0020_0000
+  l2_size_large: 0x0020_0000
+  l2_size_small: 0x0010_0000
+
+  # Register regions, packed back to back: one block per cluster, then one iDMA
+  # and one control block per L2 tile, indexed by the tile number.
+  reg_size: 0x0000_1000
+  cluster_cfg_base: 0x2100_0000
+  l2_dma_base: 0x2101_0000
+  l2_cfg_base: 0x2101_4000
+
+  # UCIe chiplet alias windows. Every region aliased into a window keeps the low
+  # bits of its canonical address, so masking maps the one onto the other.
+  chiplet_win_size: 0x0200_0000
+  chiplet_win_mask: "${chiplet_win_size - 1}"
+
+  # Cheshire's serial link lanes, driven by `SLINK_NUM_LANES` from the Makefile.
+  csh_slink_num_lanes: 8
+
 routing:
-  route_algo: "XY"
+  route_algo: "YX_MIRRORED"
   use_id_table: true
   collective:
     en_narrow_multicast: true
@@ -61,16 +89,18 @@ protocols:
 
 endpoints:
   - name: "cluster"
-    array: [4, 4]
+    array: ["${cluster_x}", "${cluster_y}"]
     addr_range:
-      - base: 0x2000_0000
-        size: 0x0004_0000
+      - base: "${cluster_base}"
+        size: "${cluster_size}"
         rdl_name: "snitch_cluster"
         en_collective: true
-      - base: 0x6000_0000
-        size: 0x0000_1000
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${cluster_cfg_base}"
+        size: "${reg_size}"
         desc: "config"
         rdl_name: "gw_tile_regs"
+        rdl_addrmap_grp: ["64b", "32b"]
     mgr_port_protocol:
       - "narrow_in"
       - "wide_in"
@@ -83,33 +113,138 @@ endpoints:
         end: 0x2000_0000
         desc: "internal"
         rdl_name: "cheshire_tile"
+        rdl_params:
+          SlinkNumLanes: "${csh_slink_num_lanes}"
+        rdl_addrmap_grp: ["64b", "32b"]
       - start: 0x8000_0000
         end: 0x1_0000_0000
         desc: "external"
         rdl_name: "cheshire_external"
+        rdl_addrmap_grp: ["64b", "32b"]
     mgr_port_protocol:
       - "narrow_in"
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
-  - name: "l2_spm"
-    array: [2]
+  # ---- Memory tiles: four individual endpoints (heterogeneous L2 sizes) ----
+  # Tiles 0,2 are large; tiles 1,3 are small and leave the upper half of their
+  # `l2_stride` slot unmapped. Each tile owns one iDMA and one control register
+  # block, indexed by the tile number.
+  - name: "l2_spm_0"
     addr_range:
-      - base: 0x7000_0000
-        size: 0x0010_0000
-      - base: 0x6001_0000
-        size: 0x0000_1000
+      - base: "${l2_base}"
+        size: "${l2_size_large}"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${l2_cfg_base}"
+        size: "${reg_size}"
         desc: "config"
         rdl_name: "gw_tile_regs"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${l2_dma_base}"
+        size: "${reg_size}"
+        desc: "dma"
+        rdl_addrmap_grp: ["64b", "32b"]
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
-  - name: "ucie"
-    array: [2]
+  - name: "l2_spm_1"
     addr_range:
-      base: 0x1_0000_0000
-      size: 0x1_0000_0000
-      rdl_as_mem: false
+      - base: "${l2_base + l2_stride}"
+        size: "${l2_size_small}"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${l2_cfg_base + reg_size}"
+        size: "${reg_size}"
+        desc: "config"
+        rdl_name: "gw_tile_regs"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${l2_dma_base + reg_size}"
+        size: "${reg_size}"
+        desc: "dma"
+        rdl_addrmap_grp: ["64b", "32b"]
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "l2_spm_2"
+    addr_range:
+      - base: "${l2_base + 2 * l2_stride}"
+        size: "${l2_size_large}"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${l2_cfg_base + 2 * reg_size}"
+        size: "${reg_size}"
+        desc: "config"
+        rdl_name: "gw_tile_regs"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${l2_dma_base + 2 * reg_size}"
+        size: "${reg_size}"
+        desc: "dma"
+        rdl_addrmap_grp: ["64b", "32b"]
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "l2_spm_3"
+    addr_range:
+      - base: "${l2_base + 3 * l2_stride}"
+        size: "${l2_size_small}"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${l2_cfg_base + 3 * reg_size}"
+        size: "${reg_size}"
+        desc: "config"
+        rdl_name: "gw_tile_regs"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: "${l2_dma_base + 3 * reg_size}"
+        size: "${reg_size}"
+        desc: "dma"
+        rdl_addrmap_grp: ["64b", "32b"]
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  # ---- UCIe chiplet alias windows ----
+  # `chiplet.rdl` describes the window contents; the offsets it needs are just the
+  # canonical addresses above with the window base masked off, so they are bound
+  # here instead of being generated into a separate RDL file.
+  - name: "ucie0"
+    addr_range:
+      base: 0x3200_0000
+      size: "${chiplet_win_size}"
+      rdl_name: "chiplet"
+      rdl_params: &chiplet_rdl_params
+        NumClusters: "${cluster_x * cluster_y}"
+        ClusterOffset: "${cluster_base & chiplet_win_mask}"
+        ClusterSize: "${cluster_size}"
+        ClusterCfgOffset: "${cluster_cfg_base & chiplet_win_mask}"
+        NumL2Tiles: 4
+        L2DmaOffset: "${l2_dma_base & chiplet_win_mask}"
+        L2CfgOffset: "${l2_cfg_base & chiplet_win_mask}"
+        L2SpmOffset: "${l2_base & chiplet_win_mask}"
+        L2SpmStride: "${l2_stride}"
+        L2SpmSizeLarge: "${l2_size_large}"
+        L2SpmSizeSmall: "${l2_size_small}"
+        RegSize: "${reg_size}"
+      rdl_addrmap_grp: ["64b", "32b"]
+    mgr_port_protocol:
+      - "narrow_in"
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "ucie1"
+    addr_range:
+      base: 0x3000_0000
+      size: "${chiplet_win_size}"
+      rdl_name: "chiplet"
+      rdl_params: *chiplet_rdl_params
+      rdl_addrmap_grp: ["64b", "32b"]
+    mgr_port_protocol:
+      - "narrow_in"
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
+  - name: "pcie"
+    addr_range:
+      - base: 0x1_0000_0000
+        size: 0x1_0000_0000
+        rdl_addrmap_grp: "64b"
     mgr_port_protocol:
       - "narrow_in"
       - "wide_in"
@@ -118,20 +253,20 @@ endpoints:
       - "wide_out"
 
 routers:
-  - name: "router_top"
-    array: [4, 1]
+  - name: "router_right"
+    array: [1, 5]
     degree: 5
     xy_id_offset:
-      y: 8
-      x: 0
+      x: 8
+      y: 0
   - name: "router_center"
-    array: [4, 4]
+    array: [4, 5]
     degree: 5
     xy_id_offset:
-      y: 4
-      x: 0
-  - name: "router_bottom"
-    array: [4, 1]
+      x: 4
+      y: 0
+  - name: "router_left"
+    array: [1, 5]
     degree: 5
 
 connections:
@@ -145,50 +280,59 @@ connections:
     - [0, 3]
     dst_dir: "Eject"
   - src: "cheshire"
-    dst: "router_top"
-    dst_idx: [3, 0]
+    dst: "router_right"
+    dst_idx: [0, 4]
     dst_dir: "Eject"
-  - src: "l2_spm"
-    dst: "router_bottom"
-    src_range:
-      - [0, 1]
-    dst_range:
-      - [1, 2]
-      - [0, 0]
+  - src: "l2_spm_0"
+    dst: "router_left"
+    dst_idx: [0, 2]
     dst_dir: "Eject"
-  # bottom left UCIe (ucie[0] → router_bottom[0,0])
-  - src: "ucie"
-    dst: "router_bottom"
-    src_range:
-      - [0, 0]
+  - src: "l2_spm_1"
+    dst: "router_left"
+    dst_idx: [0, 3]
+    dst_dir: "Eject"
+  - src: "l2_spm_2"
+    dst: "router_right"
+    dst_idx: [0, 2]
+    dst_dir: "Eject"
+  - src: "l2_spm_3"
+    dst: "router_right"
+    dst_idx: [0, 3]
+    dst_dir: "Eject"
+  # bottom left UCIe (ucie[0] → router_left[0,0])
+  - src: "ucie0"
+    dst: "router_left"
     dst_idx: [0, 0]
     dst_dir: "Eject"
-  # bottom right UCIe (ucie[1] → router_bottom[3,0])
-  - src: "ucie"
-    dst: "router_bottom"
-    src_range:
-      - [1, 1]
-    dst_idx: [3, 0]
+  # bottom right UCIe (ucie[1] → router_right[0,0])
+  - src: "ucie1"
+    dst: "router_right"
+    dst_idx: [0, 0]
     dst_dir: "Eject"
-  # router_bottom (y=0) ↔ router_center south boundary (y=1)
-  - src: "router_bottom"
+  # pcie
+  - src: "pcie"
+    dst: "router_left"
+    dst_idx: [0, 4]
+    dst_dir: "Eject"
+  # router_left (x=0) ↔ router_center West boundary (x=4)
+  - src: "router_left"
     dst: "router_center"
     src_range:
-      - [0, 3]
       - [0, 0]
+      - [0, 4]
     dst_range:
-      - [0, 3]
       - [0, 0]
-    src_dir: "North"
-    dst_dir: "South"
-  # router_center north boundary (y=3) ↔ router_top (y=0)
+      - [0, 4]
+    src_dir: "East"
+    dst_dir: "West"
+  # router_center East boundary (x=7) ↔ router_right (x=8)
   - src: "router_center"
-    dst: "router_top"
+    dst: "router_right"
     src_range:
-      - [0, 3]
       - [3, 3]
+      - [0, 4]
     dst_range:
-      - [0, 3]
       - [0, 0]
-    src_dir: "North"
-    dst_dir: "South"
+      - [0, 4]
+    src_dir: "East"
+    dst_dir: "West"

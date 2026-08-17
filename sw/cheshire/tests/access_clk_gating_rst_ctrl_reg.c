@@ -4,8 +4,9 @@
 //
 // Cyrill Durrer <cdurrer@iis.ee.ethz.ch>
 
-#include "gw_addrmap.h"
-#include "gw_raw_addrmap.h"
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"
+#include "gw_memtile.h"
 
 // The clock-gating and reset control are now per-tile registers, exposed via
 // the per-tile config blocks. Each tile holds a single clock-enable bit
@@ -15,8 +16,7 @@ int main(void) {
 
     uint32_t n_errors = 2 * (GW_CLUSTER_NUM + GW_L2_SPM_NUM);
 
-    volatile gw_tile_regs__stride1000_t *cluster_cfg = gwaihir_addrmap.cluster_config;
-    volatile gw_tile_regs__stride1000_t *mem_cfg = gwaihir_addrmap.l2_spm_config;
+    volatile gw_tile_regs__stride1000_t *cluster_cfg = gwaihir_addrmap_64b.cluster_config;
 
     // Write and read back the clock-enable and reset bits of every cluster tile
     for (int i = 0; i < GW_CLUSTER_NUM; i++) {
@@ -28,10 +28,12 @@ int main(void) {
 
     // Write and read back the clock-enable and reset bits of every memory tile
     for (int i = 0; i < GW_L2_SPM_NUM; i++) {
-        mem_cfg[i].clk.f.en = 0x1;
-        mem_cfg[i].rst.f.n = 0x1;
-        n_errors -= (mem_cfg[i].clk.f.en == 0x1);
-        n_errors -= (mem_cfg[i].rst.f.n == 0x1);
+        volatile gw_tile_regs__stride1000_t *mem_cfg =
+            (volatile gw_tile_regs__stride1000_t *)(uintptr_t)GW_L2_SPM_CONFIG_BASE_ADDR(i);
+        mem_cfg->clk.f.en = 0x1;
+        mem_cfg->rst.f.n = 0x1;
+        n_errors -= (mem_cfg->clk.f.en == 0x1);
+        n_errors -= (mem_cfg->rst.f.n == 0x1);
     }
 
     return n_errors;

@@ -38,6 +38,16 @@ modelsim.ini
 .rtlbinary
 .chsbinary
 *.do
+*.vcd
+*.fst
+
+## VCS
+.inter*
+inter.*
+novas.*
+ucli.key
+.vcs*
+verdiLog
 
 # Software build files
 *.bin
@@ -60,3 +70,7 @@ gmon.out
 .dvt
 .vscode
 sources.flist
+
+# documentation
+docs/addressmap.md
+/site

@@ -40,7 +40,7 @@ static inline void sw_barrier(snrt_comm_t comm) {
     for (volatile uint32_t i = 0; i < 2; i++) {
         // Align start times using hardware barrier
         snrt_inter_cluster_barrier(comm);
-        
+
         snrt_mcycle();
 
         // Perform software inter-cluster barrier.

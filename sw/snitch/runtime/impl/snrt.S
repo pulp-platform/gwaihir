@@ -11,7 +11,7 @@
 #define SNRT_INIT_TLS
 #define SNRT_CRT0_PARK
 
-#include "gw_raw_addrmap.h"
+#include "gw_raw_addrmap_32b.h"
 #define SNRT_TCDM_START_ADDR GW_CLUSTER_TCDM_BASE_ADDR(0)
 
 #include "snitch_cluster_cfg.h"

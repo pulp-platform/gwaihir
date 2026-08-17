@@ -13,16 +13,22 @@ remotes:
 
 dependencies:
   register_interface: "0.4.5"
-  axi: "0.39.9"
+  axi: { git: "https://github.com/colluca/axi.git", rev: "multicast" }
   apb_fll_if: "0.3.0"
-  floo_noc: { version: "0.8.3", upstream_name: "FlooNoC" }
-  apb: "0.2.4"
-  common_cells: "1.39.0"
-  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main"                                     }
-  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir"                                  }
-  obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "acfcd0f80c7539aa8da7821a66d9acf2074a5b4e" }
-  axi_obi:            { path: "hw/axi_obi"                                                                                              }
-  gwaihir-pd:       { path: "./pd"                                                                                                    }
+  floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "main", upstream_name: "FlooNoC" }
+  apb:                { git: "https://github.com/pulp-platform/apb.git",                rev: "common-cells-v2"                          }
+  common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",       rev: "c63eada47c050f78b320d0e854a24a9cd9c1cc80" }
+  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main" }
+  cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir-common-cells-v2"                  }
+  obi:                { git: "https://github.com/pulp-platform/obi.git",                rev: "common-cells-v2" }
+  axi_obi:            { git: "https://github.com/pulp-platform/axi_obi.git",            rev: "common-cells-v2"                          }
+  pcie:               { path: ".deps/pcie"                                                                                              }
+  iDMA:               { git: "https://github.com/pulp-platform/iDMA.git",               version: 0.6.5  }
+  gwaihir-pd:         { path: "./pd"                                                                                                    }
+  # This is not a direct dependency of Gwaihir, but tcdm_interface (snitch_cluster) needs it and Bender
+  # does not transitively export incdirs (see https://github.com/pulp-platform/bender/issues/340).
+  reqrsp_interface: 0.1.0
+  gwaihir_lpddr:      { path: "./.deps/lpddr"                                                                                           }
 
 workspace:
   package_links:
@@ -34,22 +40,29 @@ sources:
   # package. Files in level 1 only depend on files in level 0, files in level 2 on files in
   # levels 1 and 0, etc. Files within a level are ordered alphabetically.
   # Level 0
+
+  - target: gw_gen_rtl
+    override_files: true
+    files:
+      - .generated/snitch_cluster_wrapper_pkg.sv
   - target: gw_gen_rtl
     files:
       # Level 0.0
       - .generated/floo_gwaihir_noc_pkg.sv
-      - .generated/snitch_cluster_pkg.sv
       - .generated/gw_tile_regs_pkg.sv
+      - .generated/gw_addrmap_pkg.sv
       # Level 0.1
       - .generated/gw_tile_regs.sv
-      - .generated/snitch_cluster_wrapper.sv
 
   # Level 1
   - hw/gwaihir_pkg.sv
   # Level 2
   - hw/cluster_tile.sv
   - hw/cheshire_tile.sv
+  - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
+  - hw/mem_tile_small.sv
+  - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
   - hw/ucie_tile.sv
 
@@ -64,6 +77,13 @@ sources:
       - target/sim/src/fixture_gwaihir_top.sv
       - target/sim/src/tb_gwaihir_top.sv
 
+  - target: not(all(pcie, asic))
+    files:
+      - hw/pcie_tile.sv
+
+  - target: all(pcie, asic)
+    files:
+      - .deps/pcie/hw/pcie_tile.sv
 
   - target: asic
     files:
@@ -72,7 +92,6 @@ sources:
   - target: all(any(simulation, test), asic)
     include_dirs:
       - .generated
-      - pd/target/sim/include
       - target/sim/include
     files:
       - pd/target/sim/src/fixture_gwaihir_chip.sv

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
+#					Lorenzo Leone <fischeti@iis.ee.ethz.ch>
 
 #TODO(lleone): remove if not necessary to redefine. Fix the bender version somewhere
 BENDER ?= bender
@@ -18,6 +19,7 @@ GW_SNITCH_SW_DIR = $(GW_SW_DIR)/snitch
 GW_INCDIR = $(GW_SW_DIR)/include
 
 -include $(PD_DIR)/sw/sw.mk
+-include $(PCIE_DIR)/sw/sw.mk
 
 ####################
 ## Snitch Cluster ##
@@ -25,11 +27,11 @@ GW_INCDIR = $(GW_SW_DIR)/include
 
 SN_RUNTIME_SRCDIR    = $(GW_SNITCH_SW_DIR)/runtime/impl
 SN_RUNTIME_BUILDDIR  = $(GW_SNITCH_SW_DIR)/runtime/build
-GW_RUNTIME_INCDIRS   = $(GW_INCDIR)
+SN_RUNTIME_INCDIRS  += $(GW_INCDIR)
 SN_RUNTIME_INCDIRS  += $(GW_GEN_DIR)
 SN_RUNTIME_INCDIRS  += $(GW_SNITCH_SW_DIR)/runtime/src
-SN_RUNTIME_HAL_HDRS  = $(GW_GEN_DIR)/gw_addrmap.h
-SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/gw_raw_addrmap.h
+SN_RUNTIME_HAL_HDRS  = $(GW_GEN_DIR)/gw_addrmap_32b.h
+SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/gw_raw_addrmap_32b.h
 SN_RUNTIME_HAL_HDRS += $(GW_GEN_DIR)/gw_noc_cfg.h
 
 #TODO(lleone): do we need this?
@@ -51,8 +53,8 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
 
 SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 
-$(GW_GEN_DIR)/gw_noc_cfg.h: $(UTIL_DIR)/mako_render.py $(FLOO_CFG)
-	 $< -t $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl -y $(FLOO_CFG) -o $@
+$(GW_GEN_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
+	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_DIR) --no-format $<
 
 include $(SN_ROOT)/make/sw.mk
 
@@ -76,7 +78,7 @@ GW_CHS_SW_TEST_ELF  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).elf) $(patsubst 
 GW_CHS_SW_TEST = $(GW_CHS_SW_TEST_DUMP)
 
 $(GW_CHS_SW_TEST_DUMP): $(GW_CHS_SW_TEST_ELF)
-$(GW_CHS_SW_TEST_ELF): $(GW_GEN_DIR)/gw_addrmap.h $(SN_RUNTIME_HAL_HDRS)
+$(GW_CHS_SW_TEST_ELF): $(GW_GEN_DIR)/gw_addrmap_64b.h $(GW_GEN_DIR)/gw_raw_addrmap_64b.h $(SN_RUNTIME_HAL_HDRS)
 
 .PHONY: chs-sw-tests chs-sw-tests-clean
 

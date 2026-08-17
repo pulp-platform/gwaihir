@@ -11,13 +11,15 @@
  * management.
  */
 
+#include "gw_memtile.h"
+
 /**
  * @brief Get start address of a memory tile
  * @param tile_idx The memory tile idx in the NoC
  * @return Start addres of memory tile idx
  */
 inline uintptr_t gw_l2_tile_address(uint32_t tile_idx) {
-  return (uintptr_t)(gwaihir_addrmap.l2_spm[tile_idx].mem);
+  return (uintptr_t)GW_L2_SPM_BASE_ADDR(tile_idx);
 }
 
 /**
@@ -27,7 +29,7 @@ inline uintptr_t gw_l2_tile_address(uint32_t tile_idx) {
  * @return Address location offset respect to the tile start address
  */
 inline uintptr_t gw_l2_tile_offset(uintptr_t src_addr) {
-  return (src_addr - GW_L2_SPM_BASE_ADDR(0)) % GW_L2_SPM_SIZE;
+  return (src_addr - GW_L2_SPM_BASE_ADDR(0)) % GW_L2_SPM_STRIDE;
 }
 
 /**

@@ -31,7 +31,7 @@
         dca_data_width: 512,
         cluster_base_expose: true,
         alias_region_enable: true,
-        alias_region_base: 0x30000000,
+        alias_region_base: 0x20400000,
         num_exposed_wide_tcdm_ports: 1,
         narrow_axi_port_expose: true,
         collective_width: 4,
@@ -84,8 +84,8 @@
     external_addr_regions: [
         {
             name: "l2spm",
-            address: 0x70000000,
-            length: 0x10000000,
+            address: 0x21200000,
+            length: 0x00200000,
             cacheable: true
         },
         {
@@ -106,7 +106,7 @@
         xfrep: true,
         xcopift: true,
         xdma: false,
-        xf16: true,
+        zfh: true,
         xf16alt: true,
         xf8: true,
         xf8alt: true,
@@ -136,7 +136,7 @@
         xssr: false,
         xfrep: false,
         xcopift: false,
-        xf16: false,
+        zfh: false,
         xf16alt: false,
         xf8: false,
         xf8alt: false,

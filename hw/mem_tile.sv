@@ -2,7 +2,8 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 //
-// Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
+// Author: Hong Pang <hopang@iis.ee.ethz.ch>
+//         Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 `include "common_cells/registers.svh"
 `include "axi/typedef.svh"
@@ -17,31 +18,40 @@ module mem_tile
   parameter bit          AxiUserAtop    = 1'b1,
   parameter int unsigned AxiUserAtopMsb = 3,
   parameter int unsigned AxiUserAtopLsb = 0,
-  parameter int unsigned MemTileId      = 0
+  parameter int unsigned MemTileId      = 0,
+  parameter int unsigned MemTileSize    = MemTileSizeLarge  // Memory size in total in bytes
 ) (
-  input  logic                    clk_i,
-  input  logic                    rst_ni,
-  input  logic                    test_enable_i,
-  input  logic                    clk_rst_bypass_i,
+  input  logic                              clk_i,
+  input  logic                              rst_ni,
+  input  logic                              test_enable_i,
+  input  logic                              clk_rst_bypass_i,
   // Chimney ports
-  input  id_t                     id_i,
+  input  id_t                               id_i,
+  // Sam idx
+  input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
   // Router ports
-  output floo_req_t  [West:North] floo_req_o,
-  input  floo_rsp_t  [West:North] floo_rsp_i,
-  output floo_wide_t [West:North] floo_wide_o,
-  input  floo_req_t  [West:North] floo_req_i,
-  output floo_rsp_t  [West:North] floo_rsp_o,
-  input  floo_wide_t [West:North] floo_wide_i
+  output floo_req_t  [          West:North] floo_req_o,
+  input  floo_rsp_t  [          West:North] floo_rsp_i,
+  output floo_wide_t [          West:North] floo_wide_o,
+  input  floo_req_t  [          West:North] floo_req_i,
+  output floo_rsp_t  [          West:North] floo_rsp_o,
+  input  floo_wide_t [          West:North] floo_wide_i
 );
 
   // Tile-specific reset and clock signals
   logic tile_clk;
   logic tile_rst_n;
 
+  // The number of macros required to store the entire memory
+  localparam int unsigned NumBankRows = (MemTileSize / (AxiCfgW.DataWidth / 8)) / SramNumWords;
+  // The number of bits to index the SRAM macro
+  localparam int unsigned SramMacroSelWidth = $clog2(NumBankRows);
+
   typedef enum int unsigned {
     Mem           = 'd0,
     TileCfg       = 'd1,
-    NumDemuxPorts = 'd2
+    Dma           = 'd2,
+    NumDemuxPorts = 'd3
   } axi_demux_sel_e;
 
   typedef logic [AxiCfgN.AddrWidth-1:0] addr_t;
@@ -51,37 +61,60 @@ module mem_tile
     addr_t       end_addr;
   } addr_rule_t;
 
-  // NOTE(fischeti): This is approximate since it does not include the
-  // actual address range for this exact tile, but it is sufficient since
-  // the NoC will take care of routing the request to the correct tile.
-  localparam int unsigned NumTileAddrMapRules = 1;
-  addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
-      '{
-          idx: TileCfg,
-          start_addr: Sam[L2SpmConfig0SamIdx].start_addr,
-          end_addr: Sam[L2SpmConfig1SamIdx].end_addr
-      }
-  };
+  // This tile's SAM index, passed in from the parent (gwaihir_top) rather than
+  // derived from the NoC coordinates here. Used to look up the tile-specific
+  // iDMA register address range below.
+  logic [$bits(sam_idx_e)-1:0] mem_tile_idx;
+  assign mem_tile_idx = samidx_i;
+
+  // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
+  // from the generated enum so it survives YAML / regeneration changes.
+  localparam int DmaIdxOffset = int'(L2Spm0DmaSamIdx) - int'(L2Spm0SamIdx);
+
+  // Offset from an L2Spm SAM index to its matching DMA-reg SAM index. Computed
+  // from the generated enum so it survives YAML / regeneration changes.
+  localparam int CfgIdxOffset = int'(L2Spm0ConfigSamIdx) - int'(L2Spm0SamIdx);
+
+  // NOTE(fischeti): The TileCfg range is approximate since it does not include
+  // the actual address range for this exact tile, but it is sufficient since the
+  // NoC will take care of routing the request to the correct tile. The Dma range
+  // is the tile-specific iDMA register window derived from the SAM.
+  localparam int unsigned NumTileAddrMapRules = 2;
+  addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap;
+  always_comb begin
+    TileAddrMap = '{
+        '{
+            idx: TileCfg,
+            start_addr: Sam[int'(mem_tile_idx)+CfgIdxOffset].start_addr,
+            end_addr: Sam[int'(mem_tile_idx)+CfgIdxOffset].end_addr
+        },
+        '{
+            idx: Dma,
+            start_addr: Sam[int'(mem_tile_idx)+DmaIdxOffset].start_addr,
+            end_addr: Sam[int'(mem_tile_idx)+DmaIdxOffset].end_addr
+        }
+    };
+  end
   localparam int unsigned NumTileApbAddrMapRules = 1;
   addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
       '{idx: 0, start_addr: '0, end_addr: '1}
   };
 
-  logic aw_select, ar_select;
+  logic [cf_math_pkg::idx_width(NumDemuxPorts)-1:0] aw_select, ar_select;
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t       chimney_narrow_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t       chimney_narrow_out_rsp;
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [1:0] axi_demux_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [1:0] axi_demux_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t                     chimney_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t                     chimney_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumDemuxPorts-1:0] axi_demux_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumDemuxPorts-1:0] axi_demux_out_rsp;
 
-  gw_tile_regs_pkg::gw_tile_regs__out_t            hwif_out;
+  gw_tile_regs_pkg::gw_tile_regs__out_t                          hwif_out;
 
-  tile_cfg_axi_lite_req_t                          tile_cfg_axi_lite_req;
-  tile_cfg_axi_lite_resp_t                         tile_cfg_axi_lite_rsp;
-  tile_cfg_axi_lite_32_req_t                       tile_cfg_reg_lite_req;
-  tile_cfg_axi_lite_32_resp_t                      tile_cfg_reg_lite_rsp;
-  tile_cfg_apb_req_t                               tile_cfg_apb_req;
-  tile_cfg_apb_resp_t                              tile_cfg_apb_rsp;
+  tile_cfg_axi_lite_req_t                                        tile_cfg_axi_lite_req;
+  tile_cfg_axi_lite_resp_t                                       tile_cfg_axi_lite_rsp;
+  tile_cfg_axi_lite_32_req_t                                     tile_cfg_reg_lite_req;
+  tile_cfg_axi_lite_32_resp_t                                    tile_cfg_reg_lite_rsp;
+  tile_cfg_apb_req_t                                             tile_cfg_apb_req;
+  tile_cfg_apb_resp_t                                            tile_cfg_apb_rsp;
 
   ////////////
   // Router //
@@ -139,6 +172,14 @@ module mem_tile
   assign router_floo_wide_in[West:North] = floo_wide_i;
   assign floo_wide_o[West:North]         = router_floo_wide_out[West:North];
 
+  axi_wide_in_req_t [1:0] axi_dma_req_demux;
+  axi_wide_in_rsp_t [1:0] axi_dma_rsp_demux;
+
+  typedef enum logic {
+    Local    = 1'b0,
+    External = 1'b1
+  } wide_axi_sel_e;
+
   /////////////
   // Chimney //
   /////////////
@@ -146,11 +187,15 @@ module mem_tile
   floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_req;
   floo_gwaihir_noc_pkg::axi_wide_out_rsp_t axi_wide_rsp;
 
+  // DMA req/resp, supposed to access LPDDR tile, we also keep the option to access other tiles
+  axi_wide_in_req_t                        axi_dma_req;
+  axi_wide_in_rsp_t                        axi_dma_rsp;
+
   floo_nw_chimney #(
     .AxiCfgN             (AxiCfgN),
     .AxiCfgW             (AxiCfgW),
     .ChimneyCfgN         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b0)),
-    .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b0)),
+    .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b1)),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
     .WideRwDecouple      (WideRwDecouple),
@@ -183,8 +228,9 @@ module mem_tile
     .axi_narrow_in_rsp_o (),
     .axi_narrow_out_req_o(chimney_narrow_out_req),
     .axi_narrow_out_rsp_i(chimney_narrow_out_rsp),
-    .axi_wide_in_req_i   ('0),
-    .axi_wide_in_rsp_o   (),
+    // Receive transfer requests from DMA
+    .axi_wide_in_req_i   (axi_dma_req_demux[External]),
+    .axi_wide_in_rsp_o   (axi_dma_rsp_demux[External]),
     .axi_wide_out_req_o  (axi_wide_req),
     .axi_wide_out_rsp_i  (axi_wide_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
@@ -243,7 +289,6 @@ module mem_tile
   ) i_axi_demux (
     .clk_i          (clk_i),
     .rst_ni         (rst_ni),
-    .test_i         (test_enable_i),
     .slv_aw_select_i(aw_select),
     .slv_ar_select_i(ar_select),
     .slv_req_i      (chimney_narrow_out_req),
@@ -266,7 +311,6 @@ module mem_tile
   ) i_axi_to_axi_lite_tile_cfg (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .test_i    (test_enable_i),
     .slv_req_i (axi_demux_out_req[TileCfg]),
     .slv_resp_o(axi_demux_out_rsp[TileCfg]),
     .mst_req_o (tile_cfg_axi_lite_req),
@@ -333,6 +377,120 @@ module mem_tile
     .hwif_out     (hwif_out)
   );
 
+  ////////////////////////
+  // DMA Wide AXI Demux //
+  ////////////////////////
+
+  // This module demuxes DMA AXI requests to local memory banks and external tiles.
+  // Without this demux, floo_noc would have loopback.
+
+  // Configure AXI Xbar
+  localparam axi_pkg::xbar_cfg_t AxiWideXbarCfg = '{
+      NoSlvPorts: 1,
+      NoMstPorts: 2,
+      MaxMstTrans: 4,
+      MaxSlvTrans: 4,
+      FallThrough: 0,
+      LatencyMode: axi_pkg::NO_LATENCY,
+      PipelineStages: 0,
+      AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
+      AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
+      UniqueIds: 0,
+      AxiAddrWidth: $bits(axi_wide_in_addr_t),
+      AxiDataWidth: $bits(axi_wide_in_data_t),
+      NoAddrRules: 2,
+      default: '0
+  };
+
+  typedef struct packed {
+    // Only two regions: MEM and DMA
+    logic [$clog2(AxiWideXbarCfg.NoMstPorts)-1:0] idx;
+    axi_wide_in_addr_t                            start_addr;
+    axi_wide_in_addr_t                            end_addr;
+  } dma_rule_t;
+
+  // TODO: The address of External needs to be adapted
+  // Generate address map for narrow_axi_demux
+  dma_rule_t [1:0] routing_rules_dma;
+  assign routing_rules_dma = '{
+          '{
+              idx: Local,
+              start_addr: Sam[mem_tile_idx].start_addr,
+              end_addr  : Sam[mem_tile_idx].end_addr
+          },
+          // The address range for External is not the actual address range, all the unmapped requests will go to External
+          '{
+              idx: External,
+              start_addr: Sam[int'(mem_tile_idx)+DmaIdxOffset].start_addr,
+              end_addr  : Sam[int'(mem_tile_idx)+DmaIdxOffset].end_addr
+          }
+      };
+
+  axi_xbar #(
+    .Cfg          (AxiWideXbarCfg),
+    // TODO: Check if we need to support ATOP, according to the parameter list, this is enabled
+    .ATOPs        ('0),
+    .Connectivity ('1),
+    .slv_aw_chan_t(axi_wide_in_aw_chan_t),
+    .mst_aw_chan_t(axi_wide_in_aw_chan_t),
+    .w_chan_t     (axi_wide_in_w_chan_t),
+    .slv_b_chan_t (axi_wide_in_b_chan_t),
+    .mst_b_chan_t (axi_wide_in_b_chan_t),
+    .slv_ar_chan_t(axi_wide_in_ar_chan_t),
+    .mst_ar_chan_t(axi_wide_in_ar_chan_t),
+    .slv_r_chan_t (axi_wide_in_r_chan_t),
+    .mst_r_chan_t (axi_wide_in_r_chan_t),
+    .slv_req_t    (axi_wide_in_req_t),
+    .slv_resp_t   (axi_wide_in_rsp_t),
+    .mst_req_t    (axi_wide_in_req_t),
+    .mst_resp_t   (axi_wide_in_rsp_t),
+    .rule_t       (dma_rule_t)
+  ) i_axi_dma_xbar (
+    .clk_i                (tile_clk),
+    .rst_ni               (tile_rst_n),
+    .slv_ports_req_i      (axi_dma_req),
+    .slv_ports_resp_o     (axi_dma_rsp),
+    .mst_ports_req_o      (axi_dma_req_demux),
+    .mst_ports_resp_i     (axi_dma_rsp_demux),
+    .addr_map_i           (routing_rules_dma),
+    // Unmapped address go to the external port
+    .en_default_mst_port_i(1'b1),
+    .default_mst_port_i   (External)
+  );
+
+  /////////
+  // DMA //
+  /////////
+
+  mem_tile_dma_wrap #(
+    .AxiNarrowAddrWidth($bits(axi_narrow_out_addr_t)),
+    .AxiNarrowDataWidth($bits(axi_narrow_out_data_t)),
+    .AxiNarrowIdWidth  ($bits(axi_narrow_out_id_t)),
+    .AxiNarrowUserWidth($bits(axi_narrow_out_user_t)),
+    .AxiAddrWidth      ($bits(axi_wide_in_addr_t)),
+    .AxiDataWidth      ($bits(axi_wide_in_data_t)),
+    .AxiIdWidth        ($bits(axi_wide_in_id_t)),
+    .AxiUserWidth      ($bits(axi_wide_in_user_t)),
+    // TODO: Undrestand all these parameters: NumAxInFlight, MemSysDepth, JobFifoDepth, RAWCouplingAvail, IsTwoD
+    .NumAxInFlight     (gwaihir_pkg::DmaNumAxInFlight),
+    .MemSysDepth       (gwaihir_pkg::DmaMemSysDepth),
+    .JobFifoDepth      (gwaihir_pkg::DmaJobFifoDepth),
+    .RAWCouplingAvail  (gwaihir_pkg::DmaRAWCouplingAvail),
+    .IsTwoD            (gwaihir_pkg::DmaConfEnableTwoD),
+    .axi_mst_req_t     (axi_wide_in_req_t),
+    .axi_mst_rsp_t     (axi_wide_in_rsp_t),
+    .axi_slv_req_t     (axi_narrow_out_req_t),
+    .axi_slv_rsp_t     (axi_narrow_out_rsp_t)
+  ) i_mem_tile_dma (
+    .clk_i        (tile_clk),
+    .rst_ni       (tile_rst_n),
+    .testmode_i   (test_enable_i),
+    .axi_mst_req_o(axi_dma_req),
+    .axi_mst_rsp_i(axi_dma_rsp),
+    .axi_slv_req_i(axi_demux_out_req[Dma]),
+    .axi_slv_rsp_o(axi_demux_out_rsp[Dma])
+  );
+
   /////////////
   // NW Join //
   /////////////
@@ -371,6 +529,195 @@ module mem_tile
     .axi_req_o       (axi_req),
     .axi_rsp_i       (axi_rsp)
   );
+
+  ////////////////////////////////
+  // DMA wide axi2obi converter //
+  ////////////////////////////////
+
+  // iDMA never issues atomics (aw.atop is hardcoded to '0 in the iDMA
+  // legalizer and the frontend has no software-visible register to set it),
+  // so the DMA local-memory path uses a single non-atop OBI cfg end-to-end
+  // and no atop resolver.
+  localparam obi_pkg::obi_optional_cfg_t DMASbrObiOptionalCfg = '{
+      UseAtop: 1'b0,
+      UseMemtype: 1'b0,
+      UseProt: 1'b0,
+      UseDbg: 1'b0,
+      AUserWidth: 0,
+      WUserWidth: 0,
+      RUserWidth: 0,
+      MidWidth: 0,
+      AChkWidth: 0,
+      RChkWidth: 0
+  };
+  localparam obi_pkg::obi_cfg_t DMASbrObiCfg = obi_pkg::obi_default_cfg(
+      AxiCfgW.AddrWidth, AxiCfgW.DataWidth, AxiCfgW.InIdWidth, DMASbrObiOptionalCfg
+  );
+  `OBI_TYPEDEF_MINIMAL_A_OPTIONAL(dma_sbr_obi_a_optional_t)
+  `OBI_TYPEDEF_A_CHAN_T(dma_sbr_obi_a_chan_t, DMASbrObiCfg.AddrWidth, DMASbrObiCfg.DataWidth,
+                        DMASbrObiCfg.IdWidth, dma_sbr_obi_a_optional_t)
+  `OBI_TYPEDEF_DEFAULT_REQ_T(dma_sbr_obi_req_t, dma_sbr_obi_a_chan_t)
+  `OBI_TYPEDEF_MINIMAL_R_OPTIONAL(dma_sbr_obi_r_optional_t)
+  `OBI_TYPEDEF_R_CHAN_T(dma_sbr_obi_r_chan_t, DMASbrObiCfg.DataWidth, DMASbrObiCfg.IdWidth,
+                        dma_sbr_obi_r_optional_t)
+  `OBI_TYPEDEF_RSP_T(dma_sbr_obi_rsp_t, dma_sbr_obi_r_chan_t)
+
+  // Number of outstanding transactions should be larger than round-trip
+  // latency from converter to SRAM
+  // TODO: Not sure if this is enough!!!
+  localparam int unsigned DMAObiLatency = 4;
+
+  dma_sbr_obi_req_t dma_obi_req, dma_mem_obi_req_cut;
+  dma_sbr_obi_rsp_t dma_obi_rsp, dma_mem_obi_rsp_cut;
+
+`ifndef SYNTHESIS
+  // AXI Monitor dumper to improvce debiugging
+  axi_dumper #(
+    .BusName   ($sformatf("mem_tile_%d", MemTileId)),
+    .LogAW     (1'b1),
+    .LogAR     (1'b1),
+    .LogW      (1'b1),
+    .LogB      (1'b1),
+    .LogR      (1'b1),
+    .axi_req_t (axi_wide_in_req_t),
+    .axi_resp_t(axi_wide_in_rsp_t)
+  ) i_dma_axi_monitor (
+    .clk_i,
+    .rst_ni,
+    .axi_req_i (axi_dma_req_demux[Local]),
+    .axi_resp_i(axi_dma_rsp_demux[Local])
+  );
+`endif
+
+  axi_to_obi #(
+    .ObiCfg      (DMASbrObiCfg),
+    .obi_req_t   (dma_sbr_obi_req_t),
+    .obi_rsp_t   (dma_sbr_obi_rsp_t),
+    .obi_a_chan_t(dma_sbr_obi_a_chan_t),
+    .obi_r_chan_t(dma_sbr_obi_r_chan_t),
+    .AxiAddrWidth(AxiCfgW.AddrWidth),
+    .AxiDataWidth(AxiCfgW.DataWidth),
+    .AxiIdWidth  (AxiCfgW.InIdWidth),
+    .AxiUserWidth(AxiCfgW.UserWidth),
+    .MaxTrans    (DMAObiLatency),
+    .axi_req_t   (axi_wide_in_req_t),
+    .axi_rsp_t   (axi_wide_in_rsp_t)
+  ) i_dma_axi_to_obi (
+    .clk_i    (tile_clk),
+    .rst_ni   (tile_rst_n),
+    .axi_req_i(axi_dma_req_demux[Local]),
+    .axi_rsp_o(axi_dma_rsp_demux[Local]),
+    .obi_req_o(dma_obi_req),
+    .obi_rsp_i(dma_obi_rsp),
+
+    // No atop on the DMA path: no aid round-trip, no user-field smuggling.
+    .req_aw_id_o      (),
+    .req_aw_user_o    (),
+    .req_w_user_o     (),
+    .req_write_aid_i  ('0),
+    .req_write_auser_i('0),
+    .req_write_wuser_i('0),
+
+    .req_ar_id_o     (),
+    .req_ar_user_o   (),
+    .req_read_aid_i  ('0),
+    .req_read_auser_i('0),
+
+    .rsp_write_aw_user_o  (),
+    .rsp_write_w_user_o   (),
+    .rsp_write_bank_strb_o(),
+    .rsp_write_rid_o      (),
+    .rsp_write_ruser_o    (),
+    .rsp_write_last_o     (),
+    .rsp_write_hs_o       (),
+    .rsp_b_user_i         ('0),
+
+    .rsp_read_ar_user_o    (),
+    .rsp_read_size_enable_o(),
+    .rsp_read_rid_o        (),
+    .rsp_read_ruser_o      (),
+    .rsp_r_user_i          ('0)
+  );
+
+  ///////////////////////
+  // DMA local mem req //
+  ///////////////////////
+
+  logic                           dma_mem_req;
+  logic                           dma_mem_gnt;
+  logic                           dma_mem_we;
+  logic [  AxiCfgW.AddrWidth-1:0] dma_mem_addr;
+  logic [  AxiCfgW.DataWidth-1:0] dma_mem_wdata;
+  logic [AxiCfgW.DataWidth/8-1:0] dma_mem_be;
+  logic [  AxiCfgW.DataWidth-1:0] dma_mem_rdata;
+
+
+  obi_cut #(
+    .ObiCfg      (DMASbrObiCfg),
+    .obi_a_chan_t(dma_sbr_obi_a_chan_t),
+    .obi_r_chan_t(dma_sbr_obi_r_chan_t),
+    .obi_req_t   (dma_sbr_obi_req_t),
+    .obi_rsp_t   (dma_sbr_obi_rsp_t)
+  ) i_dma_obi_cut (
+    .clk_i         (tile_clk),
+    .rst_ni        (tile_rst_n),
+    .sbr_port_req_i(dma_obi_req),
+    .sbr_port_rsp_o(dma_obi_rsp),
+    .mgr_port_req_o(dma_mem_obi_req_cut),
+    .mgr_port_rsp_i(dma_mem_obi_rsp_cut)
+  );
+
+  obi_sram_shim #(
+    .ObiCfg   (DMASbrObiCfg),
+    .obi_req_t(dma_sbr_obi_req_t),
+    .obi_rsp_t(dma_sbr_obi_rsp_t)
+  ) i_dma_sram_shim_bank (
+    .clk_i    (tile_clk),
+    .rst_ni   (tile_rst_n),
+    .obi_req_i(dma_mem_obi_req_cut),
+    .obi_rsp_o(dma_mem_obi_rsp_cut),
+    .req_o    (dma_mem_req),
+    .we_o     (dma_mem_we),
+    .addr_o   (dma_mem_addr),
+    .wdata_o  (dma_mem_wdata),
+    .be_o     (dma_mem_be),
+    .gnt_i    (dma_mem_gnt),
+    .rdata_i  (dma_mem_rdata)
+  );
+
+  logic [NumBankRows-1:0]                                         payload_dma_gnt;
+
+  // Read data (direct output from SRAM memory macro)
+  logic [NumBankRows-1:0][NumBanksPerWord-1:0][SramDataWidth-1:0] arb_sram_rdata_split;
+
+  logic dma_sram_req, dma_sram_gnt, dma_sram_we;
+  logic [NumBanksPerWord-1:0][SramMacroSelWidth-1:0] dma_sram_macro_sel, dma_sram_macro_sel_q;
+  logic [  NumBanksPerWord-1:0][  SramAddrWidth-1:0] dma_sram_addr;
+  logic [AxiCfgW.DataWidth-1:0]                      dma_sram_rdata;
+
+  logic [  NumBanksPerWord-1:0][  SramDataWidth-1:0] dma_sram_wdata;
+  logic [  NumBanksPerWord-1:0][SramDataWidth/8-1:0] dma_sram_be;
+
+  assign dma_sram_req  = dma_mem_req;
+  assign dma_mem_gnt   = dma_sram_gnt;
+  assign dma_sram_we   = dma_mem_we;
+  assign dma_mem_rdata = dma_sram_rdata;
+
+  for (genvar bank = 0; bank < NumBanksPerWord; bank++) begin : gen_dma_wide_addresses
+    // Calculate the addresses
+    assign dma_sram_addr[bank]      = dma_mem_addr[SramAddrWidthOffset+:SramAddrWidth];
+    assign dma_sram_macro_sel[bank] = dma_mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
+    // Register the macro selection to select the correct macro for the next cycle
+    `FFL(dma_sram_macro_sel_q[bank], dma_sram_macro_sel[bank],
+         dma_sram_req & dma_sram_gnt & ~dma_sram_we, '0);
+    // Assign the data
+    assign dma_sram_wdata[bank] = dma_mem_wdata[bank*SramDataWidth+:SramDataWidth];
+    assign dma_sram_be[bank] = dma_mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
+    assign dma_sram_rdata[bank*SramDataWidth+:SramDataWidth] =
+        arb_sram_rdata_split[dma_sram_macro_sel_q[bank]][bank];
+  end
+
+  assign dma_sram_gnt = |payload_dma_gnt;
 
   ///////////////////////
   // axi2obi converter //
@@ -505,13 +852,12 @@ module mem_tile
     .axi_req_t   (axi_nw_join_req_t),
     .axi_rsp_t   (axi_nw_join_rsp_t)
   ) i_axi_to_obi (
-    .clk_i     (tile_clk),
-    .rst_ni    (tile_rst_n),
-    .testmode_i(test_enable_i),
-    .axi_req_i (axi_req),
-    .axi_rsp_o (axi_rsp),
-    .obi_req_o (obi_req),
-    .obi_rsp_i (obi_rsp),
+    .clk_i    (tile_clk),
+    .rst_ni   (tile_rst_n),
+    .axi_req_i(axi_req),
+    .axi_rsp_o(axi_rsp),
+    .obi_req_o(obi_req),
+    .obi_rsp_i(obi_rsp),
 
     .req_aw_id_o      (axi_in_aw_id),
     .req_aw_user_o    (axi_in_aw_user),
@@ -546,6 +892,7 @@ module mem_tile
   /////////////////
 
   logic                            mem_req;
+  logic                            mem_gnt;
   logic                            mem_we;
   logic [AxiCfgJoin.AddrWidth-1:0] mem_addr;
   logic [   AxiCfgW.DataWidth-1:0] mem_wdata;
@@ -568,7 +915,6 @@ module mem_tile
   ) i_obi_atop_resolver (
     .clk_i         (tile_clk),
     .rst_ni        (tile_rst_n),
-    .testmode_i    (test_enable_i),
     .sbr_port_req_i(obi_req),
     .sbr_port_rsp_o(obi_rsp),
     .mgr_port_req_o(mem_obi_req),
@@ -604,31 +950,120 @@ module mem_tile
     .addr_o   (mem_addr),
     .wdata_o  (mem_wdata),
     .be_o     (mem_be),
-    .gnt_i    (1'b1),
+    .gnt_i    (mem_gnt),
     .rdata_i  (mem_rdata)
   );
 
+  logic [NumBankRows-1:0] payload_ext_gnt;
+
+  logic sram_req, sram_gnt, sram_we;
   logic [NumBanksPerWord-1:0][SramMacroSelWidth-1:0] sram_macro_sel, sram_macro_sel_q;
-  logic [NumBanksPerWord-1:0][  SramAddrWidth-1:0]                    sram_addr;
-  logic [    NumBankRows-1:0][NumBanksPerWord-1:0][SramDataWidth-1:0] sram_rdata_split;
+  logic [  NumBanksPerWord-1:0][  SramAddrWidth-1:0] sram_addr;
+  logic [AxiCfgW.DataWidth-1:0]                      sram_rdata;
 
-  logic [NumBanksPerWord-1:0][  SramDataWidth-1:0]                    sram_wdata;
-  logic [NumBanksPerWord-1:0][SramDataWidth/8-1:0]                    sram_be;
+  logic [  NumBanksPerWord-1:0][  SramDataWidth-1:0] sram_wdata;
+  logic [  NumBanksPerWord-1:0][SramDataWidth/8-1:0] sram_be;
 
-  for (genvar i = 0; i < NumBanksPerWord; i++) begin : gen_addresses
+  assign sram_req  = mem_req;
+  assign mem_gnt   = sram_gnt;
+  assign sram_we   = mem_we;
+  assign mem_rdata = sram_rdata;
+
+  for (genvar bank = 0; bank < NumBanksPerWord; bank++) begin : gen_addresses
     // Calculate the addresses
-    assign sram_addr[i]      = mem_addr[SramAddrWidthOffset+:SramAddrWidth];
-    assign sram_macro_sel[i] = mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
+    assign sram_addr[bank]      = mem_addr[SramAddrWidthOffset+:SramAddrWidth];
+    assign sram_macro_sel[bank] = mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
     // Register the macro selection to select the correct macro for the next cycle
-    `FFL(sram_macro_sel_q[i], sram_macro_sel[i], mem_req & ~mem_we, '0)
+    `FFL(sram_macro_sel_q[bank], sram_macro_sel[bank], sram_req & sram_gnt & ~sram_we, '0);
     // Assign the data
-    assign sram_wdata[i]                             = mem_wdata[i*SramDataWidth+:SramDataWidth];
-    assign sram_be[i]                                = mem_be[i*SramDataWidth/8+:SramDataWidth/8];
-    assign mem_rdata[i*SramDataWidth+:SramDataWidth] = sram_rdata_split[sram_macro_sel_q[i]][i];
+    assign sram_wdata[bank] = mem_wdata[bank*SramDataWidth+:SramDataWidth];
+    assign sram_be[bank] = mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
+    assign sram_rdata[bank*SramDataWidth+:SramDataWidth] =
+        arb_sram_rdata_split[sram_macro_sel_q[bank]][bank];
   end
 
-  for (genvar i = 0; i < NumBanksPerWord; i++) begin : gen_sram_banks
-    for (genvar j = 0; j < NumBankRows; j++) begin : gen_sram_macros
+  assign sram_gnt = |payload_ext_gnt;
+
+  /////////////////////////
+  // Row Request Arbitor //
+  /////////////////////////
+
+  logic [NumBankRows-1:0] payload_ext_req, payload_dma_req;
+
+  // Arbitor result signals
+  logic [NumBankRows-1:0]                                           arb_sram_req;
+  logic [NumBankRows-1:0][  SramAddrWidth-1:0]                      arb_sram_addr;
+  logic [NumBankRows-1:0]                                           arb_sram_we;
+  logic [NumBankRows-1:0][NumBanksPerWord-1:0][  SramDataWidth-1:0] arb_sram_wdata;
+  logic [NumBankRows-1:0][NumBanksPerWord-1:0][SramDataWidth/8-1:0] arb_sram_be;
+
+  typedef struct packed {
+    logic [SramAddrWidth-1:0]                        addr;
+    logic                                            we;
+    logic [NumBanksPerWord-1:0][SramDataWidth-1:0]   wdata;
+    logic [NumBanksPerWord-1:0][SramDataWidth/8-1:0] be;
+  } sram_payload_t;
+
+  // Pack memory request payload from external tiles
+  sram_payload_t [NumBankRows-1:0] payload_ext, payload_dma;
+
+  for (genvar row = 0; row < NumBankRows; row++) begin : gen_sram_row_arbitor
+    // Memory request from external tiles and DMA
+    assign payload_ext_req[row]  = sram_req && (sram_macro_sel[0] == row);
+    assign payload_dma_req[row]  = dma_sram_req && (dma_sram_macro_sel[0] == row);
+
+    assign payload_ext[row].addr = sram_addr[0];
+    assign payload_ext[row].we   = sram_we && (sram_macro_sel[0] == row);
+    for (genvar bank = 0; bank < NumBanksPerWord; bank++) begin : gen_ext_payload_banks
+      assign payload_ext[row].wdata[bank] = sram_wdata[bank];
+      assign payload_ext[row].be[bank]    = sram_be[bank];
+    end
+    // Pack memory request payload from DMA
+    assign payload_dma[row].addr = dma_sram_addr[0];
+    assign payload_dma[row].we   = dma_sram_we && (dma_sram_macro_sel[0] == row);
+    for (genvar bank = 0; bank < NumBanksPerWord; bank++) begin : gen_dma_payload_banks
+      assign payload_dma[row].wdata[bank] = dma_sram_wdata[bank];
+      assign payload_dma[row].be[bank]    = dma_sram_be[bank];
+    end
+
+    // Requests from external tiles has higher priority
+    rr_arb_tree #(
+      .NumIn    (2),
+      .DataWidth($bits(sram_payload_t)),
+      .AxiVldRdy(1'b0),
+      .ExtPrio  (1'b1)
+    ) i_row_arbiter (
+      .clk_i(tile_clk),
+      .rst_ni(tile_rst_n),
+      .flush_i(1'b0),
+      .rr_i(1'b1),
+      .data_i({payload_ext[row], payload_dma[row]}),
+      .req_i({payload_ext_req[row], payload_dma_req[row]}),
+      .gnt_o({payload_ext_gnt[row], payload_dma_gnt[row]}),
+      .data_o({arb_sram_addr[row], arb_sram_we[row], arb_sram_wdata[row], arb_sram_be[row]}),
+      .idx_o(  /* Unused */),
+      .req_o(arb_sram_req[row]),
+      .gnt_i(arb_sram_req[row])  // Acknowledge it directly
+    );
+
+`ifndef SYNTHESIS
+`ifndef VERILATOR
+    // (1) Both clients (EXT and DMA) request the SAME row in the SAME cycle.
+    RowReqCollision :
+    cover property (@(posedge tile_clk) disable iff (!tile_rst_n)
+        payload_ext_req[row] && payload_dma_req[row]);
+
+    // (2) Collision resolved by priority: ext granted, DMA denied same cycle.
+    RowDmaPreempted :
+    cover property (@(posedge tile_clk) disable iff (!tile_rst_n)
+        payload_ext_req[row] && payload_dma_req[row] &&
+        payload_ext_gnt[row] && !payload_dma_gnt[row]);
+`endif
+`endif
+  end
+
+  for (genvar bank = 0; bank < NumBanksPerWord; bank++) begin : gen_sram_banks
+    for (genvar row = 0; row < NumBankRows; row++) begin : gen_sram_macros
       tc_sram #(
         .NumWords (SramNumWords),
         .DataWidth(SramDataWidth),
@@ -637,12 +1072,12 @@ module mem_tile
       ) i_mem (
         .clk_i  (tile_clk),
         .rst_ni (tile_rst_n),
-        .req_i  (mem_req && (sram_macro_sel[i] == j)),
-        .we_i   (mem_we && (sram_macro_sel[i] == j)),
-        .addr_i (sram_addr[i]),
-        .wdata_i(sram_wdata[i]),
-        .be_i   (sram_be[i]),
-        .rdata_o(sram_rdata_split[j][i])
+        .req_i  (arb_sram_req[row]),
+        .we_i   (arb_sram_we[row]),
+        .addr_i (arb_sram_addr[row]),
+        .wdata_i(arb_sram_wdata[row][bank]),
+        .be_i   (arb_sram_be[row][bank]),
+        .rdata_o(arb_sram_rdata_split[row][bank])
       );
     end
   end

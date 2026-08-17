@@ -9,7 +9,6 @@
 // in the system. Each cluster CLINT reg is written using multicast.
 
 #include <stdint.h>
-#include "gw_addrmap.h"
 #include "snrt.h"
 
 int main (void) {

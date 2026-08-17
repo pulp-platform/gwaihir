@@ -59,4 +59,3 @@ Report Power:
 ```bash
 primetime-2022.03 pt_shell -x "set RUN_NAME cluster_tile_latest; source power.tcl"
 ```
-

@@ -62,14 +62,17 @@ module cheshire_tile
   input logic [31:0] gpio_i,
   output logic [31:0] gpio_o,
   output logic [31:0] gpio_en_o,
-  // register interfaces
-  output csh_reg_req_t [CshRegExtChipCtrl:CshRegExtFLL] reg_req_o,
-  input csh_reg_rsp_t [CshRegExtChipCtrl:CshRegExtFLL] reg_rsp_i,
+  // APB configuration interfaces
+  output csh_apb_req_t [CshRegExtNumSlv-1:0] apb_req_o,
+  input csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
   // Serial link interface
   input logic [SlinkNumChan-1:0] slink_rcv_clk_i,
   output logic [SlinkNumChan-1:0] slink_rcv_clk_o,
   input logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
   output logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
+  // AXI ports to DRAM
+  output csh_axi_llc_req_t axi_llc_mst_req_o,
+  input csh_axi_llc_rsp_t axi_llc_mst_rsp_i,
   // Chimney ports
   input id_t id_i,
   // Router ports
@@ -266,8 +269,6 @@ module cheshire_tile
   // Cheshire //
   //////////////
 
-  csh_axi_llc_req_t                                axi_llc_req;
-  csh_axi_llc_rsp_t                                axi_llc_rsp;
   csh_axi_mst_req_t [CheshireCfg.AxiExtNumMst-1:0] axi_ext_mst_req_in;
   csh_axi_mst_rsp_t [CheshireCfg.AxiExtNumMst-1:0] axi_ext_mst_rsp_out;
   csh_axi_slv_req_t [CheshireCfg.AxiExtNumSlv-1:0] axi_ext_slv_req_out;
@@ -296,8 +297,8 @@ module cheshire_tile
     .test_mode_i,
     .boot_mode_i,
     .rtc_i,
-    .axi_llc_mst_req_o(axi_llc_req),
-    .axi_llc_mst_rsp_i(axi_llc_rsp),
+    .axi_llc_mst_req_o,
+    .axi_llc_mst_rsp_i,
     .axi_ext_mst_req_i(axi_ext_mst_req_in),
     .axi_ext_mst_rsp_o(axi_ext_mst_rsp_out),
     .axi_ext_slv_req_o(axi_ext_slv_req_out),
@@ -365,29 +366,21 @@ module cheshire_tile
     .usb_dp_oe_o      ()
   );
 
-  // Connect to the chip-level register interfaces
-  assign reg_req_o                                   = reg_ext_req[CshRegExtChipCtrl:CshRegExtFLL];
-  assign reg_ext_rsp[CshRegExtChipCtrl:CshRegExtFLL] = reg_rsp_i;
-
-  // LLC master port tied to an error slave (no external DRAM via serial link)
-  axi_err_slv #(
-    .AxiIdWidth(CheshireCfg.AxiMstIdWidth + $clog2(
-        csh_axi__AxiIn.num_in
-    ) + CheshireCfg.LlcNotBypass),
-    .axi_req_t(csh_axi_llc_req_t),
-    .axi_resp_t(csh_axi_llc_rsp_t),
-    .Resp(axi_pkg::RESP_DECERR),
-    .RespWidth(CheshireCfg.AxiDataWidth),
-    .RespData(64'hCA11AB1EBADCAB1E),
-    .ATOPs(1'b1),
-    .MaxTrans(4)  // TODO maybe tune, but this block should never be used.
-  ) i_llc_err_slv (
-    .clk_i,
-    .rst_ni,
-    .test_i    (test_mode_i),
-    .slv_req_i (axi_llc_req),
-    .slv_resp_o(axi_llc_rsp)
-  );
+  for (genvar i = 0; i < CheshireCfg.RegExtNumSlv; i++) begin : gen_reg_to_apb
+    reg_to_apb #(
+      .reg_req_t(csh_reg_req_t),
+      .reg_rsp_t(csh_reg_rsp_t),
+      .apb_req_t(csh_apb_req_t),
+      .apb_rsp_t(csh_apb_resp_t)
+    ) i_fll_reg_to_apb (
+      .clk_i,
+      .rst_ni,
+      .reg_req_i(reg_ext_req[i]),
+      .reg_rsp_o(reg_ext_rsp[i]),
+      .apb_req_o(apb_req_o[i]),
+      .apb_rsp_i(apb_rsp_i[i])
+    );
+  end
 
   // Add Assertion that no multicast / reduction can enter this tile!
   for (genvar r = 0; r < 4; r++) begin : gen_virt

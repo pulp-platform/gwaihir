@@ -64,7 +64,7 @@ static inline void snrt_dma_load_2d_tile_mcast_sw(
         // Every active cluster sends the data to a cluster above it
         if (is_sender) {
 
-            // Calculate destination 
+            // Calculate destination
             char receiver_offset = sender_stride / 2;
             uintptr_t dst_cluster = gw_calculate_cluster_idx(
                 gw_cluster_row_idx() + receiver_offset, gw_cluster_col_idx());
@@ -74,13 +74,13 @@ static inline void snrt_dma_load_2d_tile_mcast_sw(
             snrt_mcycle();
 
             // Start DMA
-            snrt_dma_start_1d(remote_dst, dst, size);    
+            snrt_dma_start_1d(remote_dst, dst, size);
 
             // Wait for DMA to complete
             snrt_dma_wait_all();
             snrt_mcycle();
         }
-        
+
         // Perform inter-cluster barrier. Disable reduction before the fence
         // so it overlaps with the latency of the ongoing reduction operation.
         snrt_set_awuser_low(user);
@@ -326,7 +326,7 @@ static inline int gemm_gwaihir(const gemm_args_t *args) {
                                     lb[b_buff_idx], largs->b, dma_in_k_abs,
                                     dma_in_n_abs, tile_k, tile_n,
                                     largs->ldb, largs->prec,
-                                    col_comm[gw_cluster_col_idx()]);                            
+                                    col_comm[gw_cluster_col_idx()]);
                             } else {
                                 snrt_dma_load_2d_tile(
                                     lb[b_buff_idx], largs->b, dma_in_k_abs,

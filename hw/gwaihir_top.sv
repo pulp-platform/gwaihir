@@ -4,63 +4,86 @@
 //
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
+`include "axi/assign.svh"
+
 module gwaihir_top
   import gwaihir_pkg::*;
   import cheshire_pkg::*;
   import floo_pkg::*;
-  import snitch_cluster_pkg::*;
+  import snitch_cluster_wrapper_pkg::*;
   import floo_gwaihir_noc_pkg::*;
 (
-  input  logic                                                             clk_i,
-  input  logic                                                             rst_ni,
-  input  logic                                                             test_mode_i,
-  input  logic         [                           1:0]                    boot_mode_i,
-  input  logic                                                             rtc_i,
-  input  logic                                                             clk_rst_bypass_i,
+  input  logic                                                      clk_i,
+  input  logic                                                      rst_ni,
+  input  logic                                                      test_mode_i,
+  input  logic             [                1:0]                    boot_mode_i,
+  input  logic                                                      rtc_i,
+  input  logic                                                      clk_rst_bypass_i,
   // JTAG
-  input  logic                                                             jtag_tck_i,
-  input  logic                                                             jtag_trst_ni,
-  input  logic                                                             jtag_tms_i,
-  input  logic                                                             jtag_tdi_i,
-  output logic                                                             jtag_tdo_o,
-  output logic                                                             jtag_tdo_oe_o,
+  input  logic                                                      jtag_tck_i,
+  input  logic                                                      jtag_trst_ni,
+  input  logic                                                      jtag_tms_i,
+  input  logic                                                      jtag_tdi_i,
+  output logic                                                      jtag_tdo_o,
+  output logic                                                      jtag_tdo_oe_o,
   // UART interface
-  output logic                                                             uart_tx_o,
-  input  logic                                                             uart_rx_i,
+  output logic                                                      uart_tx_o,
+  input  logic                                                      uart_rx_i,
   // UART modem flow control
-  output logic                                                             uart_rts_no,
-  output logic                                                             uart_dtr_no,
-  input  logic                                                             uart_cts_ni,
-  input  logic                                                             uart_dsr_ni,
-  input  logic                                                             uart_dcd_ni,
-  input  logic                                                             uart_rin_ni,
+  output logic                                                      uart_rts_no,
+  output logic                                                      uart_dtr_no,
+  input  logic                                                      uart_cts_ni,
+  input  logic                                                      uart_dsr_ni,
+  input  logic                                                      uart_dcd_ni,
+  input  logic                                                      uart_rin_ni,
   // I2C interface
-  output logic                                                             i2c_sda_o,
-  input  logic                                                             i2c_sda_i,
-  output logic                                                             i2c_sda_en_o,
-  output logic                                                             i2c_scl_o,
-  input  logic                                                             i2c_scl_i,
-  output logic                                                             i2c_scl_en_o,
+  output logic                                                      i2c_sda_o,
+  input  logic                                                      i2c_sda_i,
+  output logic                                                      i2c_sda_en_o,
+  output logic                                                      i2c_scl_o,
+  input  logic                                                      i2c_scl_i,
+  output logic                                                      i2c_scl_en_o,
   // SPI host interface
-  output logic                                                             spih_sck_o,
-  output logic                                                             spih_sck_en_o,
-  output logic         [                 SpihNumCs-1:0]                    spih_csb_o,
-  output logic         [                 SpihNumCs-1:0]                    spih_csb_en_o,
-  output logic         [                           3:0]                    spih_sd_o,
-  output logic         [                           3:0]                    spih_sd_en_o,
-  input  logic         [                           3:0]                    spih_sd_i,
+  output logic                                                      spih_sck_o,
+  output logic                                                      spih_sck_en_o,
+  output logic             [      SpihNumCs-1:0]                    spih_csb_o,
+  output logic             [      SpihNumCs-1:0]                    spih_csb_en_o,
+  output logic             [                3:0]                    spih_sd_o,
+  output logic             [                3:0]                    spih_sd_en_o,
+  input  logic             [                3:0]                    spih_sd_i,
   // GPIO interface
-  input  logic         [                          31:0]                    gpio_i,
-  output logic         [                          31:0]                    gpio_o,
-  output logic         [                          31:0]                    gpio_en_o,
-  // Chip-level register interface
-  output csh_reg_req_t [CshRegExtChipCtrl:CshRegExtFLL]                    reg_req_o,
-  input  csh_reg_rsp_t [CshRegExtChipCtrl:CshRegExtFLL]                    reg_rsp_i,
+  input  logic             [               31:0]                    gpio_i,
+  output logic             [               31:0]                    gpio_o,
+  output logic             [               31:0]                    gpio_en_o,
+  // APB configuration interfaces
+  output csh_apb_req_t     [CshRegExtNumSlv-1:0]                    apb_req_o,
+  input  csh_apb_resp_t    [CshRegExtNumSlv-1:0]                    apb_rsp_i,
   // Serial link interface
-  input  logic         [              SlinkNumChan-1:0]                    slink_rcv_clk_i,
-  output logic         [              SlinkNumChan-1:0]                    slink_rcv_clk_o,
-  input  logic         [              SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
-  output logic         [              SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o
+  input  logic             [   SlinkNumChan-1:0]                    slink_rcv_clk_i,
+  output logic             [   SlinkNumChan-1:0]                    slink_rcv_clk_o,
+  input  logic             [   SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
+  output logic             [   SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
+  // PCIe interface
+  inout  wire                                                       pcie_refclk_n,
+  inout  wire                                                       pcie_refclk_p,
+  input  logic                                                      pcie_button_rst_ni,
+  inout  wire              [                1:0]                    pcie_rx_p,
+  inout  wire              [                1:0]                    pcie_rx_n,
+  inout  wire              [                1:0]                    pcie_tx_p,
+  inout  wire              [                1:0]                    pcie_tx_n,
+  input  logic                                                      pcie_test_clk_en_i,
+  input  logic                                                      pcie_test_coreclk_i,
+  input  logic                                                      pcie_test_rst_en_i,
+  input  logic                                                      pcie_test_rst_n_i,
+  input  logic                                                      pcie_test_phy_rst_n_i,
+  input  logic                                                      pcie_jtag_phys_tdi_i,
+  input  logic                                                      pcie_jtag_phys_tck_i,
+  input  logic                                                      pcie_jtag_phys_tms_i,
+  input  logic                                                      pcie_jtag_phys_trst_ni,
+  output logic                                                      pcie_jtag_phys_tdo_o,
+  // AXI ports to DRAM
+  output csh_axi_llc_req_t                                          axi_llc_mst_req_o,
+  input  csh_axi_llc_rsp_t                                          axi_llc_mst_rsp_i
 );
 
   floo_req_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_req_in, floo_req_out;
@@ -163,12 +186,14 @@ module gwaihir_top
     .gpio_i,
     .gpio_o,
     .gpio_en_o,
-    .reg_req_o,
-    .reg_rsp_i,
+    .apb_req_o,
+    .apb_rsp_i,
     .slink_rcv_clk_i,
     .slink_rcv_clk_o,
     .slink_i,
     .slink_o,
+    .axi_llc_mst_req_o,
+    .axi_llc_mst_rsp_i,
     .id_i             (CheshireId),
     .floo_req_west_o  (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
     .floo_rsp_west_i  (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
@@ -195,58 +220,188 @@ module gwaihir_top
   //////////////
 
   for (genvar m = 0; m < NumMemTiles; m++) begin : gen_memtile
-
-    localparam int MemTileSamIdx = 2 * m + L2Spm0SamIdx;
+    // Each L2 memory tile spans L2SpmIdxStride idx: idma, memory, and config
+    localparam logic [$bits(sam_idx_e)-1:0] MemTileSamIdx = L2SpmIdxStride * m + L2Spm0SamIdx;
     localparam id_t MemTileId = CollectiveSam[MemTileSamIdx].idx.id;
     localparam id_t MemTilePhysicalId = SamPhysical[MemTileSamIdx].idx;
     localparam int MemTileX = int'(MemTilePhysicalId.x);
     localparam int MemTileY = int'(MemTilePhysicalId.y);
+    // Per-tile L2 SPM size
+    localparam int unsigned MemTileSpmSize = mem_tile_size(m);
 
-    mem_tile #(
+    if (MemTileSpmSize == MemTileSizeSmall) begin : gen_memtile_impl
+      mem_tile_small #(
 `ifndef TARGET_SYNTHESIS
-      .MemTileId(int'(m))
+        .MemTileId(int'(m))
 `endif
-    ) i_mem_tile (
-      .clk_i,
-      .rst_ni,
-      .test_enable_i   (test_mode_i),
-      .clk_rst_bypass_i(clk_rst_bypass_i),
-      .id_i            (MemTileId),
-      .floo_req_o      (floo_req_out[MemTileX][MemTileY]),
-      .floo_rsp_i      (floo_rsp_in[MemTileX][MemTileY]),
-      .floo_wide_o     (floo_wide_out[MemTileX][MemTileY]),
-      .floo_req_i      (floo_req_in[MemTileX][MemTileY]),
-      .floo_rsp_o      (floo_rsp_out[MemTileX][MemTileY]),
-      .floo_wide_i     (floo_wide_in[MemTileX][MemTileY])
-    );
+      ) i_mem_tile (
+        .clk_i,
+        .rst_ni,
+        .test_enable_i   (test_mode_i),
+        .clk_rst_bypass_i(clk_rst_bypass_i),
+        .id_i            (MemTileId),
+        .samidx_i        (MemTileSamIdx),
+        .floo_req_o      (floo_req_out[MemTileX][MemTileY]),
+        .floo_rsp_i      (floo_rsp_in[MemTileX][MemTileY]),
+        .floo_wide_o     (floo_wide_out[MemTileX][MemTileY]),
+        .floo_req_i      (floo_req_in[MemTileX][MemTileY]),
+        .floo_rsp_o      (floo_rsp_out[MemTileX][MemTileY]),
+        .floo_wide_i     (floo_wide_in[MemTileX][MemTileY])
+      );
+    end else if (MemTileSpmSize == MemTileSizeLarge) begin : gen_memtile_impl
+      mem_tile_large #(
+`ifndef TARGET_SYNTHESIS
+        .MemTileId(int'(m))
+`endif
+      ) i_mem_tile (
+        .clk_i,
+        .rst_ni,
+        .test_enable_i   (test_mode_i),
+        .clk_rst_bypass_i(clk_rst_bypass_i),
+        .id_i            (MemTileId),
+        .samidx_i        (MemTileSamIdx),
+        .floo_req_o      (floo_req_out[MemTileX][MemTileY]),
+        .floo_rsp_i      (floo_rsp_in[MemTileX][MemTileY]),
+        .floo_wide_o     (floo_wide_out[MemTileX][MemTileY]),
+        .floo_req_i      (floo_req_in[MemTileX][MemTileY]),
+        .floo_rsp_o      (floo_rsp_out[MemTileX][MemTileY]),
+        .floo_wide_i     (floo_wide_in[MemTileX][MemTileY])
+      );
+    end else begin : gen_memtile_impl
+      // Only the two hard-coded mem tile flavours exist, so a SAM window whose
+      // size matches neither has no implementation to instantiate. Fail at
+      // elaboration instead of silently leaving the tile out of the NoC.
+      $fatal(
+          1,
+          "[gwaihir_top] Mem tile %0d has unsupported SPM size 0x%0h (expected 0x%0h or 0x%0h).",
+          m,
+          MemTileSpmSize,
+          MemTileSizeSmall,
+          MemTileSizeLarge
+      );
+    end
   end
 
   ////////////////
   // UCIe tiles //
   ////////////////
 
-  for (genvar u = 0; u < NumUcieTiles; u++) begin : gen_ucietile
+  // AXI narrow channels
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieTiles-1:0] ucie_axi_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumUcieTiles-1:0] ucie_axi_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_req;
+  floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_rsp;
+  // AXI wide channels
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   [NumUcieTiles-1:0] ucie_axi_wide_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   [NumUcieTiles-1:0] ucie_axi_wide_out_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t    [NumUcieTiles-1:0] ucie_axi_wide_in_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
 
-    localparam int UcieSamIdx = u + Ucie0SamIdx;
-    localparam id_t UcieId = Sam[UcieSamIdx].idx;
-    localparam id_t UciePhysicalId = SamPhysical[UcieSamIdx].idx;
-    localparam int UcieX = int'(UciePhysicalId.x);
-    localparam int UcieY = int'(UciePhysicalId.y);
+  localparam int Ucie0X = int'(SamPhysical[Ucie0SamIdx].idx.x);
+  localparam int Ucie0Y = int'(SamPhysical[Ucie0SamIdx].idx.y);
+  localparam int Ucie1X = int'(SamPhysical[Ucie1SamIdx].idx.x);
+  localparam int Ucie1Y = int'(SamPhysical[Ucie1SamIdx].idx.y);
 
-    ucie_tile i_ucie_tile (
-      .clk_i,
-      .rst_ni,
-      .test_enable_i(test_mode_i),
-      .id_i         (UcieId),
-      .floo_req_o   (floo_req_out[UcieX][UcieY]),
-      .floo_rsp_i   (floo_rsp_in[UcieX][UcieY]),
-      .floo_wide_o  (floo_wide_out[UcieX][UcieY]),
-      .floo_req_i   (floo_req_in[UcieX][UcieY]),
-      .floo_rsp_o   (floo_rsp_out[UcieX][UcieY]),
-      .floo_wide_i  (floo_wide_in[UcieX][UcieY])
-    );
+  ucie_tile i_ucie_tile0 (
+    .clk_i,
+    .rst_ni,
+    .test_enable_i       (test_mode_i),
+    .id_i                (Sam[Ucie0SamIdx].idx),
+    // ucie0 (chiplet0) ingress is pass-through.
+    .ucie_id_i           (1'b0),
+    .floo_req_o          (floo_req_out[Ucie0X][Ucie0Y]),
+    .floo_rsp_i          (floo_rsp_in[Ucie0X][Ucie0Y]),
+    .floo_wide_o         (floo_wide_out[Ucie0X][Ucie0Y]),
+    .floo_req_i          (floo_req_in[Ucie0X][Ucie0Y]),
+    .floo_rsp_o          (floo_rsp_out[Ucie0X][Ucie0Y]),
+    .floo_wide_i         (floo_wide_in[Ucie0X][Ucie0Y]),
+    // loopback
+    .axi_narrow_out_req_o(ucie_axi_narrow_out_req[0]),
+    .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[0]),
+    .axi_narrow_in_req_i (ucie_axi_narrow_in_req[0]),
+    .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[0]),
 
-  end
+    .axi_wide_out_req_o(ucie_axi_wide_out_req[0]),
+    .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[0]),
+    .axi_wide_in_req_i (ucie_axi_wide_in_req[0]),
+    .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[0])
+  );
+
+  ucie_tile i_ucie_tile1 (
+    .clk_i,
+    .rst_ni,
+    .test_enable_i       (test_mode_i),
+    .id_i                (Sam[Ucie1SamIdx].idx),
+    // ucie1 (chiplet1) ingress applies the half-shift.
+    .ucie_id_i           (1'b1),
+    .floo_req_o          (floo_req_out[Ucie1X][Ucie1Y]),
+    .floo_rsp_i          (floo_rsp_in[Ucie1X][Ucie1Y]),
+    .floo_wide_o         (floo_wide_out[Ucie1X][Ucie1Y]),
+    .floo_req_i          (floo_req_in[Ucie1X][Ucie1Y]),
+    .floo_rsp_o          (floo_rsp_out[Ucie1X][Ucie1Y]),
+    .floo_wide_i         (floo_wide_in[Ucie1X][Ucie1Y]),
+    // loopback
+    .axi_narrow_out_req_o(ucie_axi_narrow_out_req[1]),
+    .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[1]),
+    .axi_narrow_in_req_i (ucie_axi_narrow_in_req[1]),
+    .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[1]),
+
+    .axi_wide_out_req_o(ucie_axi_wide_out_req[1]),
+    .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[1]),
+    .axi_wide_in_req_i (ucie_axi_wide_in_req[1]),
+    .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[1])
+  );
+
+  // loopback UCIe[0] -> UCIe[1]
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[1], ucie_axi_narrow_out_req[0]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[0], ucie_axi_narrow_in_rsp[1]);
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[1], ucie_axi_wide_out_req[0]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[0], ucie_axi_wide_in_rsp[1]);
+
+  // loopback UCIe[1] -> UCIe[0]
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[0], ucie_axi_narrow_out_req[1]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[1], ucie_axi_narrow_in_rsp[0]);
+  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[0], ucie_axi_wide_out_req[1]);
+  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[1], ucie_axi_wide_in_rsp[0]);
+
+  ////////////////
+  // PCIe tile  //
+  ////////////////
+
+  localparam id_t PCIeId = Sam[PcieSamIdx].idx;
+  localparam id_t PCIeTilePhysicalId = SamPhysical[PcieSamIdx].idx;
+  localparam int PCIeTileX = int'(PCIeTilePhysicalId.x);
+  localparam int PCIeTileY = int'(PCIeTilePhysicalId.y);
+
+  pcie_tile i_pcie_tile (
+    .clk_i            (clk_i),
+    .rst_ni           (rst_ni),
+    .test_enable_i    (test_mode_i),
+    .pcie_refclk_n,
+    .pcie_refclk_p,
+    .pcie_button_rst_ni,
+    .pcie_rx_p,
+    .pcie_rx_n,
+    .pcie_tx_p,
+    .pcie_tx_n,
+    .test_clk_en_i    (pcie_test_clk_en_i),
+    .test_coreclk_i   (pcie_test_coreclk_i),
+    .test_rst_en_i    (pcie_test_rst_en_i),
+    .test_rst_n_i     (pcie_test_rst_n_i),
+    .test_phy_rst_n_i (pcie_test_phy_rst_n_i),
+    .jtag_phys_tdi_i  (pcie_jtag_phys_tdi_i),
+    .jtag_phys_tck_i  (pcie_jtag_phys_tck_i),
+    .jtag_phys_tms_i  (pcie_jtag_phys_tms_i),
+    .jtag_phys_trst_ni(pcie_jtag_phys_trst_ni),
+    .jtag_phys_tdo_o  (pcie_jtag_phys_tdo_o),
+    .id_i             (PCIeId),
+    .floo_req_o       (floo_req_out[PCIeTileX][PCIeTileY]),
+    .floo_rsp_i       (floo_rsp_in[PCIeTileX][PCIeTileY]),
+    .floo_wide_o      (floo_wide_out[PCIeTileX][PCIeTileY]),
+    .floo_req_i       (floo_req_in[PCIeTileX][PCIeTileY]),
+    .floo_rsp_o       (floo_rsp_out[PCIeTileX][PCIeTileY]),
+    .floo_wide_i      (floo_wide_in[PCIeTileX][PCIeTileY])
+  );
 
   ////////////////
   // Dummy tile //
