@@ -231,7 +231,6 @@ module gwaihir_top
   //////////////
 
   for (genvar m = 0; m < NumMemTiles; m++) begin : gen_memtile
-    // Each L2 memory tile spans three idx: idma, memory, and config
     localparam logic [$bits(sam_idx_e)-1:0] MemTileSamIdx = L2SpmNumAddrRules * m + L2Spm0SamIdx;
     localparam id_t MemTileId = CollectiveSam[MemTileSamIdx].idx.id;
     localparam id_t MemTilePhysicalId = SamPhysical[MemTileSamIdx].idx;

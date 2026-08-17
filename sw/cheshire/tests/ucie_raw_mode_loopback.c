@@ -36,19 +36,16 @@ static void slink_raw_configure_tx(slink_regs_t *regs) {
   regs->raw_mode_out_ch_mask[0].w = 1;
   // Clear TX FIFO before transmitting
   regs->raw_mode_out_data_fifo_ctrl.w = 1;
-  fence();
 }
 
 static void slink_raw_configure_rx(slink_regs_t *regs) {
   regs->raw_mode_en.w = 1;
   regs->raw_mode_in_ch_sel.w = 0;
-  fence();
 }
 
 static void slink_raw_disable(slink_regs_t *regs) {
   regs->raw_mode_out_en.w = 0;
   regs->raw_mode_en.w = 0;
-  fence();
 }
 
 static int slink_raw_wait_rx_valid(slink_regs_t *regs) {
@@ -80,8 +77,6 @@ int main() {
   }
   ucie0_slink->raw_mode_push.w = 1;
   ucie0_slink->raw_mode_out_en.w = 1;
-  fence();
-
   // RX: wait for a valid read data
   if (slink_raw_wait_rx_valid(ucie1_slink)) {
     slink_raw_disable(ucie0_slink);
@@ -94,7 +89,6 @@ int main() {
     rx_sample[i] = ucie1_slink->raw_mode_in_data[i].w;
   }
   ucie1_slink->raw_mode_pop.w = 1;
-  fence();
 
   slink_raw_disable(ucie0_slink);
   slink_raw_disable(ucie1_slink);

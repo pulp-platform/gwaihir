@@ -48,12 +48,12 @@ dependencies:
   # needs it and Bender does not transitively export incdirs (see
   # https://github.com/pulp-platform/bender/issues/340).
   reqrsp_interface: 0.1.0
+  serial_link:
+    git: https://github.com/pulp-platform/serial_link.git
+    rev: main
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: main
-  serial_link:
-    git: "https://github.com/pulp-platform/serial_link.git"
-    rev: "main"
 
 workspace:
   package_links:
