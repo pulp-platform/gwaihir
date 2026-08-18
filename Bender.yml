@@ -69,17 +69,18 @@ sources:
   - target: gw_gen_rtl
     override_files: true
     files:
-      - .generated/snitch_cluster_wrapper_pkg.sv
+      - .generated/hw/snitch_cluster_wrapper_pkg.sv
+
   - target: gw_gen_rtl
     files:
       # Level 0.0
-      - .generated/floo_gwaihir_noc_pkg.sv
-      - .generated/gw_tile_regs_pkg.sv
-      - .generated/gw_addrmap_pkg.sv
-      - .generated/ucie_slink_reg_pkg.sv
+      - .generated/hw/floo_gwaihir_noc_pkg.sv
+      - .generated/hw/gw_tile_regs_pkg.sv
+      - .generated/hw/gw_addrmap_pkg.sv
+      - .generated/hw/ucie_slink_reg_pkg.sv
       # Level 0.1
-      - .generated/gw_tile_regs.sv
-      - .generated/ucie_slink_reg.sv
+      - .generated/hw/gw_tile_regs.sv
+      - .generated/hw/ucie_slink_reg.sv
 
   # Level 1
   - hw/gwaihir_pkg.sv
@@ -98,7 +99,7 @@ sources:
 
   - target: any(simulation, test)
     include_dirs:
-      - .generated
+      - .generated/hw
       - target/sim/include
     files:
       - target/sim/src/fixture_gwaihir_top.sv
@@ -118,7 +119,7 @@ sources:
 
   - target: all(any(simulation, test), asic)
     include_dirs:
-      - .generated
+      - .generated/hw
       - target/sim/include
     files:
       - pd/target/sim/src/fixture_gwaihir_chip.sv
