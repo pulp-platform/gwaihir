@@ -230,7 +230,7 @@ packages:
       Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: 706b3bc805bd295bcde4375aefd098d68e431f34
+    revision: eb505fefc554c1d7b842eed66966a4ccf1dfd888
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -315,7 +315,7 @@ packages:
       Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
     dependencies: []
   mxcore:
-    revision: e41d5969fc3241312992ff51710b2d05b67a94bb
+    revision: 7912c24a9d49891fcc96738c4e898da9b5fadf97
     version: null
     source:
       Git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
@@ -426,10 +426,10 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: f78a97834326f018880d786abc418f8c4af8f6aa
+    revision: f68c4666320ab621fcf3fc5cdde405c98cf2902b
     version: null
     source:
-      Git: https://github.com/pulp-platform/snitch_cluster.git
+      Git: https://github.com/Jayanth2209/snitch_cluster.git
     dependencies:
     - apb
     - axi
@@ -445,7 +445,7 @@ packages:
     - spatz_vpu
     - tech_cells_generic
   spatz_vpu:
-    revision: a9d4b0cadc91db9b17c5ee8338c8279343ed5e36
+    revision: 5818fad0b44ce0d4cd88ddf4c05df8e3302474b7
     version: null
     source:
       Git: https://github.com/pulp-platform/spatz_vpu.git

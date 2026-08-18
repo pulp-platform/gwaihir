@@ -17,8 +17,8 @@ dependencies:
   apb_fll_if: "0.3.0"
   floo_noc: { git: "https://github.com/pulp-platform/FlooNoC.git",     rev: "main", upstream_name: "FlooNoC" }
   apb:                { git: "https://github.com/pulp-platform/apb.git",                rev: "common-cells-v2"                          }
-  common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",       rev: "c63eada47c050f78b320d0e854a24a9cd9c1cc80" }
-  snitch_cluster:     { git: "https://github.com/pulp-platform/snitch_cluster.git",     rev: "main" }
+  common_cells:       { git: "https://github.com/pulp-platform/common_cells.git",       rev: "63b7c50d43e462b59506f69d341ff1e40202866d" }
+  snitch_cluster:     { git: "https://github.com/Jayanth2209/snitch_cluster.git",       rev: "fpnew-mxcore" }
   mxcore:             { git: "git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git",         rev: "common-cells-v2"                          }
   datamover:          { git: "https://github.com/pulp-platform/datamover.git",          rev: "5df9c9bd9e10ad020763c4291c571adf35ef4ae2" }
   cheshire:           { git: "https://github.com/pulp-platform/cheshire.git",           rev: "gwaihir" }
