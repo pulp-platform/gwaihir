@@ -41,8 +41,8 @@ module snitch_hwpe_subsystem
     BW:  DEFAULT_BW,
     UW:  DEFAULT_UW,
     IW:  DEFAULT_IW,
-    EW:  0,
-    EHW: 0
+    EW:  DEFAULT_EW,
+    EHW: DEFAULT_EHW
   };
   // verilog_format: on
 
@@ -64,8 +64,8 @@ module snitch_hwpe_subsystem
     .WAIVE_RSP3_ASSERT(1'b1),
 `endif
     .DW               (HwpeDataWidth),
-    .EW               (0),
-    .EHW              (0)
+    .EW               (DEFAULT_EW),
+    .EHW              (DEFAULT_EHW)
   ) tcdm (
     .clk(clk_i)
   );
@@ -75,8 +75,8 @@ module snitch_hwpe_subsystem
     .WAIVE_RSP3_ASSERT(1'b1),
 `endif
     .DW               (HwpeDataWidth),
-    .EW               (0),
-    .EHW              (0)
+    .EW               (DEFAULT_EW),
+    .EHW              (DEFAULT_EHW)
   ) tcdm_to_mux[0:1] (
     .clk(clk_i)
   );

@@ -85,7 +85,7 @@ int main() {
     uint16_t b_size = K*N*NBYTES_VEC;
     uint16_t scale_a_size = (M*K/BLOCK_SIZE)*NBYTES_SCALE;
     uint16_t scale_b_size = (K*N/BLOCK_SIZE)*NBYTES_SCALE;
-    uint16_t result_size = M*N*NBYTES_RESULT; 
+    uint16_t result_size = M*N*NBYTES_RESULT;
     uint16_t result_scale_size = (M*N/BLOCK_SIZE)*NBYTES_SCALE;
 
     // Control Engine Register Value
