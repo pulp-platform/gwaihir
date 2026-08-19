@@ -64,6 +64,9 @@ dependencies:
     rev: main
   ucie:
     path: .deps/ucie
+  surya:
+    git: git@iis-git.ee.ethz.ch:visual-wakeup/surya.git
+    rev: 19f66ab8247d84e386e4c4151f340efa4efd4d79
 
 workspace:
   package_links:
@@ -99,7 +102,6 @@ sources:
   # Level 2
   - hw/snitch_tcdm_aligner.sv
   - hw/snitch_hwpe_subsystem.sv
-  - hw/floo_dca_decode.sv
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
