@@ -68,7 +68,7 @@ UCIE_SLINK_EN_DDR    ?= 0
 
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
-$(GW_GEN_HW_DIR) $(GW_GEN_SW_DIR):
+$(GW_GEN_SW_DIR):
 	@mkdir -p $@
 
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
@@ -194,7 +194,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= e2f26d514d74b13524c304b2b281055c77d88d49
+PD_COMMIT ?= 16a629df7c0585d6e2202a1103123c03ca09b782
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
