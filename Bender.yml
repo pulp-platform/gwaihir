@@ -60,6 +60,9 @@ dependencies:
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: dca
+  surya:
+    git: git@iis-git.ee.ethz.ch:visual-wakeup/surya.git
+    rev: 19f66ab8247d84e386e4c4151f340efa4efd4d79
 
 workspace:
   package_links:
@@ -93,6 +96,7 @@ sources:
   # Level 2
   - hw/snitch_tcdm_aligner.sv
   - hw/snitch_hwpe_subsystem.sv
+  - hw/surya_hwpe_subsystem.sv
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv

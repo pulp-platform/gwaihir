@@ -262,8 +262,8 @@ packages:
     - register_interface
     - tech_cells_generic
   hci:
-    revision: a8d8132b7f7839fd55f92df65cdc3e361ea80a6b
-    version: 2.6.1
+    revision: c38974f0907969b9efdfd6cf5f23ff5e8a6e31bf
+    version: null
     source:
       Git: https://github.com/pulp-platform/hci.git
     dependencies:
@@ -282,10 +282,17 @@ packages:
     - common_cells
     - tech_cells_generic
   hwpe-stream:
-    revision: f5b017893c590f4b9b4d45c38c5abe5a8fcb4b81
+    revision: 70d7656f10495b62ede88eef0e289eede04646d4
     version: null
     source:
       Git: https://github.com/pulp-platform/hwpe-stream.git
+    dependencies:
+    - tech_cells_generic
+  ibex:
+    revision: b18f7ef178ed07f5085051f96042c670a919fd5c
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/ibex.git
     dependencies:
     - tech_cells_generic
   idma:
@@ -457,6 +464,19 @@ packages:
     - fpnew
     - reqrsp_interface
     - tech_cells_generic
+  surya:
+    revision: 19f66ab8247d84e386e4c4151f340efa4efd4d79
+    version: null
+    source:
+      Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya.git
+    dependencies:
+    - common_cells
+    - fpnew
+    - hci
+    - hwpe-ctrl
+    - hwpe-stream
+    - ibex
+    - scm
   tagger:
     revision: ac13da3c43c59b866841935e0d3b822c03e626e1
     version: null
