@@ -39,6 +39,9 @@ SN_RVTESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/riscv-tests/build
 
 SN_TESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/tests/build
 SN_TESTS_INCDIRS  = $(SN_ROOT)/sw/kernels/blas
+# The Surya HAL and the generated workload of the H tile test.
+SN_TESTS_INCDIRS += $(shell $(BENDER) path surya)/sw
+SN_TESTS_INCDIRS += $(GW_SNITCH_SW_DIR)/tests/data/surya_mx
 
 SN_BUILD_APPS = OFF
 
@@ -100,10 +103,18 @@ $(SN_HTILE_RUNTIME_LIB): $(SN_HTILE_RUNTIME_OBJS) | $(SN_HTILE_RUNTIME_BUILDDIR)
 
 $(SN_HTILE_RUNTIME_DEPS): | $(SN_RUNTIME_HAL_HDRS)
 
-$(SN_TESTS_BUILDDIR)/simple_htile.d: SN_TESTS_RISCV_CFLAGS += -DGW_HTILE_RUNTIME
-$(SN_TESTS_BUILDDIR)/simple_htile.elf: SN_TESTS_RISCV_CFLAGS += -DGW_HTILE_RUNTIME
-$(SN_TESTS_BUILDDIR)/simple_htile.elf: SN_TESTS_RISCV_LDFLAGS = $(SN_HTILE_TEST_RISCV_LDFLAGS)
-$(SN_TESTS_BUILDDIR)/simple_htile.elf: $(SN_HTILE_RUNTIME_LIB)
+# Tests that run on the H tile. They need the H tile runtime, which moves the
+# hart id and the TCDM base.
+GW_HTILE_TESTS = simple_htile surya_mx
+
+$(foreach t,$(GW_HTILE_TESTS),$(eval \
+  $(SN_TESTS_BUILDDIR)/$(t).d: SN_TESTS_RISCV_CFLAGS += -DGW_HTILE_RUNTIME))
+$(foreach t,$(GW_HTILE_TESTS),$(eval \
+  $(SN_TESTS_BUILDDIR)/$(t).elf: SN_TESTS_RISCV_CFLAGS += -DGW_HTILE_RUNTIME))
+$(foreach t,$(GW_HTILE_TESTS),$(eval \
+  $(SN_TESTS_BUILDDIR)/$(t).elf: SN_TESTS_RISCV_LDFLAGS = $(SN_HTILE_TEST_RISCV_LDFLAGS)))
+$(foreach t,$(GW_HTILE_TESTS),$(eval \
+  $(SN_TESTS_BUILDDIR)/$(t).elf: $(SN_HTILE_RUNTIME_LIB)))
 
 sn-clean-runtime: sn-clean-htile-runtime
 

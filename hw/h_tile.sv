@@ -263,7 +263,7 @@ module h_tile
     .x_result_ready_o      ()
   );
 
-  if (UseHWPE) begin : gen_hwpe
+  if (UseHtileHWPE) begin : gen_surya
 
     // Convert narrow AXI's 64 bit DW down to 32
     axi_dw_converter #(
@@ -311,13 +311,10 @@ module h_tile
     );
 
     axi_to_tcdm #(
-      .axi_req_t (cluster_narrow_out_dw_conv_req_t),
-      .axi_rsp_t (cluster_narrow_out_dw_conv_resp_t),
-      .tcdm_req_t(hwpectrl_req_t),
-      .tcdm_rsp_t(hwpectrl_rsp_t),
-      .IdWidth   (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .AddrWidth (HWPECtrlAddrWidth),
-      .DataWidth (HWPECtrlDataWidth)
+      .AddrWidth(HWPECtrlAddrWidth),
+      .DataWidth(HWPECtrlDataWidth),
+      .IdWidth  (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
+      .UserWidth(snitch_cluster_wrapper_pkg::NarrowUserWidth)
     ) i_axi_to_hwpe_ctrl (
       .clk_i     (tile_clk),
       .rst_ni    (tile_rst_n),
@@ -342,16 +339,15 @@ module h_tile
       .tcdm_rsp_misaligned_o(cluster_tcdm_ext_rsp_misaligned)
     );
 
-    snitch_hwpe_subsystem #(
+    surya_hwpe_subsystem #(
       .tcdm_req_t   (snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
       .tcdm_rsp_t   (snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
       .periph_req_t (hwpectrl_req_t),
       .periph_rsp_t (hwpectrl_rsp_t),
       .HwpeDataWidth(snitch_cluster_wrapper_pkg::WideDataWidth),
       .IdWidth      (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .NrCores      (NrCores),
-      .TCDMDataWidth(snitch_cluster_wrapper_pkg::NarrowDataWidth)
-    ) i_snitch_hwpe_subsystem (
+      .NrCores      (NrCores)
+    ) i_surya_hwpe_subsystem (
       .clk_i          (tile_clk),
       .rst_ni         (tile_rst_n),
       .test_mode_i    (1'b0),
@@ -361,7 +357,7 @@ module h_tile
       .hwpe_ctrl_rsp_o(hwpectrl_rsp),
       .hwpe_evt_o     (mxip)
     );
-  end else begin : gen_no_redmul_e
+  end else begin : gen_no_surya
     assign mxip                         = '0;
     assign cluster_tcdm_ext_req_aligned = '0;
     assign cluster_narrow_ext_rsp       = '0;
