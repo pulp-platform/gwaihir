@@ -24,6 +24,7 @@ dev = [
     "reuse>=6.2.0",
     "tsunami-wave",
     "verible==0.0.4071.0",
+    "rdlfmt>=0.2.0",
 ]
 docs = [
     "peakrdl-markdown>=1.0.3",

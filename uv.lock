@@ -656,6 +656,7 @@ dependencies = [
 dev = [
     { name = "prek" },
     { name = "pyyaml" },
+    { name = "rdlfmt" },
     { name = "reuse" },
     { name = "tsunami-wave" },
     { name = "verible" },
@@ -678,6 +679,7 @@ requires-dist = [
 dev = [
     { name = "prek", specifier = ">=0.4.11" },
     { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "rdlfmt", specifier = ">=0.2.0" },
     { name = "reuse", specifier = ">=6.2.0" },
     { name = "tsunami-wave", git = "https://github.com/zarubaf/tsunami.git?rev=4a2d5c02462875fcebaef6f4e84563eb28b99cf8" },
     { name = "verible", specifier = "==0.0.4071.0" },
@@ -2217,6 +2219,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/eb/2e/79c822141bfd05a853236b504869ebc6b70159afc570e1d5a20641782eaa/pyyaml_env_tag-1.1.tar.gz", hash = "sha256:2eb38b75a2d21ee0475d6d97ec19c63287a7e140231e4214969d0eac923cd7ff", size = 5737, upload-time = "2025-05-13T15:24:01.64Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/11/432f32f8097b03e3cd5fe57e88efb685d964e2e5178a48ed61e841f7fdce/pyyaml_env_tag-1.1-py3-none-any.whl", hash = "sha256:17109e1a528561e32f026364712fee1264bc2ea6715120891174ed1b980d2e04", size = 4722, upload-time = "2025-05-13T15:23:59.629Z" },
+]
+
+[[package]]
+name = "rdlfmt"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/43/1417eed4635b07e90c0049da4af42044d7f2dc62fc801c7d43e81cffaa9e/rdlfmt-0.2.0.tar.gz", hash = "sha256:f6d14fadcffeb75f72863054f26f79678ef6fe6f90f2507cb186e5cfbb9c4c91", size = 85234, upload-time = "2026-08-19T20:48:45.691Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/57/f6/e0fcbed75a9e6f40f5766652a80a333ea70d5893f4a31e7239a273245a45/rdlfmt-0.2.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:9cd378685292ff031287875715ca020d6eb31e7fdc6d5f23a486f95fdfc931bb", size = 1228447, upload-time = "2026-08-19T20:48:34.705Z" },
+    { url = "https://files.pythonhosted.org/packages/11/fe/82ff8a340b6ebd5c121ff0fcb0e0c826491debd9ab262b69707ce4d469b4/rdlfmt-0.2.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:f82a151a1b1809fa1fa980d989f3ebfbd25929dc57b14b5f6a95973a7f9cb1e7", size = 1112411, upload-time = "2026-08-19T20:48:36.193Z" },
+    { url = "https://files.pythonhosted.org/packages/36/81/8731549064fd37031468d156587df67810908fad85834f8d33594e58727f/rdlfmt-0.2.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d95d203752d8953214b60537873080b421f48c6b4d49e155d1c59d51c3bb2889", size = 1199417, upload-time = "2026-08-19T20:48:37.688Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/5a/8870df58bb9b2bb2ca6013b5477ad35de28548684a4bbd2b80ff6f4cb605/rdlfmt-0.2.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:51836cd2a35b0d85d003c2aef327d1f56f3f14a4ac097752e63d8032107f59a9", size = 1318706, upload-time = "2026-08-19T20:48:39.17Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/e6/0c61a5338de52fe5a9fffb42a206a6cac16eeb361da0fc777728ca546fb4/rdlfmt-0.2.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:ec15e9fb4434a0b19bdbd8149869d731ccd5ced0648361871facecc69672cc6d", size = 1251078, upload-time = "2026-08-19T20:48:40.759Z" },
+    { url = "https://files.pythonhosted.org/packages/01/2d/c881ff08a116ecedae8a93c37f818927294610275400cfc1aa8dfb2a2ac6/rdlfmt-0.2.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:8117959bf5bd091f2e522c9f74ea2396cbd5899573b255c4289c4a08c6edd96d", size = 1313430, upload-time = "2026-08-19T20:48:42.536Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/7a/02ef60fc68fd820f68b031889ef8461dd07c63d2a0e9f3645cac43427326/rdlfmt-0.2.0-py3-none-win_amd64.whl", hash = "sha256:ec7c8cb3077245d2051518491e0e70f62421917b2b44c844db7bd5757aa73309", size = 1009159, upload-time = "2026-08-19T20:48:44.269Z" },
 ]
 
 [[package]]
