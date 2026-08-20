@@ -103,8 +103,7 @@ $(SN_HTILE_RUNTIME_LIB): $(SN_HTILE_RUNTIME_OBJS) | $(SN_HTILE_RUNTIME_BUILDDIR)
 
 $(SN_HTILE_RUNTIME_DEPS): | $(SN_RUNTIME_HAL_HDRS)
 
-# Tests that run on the H tile. They need the H tile runtime, which moves the
-# hart id and the TCDM base.
+# Tests that run on the H tile
 GW_HTILE_TESTS = simple_htile surya_mx
 
 $(foreach t,$(GW_HTILE_TESTS),$(eval \
