@@ -41,7 +41,6 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 
 COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync -t mxcore_hwpe
 # Surya MX accelerator in the H tile
-COMMON_TARGS += -t surya_no_pace
 COMMON_TARGS += -DN_CIM=4 -DCIM_INNER=32 -DCIM_OUTER=8 -DN_ACCUM=32 \
                 -DOPTIMAL_BW=1 -DCIM_DIGITAL=1 \
                 -DENABLE_DEPTHWISE=0 -DENABLE_PACE=0 -DENABLE_MX=1 \
