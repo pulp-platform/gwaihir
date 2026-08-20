@@ -38,6 +38,20 @@ repos:
         additional_dependencies: ["verible==0.0.4071.0"]
         files: '\.sv$'
 
+  ##########
+  # rdlfmt #
+  ##########
+
+  - repo: local
+    hooks:
+      - id: rdlfmt
+        name: rdlfmt
+        entry: rdlfmt
+        language: python
+        additional_dependencies: [rdlfmt]
+        types: [file]
+        files: \.rdl$
+
   ###################
   # General hygiene #
   ###################
