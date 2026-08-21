@@ -426,7 +426,7 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: f68c4666320ab621fcf3fc5cdde405c98cf2902b
+    revision: a65533ad014042f7651486aaa608d550feb73f1f
     version: null
     source:
       Git: https://github.com/Jayanth2209/snitch_cluster.git
