@@ -367,7 +367,7 @@ package gwaihir_pkg;
     ret.RegExtRegionEnd[CshRegExtChipCtrl]   = 'h1800_3000;
     ret.RegExtRegionIdx[CshRegLPDDR]         = CshRegLPDDR;
     ret.RegExtRegionStart[CshRegLPDDR]       = 'h1900_0000;
-    ret.RegExtRegionEnd[CshRegLPDDR]         = 'h1a00_1020;
+    ret.RegExtRegionEnd[CshRegLPDDR]         = 'h1b00_1020;
 
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
