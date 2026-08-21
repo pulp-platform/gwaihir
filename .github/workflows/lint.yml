@@ -27,7 +27,7 @@ jobs:
         with:
           # needed to find the base commit of a PR
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: astral-sh/setup-uv@v10.0.1
       - name: Run hooks on changed files
         env:
           FROM_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
