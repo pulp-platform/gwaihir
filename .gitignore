@@ -43,6 +43,7 @@ modelsim.ini
 *.do
 *.vcd
 *.fst
+*.fsdb
 
 ## VCS
 .inter*
@@ -51,6 +52,7 @@ novas.*
 ucli.key
 .vcs*
 verdiLog
+novasLog/
 
 # Software build files
 *.bin

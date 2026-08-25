@@ -28,7 +28,7 @@
 #define PATTERN_MARKER_IDX 4u
 #define PATTERN_MARKER 0xdeadbeefu
 
-typedef volatile slink_reg_NumLanes_100_EnDdr_0_NumBits_100_RawModeNumWords_8_t slink_regs_t;
+typedef volatile slink_reg_NumLanes_200_EnDdr_0_NumBits_200_RawModeNumWords_10_t slink_regs_t;
 
 static void slink_raw_configure_tx(slink_regs_t *regs) {
   regs->raw_mode_en.w = 1;
