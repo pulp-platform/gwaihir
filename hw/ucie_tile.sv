@@ -183,7 +183,7 @@ module ucie_tile
     axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_req_iw_conv.ar.addr, ucie_id_i);
   end
 
-  // ID Conveter from Slink to Chimney
+  // ID Converter from Slink to Chimney
   axi_iw_converter #(
     .AxiSlvPortIdWidth(AxiCfgUcieJoin.OutIdWidth),  // Chimney Output ID
     .AxiMstPortIdWidth(AxiCfgW.InIdWidth),  // ID of the chimney's input port
@@ -465,12 +465,11 @@ module ucie_tile
     .mst_resp_i(axi_narrow_atop_filtered_rsp)
   );
 
-  // Strip the user field form the narrow AXI
+  // Strip the user field from the narrow AXI
   // Reuse the AXI STRUCT ASSIGN macro. Since the dst user is a logic,
-  // the struct assign wil truncate the field.
+  // the struct assign will truncate the field.
   `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_atop_filtered_req)
   `AXI_ASSIGN_RESP_STRUCT(axi_narrow_atop_filtered_rsp, axi_narrow_noatop_out_rsp)
-
 
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgNoAtop)),
