@@ -41,13 +41,19 @@ module pcie_tile
   // Router ID
   input id_t id_i,
 
-  // Router mesh ports (all 4 directions; boundary tie-offs handled by mesh)
-  output floo_req_t  [West:North] floo_req_o,
-  input  floo_rsp_t  [West:North] floo_rsp_i,
-  output floo_wide_t [West:North] floo_wide_o,
-  input  floo_req_t  [West:North] floo_req_i,
-  output floo_rsp_t  [West:North] floo_rsp_o,
-  input  floo_wide_t [West:North] floo_wide_i
+  // Router mesh ports
+  output floo_req_t  floo_req_east_o,
+  input  floo_rsp_t  floo_rsp_east_i,
+  output floo_wide_t floo_wide_east_o,
+  input  floo_req_t  floo_req_east_i,
+  output floo_rsp_t  floo_rsp_east_o,
+  input  floo_wide_t floo_wide_east_i,
+  output floo_req_t  floo_req_south_o,
+  input  floo_rsp_t  floo_rsp_south_i,
+  output floo_wide_t floo_wide_south_o,
+  input  floo_req_t  floo_req_south_i,
+  output floo_rsp_t  floo_rsp_south_o,
+  input  floo_wide_t floo_wide_south_i
 );
 
   ////////////
@@ -91,13 +97,24 @@ module pcie_tile
     .offload_narrow_rsp_i('0)
   );
 
-  // Connect all 4 mesh directions; top-level mesh handles boundary tie-offs
-  assign floo_req_o                      = router_floo_req_out[West:North];
-  assign router_floo_req_in[West:North]  = floo_req_i;
-  assign floo_rsp_o                      = router_floo_rsp_out[West:North];
-  assign router_floo_rsp_in[West:North]  = floo_rsp_i;
-  assign floo_wide_o                     = router_floo_wide_out[West:North];
-  assign router_floo_wide_in[West:North] = floo_wide_i;
+  assign floo_req_east_o            = router_floo_req_out[East];
+  assign router_floo_req_in[East]   = floo_req_east_i;
+  assign floo_rsp_east_o            = router_floo_rsp_out[East];
+  assign router_floo_rsp_in[East]   = floo_rsp_east_i;
+  assign floo_wide_east_o           = router_floo_wide_out[East];
+  assign router_floo_wide_in[East]  = floo_wide_east_i;
+  assign floo_req_south_o           = router_floo_req_out[South];
+  assign router_floo_req_in[South]  = floo_req_south_i;
+  assign floo_rsp_south_o           = router_floo_rsp_out[South];
+  assign router_floo_rsp_in[South]  = floo_rsp_south_i;
+  assign floo_wide_south_o          = router_floo_wide_out[South];
+  assign router_floo_wide_in[South] = floo_wide_south_i;
+  assign router_floo_req_in[West]   = '0;
+  assign router_floo_req_in[North]  = '0;
+  assign router_floo_rsp_in[West]   = '0;
+  assign router_floo_rsp_in[North]  = '0;
+  assign router_floo_wide_in[West]  = '0;
+  assign router_floo_wide_in[North] = '0;
 
   // Eject port: no real endpoint yet, tied to zero
   assign router_floo_req_in[Eject]  = '0;
