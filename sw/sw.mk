@@ -70,9 +70,15 @@ GW_LINK_MODE ?= spm
 CHS_SW_INCLUDES += -I$(GW_INCDIR)
 CHS_SW_INCLUDES += -I$(SN_RUNTIME_SRCDIR)
 CHS_SW_INCLUDES += -I$(GW_GEN_SW_DIR)
+# Closed-source dependency headers, built in place from .deps (see Makefile init-pd).
+# Referenced by path only, never vendored; wildcard is empty when the dep is absent.
+CHS_SW_INCLUDES += -I$(GW_ROOT)/.deps/ucie/sw/include
 
 # Collect tests, which should be build for all modes, and their .dump targets
 GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_CHS_SW_DIR)/tests/*.c)
+# Closed-source dependency tests, built in place from .deps (see Makefile init-pd).
+# Referenced by path only, never vendored; wildcard is empty when the dep is absent.
+GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_ROOT)/.deps/ucie/sw/tests/*.c)
 GW_CHS_SW_TEST_SRC_S += $(wildcard $(GW_CHS_SW_DIR)/tests/*.S)
 GW_CHS_SW_TEST_DUMP  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).dump) $(patsubst %.$(GW_LINK_MODE).S,%.$(GW_LINK_MODE).dump,$(GW_CHS_SW_TEST_SRC_S))
 GW_CHS_SW_TEST_ELF  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).elf) $(patsubst %.$(GW_LINK_MODE).S,%.$(GW_LINK_MODE).elf,$(GW_CHS_SW_TEST_SRC_S))
