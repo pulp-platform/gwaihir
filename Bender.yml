@@ -54,6 +54,8 @@ dependencies:
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: main
+  ucie:
+    path: .deps/ucie
 
 workspace:
   package_links:
@@ -92,7 +94,13 @@ sources:
   - hw/mem_tile_small.sv
   - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
-  - hw/ucie_tile.sv
+  # UCIe: opensource tile by default; closed-source (real macro) when built with -t ucie
+  - target: not(ucie)
+    files:
+      - hw/ucie_tile.sv
+  - target: ucie
+    files:
+      - .deps/ucie/hw/ucie_tile.sv
 
   # Level 3
   - hw/gwaihir_top.sv
