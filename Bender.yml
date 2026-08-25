@@ -121,6 +121,7 @@ sources:
       - target/sim/src/fixture_gwaihir_top.sv
       - target/sim/src/tb_gwaihir_top.sv
 
+  # PCIe
   - target: not(all(pcie, asic))
     files:
       - hw/pcie_tile.sv
@@ -128,6 +129,15 @@ sources:
   - target: all(pcie, asic)
     files:
       - .deps/pcie/hw/pcie_tile.sv
+
+  # UCIe
+  - target: not(ucie)
+    files:
+      - hw/ucie_tile.sv
+
+  - target: ucie
+    files:
+      - .deps/ucie/hw/ucie_tile.sv
 
   - target: asic
     files:
