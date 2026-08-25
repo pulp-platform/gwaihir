@@ -205,7 +205,7 @@ PCIE_COMMIT ?= 76b282c7390db8bff18dfa036e51a72773fd24ac
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
-UCIE_COMMIT ?= 9e376d17afd1acc7e9974b5273534d6ebb8d1dc4
+UCIE_COMMIT ?= e831328236a6898734f5a1b3b944ed9dd92865df
 UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
@@ -255,7 +255,7 @@ update-pd-commit:
 
 clean-pd:
 	rm -f $(PCIE_SW_TESTS_VENDORED)
-	rm -rf $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR)
+	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR)
 
 -include $(PD_DIR)/pd.mk
 -include $(LPDDR_DIR)/lpddr.mk
