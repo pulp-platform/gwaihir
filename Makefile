@@ -204,6 +204,10 @@ PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
 PCIE_COMMIT ?= 76b282c7390db8bff18dfa036e51a72773fd24ac
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
+UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
+UCIE_COMMIT ?= e831328236a6898734f5a1b3b944ed9dd92865df
+UCIE_DIR = $(GW_ROOT)/.deps/ucie
+
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
 LPDDR_COMMIT ?= 5296d8eaf1046ae7eb4ec488c272fac2e9896dac
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
@@ -227,6 +231,13 @@ $(PCIE_DIR):
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
 	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
+UCIE_SW_TESTS = $(wildcard $(UCIE_DIR)/sw/tests/*.c)
+UCIE_SW_TESTS_VENDORED = $(patsubst $(UCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshire/tests/%,$(UCIE_SW_TESTS))
+
+$(UCIE_DIR):
+	git clone $(UCIE_REMOTE) $(UCIE_DIR)
+	cd $(UCIE_DIR) && git checkout $(UCIE_COMMIT)
+	cp $(UCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
