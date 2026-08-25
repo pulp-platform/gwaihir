@@ -58,8 +58,8 @@ dependencies:
     git: https://github.com/pulp-platform/serial_link.git
     rev: main
   snitch_cluster:
-    git: https://github.com/Jayanth2209/snitch_cluster.git
-    rev: fpnew-mxcore
+    git: https://github.com/pulp-platform/snitch_cluster.git
+    rev: main
 
 workspace:
   package_links:
