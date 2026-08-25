@@ -51,6 +51,7 @@ inter.*
 novas.*
 ucli.key
 .vcs*
+.fsdb*
 verdiLog
 novasLog/
 
