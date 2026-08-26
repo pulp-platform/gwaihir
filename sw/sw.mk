@@ -74,7 +74,7 @@ CHS_SW_INCLUDES += -I$(GW_GEN_SW_DIR)
 # Referenced by path only, never vendored; wildcard is empty when the dep is absent.
 CHS_SW_INCLUDES += -I$(GW_ROOT)/.deps/ucie/sw/include
 
-# Collect tests, which should be build for all modes, and their .dump targets
+# Collect tests, which should be built for all modes, and their .dump targets
 GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_CHS_SW_DIR)/tests/*.c)
 # Closed-source dependency tests, built in place from .deps (see Makefile init-pd).
 # Referenced by path only, never vendored; wildcard is empty when the dep is absent.
