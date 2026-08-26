@@ -130,15 +130,6 @@ sources:
     files:
       - .deps/pcie/hw/pcie_tile.sv
 
-  # UCIe
-  - target: not(ucie)
-    files:
-      - hw/ucie_tile.sv
-
-  - target: ucie
-    files:
-      - .deps/ucie/hw/ucie_tile.sv
-
   - target: asic
     files:
     - pd/hw/gwaihir_chip.sv
