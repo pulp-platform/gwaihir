@@ -84,7 +84,7 @@ int main() {
     return 2;
   }
 
-  // Pop word by word form teh RAW data in register
+  // Pop word by word form the RAW data in register
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     rx_sample[i] = ucie1_slink->raw_mode_in_data[i].w;
   }
