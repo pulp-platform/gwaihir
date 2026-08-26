@@ -17,16 +17,17 @@ module cheshire_tile
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
 (
-  input logic       clk_i,
-  input logic       rst_ni,
-  input logic       test_mode_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic test_mode_i,
   input logic [1:0] boot_mode_i,
-  input logic       rtc_i,
-
+  input logic rtc_i,
+  // External Interrupts
+  input logic [NumUcieTiles-1:0][CheshireCfg.NumExtInIntrs-1:0] intr_ext_i,  // 4
   // Interrupt requests to external harts
   output logic [iomsb(NumIrqCtxts*CheshireCfg.NumExtIrqHarts):0] xeip_ext_o,
-  output logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext_o,
-  output logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] msip_ext_o,
+  output logic [iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext_o,
+  output logic [iomsb(CheshireCfg.NumExtIrqHarts):0] msip_ext_o,
 
   // JTAG
   input  logic jtag_tck_i,
@@ -318,7 +319,7 @@ module cheshire_tile
     .reg_ext_slv_req_o(reg_ext_req),
     .reg_ext_slv_rsp_i(reg_ext_rsp),
     // TODO(fischeti): Do we need external interrupts?
-    .intr_ext_i       ('0),
+    .intr_ext_i       (intr_ext_i),
     .intr_ext_o       (),
     .xeip_ext_o,
     .mtip_ext_o,
