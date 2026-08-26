@@ -43,7 +43,7 @@ modelsim.ini
 *.do
 *.vcd
 *.fst
-*.fsdb
+*.fsdb*
 
 ## VCS
 .inter*
@@ -51,7 +51,6 @@ inter.*
 novas.*
 ucli.key
 .vcs*
-.fsdb*
 verdiLog
 novasLog/
 
