@@ -426,7 +426,7 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: 71d1c97961ab32677cb80f35bd9a13c94a6d9658
+    revision: ccde489fb287543e548e844fc6cb4943eee4797a
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git
