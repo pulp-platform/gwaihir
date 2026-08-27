@@ -48,7 +48,7 @@ repos:
         name: rdlfmt
         entry: rdlfmt
         language: python
-        additional_dependencies: [rdlfmt]
+        additional_dependencies: ["rdlfmt @ git+https://github.com/fischeti/rdlfmt.git@1ac547a3edf530f4cb16a6c88bbbbbe5626857e0"]
         types: [file]
         files: \.rdl$
 
