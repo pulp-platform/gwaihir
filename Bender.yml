@@ -58,8 +58,8 @@ dependencies:
     git: https://github.com/pulp-platform/serial_link.git
     rev: main
   snitch_cluster:
-    git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: dca
+    git: https://github.com/DiyouS/snitch_cluster.git
+    rev: doublebw-pace
 
 workspace:
   package_links:

@@ -426,10 +426,10 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: 8b59269b83e199c18273279db14c88563e110a9b
+    revision: 719569947eccdd06cd14eb8a69a98ac9feecf194
     version: null
     source:
-      Git: https://github.com/pulp-platform/snitch_cluster.git
+      Git: https://github.com/DiyouS/snitch_cluster.git
     dependencies:
     - apb
     - axi
@@ -445,7 +445,7 @@ packages:
     - spatz_vpu
     - tech_cells_generic
   spatz_vpu:
-    revision: f396e76985f3a07d77c0e1e45159e46d5ae04dd0
+    revision: 496e7e53ead83aa8cf2cd893156377cd78f81c83
     version: null
     source:
       Git: https://github.com/pulp-platform/spatz_vpu.git
