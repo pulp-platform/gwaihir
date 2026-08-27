@@ -12,10 +12,11 @@ addrmap cheshire_external {
     // DRAM; 8 MiB minimum (Linux requirement), read+write+exec
     // Reuse the executable property already defined in cheshire_internal.rdl
     external mem {
-        mementries = 2097152; memwidth = 32;
-        sw = rw; executable = true;
-    } dram @0x0;
-
+        mementries = 2097152;
+        memwidth = 32;
+        sw = rw;
+        executable = true;
+    } dram @ 0x0;
 };
 
 `endif // __CHESHIRE_EXTERNAL_RDL__

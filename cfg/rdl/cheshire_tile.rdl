@@ -11,18 +11,15 @@
 `include "gw_chip_regs.rdl"
 `include "lpddr.rdl"
 
-addrmap cheshire_tile #(
-    longint unsigned SlinkNumLanes = 8
-) {
-
-    cheshire #(.SlinkNumLanes (SlinkNumLanes)) cheshire @0x0000_0000;
+addrmap cheshire_tile #(longint unsigned SlinkNumLanes = 8) {
+    cheshire #(.SlinkNumLanes(SlinkNumLanes)) cheshire @ 0x0000_0000;
 
 `ifdef GW_CHIP_RDL
-    fll          fll           @0x1800_1000;
-    gw_chip_regs gw_chip_regs  @0x1800_2000;
+    fll          fll          @ 0x1800_1000;
+    gw_chip_regs gw_chip_regs @ 0x1800_2000;
 `endif
 `ifdef GW_LPDDR_RDL
-    lpddr        lpddr         @0x1900_0000;
+    lpddr lpddr @ 0x1900_0000;
 `endif
 };
 
