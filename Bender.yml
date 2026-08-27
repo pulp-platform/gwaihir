@@ -29,6 +29,9 @@ dependencies:
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: c63eada47c050f78b320d0e854a24a9cd9c1cc80
+  datamover:
+    git: https://github.com/pulp-platform/datamover.git
+    rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
     rev: main
@@ -38,6 +41,9 @@ dependencies:
   gwaihir_lpddr:
     path: .deps/lpddr
   iDMA: 0.6.5
+  mxcore:
+    git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
+    rev: common-cells-v2
   obi:
     git: https://github.com/pulp-platform/obi.git
     rev: common-cells-v2
@@ -85,7 +91,8 @@ sources:
   # Level 1
   - hw/gwaihir_pkg.sv
   # Level 2
-  - hw/cluster_tile.sv
+  - hw/snitch_tcdm_aligner.sv
+  - hw/snitch_hwpe_subsystem.sv
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
@@ -95,6 +102,7 @@ sources:
   - hw/ucie_tile.sv
 
   # Level 3
+  - hw/cluster_tile.sv
   - hw/gwaihir_top.sv
 
   - target: any(simulation, test)

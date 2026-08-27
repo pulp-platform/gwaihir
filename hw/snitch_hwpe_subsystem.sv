@@ -2,12 +2,10 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 
-`include "hci_helpers.svh"
-
 module snitch_hwpe_subsystem
   import hci_package::*;
   import hwpe_ctrl_package::*;
-  import reqrsp_pkg::amo_op_e;
+  import lsu_pkg::amo_op_e;
 #(
   parameter type tcdm_req_t   = logic,
   parameter type tcdm_rsp_t   = logic,
@@ -43,8 +41,8 @@ module snitch_hwpe_subsystem
     BW:  DEFAULT_BW,
     UW:  DEFAULT_UW,
     IW:  DEFAULT_IW,
-    EW:  0,
-    EHW: 0
+    EW:  DEFAULT_EW,
+    EHW: DEFAULT_EHW
   };
   // verilog_format: on
 
@@ -66,8 +64,8 @@ module snitch_hwpe_subsystem
     .WAIVE_RSP3_ASSERT(1'b1),
 `endif
     .DW               (HwpeDataWidth),
-    .EW               (0),
-    .EHW              (0)
+    .EW               (DEFAULT_EW),
+    .EHW              (DEFAULT_EHW)
   ) tcdm (
     .clk(clk_i)
   );
@@ -77,8 +75,8 @@ module snitch_hwpe_subsystem
     .WAIVE_RSP3_ASSERT(1'b1),
 `endif
     .DW               (HwpeDataWidth),
-    .EW               (0),
-    .EHW              (0)
+    .EW               (DEFAULT_EW),
+    .EHW              (DEFAULT_EHW)
   ) tcdm_to_mux[0:1] (
     .clk(clk_i)
   );
@@ -89,7 +87,7 @@ module snitch_hwpe_subsystem
   assign tcdm_req_o.q.write = ~tcdm.wen;
   assign tcdm_req_o.q.strb  = tcdm.be;
   assign tcdm_req_o.q.data  = tcdm.data;
-  assign tcdm_req_o.q.amo   = reqrsp_pkg::AMONone;
+  assign tcdm_req_o.q.amo   = lsu_pkg::AMONone;
   assign tcdm_req_o.q.user  = '0;
   // response channel
   assign tcdm.gnt           = tcdm_rsp_i.q_ready;
@@ -193,7 +191,7 @@ module snitch_hwpe_subsystem
   end
   assign hwpe_evt_o = hwpe_evt_q;
 
-  tc_clk_gating i_redmule_clk_gate (
+  tc_clk_gating i_mxcore_clk_gate (
     .clk_i    (clk_i),
     .en_i     (clk_en[0]),
     .test_en_i('0),
@@ -207,12 +205,7 @@ module snitch_hwpe_subsystem
     .clk_o    (hwpe_clk[1])
   );
 
-  redmule_top #(
-    .ID_WIDTH     (IdWidth),
-    .N_CORES      (NrCores),
-    .DW           (HwpeDataWidth),
-    .HCI_SIZE_tcdm(HCISizeTcdm)
-  ) i_redmule_top (
+  mxcore_hwpe_top i_mxcore_top (
     .clk_i      (hwpe_clk[0]),
     .rst_ni     (rst_ni),
     .test_mode_i(test_mode_i),
