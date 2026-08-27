@@ -40,6 +40,9 @@ dependencies:
     path: ./pd
   gwaihir_lpddr:
     path: .deps/lpddr
+  hci:
+    git: https://github.com/pulp-platform/hci.git
+    rev: c38974f0907969b9efdfd6cf5f23ff5e8a6e31bf
   iDMA: 0.6.5
   mxcore:
     git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
