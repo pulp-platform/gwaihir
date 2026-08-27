@@ -204,23 +204,31 @@ endpoints:
   # here instead of being generated into a separate RDL file.
   - name: "ucie0"
     addr_range:
-      base: 0x3200_0000
-      size: "${chiplet_win_size}"
-      rdl_name: "chiplet"
-      rdl_params: &chiplet_rdl_params
-        NumClusters: "${cluster_x * cluster_y}"
-        ClusterOffset: "${cluster_base & chiplet_win_mask}"
-        ClusterSize: "${cluster_size}"
-        ClusterCfgOffset: "${cluster_cfg_base & chiplet_win_mask}"
-        NumL2Tiles: 4
-        L2DmaOffset: "${l2_dma_base & chiplet_win_mask}"
-        L2CfgOffset: "${l2_cfg_base & chiplet_win_mask}"
-        L2SpmOffset: "${l2_base & chiplet_win_mask}"
-        L2SpmStride: "${l2_stride}"
-        L2SpmSizeLarge: "${l2_size_large}"
-        L2SpmSizeSmall: "${l2_size_small}"
-        RegSize: "${reg_size}"
-      rdl_addrmap_grp: ["64b", "32b"]
+      - base: 0x3200_0000
+        size: "${chiplet_win_size}"
+        rdl_name: "chiplet"
+        rdl_params: &chiplet_rdl_params
+          NumClusters: "${cluster_x * cluster_y}"
+          ClusterOffset: "${cluster_base & chiplet_win_mask}"
+          ClusterSize: "${cluster_size}"
+          ClusterCfgOffset: "${cluster_cfg_base & chiplet_win_mask}"
+          NumL2Tiles: 4
+          L2DmaOffset: "${l2_dma_base & chiplet_win_mask}"
+          L2CfgOffset: "${l2_cfg_base & chiplet_win_mask}"
+          L2SpmOffset: "${l2_base & chiplet_win_mask}"
+          L2SpmStride: "${l2_stride}"
+          L2SpmSizeLarge: "${l2_size_large}"
+          L2SpmSizeSmall: "${l2_size_small}"
+          RegSize: "${reg_size}"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: 0x3404_0000
+        size: 0x0000_1000
+        desc: "axi_serial_cfg"
+        rdl_name: "slink_reg"
+        rdl_params: &slink_reg_rdl_params
+          NumLanes: 256
+          EnDdr: 0
+        rdl_addrmap_grp: ["64b", "32b"]
     mgr_port_protocol:
       - "narrow_in"
       - "wide_in"
@@ -229,11 +237,17 @@ endpoints:
       - "wide_out"
   - name: "ucie1"
     addr_range:
-      base: 0x3000_0000
-      size: "${chiplet_win_size}"
-      rdl_name: "chiplet"
-      rdl_params: *chiplet_rdl_params
-      rdl_addrmap_grp: ["64b", "32b"]
+      - base: 0x3000_0000
+        size: "${chiplet_win_size}"
+        rdl_name: "chiplet"
+        rdl_params: *chiplet_rdl_params
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: 0x3404_1000
+        size: 0x0000_1000
+        desc: "axi_serial_cfg"
+        rdl_name: "slink_reg"
+        rdl_params: *slink_reg_rdl_params
+        rdl_addrmap_grp: ["64b", "32b"]
     mgr_port_protocol:
       - "narrow_in"
       - "wide_in"

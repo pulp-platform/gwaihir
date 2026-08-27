@@ -12,78 +12,89 @@ module gwaihir_top
   import floo_pkg::*;
   import snitch_cluster_wrapper_pkg::*;
   import floo_gwaihir_noc_pkg::*;
+  import ucie_slink_reg_pkg::*;
 (
-  input  logic                                                      clk_i,
-  input  logic                                                      rst_ni,
-  input  logic                                                      test_mode_i,
-  input  logic             [                1:0]                    boot_mode_i,
-  input  logic                                                      rtc_i,
-  input  logic                                                      clk_rst_bypass_i,
+  input logic       clk_i,
+  input logic       rst_ni,
+  input logic       test_mode_i,
+  input logic [1:0] boot_mode_i,
+  input logic       rtc_i,
+  input logic       clk_rst_bypass_i,
+
   // JTAG
-  input  logic                                                      jtag_tck_i,
-  input  logic                                                      jtag_trst_ni,
-  input  logic                                                      jtag_tms_i,
-  input  logic                                                      jtag_tdi_i,
-  output logic                                                      jtag_tdo_o,
-  output logic                                                      jtag_tdo_oe_o,
+  input  logic jtag_tck_i,
+  input  logic jtag_trst_ni,
+  input  logic jtag_tms_i,
+  input  logic jtag_tdi_i,
+  output logic jtag_tdo_o,
+  output logic jtag_tdo_oe_o,
+
   // UART interface
-  output logic                                                      uart_tx_o,
-  input  logic                                                      uart_rx_i,
+  output logic uart_tx_o,
+  input  logic uart_rx_i,
+
   // UART modem flow control
-  output logic                                                      uart_rts_no,
-  output logic                                                      uart_dtr_no,
-  input  logic                                                      uart_cts_ni,
-  input  logic                                                      uart_dsr_ni,
-  input  logic                                                      uart_dcd_ni,
-  input  logic                                                      uart_rin_ni,
+  output logic uart_rts_no,
+  output logic uart_dtr_no,
+  input  logic uart_cts_ni,
+  input  logic uart_dsr_ni,
+  input  logic uart_dcd_ni,
+  input  logic uart_rin_ni,
+
   // I2C interface
-  output logic                                                      i2c_sda_o,
-  input  logic                                                      i2c_sda_i,
-  output logic                                                      i2c_sda_en_o,
-  output logic                                                      i2c_scl_o,
-  input  logic                                                      i2c_scl_i,
-  output logic                                                      i2c_scl_en_o,
+  output logic i2c_sda_o,
+  input  logic i2c_sda_i,
+  output logic i2c_sda_en_o,
+  output logic i2c_scl_o,
+  input  logic i2c_scl_i,
+  output logic i2c_scl_en_o,
+
   // SPI host interface
-  output logic                                                      spih_sck_o,
-  output logic                                                      spih_sck_en_o,
-  output logic             [      SpihNumCs-1:0]                    spih_csb_o,
-  output logic             [      SpihNumCs-1:0]                    spih_csb_en_o,
-  output logic             [                3:0]                    spih_sd_o,
-  output logic             [                3:0]                    spih_sd_en_o,
-  input  logic             [                3:0]                    spih_sd_i,
+  output logic                 spih_sck_o,
+  output logic                 spih_sck_en_o,
+  output logic [SpihNumCs-1:0] spih_csb_o,
+  output logic [SpihNumCs-1:0] spih_csb_en_o,
+  output logic [          3:0] spih_sd_o,
+  output logic [          3:0] spih_sd_en_o,
+  input  logic [          3:0] spih_sd_i,
+
   // GPIO interface
-  input  logic             [               31:0]                    gpio_i,
-  output logic             [               31:0]                    gpio_o,
-  output logic             [               31:0]                    gpio_en_o,
+  input  logic [31:0] gpio_i,
+  output logic [31:0] gpio_o,
+  output logic [31:0] gpio_en_o,
+
   // APB configuration interfaces
-  output csh_apb_req_t     [CshRegExtNumSlv-1:0]                    apb_req_o,
-  input  csh_apb_resp_t    [CshRegExtNumSlv-1:0]                    apb_rsp_i,
+  output csh_apb_req_t  [CshRegExtNumSlv-1:0] apb_req_o,
+  input  csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
+
   // Serial link interface
-  input  logic             [   SlinkNumChan-1:0]                    slink_rcv_clk_i,
-  output logic             [   SlinkNumChan-1:0]                    slink_rcv_clk_o,
-  input  logic             [   SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
-  output logic             [   SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
+  input  logic [SlinkNumChan-1:0]                    slink_rcv_clk_i,
+  output logic [SlinkNumChan-1:0]                    slink_rcv_clk_o,
+  input  logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i,
+  output logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o,
+
   // PCIe interface
-  inout  wire                                                       pcie_refclk_n,
-  inout  wire                                                       pcie_refclk_p,
-  input  logic                                                      pcie_button_rst_ni,
-  inout  wire              [                1:0]                    pcie_rx_p,
-  inout  wire              [                1:0]                    pcie_rx_n,
-  inout  wire              [                1:0]                    pcie_tx_p,
-  inout  wire              [                1:0]                    pcie_tx_n,
-  input  logic                                                      pcie_test_clk_en_i,
-  input  logic                                                      pcie_test_coreclk_i,
-  input  logic                                                      pcie_test_rst_en_i,
-  input  logic                                                      pcie_test_rst_n_i,
-  input  logic                                                      pcie_test_phy_rst_n_i,
-  input  logic                                                      pcie_jtag_phys_tdi_i,
-  input  logic                                                      pcie_jtag_phys_tck_i,
-  input  logic                                                      pcie_jtag_phys_tms_i,
-  input  logic                                                      pcie_jtag_phys_trst_ni,
-  output logic                                                      pcie_jtag_phys_tdo_o,
+  inout  wire        pcie_refclk_n,
+  inout  wire        pcie_refclk_p,
+  input  logic       pcie_button_rst_ni,
+  inout  wire  [1:0] pcie_rx_p,
+  inout  wire  [1:0] pcie_rx_n,
+  inout  wire  [1:0] pcie_tx_p,
+  inout  wire  [1:0] pcie_tx_n,
+  input  logic       pcie_test_clk_en_i,
+  input  logic       pcie_test_coreclk_i,
+  input  logic       pcie_test_rst_en_i,
+  input  logic       pcie_test_rst_n_i,
+  input  logic       pcie_test_phy_rst_n_i,
+  input  logic       pcie_jtag_phys_tdi_i,
+  input  logic       pcie_jtag_phys_tck_i,
+  input  logic       pcie_jtag_phys_tms_i,
+  input  logic       pcie_jtag_phys_trst_ni,
+  output logic       pcie_jtag_phys_tdo_o,
+
   // AXI ports to DRAM
-  output csh_axi_llc_req_t                                          axi_llc_mst_req_o,
-  input  csh_axi_llc_rsp_t                                          axi_llc_mst_rsp_i
+  output csh_axi_llc_req_t axi_llc_mst_req_o,
+  input  csh_axi_llc_rsp_t axi_llc_mst_rsp_i
 );
 
   floo_req_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_req_in, floo_req_out;
@@ -220,8 +231,7 @@ module gwaihir_top
   //////////////
 
   for (genvar m = 0; m < NumMemTiles; m++) begin : gen_memtile
-    // Each L2 memory tile spans L2SpmIdxStride idx: idma, memory, and config
-    localparam logic [$bits(sam_idx_e)-1:0] MemTileSamIdx = L2SpmIdxStride * m + L2Spm0SamIdx;
+    localparam logic [$bits(sam_idx_e)-1:0] MemTileSamIdx = L2SpmNumAddrRules * m + L2Spm0SamIdx;
     localparam id_t MemTileId = CollectiveSam[MemTileSamIdx].idx.id;
     localparam id_t MemTilePhysicalId = SamPhysical[MemTileSamIdx].idx;
     localparam int MemTileX = int'(MemTilePhysicalId.x);
@@ -286,16 +296,12 @@ module gwaihir_top
   // UCIe tiles //
   ////////////////
 
-  // AXI narrow channels
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieTiles-1:0] ucie_axi_narrow_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumUcieTiles-1:0] ucie_axi_narrow_out_rsp;
-  floo_gwaihir_noc_pkg::axi_narrow_in_req_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_req;
-  floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t  [NumUcieTiles-1:0] ucie_axi_narrow_in_rsp;
-  // AXI wide channels
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t   [NumUcieTiles-1:0] ucie_axi_wide_out_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   [NumUcieTiles-1:0] ucie_axi_wide_out_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t    [NumUcieTiles-1:0] ucie_axi_wide_in_req;
-  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    [NumUcieTiles-1:0] ucie_axi_wide_in_rsp;
+  logic [NumUcieTiles-1:0][NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out;
+  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_out_valid;
+  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_out_ready;
+  logic [NumUcieTiles-1:0][NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in;
+  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_in_valid;
+  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_in_ready;
 
   localparam int Ucie0X = int'(SamPhysical[Ucie0SamIdx].idx.x);
   localparam int Ucie0Y = int'(SamPhysical[Ucie0SamIdx].idx.y);
@@ -307,6 +313,7 @@ module gwaihir_top
     .rst_ni,
     .test_enable_i       (test_mode_i),
     .id_i                (Sam[Ucie0SamIdx].idx),
+    .samidx_i            (Ucie0SamIdx),
     // ucie0 (chiplet0) ingress is pass-through.
     .ucie_id_i           (1'b0),
     .floo_req_o          (floo_req_out[Ucie0X][Ucie0Y]),
@@ -316,15 +323,12 @@ module gwaihir_top
     .floo_rsp_o          (floo_rsp_out[Ucie0X][Ucie0Y]),
     .floo_wide_i         (floo_wide_in[Ucie0X][Ucie0Y]),
     // loopback
-    .axi_narrow_out_req_o(ucie_axi_narrow_out_req[0]),
-    .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[0]),
-    .axi_narrow_in_req_i (ucie_axi_narrow_in_req[0]),
-    .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[0]),
-
-    .axi_wide_out_req_o(ucie_axi_wide_out_req[0]),
-    .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[0]),
-    .axi_wide_in_req_i (ucie_axi_wide_in_req[0]),
-    .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[0])
+    .phy_data_out_o      (phy_data_out[0]),
+    .phy_data_out_valid_o(phy_data_out_valid[0]),
+    .phy_data_out_ready_i(phy_data_out_ready[0]),
+    .phy_data_in_i       (phy_data_in[0]),
+    .phy_data_in_valid_i (phy_data_in_valid[0]),
+    .phy_data_in_ready_o (phy_data_in_ready[0])
   );
 
   ucie_tile i_ucie_tile1 (
@@ -332,6 +336,7 @@ module gwaihir_top
     .rst_ni,
     .test_enable_i       (test_mode_i),
     .id_i                (Sam[Ucie1SamIdx].idx),
+    .samidx_i            (Ucie1SamIdx),
     // ucie1 (chiplet1) ingress applies the half-shift.
     .ucie_id_i           (1'b1),
     .floo_req_o          (floo_req_out[Ucie1X][Ucie1Y]),
@@ -341,28 +346,23 @@ module gwaihir_top
     .floo_rsp_o          (floo_rsp_out[Ucie1X][Ucie1Y]),
     .floo_wide_i         (floo_wide_in[Ucie1X][Ucie1Y]),
     // loopback
-    .axi_narrow_out_req_o(ucie_axi_narrow_out_req[1]),
-    .axi_narrow_out_rsp_i(ucie_axi_narrow_out_rsp[1]),
-    .axi_narrow_in_req_i (ucie_axi_narrow_in_req[1]),
-    .axi_narrow_in_rsp_o (ucie_axi_narrow_in_rsp[1]),
-
-    .axi_wide_out_req_o(ucie_axi_wide_out_req[1]),
-    .axi_wide_out_rsp_i(ucie_axi_wide_out_rsp[1]),
-    .axi_wide_in_req_i (ucie_axi_wide_in_req[1]),
-    .axi_wide_in_rsp_o (ucie_axi_wide_in_rsp[1])
+    .phy_data_out_o      (phy_data_out[1]),
+    .phy_data_out_valid_o(phy_data_out_valid[1]),
+    .phy_data_out_ready_i(phy_data_out_ready[1]),
+    .phy_data_in_i       (phy_data_in[1]),
+    .phy_data_in_valid_i (phy_data_in_valid[1]),
+    .phy_data_in_ready_o (phy_data_in_ready[1])
   );
 
-  // loopback UCIe[0] -> UCIe[1]
-  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[1], ucie_axi_narrow_out_req[0]);
-  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[0], ucie_axi_narrow_in_rsp[1]);
-  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[1], ucie_axi_wide_out_req[0]);
-  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[0], ucie_axi_wide_in_rsp[1]);
+  // loopback UCIe[0] -> UCIe[1]: connect TX0 -> RX1
+  assign phy_data_in[1]        = phy_data_out[0];
+  assign phy_data_in_valid[1]  = phy_data_out_valid[0];
+  assign phy_data_out_ready[0] = phy_data_in_ready[1];
 
-  // loopback UCIe[1] -> UCIe[0]
-  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_narrow_in_req[0], ucie_axi_narrow_out_req[1]);
-  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_narrow_out_rsp[1], ucie_axi_narrow_in_rsp[0]);
-  `AXI_ASSIGN_REQ_STRUCT(ucie_axi_wide_in_req[0], ucie_axi_wide_out_req[1]);
-  `AXI_ASSIGN_RESP_STRUCT(ucie_axi_wide_out_rsp[1], ucie_axi_wide_in_rsp[0]);
+  // loopback UCIe[1] -> UCIe[0]: connect TX1 -> RX0
+  assign phy_data_in[0]        = phy_data_out[1];
+  assign phy_data_in_valid[0]  = phy_data_out_valid[1];
+  assign phy_data_out_ready[1] = phy_data_in_ready[0];
 
   ////////////////
   // PCIe tile  //

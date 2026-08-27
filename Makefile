@@ -2,10 +2,13 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 #
+# Author: Lorenzo Leone <lleone@iis.ee.ethz.ch>
 # Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 GW_ROOT ?= $(shell pwd -P)
 GW_GEN_DIR = $(GW_ROOT)/.generated
+GW_GEN_HW_DIR = $(GW_GEN_DIR)/hw
+GW_GEN_SW_DIR = $(GW_GEN_DIR)/sw
 BENDER_ROOT ?= $(GW_ROOT)/.bender
 
 # Executables — must be defined before dependency paths that call $(BENDER)
@@ -19,7 +22,6 @@ PEAKRDL          ?= peakrdl
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
 SN_CFG	  ?= $(GW_ROOT)/cfg/snitch_cluster.json
 PLIC_CFG  ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
-SLINK_CFG ?= $(GW_ROOT)/cfg/serial_link.hjson
 
 # L2 SPM base address, queried from the FlooNoC config so it stays in sync with FLOO_CFG
 L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) "endpoints.l2_spm_0.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
@@ -37,8 +39,22 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 # Bender flags #
 ################
 
-COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync
+COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync -t mxcore_hwpe
 SIM_TARGS += -t simulation -t test -t idma_test
+
+############
+# Cheshire #
+############
+
+CLINTCORES ?= 17
+AXIRT_NUM_MGRS ?= 7
+SLINK_NUM_LANES ?= 8
+FLOO_PARAMS += -P csh_slink_num_lanes=$(SLINK_NUM_LANES)
+include $(CHS_ROOT)/cheshire.mk
+
+$(CHS_ROOT)/hw/rv_plic.cfg.hjson: $(OTPROOT)/.generated2
+$(OTPROOT)/.generated2: $(PLIC_CFG)
+	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
 
 #############
 # systemRDL #
@@ -47,9 +63,18 @@ DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
-GW_RDL_ALL += $(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl
-GW_RDL_ALL += $(GW_GEN_DIR)/lpddr.rdl
-GW_RDL_ALL += $(GW_GEN_DIR)/snitch_cluster.rdl
+UCIE_SLINK_NUM_LANES ?= 256
+UCIE_SLINK_EN_DDR    ?= 0
+
+UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
+
+$(GW_GEN_SW_DIR):
+	@mkdir -p $@
+
+GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
+GW_RDL_ALL += $(GW_GEN_HW_DIR)/lpddr.rdl
+GW_RDL_ALL += $(GW_GEN_HW_DIR)/snitch_cluster.rdl
+GW_RDL_ALL += $(UCIE_SLINK_RDL)
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
 GW_RDL_CHS_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_64b.rdl
@@ -58,45 +83,53 @@ GW_RDL_SN_ADDR = $(GW_GEN_DIR)/gwaihir_addrmap_32b.rdl
 PEAKRDL_INCLUDES += -I $(GW_ROOT)/cfg/rdl
 PEAKRDL_INCLUDES += -I $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster_peripheral
 PEAKRDL_INCLUDES += -I $(CHS_ROOT)/hw
+PEAKRDL_INCLUDES += -I $(dir $(UCIE_SLINK_RDL))
 PEAKRDL_INCLUDES += $(CHS_PEAKRDL_INCLUDES)
 
-PEAKRDL_INCLUDES += -I $(GW_GEN_DIR)
+PEAKRDL_INCLUDES += -I $(GW_GEN_HW_DIR)
 
-$(GW_GEN_DIR)/gw_tile_regs.sv: $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
-$(GW_GEN_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
-	$(PEAKRDL) regblock $< -o $(GW_GEN_DIR) --cpuif apb4-flat --default-reset arst_n
+$(GW_GEN_HW_DIR)/gw_tile_regs.sv: $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
+$(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
+	$(PEAKRDL) regblock $< -o $(GW_GEN_HW_DIR) --cpuif apb4-flat --default-reset arst_n
+
+# UCIe SLink registers
+$(GW_GEN_HW_DIR)/ucie_slink_reg.sv: $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv
+$(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL)
+	$(PEAKRDL) regblock $< -o $(GW_GEN_HW_DIR) --cpuif apb4-flat --default-reset arst_n --module-name ucie_slink_reg \
+		--package-name ucie_slink_reg_pkg  -P NumLanes=$(UCIE_SLINK_NUM_LANES) -P EnDdr=$(UCIE_SLINK_EN_DDR)
 
 $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_DIR) --as-mem --memwidth=32
 
-# Those are dummy RDL files, for generation without access to the PD repository.
-$(GW_GEN_DIR)/fll.rdl $(GW_GEN_DIR)/gw_chip_regs.rdl $(GW_GEN_DIR)/lpddr.rdl: | $(GW_GEN_DIR)
+$(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl $(GW_GEN_HW_DIR)/lpddr.rdl: | $(GW_GEN_HW_DIR)
 	@touch $@
 
-$(GW_GEN_DIR)/gw_addrmap_pkg.sv: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
+$(GW_GEN_HW_DIR)/gw_addrmap_pkg.sv: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL) | $(GW_GEN_HW_DIR)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svpkg --no-prefix
 
 # Cheshire
-$(GW_GEN_DIR)/gw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
+$(GW_GEN_SW_DIR)/gw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL) | $(GW_GEN_SW_DIR)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
 
-$(GW_GEN_DIR)/gw_addrmap_64b.svh: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
+$(GW_GEN_HW_DIR)/gw_addrmap_64b.svh: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL) | $(GW_GEN_HW_DIR)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format svh --no-prefix
 
-$(GW_GEN_DIR)/gw_raw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL)
+$(GW_GEN_SW_DIR)/gw_raw_addrmap_64b.h: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL) | $(GW_GEN_SW_DIR)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
 
 # Snitch
-$(GW_GEN_DIR)/gw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL)
+$(GW_GEN_SW_DIR)/gw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL) | $(GW_GEN_SW_DIR)
 	$(PEAKRDL) c-header $< $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) -o $@ -i -b ltoh
 
-$(GW_GEN_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL)
+$(GW_GEN_SW_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL) | $(GW_GEN_SW_DIR)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
 
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs.sv
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_tile_regs_pkg.sv
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_64b.svh
-GW_RDL_HW_ALL += $(GW_GEN_DIR)/gw_addrmap_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_64b.svh
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/ucie_slink_reg.sv
 
 .PHONY: docs docs-build docs-serve docs-clean rdl-markdown
 
@@ -116,29 +149,11 @@ docs-serve: $(DOCS_ADDRMAP_MD)
 docs-clean:
 	rm -rf $(DOCS_ADDRMAP_MD) $(GW_GEN_DIR)/docs-site
 
-############
-# Cheshire #
-############
-
-CLINTCORES ?= 17
-AXIRT_NUM_MGRS ?= 7
-SLINK_NUM_LANES ?= 8
-FLOO_PARAMS += -P csh_slink_num_lanes=$(SLINK_NUM_LANES)
-include $(CHS_ROOT)/cheshire.mk
-
-$(CHS_ROOT)/hw/rv_plic.cfg.hjson: $(OTPROOT)/.generated2
-$(OTPROOT)/.generated2: $(PLIC_CFG)
-	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
-
-$(CHS_ROOT)/hw/serial_link.hjson: $(CHS_SLINK_DIR)/.generated2
-$(CHS_SLINK_DIR)/.generated2:	$(SLINK_CFG)
-	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
-
 ##################
 # Snitch Cluster #
 ##################
 
-SN_GEN_DIR = $(GW_GEN_DIR)
+SN_GEN_DIR = $(GW_GEN_HW_DIR)
 include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/toolchain.mk
 include $(SN_ROOT)/make/rtl.mk
@@ -165,13 +180,13 @@ ifeq ($(shell $(VERIBLE_FMT) --version >/dev/null 2>&1 && echo OK),OK)
 	FLOO_GEN_FLAGS = --verible-fmt-bin="$(VERIBLE_FMT)" --verible-fmt-args="$(VERIBLE_FMT_ARGS)"
 endif
 
-floo-hw-all: $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv
-$(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv: $(FLOO_CFG)
-	$(FLOO_GEN) pkg -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_DIR) $(FLOO_GEN_FLAGS)
+floo-hw-all: $(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv
+$(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv: $(FLOO_CFG)
+	$(FLOO_GEN) pkg -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_HW_DIR) $(FLOO_GEN_FLAGS)
 
 
 floo-clean:
-	rm -f $(GW_GEN_DIR)/floo_gwaihir_noc_pkg.sv
+	rm -f $(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv
 	rm -f $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR)
 
 ###################
@@ -179,7 +194,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= e6a85faf8d740a10f4cf12efcd5784940357a3e4
+PD_COMMIT ?= 10c7e3fbdf559588aa25154d436921118f2ba06b
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -237,6 +252,7 @@ gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
 
 gwaihir-hw-clean: sn-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)
+	rm -rf $(GW_GEN_HW_DIR)
 
 clean: gwaihir-hw-clean docs-clean
 	rm -rf $(BENDER_ROOT)

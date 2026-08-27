@@ -11,10 +11,11 @@ module dummy_tile
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
 (
-  input  logic                    clk_i,
-  input  logic                    rst_ni,
-  input  logic                    test_enable_i,
-  input  id_t                     id_i,
+  input logic clk_i,
+  input logic rst_ni,
+  input logic test_enable_i,
+  input id_t  id_i,
+
   output floo_req_t  [West:North] floo_req_o,
   input  floo_rsp_t  [West:North] floo_rsp_i,
   output floo_wide_t [West:North] floo_wide_o,
@@ -80,8 +81,8 @@ module dummy_tile
   assign floo_wide_o[West:North]         = router_floo_wide_out[West:North];
 
   // Tie the router’s Eject input ports to 0
-  assign router_floo_req_in[Eject]       = '0;
-  assign router_floo_rsp_in[Eject]       = '0;
+  assign router_floo_req_in[Eject] = '0;
+  assign router_floo_rsp_in[Eject] = '0;
 
 
 endmodule : dummy_tile

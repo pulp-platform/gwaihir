@@ -60,9 +60,6 @@ typedef snitch_cluster__stride40000_t snitch_cluster_t;
 #include "datamover/archi_datamover.h"
 #include "datamover/datamover_utils.h"
 #include "datamover/hal_datamover.h"
-#include "redmule/archi_redmule.h"
-#include "redmule/hal_redmule.h"
-#include "redmule/redmule_utils.h"
 
 // Gwaihir specific
 #include "gw_team.h"

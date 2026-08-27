@@ -29,6 +29,9 @@ dependencies:
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: c63eada47c050f78b320d0e854a24a9cd9c1cc80
+  datamover:
+    git: https://github.com/pulp-platform/datamover.git
+    rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
     rev: main
@@ -38,6 +41,9 @@ dependencies:
   gwaihir_lpddr:
     path: .deps/lpddr
   iDMA: 0.6.5
+  mxcore:
+    git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
+    rev: common-cells-v2
   obi:
     git: https://github.com/pulp-platform/obi.git
     rev: common-cells-v2
@@ -48,6 +54,9 @@ dependencies:
   # needs it and Bender does not transitively export incdirs (see
   # https://github.com/pulp-platform/bender/issues/340).
   reqrsp_interface: 0.1.0
+  serial_link:
+    git: https://github.com/pulp-platform/serial_link.git
+    rev: main
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: dca
@@ -66,20 +75,24 @@ sources:
   - target: gw_gen_rtl
     override_files: true
     files:
-      - .generated/snitch_cluster_wrapper_pkg.sv
+      - .generated/hw/snitch_cluster_wrapper_pkg.sv
+
   - target: gw_gen_rtl
     files:
       # Level 0.0
-      - .generated/floo_gwaihir_noc_pkg.sv
-      - .generated/gw_tile_regs_pkg.sv
-      - .generated/gw_addrmap_pkg.sv
+      - .generated/hw/floo_gwaihir_noc_pkg.sv
+      - .generated/hw/gw_tile_regs_pkg.sv
+      - .generated/hw/gw_addrmap_pkg.sv
+      - .generated/hw/ucie_slink_reg_pkg.sv
       # Level 0.1
-      - .generated/gw_tile_regs.sv
+      - .generated/hw/gw_tile_regs.sv
+      - .generated/hw/ucie_slink_reg.sv
 
   # Level 1
   - hw/gwaihir_pkg.sv
   # Level 2
-  - hw/cluster_tile.sv
+  - hw/snitch_tcdm_aligner.sv
+  - hw/snitch_hwpe_subsystem.sv
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
@@ -89,11 +102,12 @@ sources:
   - hw/ucie_tile.sv
 
   # Level 3
+  - hw/cluster_tile.sv
   - hw/gwaihir_top.sv
 
   - target: any(simulation, test)
     include_dirs:
-      - .generated
+      - .generated/hw
       - target/sim/include
     files:
       - target/sim/src/fixture_gwaihir_top.sv
@@ -113,7 +127,7 @@ sources:
 
   - target: all(any(simulation, test), asic)
     include_dirs:
-      - .generated
+      - .generated/hw
       - target/sim/include
     files:
       - pd/target/sim/src/fixture_gwaihir_chip.sv

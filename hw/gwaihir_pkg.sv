@@ -15,6 +15,8 @@ package gwaihir_pkg;
   import floo_gwaihir_noc_pkg::*;
   import cheshire_pkg::*;
   import snitch_cluster_wrapper_pkg::*;
+  import ucie_slink_reg_pkg::*;
+
 
   typedef axi_narrow_in_addr_t addr_t;
 
@@ -347,11 +349,12 @@ package gwaihir_pkg;
   function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
     cheshire_pkg::cheshire_cfg_t ret = cheshire_pkg::DefaultCfg;
     // Enable the external AXI master and slave interfaces
-    ret.AxiExtNumMst                         = 1;
-    ret.AxiExtNumSlv                         = 1;
-    ret.AxiExtNumRules                       = 1;
-    ret.RegExtNumSlv                         = CshRegExtNumSlv;
-    ret.RegExtNumRules                       = CshRegExtNumSlv;
+    ret.AxiExtNumMst   = 1;
+    ret.AxiExtNumSlv   = 1;
+    ret.AxiExtNumRules = 1;
+    ret.RegExtNumSlv   = CshRegExtNumSlv;
+    ret.RegExtNumRules = CshRegExtNumSlv;
+
     // TODO(fischeti): Inherit these from generated SV/RDL.
     ret.AxiExtRegionIdx[0]                   = 0;
     ret.AxiExtRegionStart[0]                 = 'h2000_0000;
@@ -365,38 +368,42 @@ package gwaihir_pkg;
     ret.RegExtRegionIdx[CshRegLPDDR]         = CshRegLPDDR;
     ret.RegExtRegionStart[CshRegLPDDR]       = 'h1900_0000;
     ret.RegExtRegionEnd[CshRegLPDDR]         = 'h1a00_1020;
+
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
-    ret.Cva6ExtCieOnTop                      = 0;
-    ret.Cva6ExtCieLength                     = 'h0;
-    ret.AddrWidth                            = aw_bt'(AxiCfgN.AddrWidth);
-    ret.AxiDataWidth                         = dw_bt'(AxiCfgN.DataWidth);
-    ret.AxiUserWidth                         = dw_bt'(max(AxiCfgN.UserWidth, AxiCfgW.UserWidth));
-    ret.AxiMstIdWidth                        = aw_bt'(max(AxiCfgN.OutIdWidth, AxiCfgW.OutIdWidth));
+    ret.Cva6ExtCieOnTop  = 0;
+    ret.Cva6ExtCieLength = 'h0;
+    ret.AddrWidth        = aw_bt'(AxiCfgN.AddrWidth);
+    ret.AxiDataWidth     = dw_bt'(AxiCfgN.DataWidth);
+    ret.AxiUserWidth     = dw_bt'(max(AxiCfgN.UserWidth, AxiCfgW.UserWidth));
+    ret.AxiMstIdWidth    = aw_bt'(max(AxiCfgN.OutIdWidth, AxiCfgW.OutIdWidth));
+
     // TODO(fischeti): Check if we need external interrupts for each hart/cluster
-    ret.NumExtIrqHarts                       = doub_bt'(NumClusters);
+    ret.NumExtIrqHarts = doub_bt'(NumClusters);
     // We do not need/want VGA
-    ret.Vga                                  = 1'b0;
+    ret.Vga            = 1'b0;
     // We do not need/want USB
-    ret.Usb                                  = 1'b0;
-    ret.LlcOutRegionStart                    = 'h8000_0000;
-    ret.LlcOutRegionEnd                      = 'h1_0000_0000;
-    ret.SlinkRegionStart                     = 'h100_0000_0000;
-    ret.SlinkRegionEnd                       = 'h200_0000_0000;
+    ret.Usb            = 1'b0;
+
+    ret.LlcOutRegionStart = 'h8000_0000;
+    ret.LlcOutRegionEnd   = 'h1_0000_0000;
+    ret.SlinkRegionStart  = 'h100_0000_0000;
+    ret.SlinkRegionEnd    = 'h200_0000_0000;
+
     // RT features
-    ret.Cva6InstrTlbEntries                  = 16;
-    ret.Cva6DataTlbEntries                   = 16;  // TODO: can be increased to 32.
-    ret.Cva6TlbColoring                      = 1;
-    ret.Cva6NumTlbColors                     = 16;
-    ret.Cva6LockableTlbWays                  = 8;
-    ret.Cva6UseSharedTlb                     = 0;
-    ret.AxiRt                                = 1;
-    ret.Clic                                 = 1;
-    ret.ClicVsclic                           = 1;
-    ret.ClicVsprio                           = 1;
-    ret.ClicNumVsctxts                       = 4;
-    ret.ClicPrioWidth                        = 1;
-    ret.LlcCachePartition                    = 1;
+    ret.Cva6InstrTlbEntries = 16;
+    ret.Cva6DataTlbEntries  = 16;  // TODO: can be increased to 32.
+    ret.Cva6TlbColoring     = 1;
+    ret.Cva6NumTlbColors    = 16;
+    ret.Cva6LockableTlbWays = 8;
+    ret.Cva6UseSharedTlb    = 0;
+    ret.AxiRt               = 1;
+    ret.Clic                = 1;
+    ret.ClicVsclic          = 1;
+    ret.ClicVsprio          = 1;
+    ret.ClicNumVsctxts      = 4;
+    ret.ClicPrioWidth       = 1;
+    ret.LlcCachePartition   = 1;
     return ret;
   endfunction
 
@@ -408,7 +415,7 @@ package gwaihir_pkg;
   //  Cluster Tile  //
   ////////////////////
 
-  localparam bit UseHWPE = 1'b0;
+  localparam bit UseHWPE = 1'b1;
   localparam int unsigned ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
 
   typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH-1:0] tile_cfg_reg_data_t;
@@ -418,7 +425,7 @@ package gwaihir_pkg;
   `AXI_LITE_TYPEDEF_ALL(tile_cfg_axi_lite_32, addr_t, tile_cfg_reg_data_t, tile_cfg_reg_strb_t)
   `APB_TYPEDEF_ALL(tile_cfg_apb, addr_t, tile_cfg_reg_data_t, tile_cfg_reg_strb_t)
 
-  localparam int unsigned HWPECtrlAddrWidth = 32;
+  localparam int unsigned HWPECtrlAddrWidth = snitch_cluster_wrapper_pkg::AddrWidth;
   localparam int unsigned HWPECtrlDataWidth = 32;
   typedef logic [HWPECtrlAddrWidth-1:0] addr_hwpe_ctrl_t;
   typedef logic [HWPECtrlDataWidth-1:0] data_hwpe_ctrl_t;
@@ -428,7 +435,8 @@ package gwaihir_pkg;
                    snitch_cluster_wrapper_pkg::narrow_out_id_t, data_hwpe_ctrl_t, strb_hwpe_ctrl_t,
                    snitch_cluster_wrapper_pkg::user_narrow_t)
 
-  `TCDM_TYPEDEF_ALL(hwpectrl, HWPECtrlDataWidth, HWPECtrlAddrWidth, 1)
+  `TCDM_TYPEDEF_ALL(hwpectrl, HWPECtrlDataWidth, HWPECtrlAddrWidth,
+                    snitch_cluster_wrapper_pkg::NarrowUserWidth)
 
   ////////////////
   //  Mem Tile  //
@@ -491,9 +499,24 @@ package gwaihir_pkg;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
 
+  localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
+
+  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+
+  typedef logic [AxiCfgMemJoin.OutIdWidth-1:0] mtile_nw_join_id_t;
+  typedef logic [AxiCfgMemJoin.UserWidth-1:0] mtile_nw_join_user_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_mtile_nw_join, axi_mtile_nw_join_req_t, axi_mtile_nw_join_rsp_t,
+                      axi_wide_out_addr_t, mtile_nw_join_id_t, axi_wide_out_data_t,
+                      axi_wide_out_strb_t, mtile_nw_join_user_t)
+
   ////////////////
   // UCIe Tile  //
   ////////////////
+
+  localparam int unsigned UcieNumAddrRules = Ucie1SamIdx - Ucie0SamIdx;
+  localparam int unsigned NumBitsPerCycle = NumLanes * (1 + EnDdr);
+
 
   function automatic addr_t alias_clear_mask();
     addr_t ucie0_base, ucie1_base, canonical_base;
@@ -530,5 +553,34 @@ package gwaihir_pkg;
     cleared = addr & ~AliasClearMask;
     return en_half_shift ? ingress_half_shift(cleared) : cleared;
   endfunction
+
+  // Narrow config without ATOP support
+  localparam axi_cfg_t AxiCfgNoAtop = '{
+      AddrWidth: AxiCfgN.AddrWidth,
+      DataWidth: AxiCfgN.DataWidth,
+      InIdWidth: 1,
+      OutIdWidth: 1,
+      UserWidth: 1
+  };
+
+  // Narrow/wide join types for `floo_nw_join`
+  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg(AxiCfgNoAtop, AxiCfgW);
+
+  typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] utile_nw_join_id_t;
+  typedef logic [AxiCfgUcieJoin.UserWidth-1:0] utile_nw_join_user_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_utile_nw_join, axi_utile_nw_join_req_t, axi_utile_nw_join_rsp_t,
+                      axi_wide_in_addr_t, utile_nw_join_id_t, axi_wide_in_data_t,
+                      axi_wide_in_strb_t, utile_nw_join_user_t)
+
+
+  localparam int unsigned UcieCfgRegDataWidth = UCIE_SLINK_REG_DATA_WIDTH;
+
+  typedef logic [UcieCfgRegDataWidth-1:0] ucie_cfg_reg_data_t;
+  typedef logic [UcieCfgRegDataWidth/8-1:0] ucie_cfg_reg_strb_t;
+
+  `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite, addr_t, axi_narrow_out_data_t, axi_narrow_out_strb_t)
+  `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite_32, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
+  `APB_TYPEDEF_ALL(ucie_cfg_apb, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
 
 endpackage
