@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: b8810fdedfce4346d29957a8a9486a4dc9673958
+    revision: b5255b265aac511a9cbb90f948e812bc65c6b1fa
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -141,6 +141,13 @@ packages:
     - common_cells
     - scm
     - tech_cells_generic
+  cluster_interconnect:
+    revision: 1284def6c0b7f7e9355eb093d00883ad9dead1b7
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/cluster_interconnect.git
+    dependencies:
+    - common_cells
   common_cells:
     revision: 63b7c50d43e462b59506f69d341ff1e40202866d
     version: 2.0.0-beta.3
@@ -173,7 +180,7 @@ packages:
     dependencies:
     - common_cells
   cva6:
-    revision: 1701c8f5c1fc89248ad1ddb879ae9aab01705e40
+    revision: cbd8fd5ef7af1f941a3788516189e3f88cf42d14
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
@@ -187,6 +194,15 @@ packages:
     - opentitan_peripherals
     - register_interface
     - tech_cells_generic
+  datamover:
+    revision: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/datamover.git
+    dependencies:
+    - hci
+    - hwpe-ctrl
+    - hwpe-stream
   dram_rtl_sim:
     revision: 5566a81f2f745b5374d092208086aaf9ba6c9d75
     version: null
@@ -214,7 +230,7 @@ packages:
       Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: 46cb33a4ce6b04b83ec38ebd288dd58a031a6390
+    revision: eb505fefc554c1d7b842eed66966a4ccf1dfd888
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -244,6 +260,32 @@ packages:
     - axi
     - common_cells
     - register_interface
+  hci:
+    revision: a8d8132b7f7839fd55f92df65cdc3e361ea80a6b
+    version: 2.6.1
+    source:
+      Git: https://github.com/pulp-platform/hci.git
+    dependencies:
+    - cluster_interconnect
+    - common_cells
+    - hwpe-stream
+    - l2_tcdm_hybrid_interco
+    - redundancy_cells
+    - register_interface
+  hwpe-ctrl:
+    revision: dfcf1cb746709de206377388bbcb4a3571e24f7b
+    version: 3.1.1
+    source:
+      Git: https://github.com/pulp-platform/hwpe-ctrl
+    dependencies:
+    - common_cells
+    - tech_cells_generic
+  hwpe-stream:
+    revision: f5b017893c590f4b9b4d45c38c5abe5a8fcb4b81
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/hwpe-stream.git
+    dependencies:
     - tech_cells_generic
   idma:
     revision: 28a36e5e07705549e59fc33db96ab681bc1ca88e
@@ -266,6 +308,24 @@ packages:
     - axi
     - common_cells
     - register_interface
+  l2_tcdm_hybrid_interco:
+    revision: fa55e72859dcfb117a2788a77352193bef94ff2b
+    version: 1.0.0
+    source:
+      Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
+    dependencies: []
+  mxcore:
+    revision: 7912c24a9d49891fcc96738c4e898da9b5fadf97
+    version: null
+    source:
+      Git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
+    dependencies:
+    - fpnew
+    - hci
+    - hwpe-ctrl
+    - hwpe-stream
+    - scm
+    - tech_cells_generic
   obi:
     revision: b69af4aa00630efd14b1c5cbf9bac977f23ce840
     version: null
@@ -300,6 +360,16 @@ packages:
     dependencies:
     - axi
     - common_cells
+    - register_interface
+    - tech_cells_generic
+  redundancy_cells:
+    revision: c37bdb47339bf70e8323de8df14ea8bbeafb6583
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/redundancy_cells.git
+    dependencies:
+    - common_cells
+    - common_verification
     - register_interface
     - tech_cells_generic
   register_interface:
@@ -356,7 +426,7 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: f78a97834326f018880d786abc418f8c4af8f6aa
+    revision: ccde489fb287543e548e844fc6cb4943eee4797a
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git
@@ -375,7 +445,7 @@ packages:
     - spatz_vpu
     - tech_cells_generic
   spatz_vpu:
-    revision: 039ea68967fe8d59fea3803f6ec3682cb1fde5b3
+    revision: 5818fad0b44ce0d4cd88ddf4c05df8e3302474b7
     version: null
     source:
       Git: https://github.com/pulp-platform/spatz_vpu.git
