@@ -63,10 +63,10 @@ dependencies:
     git: https://github.com/pulp-platform/serial_link.git
     rev: main
   snitch_cluster:
-    git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: main
+    git: https://github.com/DiyouS/snitch_cluster.git
+    rev: doublebw-pace
   tum_npu:
-    path: .deps/tum_npu
+    path: .deps/tum_npu    
   ucie:
     path: .deps/ucie
   # surya-mx is private; use SSH because CI has SSH access but no HTTPS token.
