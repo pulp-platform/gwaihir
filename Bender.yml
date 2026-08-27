@@ -25,7 +25,7 @@ dependencies:
     rev: common-cells-v2
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
-    rev: dk/idma070
+    rev: gwaihir
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: c63eada47c050f78b320d0e854a24a9cd9c1cc80
