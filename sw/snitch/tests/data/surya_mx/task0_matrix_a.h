@@ -1,3 +1,7 @@
+// Copyright 2026 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
 #ifndef TASK0_MATRIX_A_H
 #define TASK0_MATRIX_A_H
 
