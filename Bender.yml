@@ -43,6 +43,10 @@ dependencies:
   iDMA:
     git: https://github.com/pulp-platform/iDMA.git
     version: 0.7.1
+  hci:
+    git: https://github.com/pulp-platform/hci.git
+    rev: c38974f0907969b9efdfd6cf5f23ff5e8a6e31bf
+  iDMA: 0.6.5
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
     rev: gwaihir
