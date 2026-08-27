@@ -49,8 +49,8 @@ module surya_hwpe_subsystem
   logic [1:0] clk_en;
   logic       mux_sel;
 
-  logic [1:0][NrCores-1:0][1:0] evt;
-  logic [NrCores-1:0]           hwpe_evt_q;
+  logic [        1:0][NrCores-1:0][1:0] evt;
+  logic [NrCores-1:0]                   hwpe_evt_q;
 
   hwpe_ctrl_intf_periph #(.ID_WIDTH(IdWidth)) periph[0:1] (.clk(clk_i));
 
@@ -102,11 +102,11 @@ module surya_hwpe_subsystem
 
   localparam logic [1:0] CtrlEvtClr = 2'd0;  // +0x0
   localparam logic [1:0] CtrlMuxSel = 2'd1;  // +0x4
-  localparam logic [1:0] CtrlClkEn  = 2'd2;  // +0x8
+  localparam logic [1:0] CtrlClkEn = 2'd2;  // +0x8
 
   logic       ctrl_blk_sel;
   logic [1:0] ctrl_blk_idx;
-  logic       periph_sel_q, periph_sel_d;
+  logic periph_sel_q, periph_sel_d;
   assign ctrl_blk_sel = hwpe_ctrl_req_i.q.addr[AccAddrWidth+1];
   assign ctrl_blk_idx = hwpe_ctrl_req_i.q.addr[3:2];
   assign periph_sel_d = hwpe_ctrl_req_i.q.addr[AccAddrWidth];
@@ -218,9 +218,9 @@ module surya_hwpe_subsystem
   );
 
   surya_hwpe_top #(
-    .`HCI_SIZE_PARAM(tcdm) (HCISizeTcdm),
-    .NumCores              (NrCores),
-    .IdWidth               (IdWidth)
+    .HCI_SIZE_tcdm(HCISizeTcdm),
+    .NumCores     (NrCores),
+    .IdWidth      (IdWidth)
   ) i_surya_top (
     .clk_i (hwpe_clk[0]),
     .rst_ni(rst_ni),
