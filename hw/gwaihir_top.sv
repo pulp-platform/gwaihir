@@ -170,8 +170,6 @@ module gwaihir_top
     .rtc_i,
 `ifdef TARGET_UCIE
     .intr_ext_i       (ucie_irq),
-`else
-    .intr_ext_i       ('0),
 `endif
     .xeip_ext_o       (xeip_ext),
     .mtip_ext_o       (mtip_ext),
