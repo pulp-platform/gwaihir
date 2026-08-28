@@ -52,9 +52,12 @@ SLINK_NUM_LANES ?= 8
 FLOO_PARAMS += -P csh_slink_num_lanes=$(SLINK_NUM_LANES)
 include $(CHS_ROOT)/cheshire.mk
 
+.PHONY: $(OTPROOT)/.generated2
 $(CHS_ROOT)/hw/rv_plic.cfg.hjson: $(OTPROOT)/.generated2
 $(OTPROOT)/.generated2: $(PLIC_CFG)
-	flock -x $@ sh -c "cp $< $(CHS_ROOT)/hw/" && touch $@
+	@flock -x $@ sh -c ' \
+	  cmp -s $(PLIC_CFG) $(CHS_ROOT)/hw/rv_plic.cfg.hjson || cp $(PLIC_CFG) $(CHS_ROOT)/hw/rv_plic.cfg.hjson; \
+	  touch $@'
 
 #############
 # systemRDL #

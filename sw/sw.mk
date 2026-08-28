@@ -50,6 +50,8 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/fused_concat_linear
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/mha
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/summa_gemm
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
+# Spatz kernels
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
 
 SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 

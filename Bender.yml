@@ -59,7 +59,7 @@ dependencies:
     rev: main
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: main
+    rev: dca
 
 workspace:
   package_links:

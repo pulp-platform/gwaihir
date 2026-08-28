@@ -173,7 +173,7 @@ packages:
     - fpnew
     - reqrsp_interface
   core_v_xif:
-    revision: 3b541fd19b79e18f9e1d5e177778107cbe279007
+    revision: fad32c62f07ec7304a7169640eaf946da3727f77
     version: null
     source:
       Git: https://github.com/pulp-platform/core-v-xif.git
@@ -315,7 +315,7 @@ packages:
       Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
     dependencies: []
   mxcore:
-    revision: 7912c24a9d49891fcc96738c4e898da9b5fadf97
+    revision: 76049379baf22b5a5eb3fb727c1520c49969fe18
     version: null
     source:
       Git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
@@ -426,7 +426,7 @@ packages:
     - axi_stream
     - common_cells
   snitch_cluster:
-    revision: ccde489fb287543e548e844fc6cb4943eee4797a
+    revision: 8b59269b83e199c18273279db14c88563e110a9b
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git
@@ -445,7 +445,7 @@ packages:
     - spatz_vpu
     - tech_cells_generic
   spatz_vpu:
-    revision: 5818fad0b44ce0d4cd88ddf4c05df8e3302474b7
+    revision: f396e76985f3a07d77c0e1e45159e46d5ae04dd0
     version: null
     source:
       Git: https://github.com/pulp-platform/spatz_vpu.git
