@@ -22,8 +22,10 @@ module cheshire_tile
   input logic test_mode_i,
   input logic [1:0] boot_mode_i,
   input logic rtc_i,
+`ifdef TARGET_UCIE
   // External Interrupts
   input logic [NumUcieTiles-1:0][CheshireCfg.NumExtInIntrs-1:0] intr_ext_i,  // 4
+`endif
   // Interrupt requests to external harts
   output logic [iomsb(NumIrqCtxts*CheshireCfg.NumExtIrqHarts):0] xeip_ext_o,
   output logic [iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext_o,
