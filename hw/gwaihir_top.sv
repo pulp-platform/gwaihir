@@ -249,6 +249,12 @@ module gwaihir_top
     .floo_req_west_i  (floo_req_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
     .floo_rsp_west_o  (floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
     .floo_wide_west_i (floo_wide_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
+    .floo_req_east_o  (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
+    .floo_rsp_east_i  (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
+    .floo_wide_east_o (floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
+    .floo_req_east_i  (floo_req_in[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
+    .floo_rsp_east_o  (floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
+    .floo_wide_east_i (floo_wide_in[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
     .floo_req_south_o (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][South]),
     .floo_rsp_south_i (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][South]),
     .floo_wide_south_o(floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][South]),
@@ -259,9 +265,6 @@ module gwaihir_top
   assign floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][North]  = '0;
   assign floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][North]  = '0;
   assign floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][North] = '0;
-  assign floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]   = '0;
-  assign floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]   = '0;
-  assign floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]  = '0;
 
   //////////////
   // Mem tile //
