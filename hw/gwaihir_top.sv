@@ -395,13 +395,25 @@ module gwaihir_top
     .jtag_phys_trst_ni(pcie_jtag_phys_trst_ni),
     .jtag_phys_tdo_o  (pcie_jtag_phys_tdo_o),
     .id_i             (PCIeId),
-    .floo_req_o       (floo_req_out[PCIeTileX][PCIeTileY]),
-    .floo_rsp_i       (floo_rsp_in[PCIeTileX][PCIeTileY]),
-    .floo_wide_o      (floo_wide_out[PCIeTileX][PCIeTileY]),
-    .floo_req_i       (floo_req_in[PCIeTileX][PCIeTileY]),
-    .floo_rsp_o       (floo_rsp_out[PCIeTileX][PCIeTileY]),
-    .floo_wide_i      (floo_wide_in[PCIeTileX][PCIeTileY])
+    .floo_req_east_o  (floo_req_out[PCIeTileX][PCIeTileY][East]),
+    .floo_rsp_east_i  (floo_rsp_in[PCIeTileX][PCIeTileY][East]),
+    .floo_wide_east_o (floo_wide_out[PCIeTileX][PCIeTileY][East]),
+    .floo_req_east_i  (floo_req_in[PCIeTileX][PCIeTileY][East]),
+    .floo_rsp_east_o  (floo_rsp_out[PCIeTileX][PCIeTileY][East]),
+    .floo_wide_east_i (floo_wide_in[PCIeTileX][PCIeTileY][East]),
+    .floo_req_south_o (floo_req_out[PCIeTileX][PCIeTileY][South]),
+    .floo_rsp_south_i (floo_rsp_in[PCIeTileX][PCIeTileY][South]),
+    .floo_wide_south_o(floo_wide_out[PCIeTileX][PCIeTileY][South]),
+    .floo_req_south_i (floo_req_in[PCIeTileX][PCIeTileY][South]),
+    .floo_rsp_south_o (floo_rsp_out[PCIeTileX][PCIeTileY][South]),
+    .floo_wide_south_i(floo_wide_in[PCIeTileX][PCIeTileY][South])
   );
+  assign floo_req_out[PCIeTileX][PCIeTileY][West]   = '0;
+  assign floo_rsp_out[PCIeTileX][PCIeTileY][West]   = '0;
+  assign floo_wide_out[PCIeTileX][PCIeTileY][West]  = '0;
+  assign floo_req_out[PCIeTileX][PCIeTileY][North]  = '0;
+  assign floo_rsp_out[PCIeTileX][PCIeTileY][North]  = '0;
+  assign floo_wide_out[PCIeTileX][PCIeTileY][North] = '0;
 
   ////////////////
   // Dummy tile //
