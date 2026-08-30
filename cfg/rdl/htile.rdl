@@ -4,15 +4,12 @@
 
 // COPIED: currently copied from the snitch cluster, need to change later
 
-
-
 `ifndef __HTILE_RDL__
 `define __HTILE_RDL__
 
 `include "snitch_cluster_peripheral_reg.rdl"
 
 addrmap htile {
-
     default regwidth = 64;
 
     mem tcdm {
@@ -30,13 +27,10 @@ addrmap htile {
         memwidth = 64;
     };
 
-
-    external tcdm                 tcdm           ;
-    external bootrom              bootrom        @0x20000;
-    snitch_cluster_peripheral_reg peripheral_reg @0x21000;
-    external zeromem              zeromem        @0x30000;
-
-
+    external tcdm                          tcdm;
+    external bootrom                       bootrom        @ 0x20000;
+             snitch_cluster_peripheral_reg peripheral_reg @ 0x21000;
+    external zeromem                       zeromem        @ 0x30000;
 };
 
-`endif // __SNITCH_CLUSTER_RDL__
+`endif // __HTILE_RDL__
