@@ -465,7 +465,7 @@ packages:
     - reqrsp_interface
     - tech_cells_generic
   surya:
-    revision: ffdeac82203fddfca6998ee698f6562fb4ade214
+    revision: 643a74584490215855736affc1c1967a94c0ec5f
     version: null
     source:
       Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya.git
