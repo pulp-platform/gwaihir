@@ -65,7 +65,7 @@ dependencies:
     rev: dca
   surya:
     git: git@iis-git.ee.ethz.ch:visual-wakeup/surya.git
-    rev: ffdeac82203fddfca6998ee698f6562fb4ade214
+    rev: 643a74584490215855736affc1c1967a94c0ec5f
 
 workspace:
   package_links:
