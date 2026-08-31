@@ -46,7 +46,7 @@ COMMON_TARGS += -DN_CIM=4 -DCIM_INNER=32 -DCIM_OUTER=8 -DN_ACCUM=32 \
                 -DOPTIMAL_BW=1 -DCIM_DIGITAL=1 \
                 -DENABLE_DEPTHWISE=0 -DENABLE_PACE=0 -DENABLE_MX=1 \
                 -DMX_FP_ADD=1 -DMX_OUT_TRANSPOSE=1 \
-                -DBANK_BITWIDTH=512 -DMISALIGNED_ACCESSES=0
+                -DBANK_BITWIDTH=64 -DMISALIGNED_ACCESSES=0
 SIM_TARGS += -t simulation -t test -t idma_test
 
 ############
