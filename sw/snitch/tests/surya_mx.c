@@ -40,13 +40,17 @@ static const surya_hw_config_t surya_hw_config = {
 #define TASK_A_BYTES(i)        (TASK##i##_MATRIX_A_SIZE * sizeof(task##i##_matrix_a[0]))
 #define TASK_B_BYTES(i)        (TASK##i##_MATRIX_B_SIZE * sizeof(task##i##_matrix_b[0]))
 #define TASK_C_BYTES(i)        (TASK##i##_MATRIX_C_SIZE * sizeof(task##i##_matrix_c[0]))
-#define TASK_MX_SCALE_BYTES(i) (TASK##i##_MX_SCALE_SIZE * sizeof(task##i##_mx_scale[0]))
+#define TASK_MX_SCALE_A_BYTES(i) (TASK##i##_MX_SCALE_A_SIZE * sizeof(task##i##_mx_scale_a[0]))
+#define TASK_MX_SCALE_B_BYTES(i) (TASK##i##_MX_SCALE_B_SIZE * sizeof(task##i##_mx_scale_b[0]))
+#define TASK_NQ_BYTES(i)         (TASK##i##_NORMQUANT_SIZE * sizeof(task##i##_normquant[0]))
 
 static uint8_t *local_a[NUM_TASKS];
 static uint8_t *local_b[NUM_TASKS];
 static uint8_t *local_c[NUM_TASKS];
 static uint8_t *local_c_gold[NUM_TASKS];
-static uint8_t *local_mx_scale[NUM_TASKS];
+static uint8_t *local_mx_scale_a[NUM_TASKS];
+static uint8_t *local_mx_scale_b[NUM_TASKS];
+static uint8_t *local_nq[NUM_TASKS];
 static uint32_t task_c_bytes[NUM_TASKS];
 
 static surya_task_config_t surya_tasks[NUM_TASKS];
@@ -57,12 +61,16 @@ static surya_task_config_t surya_tasks[NUM_TASKS];
     local_b[i]        = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_B_BYTES(i), 64);       \
     local_c[i]        = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_C_BYTES(i), 64);       \
     local_c_gold[i]   = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_C_BYTES(i), 64);       \
-    local_mx_scale[i] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_MX_SCALE_BYTES(i), 64); \
+    local_mx_scale_a[i] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_MX_SCALE_A_BYTES(i), 64); \
+    local_mx_scale_b[i] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_MX_SCALE_B_BYTES(i), 64); \
+    local_nq[i]         = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_NQ_BYTES(i), 64);         \
     task_c_bytes[i]   = TASK_C_BYTES(i);                                                   \
     snrt_dma_start_1d(local_a[i], task##i##_matrix_a, TASK_A_BYTES(i));                    \
     snrt_dma_start_1d(local_b[i], task##i##_matrix_b, TASK_B_BYTES(i));                    \
     snrt_dma_start_1d(local_c_gold[i], task##i##_matrix_c, TASK_C_BYTES(i));               \
-    snrt_dma_start_1d(local_mx_scale[i], task##i##_mx_scale, TASK_MX_SCALE_BYTES(i));      \
+    snrt_dma_start_1d(local_mx_scale_a[i], task##i##_mx_scale_a, TASK_MX_SCALE_A_BYTES(i)); \
+    snrt_dma_start_1d(local_mx_scale_b[i], task##i##_mx_scale_b, TASK_MX_SCALE_B_BYTES(i));   \
+    snrt_dma_start_1d(local_nq[i], task##i##_normquant, TASK_NQ_BYTES(i));                    \
   } while (0);
 
 // Assignment, not a designated initializer. The tests compile as C++, which
@@ -73,8 +81,10 @@ static surya_task_config_t surya_tasks[NUM_TASKS];
     t->a_ptr           = local_a[i];                                          \
     t->b_ptr           = local_b[i];                                          \
     t->c_ptr           = (int8_t *)local_c[i];                                \
-    t->mx_scale_ptr    = local_mx_scale[i];                                   \
-    t->mx_block_size   = TASK##i##_MX_BLOCK_SIZE;                             \
+    t->nq_ptr          = (uint32_t *)local_nq[i];                             \
+    t->mx_scale_a_ptr  = local_mx_scale_a[i];                                 \
+    t->mx_scale_b_ptr  = local_mx_scale_b[i];                                 \
+    t->out_dim         = TASK##i##_OUT_DIM;                                   \
     t->mx_out_int8     = TASK##i##_MX_OUT_INT8;                               \
     t->m               = TASK##i##_M;                                         \
     t->n               = TASK##i##_N;                                         \

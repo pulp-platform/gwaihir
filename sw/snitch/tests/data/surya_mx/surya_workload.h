@@ -8,7 +8,9 @@
 #include "task0_matrix_a.h"
 #include "task0_matrix_b.h"
 #include "task0_matrix_c.h"
-#include "task0_mx_scale.h"
+#include "task0_normquant.h"
+#include "task0_mx_scale_a.h"
+#include "task0_mx_scale_b.h"
 
 #define NUM_TASKS 1
 #define SURYA_HW_CIM_INNER 32
@@ -16,18 +18,23 @@
 #define SURYA_HW_N_ACCUM 32
 #define SURYA_HW_N_CIM 4
 #define SURYA_HW_OPTIMAL_BW 1
+#define SURYA_AUTOTRIGGER_N 0
 #define TASK0_A_PTR task0_matrix_a
 #define TASK0_B_PTR task0_matrix_b
 #define TASK0_C_PTR task0_matrix_c_out
 #define TASK0_C_INIT_PTR 0
-#define TASK0_NQ_PTR 0
+#define TASK0_NQ_PTR task0_normquant
 #define TASK0_PACE_PTR 0
 #define TASK0_PACE_INV_PTR 0
 #define TASK0_PACE_EPS 0
 #define TASK0_PACE_EPS_CONST 0
-#define TASK0_MX_SCALE_PTR task0_mx_scale
-#define TASK0_MX_BLOCK_SIZE 32
+#define TASK0_LAYERNORM 0
+#define TASK0_LN_RECIP_C 0
+#define TASK0_LN_EPS 0
+#define TASK0_MX_SCALE_A_PTR task0_mx_scale_a
+#define TASK0_MX_SCALE_B_PTR task0_mx_scale_b
 #define TASK0_MX_OUT_INT8 0
+#define TASK0_OUT_DIM 0
 #define TASK0_MX_OUT_SCALE_PTR 0
 #define TASK0_MX_OUT_SCALE_SIZE 0
 #define TASK0_M 32
@@ -61,7 +68,7 @@
 #define TASK0_C_GOLDEN task0_matrix_c
 #define TASK0_C_SIZE 2048
 #define TASK0_C_BUF_SIZE 2048
-#define TASK0_HAS_NORMQUANT 0
+#define TASK0_HAS_NORMQUANT 1
 #define TASK0_CHECK_ACCUM 0
 
 #define SURYA_TASKS(APPLY) \
