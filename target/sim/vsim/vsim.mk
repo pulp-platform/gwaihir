@@ -26,7 +26,10 @@ VSIM_FLAGS += -64
 VSIM_FLAGS_GUI   = -voptargs=+acc
 # `hpdcache_flush` is excluded from default O4 optimization due to
 # it causing errors in vopt for questa-2023.4
-VSIM_FLAGS_BATCH = -voptargs='+acc+hpdcache_flush'
+# `fpnew_pace_partition` added as a probe for the CI-only vsim-3043
+# unresolved-reference errors on stage_tag_out/stage_tag_in (not
+# reproducible locally); remove if it doesn't fix it.
+VSIM_FLAGS_BATCH = -voptargs='+acc+hpdcache_flush+fpnew_pace_partition'
 
 define add_vsim_flag
 ifdef $(1)
