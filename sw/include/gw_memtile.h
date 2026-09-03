@@ -51,3 +51,14 @@
 // the sum of the mapped tile sizes.
 #define GW_L2_SPM_TOTAL_SIZE \
     (GW_L2_SPM_3_BASE_ADDR + GW_L2_SPM_3_SIZE - GW_L2_SPM_0_BASE_ADDR)
+
+
+// Ungate a tile's clock and release its reset, then read both bits back.
+// `clk_rst_bypass_i` is tied low in simulation, so a tile stays clock-gated and
+// held in reset until software does this. The clock is enabled first, so the
+// tile leaves reset with a running clock.
+static int tile_enable(volatile gw_tile_regs_t *cfg) {
+  cfg->clk.f.en = 0x1;
+  cfg->rst.f.n = 0x1;
+  return (cfg->clk.f.en == 0x1) && (cfg->rst.f.n == 0x1);
+}

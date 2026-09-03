@@ -18,6 +18,7 @@
 #include "util.h"
 #include "gw_addrmap_64b.h"
 #include "gw_raw_addrmap_64b.h"
+#include "gw_memtile.h"
 
 #define RAW_WORDS_PER_SAMPLE 8
 #define POLL_TIMEOUT 100000
@@ -57,14 +58,6 @@ static int slink_raw_wait_rx_valid(slink_regs_t *regs) {
   return 1;
 }
 
-// Enable clk/rst cfg regs for tiles
-static int tile_clk_rst_enable(gw_tile_regs_t *regs) {
-  regs->clk.f.en = 0x1;
-  regs->rst.f.n = 0x1;
-  return ((regs->clk.f.en != 0x1) | (regs->rst.f.n != 0x1));
-}
-
-
 int main() {
   uint32_t tx_sample[RAW_WORDS_PER_SAMPLE];
   uint32_t rx_sample[RAW_WORDS_PER_SAMPLE];
@@ -76,7 +69,7 @@ int main() {
   volatile gw_tile_regs_t *ucie_cfg0 = (volatile gw_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie0_tile_cfg;
   volatile gw_tile_regs_t *ucie_cfg1 = (volatile gw_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie1_tile_cfg;
 
-  if (tile_clk_rst_enable(ucie_cfg0) | (tile_clk_rst_enable(ucie_cfg1))) return 1;
+  if ( (tile_enable(ucie_cfg0) && (tile_enable(ucie_cfg1))) == 0) return 1;
 
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     tx_sample[i] = PATTERN_SEED + i;

@@ -7,6 +7,9 @@
 #include <stdint.h>
 
 #include "snrt.h"
+#include "gw_addrmap_32b.h"
+#include "gw_raw_addrmap_32b.h"
+#include "gw_memtile.h"
 
 // A cluster on chiplet0 pushes a payload plus a flag into chiplet1's L2
 // through the ucie0 window, and a cluster on chiplet1 polls the flag
@@ -44,6 +47,12 @@ int main() {
   // The physical locations the alias maps to, as seen from chiplet1 (half-shift: l2_spm[i] -> l2_spm[i+2])
   volatile uint32_t *vec_phys = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.l2_spm_2 + vec_off);
   volatile uint32_t *flag_phys = (volatile uint32_t *)((uintptr_t)&gwaihir_addrmap_32b.l2_spm_2 + flag_off);
+
+  // Enable clk/rst for ucie tiles
+  volatile gw_tile_regs_t *ucie_cfg0 = (volatile gw_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_32b.ucie0_tile_cfg;
+  volatile gw_tile_regs_t *ucie_cfg1 = (volatile gw_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_32b.ucie1_tile_cfg;
+
+  if ( (tile_enable(ucie_cfg0) && (tile_enable(ucie_cfg1))) == 0) return 1;
 
   // The consumer's mailbox is uninitialized memory;
   // clear it before any cluster starts sending

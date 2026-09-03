@@ -85,16 +85,6 @@ static inline uint32_t pattern(uint32_t seed, uint32_t i) {
   return seed + i * 0x01010101u;
 }
 
-// Ungate a tile's clock and release its reset, then read both bits back.
-// `clk_rst_bypass_i` is tied low in simulation, so a tile stays clock-gated and
-// held in reset until software does this. The clock is enabled first, so the
-// tile leaves reset with a running clock.
-static int tile_enable(volatile gw_tile_regs_t *cfg) {
-  cfg->clk.f.en = 0x1;
-  cfg->rst.f.n = 0x1;
-  return (cfg->clk.f.en == 0x1) && (cfg->rst.f.n == 0x1);
-}
-
 // Check one alias window against the canonical address it resolves to.
 // `dir` is the DIR_* base folded into every failure code.
 static int check_window(volatile uint32_t *alias, volatile uint32_t *canon, int dir) {
