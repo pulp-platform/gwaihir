@@ -197,7 +197,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= a967640fe79c671b313764bfb7f85fa97304f5f8
+PD_COMMIT ?= a8e27a2c043457647c818fa64bac6adeae257f9f
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -205,7 +205,7 @@ PCIE_COMMIT ?= 76b282c7390db8bff18dfa036e51a72773fd24ac
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
-UCIE_COMMIT ?= c50ce8a7e331f0079d5da8817c78cb6322e6cccd
+UCIE_COMMIT ?= 5d10246f79231b31ee3cc74437a6c0ef73cfc4db
 UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
