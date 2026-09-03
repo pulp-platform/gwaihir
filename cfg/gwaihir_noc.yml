@@ -224,6 +224,11 @@ endpoints:
       - base: 0x3401_0000
         size: 0x0001_0000
         desc: "ucie_cfg"
+      - base: 0x3403_0000
+        size: 0x0000_1000
+        desc: "tile_cfg"
+        rdl_name: "gw_tile_regs"
+        rdl_addrmap_grp: ["64b", "32b"]
       - base: 0x3404_0000
         size: 0x0000_1000
         desc: "axi_serial_cfg"
@@ -248,6 +253,10 @@ endpoints:
       - base: 0x3402_0000
         size: 0x0001_0000
         desc: "ucie_cfg"
+      - base: 0x3403_1000
+        size: 0x0000_1000
+        desc: "tile_cfg"
+        rdl_name: "gw_tile_regs"
       - base: 0x3404_1000
         size: 0x0000_1000
         desc: "axi_serial_cfg"
