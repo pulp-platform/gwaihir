@@ -221,12 +221,20 @@ endpoints:
           L2SpmSizeSmall: "${l2_size_small}"
           RegSize: "${reg_size}"
         rdl_addrmap_grp: ["64b", "32b"]
+      - base: 0x3401_0000
+        size: 0x0001_0000
+        desc: "ucie_cfg"
+      - base: 0x3403_0000
+        size: 0x0000_1000
+        desc: "tile_cfg"
+        rdl_name: "gw_tile_regs"
+        rdl_addrmap_grp: ["64b", "32b"]
       - base: 0x3404_0000
         size: 0x0000_1000
         desc: "axi_serial_cfg"
         rdl_name: "slink_reg"
         rdl_params: &slink_reg_rdl_params
-          NumLanes: 256
+          NumLanes: 512
           EnDdr: 0
         rdl_addrmap_grp: ["64b", "32b"]
     mgr_port_protocol:
@@ -242,6 +250,13 @@ endpoints:
         rdl_name: "chiplet"
         rdl_params: *chiplet_rdl_params
         rdl_addrmap_grp: ["64b", "32b"]
+      - base: 0x3402_0000
+        size: 0x0001_0000
+        desc: "ucie_cfg"
+      - base: 0x3403_1000
+        size: 0x0000_1000
+        desc: "tile_cfg"
+        rdl_name: "gw_tile_regs"
       - base: 0x3404_1000
         size: 0x0000_1000
         desc: "axi_serial_cfg"

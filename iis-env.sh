@@ -15,7 +15,7 @@ export WLFMAN="${VSIM_SEPP} wlfman"
 export OSEDA="oseda -2026.04"
 export VCD2FST="${OSEDA} vcd2fst"
 
-export VCS_SEPP="vcs-2024.09-zr"
+export VCS_SEPP="vcs-2025.06-dz"
 export VCS="${VCS_SEPP} vcs"
 export VLOGAN="${VCS_SEPP} vlogan"
 export VCS_HOME=/usr/pack/${VCS_SEPP}/vcs

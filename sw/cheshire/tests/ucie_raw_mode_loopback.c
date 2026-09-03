@@ -18,6 +18,7 @@
 #include "util.h"
 #include "gw_addrmap_64b.h"
 #include "gw_raw_addrmap_64b.h"
+#include "gw_memtile.h"
 
 #define RAW_WORDS_PER_SAMPLE 8
 #define POLL_TIMEOUT 100000
@@ -28,7 +29,7 @@
 #define PATTERN_MARKER_IDX 4u
 #define PATTERN_MARKER 0xdeadbeefu
 
-typedef volatile slink_reg_NumLanes_100_EnDdr_0_NumBits_100_RawModeNumWords_8_t slink_regs_t;
+typedef volatile slink_reg_NumLanes_200_EnDdr_0_NumBits_200_RawModeNumWords_10_t slink_regs_t;
 
 static void slink_raw_configure_tx(slink_regs_t *regs) {
   regs->raw_mode_en.w = 1;
@@ -64,6 +65,12 @@ int main() {
   slink_regs_t *ucie0_slink = &gwaihir_addrmap_64b.ucie0_axi_serial_cfg;
   slink_regs_t *ucie1_slink = &gwaihir_addrmap_64b.ucie1_axi_serial_cfg;
 
+  // Enable clk/rst for ucie tiles
+  volatile gw_tile_regs_t *ucie_cfg0 = (volatile gw_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie0_tile_cfg;
+  volatile gw_tile_regs_t *ucie_cfg1 = (volatile gw_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie1_tile_cfg;
+
+  if ( (tile_enable(ucie_cfg0) && (tile_enable(ucie_cfg1))) == 0) return 1;
+
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     tx_sample[i] = PATTERN_SEED + i;
   }
@@ -84,7 +91,7 @@ int main() {
     return 2;
   }
 
-  // Pop word by word form teh RAW data in register
+  // Pop word by word form the RAW data in register
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     rx_sample[i] = ucie1_slink->raw_mode_in_data[i].w;
   }

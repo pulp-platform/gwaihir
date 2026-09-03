@@ -150,6 +150,10 @@ module gwaihir_top
   // Cheshire tile //
   ///////////////////
 
+`ifdef TARGET_UCIE
+  logic [NumUcieTiles-1:0][CheshireCfg.NumExtInIntrs-1:0] ucie_irq;  // 4
+`endif
+
   // TODO(fischeti): Connect the interrupt signals
   logic [iomsb(NumIrqCtxts*CheshireCfg.NumExtIrqHarts):0] xeip_ext;
   logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext;
@@ -164,6 +168,9 @@ module gwaihir_top
     .test_mode_i,
     .boot_mode_i,
     .rtc_i,
+`ifdef TARGET_UCIE
+    .intr_ext_i       (ucie_irq),
+`endif
     .xeip_ext_o       (xeip_ext),
     .mtip_ext_o       (mtip_ext),
     .msip_ext_o       (msip_ext),
@@ -312,6 +319,7 @@ module gwaihir_top
     .clk_i,
     .rst_ni,
     .test_enable_i       (test_mode_i),
+    .clk_rst_bypass_i    (clk_rst_bypass_i),
     .id_i                (Sam[Ucie0SamIdx].idx),
     .samidx_i            (Ucie0SamIdx),
     // ucie0 (chiplet0) ingress is pass-through.
@@ -322,6 +330,10 @@ module gwaihir_top
     .floo_req_i          (floo_req_in[Ucie0X][Ucie0Y]),
     .floo_rsp_o          (floo_rsp_out[Ucie0X][Ucie0Y]),
     .floo_wide_i         (floo_wide_in[Ucie0X][Ucie0Y]),
+    // Interrupt
+`ifdef TARGET_UCIE
+    .ucie_irq_o          (ucie_irq[0]),
+`endif
     // loopback
     .phy_data_out_o      (phy_data_out[0]),
     .phy_data_out_valid_o(phy_data_out_valid[0]),
@@ -335,6 +347,7 @@ module gwaihir_top
     .clk_i,
     .rst_ni,
     .test_enable_i       (test_mode_i),
+    .clk_rst_bypass_i    (clk_rst_bypass_i),
     .id_i                (Sam[Ucie1SamIdx].idx),
     .samidx_i            (Ucie1SamIdx),
     // ucie1 (chiplet1) ingress applies the half-shift.
@@ -345,6 +358,10 @@ module gwaihir_top
     .floo_req_i          (floo_req_in[Ucie1X][Ucie1Y]),
     .floo_rsp_o          (floo_rsp_out[Ucie1X][Ucie1Y]),
     .floo_wide_i         (floo_wide_in[Ucie1X][Ucie1Y]),
+    // Interrupt
+`ifdef TARGET_UCIE
+    .ucie_irq_o          (ucie_irq[1]),
+`endif
     // loopback
     .phy_data_out_o      (phy_data_out[1]),
     .phy_data_out_valid_o(phy_data_out_valid[1]),

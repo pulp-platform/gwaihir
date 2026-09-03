@@ -16,6 +16,7 @@ module ucie_tile
 (
   input logic clk_i,
   input logic rst_ni,
+  input logic clk_rst_bypass_i,
   input logic test_enable_i,
 
   // Router ID
@@ -40,6 +41,10 @@ module ucie_tile
   output logic [NumChannels-1:0]                      phy_data_in_ready_o
 );
 
+  // Tile-specific reset and clock signals
+  logic tile_clk;
+  logic tile_rst_n;
+
   ////////////
   // Router //
   ////////////
@@ -59,6 +64,9 @@ module ucie_tile
   // SLink configuration registers.
   ucie_slink_reg_pkg::slink_reg__in_t  slink_hw2reg;
   ucie_slink_reg_pkg::slink_reg__out_t slink_reg2hw;
+
+  // Clock/rst configuration registers.
+  gw_tile_regs_pkg::gw_tile_regs__out_t hwif_out;
 
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
@@ -183,7 +191,7 @@ module ucie_tile
     axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_req_iw_conv.ar.addr, ucie_id_i);
   end
 
-  // ID Conveter from Slink to Chimney
+  // ID Converter from Slink to Chimney
   axi_iw_converter #(
     .AxiSlvPortIdWidth(AxiCfgUcieJoin.OutIdWidth),  // Chimney Output ID
     .AxiMstPortIdWidth(AxiCfgW.InIdWidth),  // ID of the chimney's input port
@@ -200,8 +208,8 @@ module ucie_tile
     .mst_req_t(axi_wide_in_req_t),
     .mst_resp_t(axi_wide_in_rsp_t)
   ) i_slink2chim_wide_iw_converter (
-    .clk_i,
-    .rst_ni,
+    .clk_i     (tile_clk),
+    .rst_ni    (tile_rst_n),
     .slv_req_i (axi_utile_nw_join_in_req),
     .slv_resp_o(axi_utile_nw_join_in_rsp),
     .mst_req_o (axi_wide_req_iw_conv),
@@ -233,7 +241,7 @@ module ucie_tile
       UniqueIds: 0,
       AxiAddrWidth: $bits(axi_narrow_out_addr_t),
       AxiDataWidth: $bits(axi_narrow_out_data_t),
-      NoAddrRules: 2,
+      NoAddrRules: 3,
       default: '0
   };
 
@@ -250,15 +258,21 @@ module ucie_tile
   } addr_rule_t;
 
   // Sam Idx offset between UCIe base and AxiCfg
-  localparam int CfgIdxOffset = int'(Ucie0AxiSerialCfgSamIdx) - int'(Ucie0SamIdx);
+  localparam int AxiSerialCfgIdxOffset = int'(Ucie0AxiSerialCfgSamIdx) - int'(Ucie0SamIdx);
+  localparam int TileCfgIdxOffset = int'(Ucie0TileCfgSamIdx) - int'(Ucie0SamIdx);
 
-  ucie_rule_t [1:0] tile_addrmap;
-  // 2 rules: 1 for the AXI-Lite config (Slink + UCIe), 1 for the join path.
+  ucie_rule_t [2:0] tile_addrmap;
+  // 3 rules: 2 for the AXI-Lite config (Tile Cfg + Slink Cfg), 1 for the join path.
   assign tile_addrmap = '{
           '{
               idx: LITE_CFG,
-              start_addr: Sam[int'(samidx_i)+CfgIdxOffset].start_addr,
-              end_addr  : Sam[int'(samidx_i)+CfgIdxOffset].end_addr
+              start_addr: Sam[int'(samidx_i)+TileCfgIdxOffset].start_addr,
+              end_addr  : Sam[int'(samidx_i)+TileCfgIdxOffset].end_addr
+          },
+          '{
+              idx: LITE_CFG,
+              start_addr: Sam[int'(samidx_i)+AxiSerialCfgIdxOffset].start_addr,
+              end_addr  : Sam[int'(samidx_i)+AxiSerialCfgIdxOffset].end_addr
           },
           '{idx: JOIN, start_addr: Sam[samidx_i].start_addr, end_addr  : Sam[samidx_i].end_addr}
       };
@@ -350,20 +364,33 @@ module ucie_tile
     .mst_res_i(ucie_cfg_reg_lite_rsp)
   );
 
-  // TODO: Add rule for UCIe cfg
-  // The narrow xbar already isolated this port to the "axi_serial_cfg" SAM
-  // range, so everything reaching here is in range: a single wildcard rule.
-  localparam int unsigned NumSlinkCfgApbRules = 1;
-  addr_rule_t [NumSlinkCfgApbRules-1:0] SlinkCfgApbAddrMap = '{
-      '{idx: 0, start_addr: '0, end_addr: '1}
-  };
+  // Two APB slaves on the tile config port: the Slink registers
+  // (axi_serial_cfg SAM range) and the UCIe PCS macro APB (ucie_cfg SAM range).
+  // Both ranges reach the LITE_CFG xbar port; split here by address.
+  localparam int unsigned NumCfgApbSlaves = 2;
+  localparam int unsigned ApbSlink = 0;
+  localparam int unsigned ApbTile = 1;
 
-  ucie_cfg_apb_req_t  ucie_cfg_apb_req;
-  ucie_cfg_apb_resp_t ucie_cfg_apb_rsp;
+  addr_rule_t [NumCfgApbSlaves-1:0] CfgApbAddrMap;
+  always_comb begin
+    CfgApbAddrMap[ApbSlink] = '{
+        idx       : ApbSlink,
+        start_addr: Sam[int'(samidx_i)+AxiSerialCfgIdxOffset].start_addr,
+        end_addr  : Sam[int'(samidx_i)+AxiSerialCfgIdxOffset].end_addr
+    };
+    CfgApbAddrMap[ApbTile] = '{
+        idx       : ApbTile,
+        start_addr: Sam[int'(samidx_i)+TileCfgIdxOffset].start_addr,
+        end_addr  : Sam[int'(samidx_i)+TileCfgIdxOffset].end_addr
+    };
+  end
+
+  ucie_cfg_apb_req_t  [NumCfgApbSlaves-1:0] cfg_apb_req;
+  ucie_cfg_apb_resp_t [NumCfgApbSlaves-1:0] cfg_apb_rsp;
 
   axi_lite_to_apb #(
-    .NoApbSlaves    (1),
-    .NoRules        (NumSlinkCfgApbRules),
+    .NoApbSlaves    (NumCfgApbSlaves),
+    .NoRules        (NumCfgApbSlaves),
     .AddrWidth      (AxiCfgN.AddrWidth),
     .DataWidth      (UcieCfgRegDataWidth),
     .axi_lite_req_t (ucie_cfg_axi_lite_32_req_t),
@@ -376,29 +403,70 @@ module ucie_tile
     .rst_ni         (rst_ni),
     .axi_lite_req_i (ucie_cfg_reg_lite_req),
     .axi_lite_resp_o(ucie_cfg_reg_lite_rsp),
-    .apb_req_o      (ucie_cfg_apb_req),
-    .apb_resp_i     (ucie_cfg_apb_rsp),
-    .addr_map_i     (SlinkCfgApbAddrMap)
+    .apb_req_o      (cfg_apb_req),
+    .apb_resp_i     (cfg_apb_rsp),
+    .addr_map_i     (CfgApbAddrMap)
+  );
+
+  // Clk/Rst Enable Registers.
+  gw_tile_regs i_gw_tile_regs (
+    .clk          (clk_i),
+    .arst_n       (rst_ni),
+    .s_apb_paddr  (cfg_apb_req[ApbTile].paddr[gw_tile_regs_pkg::GW_TILE_REGS_MIN_ADDR_WIDTH-1:0]),
+    .s_apb_penable(cfg_apb_req[ApbTile].penable),
+    .s_apb_psel   (cfg_apb_req[ApbTile].psel),
+    .s_apb_pwrite (cfg_apb_req[ApbTile].pwrite),
+    .s_apb_pprot  (cfg_apb_req[ApbTile].pprot),
+    .s_apb_pwdata (cfg_apb_req[ApbTile].pwdata),
+    .s_apb_pstrb  (cfg_apb_req[ApbTile].pstrb),
+    .s_apb_prdata (cfg_apb_rsp[ApbTile].prdata),
+    .s_apb_pready (cfg_apb_rsp[ApbTile].pready),
+    .s_apb_pslverr(cfg_apb_rsp[ApbTile].pslverr),
+    .hwif_out     (hwif_out)
   );
 
   // SLink configuration registers.
   ucie_slink_reg i_serial_link_reg (
-    .clk          (clk_i),
-    .arst_n       (rst_ni),
-    .s_apb_psel   (ucie_cfg_apb_req.psel),
-    .s_apb_penable(ucie_cfg_apb_req.penable),
-    .s_apb_pwrite (ucie_cfg_apb_req.pwrite),
-    .s_apb_pprot  (ucie_cfg_apb_req.pprot),
+    .clk          (tile_clk),
+    .arst_n       (tile_rst_n),
+    .s_apb_psel   (cfg_apb_req[ApbSlink].psel),
+    .s_apb_penable(cfg_apb_req[ApbSlink].penable),
+    .s_apb_pwrite (cfg_apb_req[ApbSlink].pwrite),
+    .s_apb_pprot  (cfg_apb_req[ApbSlink].pprot),
     // TODO (lleone): Check if the address bits are correct since in the type definition was 48b
-    .s_apb_paddr  (ucie_cfg_apb_req.paddr[UCIE_SLINK_REG_MIN_ADDR_WIDTH-1:0]),
-    .s_apb_pwdata (ucie_cfg_apb_req.pwdata),
-    .s_apb_pstrb  (ucie_cfg_apb_req.pstrb),
-    .s_apb_pready (ucie_cfg_apb_rsp.pready),
-    .s_apb_prdata (ucie_cfg_apb_rsp.prdata),
-    .s_apb_pslverr(ucie_cfg_apb_rsp.pslverr),
+    .s_apb_paddr  (cfg_apb_req[ApbSlink].paddr[UCIE_SLINK_REG_MIN_ADDR_WIDTH-1:0]),
+    .s_apb_pwdata (cfg_apb_req[ApbSlink].pwdata),
+    .s_apb_pstrb  (cfg_apb_req[ApbSlink].pstrb),
+    .s_apb_pready (cfg_apb_rsp[ApbSlink].pready),
+    .s_apb_prdata (cfg_apb_rsp[ApbSlink].prdata),
+    .s_apb_pslverr(cfg_apb_rsp[ApbSlink].pslverr),
     .hwif_in      (slink_hw2reg),
     .hwif_out     (slink_reg2hw)
   );
+
+  //////////////////////////
+  // Clock Gating & Reset //
+  //////////////////////////
+
+  tc_clk_gating i_tc_clk_gating_ucie (
+    .clk_i,
+    .en_i     (hwif_out.clk.en.value),
+    .test_en_i(clk_rst_bypass_i),
+    .clk_o    (tile_clk)
+  );
+
+`ifdef TARGET_XILINX
+  // Using clk cells makes Vivado flag the reset as a clock tree
+  assign tile_rst_n = (clk_rst_bypass_i) ? rst_ni : tile_rst_ni;
+`else
+  tc_clk_mux2 i_tc_reset_mux (
+    .clk0_i   (hwif_out.rst.n.value),
+    .clk1_i   (rst_ni),
+    .clk_sel_i(clk_rst_bypass_i),
+    .clk_o    (tile_rst_n)
+  );
+`endif
+
   //////////////////
   // NW Join Path //
   /////////////////
@@ -441,8 +509,8 @@ module ucie_tile
     .mst_req_t             (axi_narrow_iw_out_req_t),
     .mst_resp_t            (axi_narrow_iw_out_rsp_t)
   ) i_chim2nw_narrow_iw_converter (
-    .clk_i,
-    .rst_ni,
+    .clk_i     (tile_clk),
+    .rst_ni    (tile_rst_n),
     .slv_req_i (axi_narrow_xbar_out_req[JOIN]),
     .slv_resp_o(axi_narrow_xbar_out_rsp[JOIN]),
     .mst_req_o (axi_narrow_iw_out_req),
@@ -457,20 +525,19 @@ module ucie_tile
     .axi_req_t      (axi_narrow_iw_out_req_t),
     .axi_resp_t     (axi_narrow_iw_out_rsp_t)
   ) i_chim2nw_narrow_atop_filter (
-    .clk_i,
-    .rst_ni,
+    .clk_i     (tile_clk),
+    .rst_ni    (tile_rst_n),
     .slv_req_i (axi_narrow_iw_out_req),
     .slv_resp_o(axi_narrow_iw_out_rsp),
     .mst_req_o (axi_narrow_atop_filtered_req),
     .mst_resp_i(axi_narrow_atop_filtered_rsp)
   );
 
-  // Strip the user field form the narrow AXI
+  // Strip the user field from the narrow AXI
   // Reuse the AXI STRUCT ASSIGN macro. Since the dst user is a logic,
-  // the struct assign wil truncate the field.
+  // the struct assign will truncate the field.
   `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_atop_filtered_req)
   `AXI_ASSIGN_RESP_STRUCT(axi_narrow_atop_filtered_rsp, axi_narrow_noatop_out_rsp)
-
 
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgNoAtop)),
@@ -485,8 +552,8 @@ module ucie_tile
     .axi_req_t       (gwaihir_pkg::axi_utile_nw_join_req_t),
     .axi_rsp_t       (gwaihir_pkg::axi_utile_nw_join_rsp_t)
   ) i_floo_nw_join (
-    .clk_i           (clk_i),
-    .rst_ni          (rst_ni),
+    .clk_i           (tile_clk),
+    .rst_ni          (tile_rst_n),
     .test_enable_i   (test_enable_i),
     .axi_narrow_req_i(axi_narrow_noatop_out_req),
     .axi_narrow_rsp_o(axi_narrow_noatop_out_rsp),
@@ -519,10 +586,10 @@ module ucie_tile
     .hwif_in_t             (ucie_slink_reg_pkg::slink_reg__in_t),
     .hwif_out_t            (ucie_slink_reg_pkg::slink_reg__out_t)
   ) i_ucie_slink_serializer (
-    .clk_i                   (clk_i),
-    .rst_ni                  (rst_ni),
-    .clk_sl_i                (clk_i),
-    .rst_sl_ni               (rst_ni),
+    .clk_i                   (tile_clk),
+    .rst_ni                  (tile_rst_n),
+    .clk_sl_i                (tile_clk),
+    .rst_sl_ni               (tile_rst_n),
     .axi_in_req_i            (axi_utile_nw_join_out_req),
     .axi_in_rsp_o            (axi_utile_nw_join_out_rsp),
     .axi_out_req_o           (axi_utile_nw_join_in_req),

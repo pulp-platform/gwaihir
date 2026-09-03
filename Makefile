@@ -66,7 +66,7 @@ DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
-UCIE_SLINK_NUM_LANES ?= 256
+UCIE_SLINK_NUM_LANES ?= 512
 UCIE_SLINK_EN_DDR    ?= 0
 
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
@@ -197,12 +197,16 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 477f861ab35b2677ccba19039916f4eb320d65c6
+PD_COMMIT ?= 5b226fddb678c5e9b200c813883096ac95afbe39
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
 PCIE_COMMIT ?= 76b282c7390db8bff18dfa036e51a72773fd24ac
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
+
+UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
+UCIE_COMMIT ?= 51d5f2f8afc2ff7ddaa5a66afeb9977f388b5492
+UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
 LPDDR_COMMIT ?= 5296d8eaf1046ae7eb4ec488c272fac2e9896dac
@@ -210,7 +214,7 @@ LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -223,6 +227,9 @@ $(PCIE_DIR):
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
 	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
+$(UCIE_DIR):
+	git clone $(UCIE_REMOTE) $(UCIE_DIR)
+	cd $(UCIE_DIR) && git checkout $(UCIE_COMMIT)
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
@@ -232,10 +239,11 @@ update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^LPDDR_COMMIT ?= .*/LPDDR_COMMIT ?= $(shell git -C $(LPDDR_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^UCIE_COMMIT ?= .*/UCIE_COMMIT ?= $(shell git -C $(UCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
 	rm -f $(PCIE_SW_TESTS_VENDORED)
-	rm -rf $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
+	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR)
 
 -include $(PD_DIR)/pd.mk
 -include $(LPDDR_DIR)/lpddr.mk
