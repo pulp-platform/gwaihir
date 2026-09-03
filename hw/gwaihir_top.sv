@@ -319,6 +319,7 @@ module gwaihir_top
     .clk_i,
     .rst_ni,
     .test_enable_i       (test_mode_i),
+    .clk_rst_bypass_i    (clk_rst_bypass_i),
     .id_i                (Sam[Ucie0SamIdx].idx),
     .samidx_i            (Ucie0SamIdx),
     // ucie0 (chiplet0) ingress is pass-through.
@@ -346,6 +347,7 @@ module gwaihir_top
     .clk_i,
     .rst_ni,
     .test_enable_i       (test_mode_i),
+    .clk_rst_bypass_i    (clk_rst_bypass_i),
     .id_i                (Sam[Ucie1SamIdx].idx),
     .samidx_i            (Ucie1SamIdx),
     // ucie1 (chiplet1) ingress applies the half-shift.
