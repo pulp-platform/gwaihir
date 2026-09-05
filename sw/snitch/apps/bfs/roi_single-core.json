@@ -1,0 +1,82 @@
+// Copyright 2024 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+[
+    <% N_CLUSTERS = 1 %>
+
+    % for cluster in range(0, N_CLUSTERS):
+        // Compute cores
+        % for j in range(0, 1):
+        {
+            "thread": "${f'hart_{cluster * 9 + j + 1}'}",
+            "roi": [
+                //{"idx": 0, "label": "init"},
+                {"idx": 1, "label": "bfs_init"},
+                {"idx": 2, "label": "wait_for_global_barrier"},
+                {"idx": 3, "label": "init_variables"},
+                {"idx": 4, "label": "wait_for_dma"},
+                {"idx": 5, "label": "bfs"},
+                {"idx": 6, "label": "wait_for_barrier"},
+                {"idx": 7, "label": "wait_for_global_barrier"},
+                {"idx": 8, "label": "-"},
+                {"idx": 9, "label": "init_variables"},
+                {"idx": 10, "label": "wait_for_dma"},
+                {"idx": 11, "label": "bfs"},
+                {"idx": 12, "label": "wait_for_barrier"},
+                {"idx": 13, "label": "wait_for_global_barrier"},
+            ]
+        },
+        % endfor
+
+        // DMA cores
+        % for j in range(0, 1):
+        {
+            "thread": "${f'hart_{cluster * 9 + 9}'}",
+            "roi": [
+                //{"idx": 0, "label": "init"},
+                {"idx": 1, "label": "dma_bfs_init"},
+                {"idx": 2, "label": "wait_for_global_barrier"},
+                {"idx": 3, "label": "init_variables"},
+                {"idx": 4, "label": "copy_data"},
+                {"idx": 5, "label": "wait_for_barrier"},
+                {"idx": 6, "label": "wait_for_barrier(bfs)"},
+                {"idx": 7, "label": "copy_data"},
+                {"idx": 8, "label": "wait_for_global_barrier"},
+                {"idx": 9, "label": "-"},
+                {"idx": 10, "label": "init_variables"},
+                {"idx": 11, "label": "copy_data"},
+                {"idx": 12, "label": "wait_for_barrier"},
+                {"idx": 13, "label": "wait_for_barrier(bfs)"},
+                {"idx": 14, "label": "copy_data"},
+                {"idx": 15, "label": "wait_for_global_barrier"}
+            ]
+        },
+        % endfor
+
+        // DMA transfers
+        {
+            "thread": "${f'dma_{cluster * 9 + 9}'}",
+            "roi": [
+                //{"idx": 0, "label": "?0"},
+                //{"idx": 1, "label": "?1"},
+                //{"idx": 2, "label": "?2"},
+                //{"idx": 3, "label": "?3"},
+                //{"idx": 4, "label": "?4"},
+                //{"idx": 5, "label": "?5"},
+                //{"idx": 6, "label": "?6"},
+                //{"idx": 7, "label": "?7"},
+                //{"idx": 8, "label": "?8"},
+                //{"idx": 9, "label": "?9"},
+                {"idx": 10, "label": "copy_job_arguments"},
+                {"idx": 11, "label": "load_offsets"},
+                {"idx": 12, "label": "load_adjacencies"},
+                {"idx": 13, "label": "load_frontier"},
+                {"idx": 14, "label": "load_dist"},
+                {"idx": 15, "label": "load_new_frontier"},
+                {"idx": 16, "label": "load_new_dist"},
+                {"idx": 17, "label": "store_frontier"},
+                {"idx": 18, "label": "store_dist"}
+            ]
+        },
+    % endfor
+]
