@@ -1,9 +1,0 @@
-// Copyright 2024 ETH Zurich and University of Bologna.
-// Licensed under the Apache License, Version 2.0, see LICENSE for details.
-// SPDX-License-Identifier: Apache-2.0
-
-{
-    num_vertices: 512,
-    num_edges: 10240, // 20 edges per vertex
-    frontier_fraction: 0.5
-}
