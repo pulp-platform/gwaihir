@@ -80,13 +80,6 @@ GW_CHS_SW_TEST = $(GW_CHS_SW_TEST_DUMP)
 $(GW_CHS_SW_TEST_DUMP): $(GW_CHS_SW_TEST_ELF)
 $(GW_CHS_SW_TEST_ELF): $(GW_GEN_DIR)/gw_addrmap_64b.h $(GW_GEN_DIR)/gw_raw_addrmap_64b.h $(SN_RUNTIME_HAL_HDRS)
 
-CH_APPS = $(GW_CHS_SW_DIR)/apps/bfs_cheshire
-
-# Include Makefile from each cheshire app subdirectory
-$(foreach app,$(CH_APPS), \
-	$(eval include $(app)/app.mk) \
-)
-
 .PHONY: chs-sw-tests chs-sw-tests-clean
 
 chs-sw-tests: $(GW_CHS_SW_TEST)
