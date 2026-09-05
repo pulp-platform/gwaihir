@@ -15,7 +15,7 @@ addrmap cheshire_tile #(longint unsigned SlinkNumLanes = 8) {
     cheshire #(.SlinkNumLanes(SlinkNumLanes)) cheshire @ 0x0000_0000;
 
 `ifdef GW_CHIP_RDL
-    fll          fll          @ 0x1800_1000;
+    fll          fll[2]       @ 0x1800_1000 += 0x0000_0010;
     gw_chip_regs gw_chip_regs @ 0x1800_2000;
 `endif
 `ifdef GW_LPDDR_RDL
