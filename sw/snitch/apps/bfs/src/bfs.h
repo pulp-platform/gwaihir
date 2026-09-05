@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Author: Luca Colagrande <colluca@iis.ee.ethz.ch>
+// Author: Pius Sieber <psieber@iis.ee.ethz.ch>
 
 #include <stdint.h>
 #include <math.h>
