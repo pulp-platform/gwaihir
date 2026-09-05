@@ -3,6 +3,16 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Author: Luca Colagrande <colluca@iis.ee.ethz.ch>
+// Author: Pius Sieber <psieber@iis.ee.ethz.ch>
+
+// Settings
+//#define RUN_ON_SINGLE_CLUSTER
+#define RUN_ON_SINGLE_CORE
+
+
+#ifdef RUN_ON_SINGLE_CORE // Single core also requires only a single cluster
+    #define RUN_ON_SINGLE_CLUSTER
+#endif
 
 #include <stdint.h>
 
@@ -23,8 +33,30 @@ int main() {
     };
     snrt_global_barrier();
     snrt_mcycle();
-    bfs_job(&args);
-    snrt_global_barrier();
-    snrt_mcycle();
+    #ifdef RUN_ON_SINGLE_CLUSTER
+        if (snrt_cluster_idx() == 0) { // only run on cluster 0 for this test
+            #ifdef RUN_ON_SINGLE_CORE
+                if((snrt_cluster_core_idx() == 0) || (snrt_cluster_core_idx() == 8)) { // only run on single core and dma
+                    bfs_job(&args);
+                }else{
+                    snrt_cluster_hw_barrier();
+                    snrt_cluster_hw_barrier();
+                    snrt_cluster_hw_barrier();
+                    snrt_global_barrier();
+                    snrt_cluster_hw_barrier();
+                    snrt_cluster_hw_barrier();
+                    snrt_global_barrier();
+                    snrt_cluster_hw_barrier();
+                }
+            #else
+                bfs_job(&args);
+            #endif
+        }else{
+            snrt_global_barrier();
+            snrt_global_barrier();
+        }
+    #else
+        bfs_job(&args);
+    #endif
     return 0;
 }
