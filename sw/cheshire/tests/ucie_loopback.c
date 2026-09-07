@@ -9,7 +9,7 @@
 #include "util.h"
 #include "gw_addrmap_64b.h"
 #include "gw_raw_addrmap_64b.h"
-#include "gw_memtile.h"
+#include "gw_host.h"
 
 #define TRANSFER_DATA 0xdeadbeef
 

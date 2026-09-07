@@ -9,7 +9,7 @@
 #include "snrt.h"
 #include "gw_addrmap_32b.h"
 #include "gw_raw_addrmap_32b.h"
-#include "gw_memtile.h"
+#include "gw_host.h"
 
 // A cluster on chiplet0 pushes a payload plus a flag into chiplet1's L2
 // through the ucie0 window, and a cluster on chiplet1 polls the flag

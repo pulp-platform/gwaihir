@@ -101,7 +101,7 @@ sources:
   - hw/mem_tile_small.sv
   - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
-  # UCIe: opensource tile by default; closed-source (real macro) when built with -t ucie
+
   - target: not(ucie)
     files:
       - hw/ucie_tile.sv
@@ -121,7 +121,6 @@ sources:
       - target/sim/src/fixture_gwaihir_top.sv
       - target/sim/src/tb_gwaihir_top.sv
 
-  # PCIe
   - target: not(all(pcie, asic))
     files:
       - hw/pcie_tile.sv
