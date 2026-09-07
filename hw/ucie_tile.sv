@@ -261,7 +261,7 @@ module ucie_tile
   localparam int AxiSerialCfgIdxOffset = int'(Ucie0AxiSerialCfgSamIdx) - int'(Ucie0SamIdx);
   localparam int TileCfgIdxOffset = int'(Ucie0TileCfgSamIdx) - int'(Ucie0SamIdx);
 
-  ucie_rule_t [2:0] tile_addrmap;
+  ucie_rule_t [AxiSerialCfgIdxOffset-1:0] tile_addrmap;
   // 3 rules: 2 for the AXI-Lite config (Tile Cfg + Slink Cfg), 1 for the join path.
   assign tile_addrmap = '{
           '{
@@ -368,8 +368,11 @@ module ucie_tile
   // (axi_serial_cfg SAM range) and the UCIe PCS macro APB (ucie_cfg SAM range).
   // Both ranges reach the LITE_CFG xbar port; split here by address.
   localparam int unsigned NumCfgApbSlaves = 2;
-  localparam int unsigned ApbSlink = 0;
-  localparam int unsigned ApbTile = 1;
+
+  typedef enum logic {
+    ApbSlink = 1'b0,
+    ApbTile  = 1'b1
+  } ucie_apb_sel_e;
 
   addr_rule_t [NumCfgApbSlaves-1:0] CfgApbAddrMap;
   always_comb begin
