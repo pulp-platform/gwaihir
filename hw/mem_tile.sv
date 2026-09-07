@@ -391,8 +391,8 @@ module mem_tile
   localparam axi_pkg::xbar_cfg_t AxiWideXbarCfg = '{
       NoSlvPorts: 1,
       NoMstPorts: 2,
-      MaxMstTrans: 4,
-      MaxSlvTrans: 4,
+      MaxMstTrans: DmaNumAxInFlight,
+      MaxSlvTrans: DmaNumAxInFlight,
       FallThrough: 0,
       LatencyMode: axi_pkg::NO_LATENCY,
       PipelineStages: 0,
