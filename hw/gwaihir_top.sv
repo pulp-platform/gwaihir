@@ -415,6 +415,56 @@ module gwaihir_top
   assign floo_rsp_out[PCIeTileX][PCIeTileY][North]  = '0;
   assign floo_wide_out[PCIeTileX][PCIeTileY][North] = '0;
 
+  /////////////////////
+  // TUM NPU tile  //
+  /////////////////////
+
+  localparam id_t TumNpuId = CollectiveSam[TumNpuSamIdx].idx.id;
+  localparam id_t TumNpuPhysicalId = SamPhysical[TumNpuSamIdx].idx;
+  localparam int TumNpuTileX = int'(TumNpuPhysicalId.x);
+  localparam int TumNpuTileY = int'(TumNpuPhysicalId.y);
+  localparam axi_wide_in_addr_t TumNpuBaseAddr = Sam[TumNpuSamIdx].start_addr;
+
+  // TODO: route these to the PLIC / a `gw_tile_regs` block for the TUM_NPU tile.
+
+  tum_npu_tile #(
+    .TumNpuBaseAddr(TumNpuBaseAddr)
+  ) i_tum_npu_tile (
+    .clk_i,
+    .rst_ni,
+    .test_enable_i(test_mode_i),
+    .id_i         (TumNpuId),
+    .irq_i        (1'b0),
+    .halted_o     (),
+    .fault_o      (),
+    .wfi_o        (),
+
+    .floo_req_east_o (floo_req_out[TumNpuTileX][TumNpuTileY][East]),
+    .floo_rsp_east_i (floo_rsp_in[TumNpuTileX][TumNpuTileY][East]),
+    .floo_wide_east_o(floo_wide_out[TumNpuTileX][TumNpuTileY][East]),
+    .floo_req_east_i (floo_req_in[TumNpuTileX][TumNpuTileY][East]),
+    .floo_rsp_east_o (floo_rsp_out[TumNpuTileX][TumNpuTileY][East]),
+    .floo_wide_east_i(floo_wide_in[TumNpuTileX][TumNpuTileY][East]),
+
+    .floo_req_south_o (floo_req_out[TumNpuTileX][TumNpuTileY][South]),
+    .floo_rsp_south_i (floo_rsp_in[TumNpuTileX][TumNpuTileY][South]),
+    .floo_wide_south_o(floo_wide_out[TumNpuTileX][TumNpuTileY][South]),
+    .floo_req_south_i (floo_req_in[TumNpuTileX][TumNpuTileY][South]),
+    .floo_rsp_south_o (floo_rsp_out[TumNpuTileX][TumNpuTileY][South]),
+    .floo_wide_south_i(floo_wide_in[TumNpuTileX][TumNpuTileY][South]),
+
+    .floo_req_west_o (floo_req_out[TumNpuTileX][TumNpuTileY][West]),
+    .floo_rsp_west_i (floo_rsp_in[TumNpuTileX][TumNpuTileY][West]),
+    .floo_wide_west_o(floo_wide_out[TumNpuTileX][TumNpuTileY][West]),
+    .floo_req_west_i (floo_req_in[TumNpuTileX][TumNpuTileY][West]),
+    .floo_rsp_west_o (floo_rsp_out[TumNpuTileX][TumNpuTileY][West]),
+    .floo_wide_west_i(floo_wide_in[TumNpuTileX][TumNpuTileY][West])
+  );
+
+  // TUM NPU has no North port. Nothing drives this slot, so drive it here.
+  assign floo_req_out[TumNpuTileX][TumNpuTileY][North]  = '0;
+  assign floo_rsp_out[TumNpuTileX][TumNpuTileY][North]  = '0;
+  assign floo_wide_out[TumNpuTileX][TumNpuTileY][North] = '0;
   ////////////////
   // Dummy tile //
   ////////////////
