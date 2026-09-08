@@ -46,3 +46,6 @@
       # - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/mha/build/mha.elf, VERIFY_PY: $SN_ROOT/sw/kernels/dnn/mha/scripts/verify.py, PRELMODE: 3 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/gemm/build/gemm.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/gemm/scripts/verify.py, PRELMODE: 3 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/axpy/build/axpy.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/axpy/scripts/verify.py, PRELMODE: 3 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.dram.elf, USTR: "Hello World!" }
+      - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.hyperbus.elf, USTR: "Hello World!" }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.hyperbus.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf }

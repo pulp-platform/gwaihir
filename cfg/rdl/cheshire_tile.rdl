@@ -9,6 +9,7 @@
 `include "cheshire.rdl"
 `include "fll.rdl"
 `include "gw_chip_regs.rdl"
+`include "gw_hyperbus_regs.rdl"
 `include "lpddr.rdl"
 
 addrmap cheshire_tile #(longint unsigned SlinkNumLanes = 8) {
@@ -18,6 +19,7 @@ addrmap cheshire_tile #(longint unsigned SlinkNumLanes = 8) {
     fll          fll[2]       @ 0x1800_1000 += 0x0000_0010;
     gw_chip_regs gw_chip_regs @ 0x1800_2000;
 `endif
+    gw_hyperbus_regs gw_hyperbus_regs @ 0x1800_3000;
 `ifdef GW_LPDDR_RDL
     lpddr lpddr @ 0x1900_0000;
 `endif

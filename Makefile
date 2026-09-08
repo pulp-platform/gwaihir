@@ -17,6 +17,8 @@ FLOO_GEN         ?= floogen
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
+PADRICK          ?= padrick
+MAKO_RENDER      ?= mako-render
 
 # Configuration files
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
@@ -30,6 +32,7 @@ L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) "endpoi
 CHS_ROOT  = $(shell $(BENDER) path cheshire)
 SN_ROOT   = $(shell $(BENDER) path snitch_cluster)
 FLOO_ROOT = $(shell $(BENDER) path floo_noc)
+HYPERBUS_ROOT = $(shell $(BENDER) path hyperbus)
 
 # Bender prerequisites
 BENDER_YML = $(GW_ROOT)/Bender.yml
@@ -39,7 +42,7 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 # Bender flags #
 ################
 
-COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync -t mxcore_hwpe
+COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync -t mxcore_hwpe -t hyperbus_macro
 SIM_TARGS += -t simulation -t test -t idma_test
 
 ############
@@ -95,6 +98,10 @@ $(GW_GEN_HW_DIR)/gw_tile_regs.sv: $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
 $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
 	$(PEAKRDL) regblock $< -o $(GW_GEN_HW_DIR) --cpuif apb4-flat --default-reset arst_n
 
+$(GW_GEN_HW_DIR)/gw_hyperbus_regs.sv: $(GW_GEN_HW_DIR)/gw_hyperbus_regs_pkg.sv
+$(GW_GEN_HW_DIR)/gw_hyperbus_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_hyperbus_regs.rdl
+	$(PEAKRDL) regblock $< -o $(GW_GEN_HW_DIR) --cpuif apb4-flat --default-reset arst_n
+
 # UCIe SLink registers
 $(GW_GEN_HW_DIR)/ucie_slink_reg.sv: $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv
 $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL)
@@ -129,6 +136,8 @@ $(GW_GEN_SW_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL) | $(GW_GE
 
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_hyperbus_regs.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_hyperbus_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_64b.svh
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv
@@ -192,12 +201,39 @@ floo-clean:
 	rm -f $(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv
 	rm -f $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR)
 
+############
+# HyperBus #
+############
+
+.PHONY: hyper-hw-all
+
+HYPER_MODEL    = $(HYPERBUS_ROOT)/models/s27ks0641/s27ks0641.v
+HYPER_SDF      = $(HYPERBUS_ROOT)/models/s27ks0641/s27ks0641.sdf
+HYPER_PADFRAME = $(HYPERBUS_ROOT)/.generated
+
+hyper-hw-all: $(HYPER_MODEL) $(HYPER_SDF) $(HYPER_PADFRAME)
+
+# The s27ks0641 model is nonfree and fetched from a restricted remote
+$(HYPER_MODEL) $(HYPER_SDF):
+	flock -x $(HYPERBUS_ROOT)/.model.lock sh -c ' \
+		if ! test -f $(HYPER_MODEL) || ! test -f $(HYPER_SDF); then \
+			test -d $(HYPERBUS_ROOT)/nonfree || $(MAKE) -C $(HYPERBUS_ROOT) hyper-nonfree-init; \
+			rm -rf $(HYPERBUS_ROOT)/models/s27ks0641; \
+			$(MAKE) -C $(HYPERBUS_ROOT) models/s27ks0641; \
+		fi'
+
+$(HYPER_PADFRAME): $(HYPERBUS_ROOT)/padframe/padrick_rundir/configs/tsmc7.yml \
+                   $(HYPERBUS_ROOT)/src/hyperbus_wrap.sv.mako
+	$(MAKE) -C $(HYPERBUS_ROOT) padframe PAD_TECH=tsmc7 \
+		PADRICK=$(PADRICK) MAKO_RENDER=$(MAKO_RENDER)
+	touch $@
+
 ###################
 # Physical Design #
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= df66988e4255591a4eeff6f85c3173389cbf160e
+PD_COMMIT ?= d8936ccdaea312ee1ebc149d64f7806544849203
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -251,7 +287,7 @@ GW_HW_ALL += $(GW_RDL_HW_ALL)
 
 .PHONY: gwaihir-hw-all gwaihir-hw-clean clean
 
-gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
+gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all hyper-hw-all
 
 gwaihir-hw-clean: sn-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)

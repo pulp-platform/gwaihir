@@ -25,7 +25,7 @@ dependencies:
     rev: common-cells-v2
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
-    rev: gwaihir-common-cells-v2
+    rev: feat/gwaihir-hyperbus
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: c63eada47c050f78b320d0e854a24a9cd9c1cc80
@@ -40,6 +40,9 @@ dependencies:
     path: ./pd
   gwaihir_lpddr:
     path: .deps/lpddr
+  hyperbus:
+    git: https://github.com/pulp-platform/hyperbus.git
+    rev: gwaihir
   iDMA: 0.6.5
   mxcore:
     git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
@@ -60,11 +63,15 @@ dependencies:
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: dca
+  hyperbus:
+    git: https://github.com/pulp-platform/hyperbus.git
+    rev: gwaihir
 
 workspace:
   package_links:
     .deps/snitch_cluster: snitch_cluster
     .deps/cheshire: cheshire
+    .deps/hyperbus: hyperbus
 
 sources:
   # Source files grouped in levels. Files in level 0 have no dependencies on files in this
@@ -82,10 +89,12 @@ sources:
       # Level 0.0
       - .generated/hw/floo_gwaihir_noc_pkg.sv
       - .generated/hw/gw_tile_regs_pkg.sv
+      - .generated/hw/gw_hyperbus_regs_pkg.sv
       - .generated/hw/gw_addrmap_pkg.sv
       - .generated/hw/ucie_slink_reg_pkg.sv
       # Level 0.1
       - .generated/hw/gw_tile_regs.sv
+      - .generated/hw/gw_hyperbus_regs.sv
       - .generated/hw/ucie_slink_reg.sv
 
   # Level 1

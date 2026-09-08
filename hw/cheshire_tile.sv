@@ -71,8 +71,16 @@ module cheshire_tile
   output logic [31:0] gpio_en_o,
 
   // APB configuration interfaces
-  output csh_apb_req_t  [CshRegExtNumSlv-1:0] apb_req_o,
-  input  csh_apb_resp_t [CshRegExtNumSlv-1:0] apb_rsp_i,
+  output csh_apb_req_t  [CshRegExtNumApbSlv-1:0] apb_req_o,
+  input  csh_apb_resp_t [CshRegExtNumApbSlv-1:0] apb_rsp_i,
+
+  // LLC output routing configuration interface
+  output csh_apb_req_t  hyper_plat_apb_req_o,
+  input  csh_apb_resp_t hyper_plat_apb_rsp_i,
+
+  // HyperBus configuration interface
+  output csh_reg_req_t hyper_reg_req_o,
+  input  csh_reg_rsp_t hyper_reg_rsp_i,
 
   // Serial link interface
   input  logic [SlinkNumChan-1:0]                    slink_rcv_clk_i,
@@ -378,21 +386,32 @@ module cheshire_tile
     .usb_dp_oe_o      ()
   );
 
-  for (genvar i = 0; i < CheshireCfg.RegExtNumSlv; i++) begin : gen_reg_to_apb
+  csh_apb_req_t  [CshRegExtNumRegToApb-1:0] apb_req;
+  csh_apb_resp_t [CshRegExtNumRegToApb-1:0] apb_rsp;
+
+  for (genvar i = 0; i < CshRegExtNumRegToApb; i++) begin : gen_reg_to_apb
     reg_to_apb #(
       .reg_req_t(csh_reg_req_t),
       .reg_rsp_t(csh_reg_rsp_t),
       .apb_req_t(csh_apb_req_t),
       .apb_rsp_t(csh_apb_resp_t)
-    ) i_fll_reg_to_apb (
+    ) i_reg_to_apb (
       .clk_i,
       .rst_ni,
       .reg_req_i(reg_ext_req[i]),
       .reg_rsp_o(reg_ext_rsp[i]),
-      .apb_req_o(apb_req_o[i]),
-      .apb_rsp_i(apb_rsp_i[i])
+      .apb_req_o(apb_req[i]),
+      .apb_rsp_i(apb_rsp[i])
     );
   end
+
+  assign apb_req_o                       = apb_req[CshRegExtNumApbSlv-1:0];
+  assign apb_rsp[CshRegExtNumApbSlv-1:0] = apb_rsp_i;
+  assign hyper_plat_apb_req_o            = apb_req[CshRegHyperbusPlat];
+  assign apb_rsp[CshRegHyperbusPlat]     = hyper_plat_apb_rsp_i;
+
+  assign hyper_reg_req_o                 = reg_ext_req[CshRegHyperbusCtrl];
+  assign reg_ext_rsp[CshRegHyperbusCtrl] = hyper_reg_rsp_i;
 
   // Add Assertion that no multicast / reduction can enter this tile!
   for (genvar r = 0; r < 4; r++) begin : gen_virt
