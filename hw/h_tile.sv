@@ -234,15 +234,17 @@ module h_tile
       .tcdm_rsp_misaligned_o(cluster_tcdm_ext_rsp_misaligned)
     );
 
-    surya_hwpe_subsystem #(
+    snitch_hwpe_subsystem #(
       .tcdm_req_t   (snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
       .tcdm_rsp_t   (snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
       .periph_req_t (hwpectrl_req_t),
       .periph_rsp_t (hwpectrl_rsp_t),
       .HwpeDataWidth(snitch_cluster_wrapper_pkg::WideDataWidth),
       .IdWidth      (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .NrCores      (NrCores)
-    ) i_surya_hwpe_subsystem (
+      .CtrlDataWidth(HWPECtrlDataWidth),
+      .NrCores      (NrCores),
+      .Accelerator  (HwpeSurya)
+    ) i_snitch_hwpe_subsystem (
       .clk_i          (tile_clk),
       .rst_ni         (tile_rst_n),
       .test_mode_i    (1'b0),
