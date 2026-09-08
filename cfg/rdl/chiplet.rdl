@@ -21,6 +21,8 @@ addrmap chiplet #(
     longint unsigned ClusterOffset    = 0x0000_0000,
     longint unsigned ClusterSize      = 0x0004_0000,
     longint unsigned ClusterCfgOffset = 0x0100_0000,
+    longint unsigned HtileOffset      = 0x0040_0000,
+    longint unsigned HtileCfgOffset   = 0x0101_8000,
     longint unsigned NumL2Tiles       = 4,
     longint unsigned L2DmaOffset      = 0x0101_0000,
     longint unsigned L2CfgOffset      = 0x0101_4000,
@@ -32,6 +34,8 @@ addrmap chiplet #(
 ) {
     snitch_cluster cluster[NumClusters]        @ ClusterOffset    += ClusterSize;
     gw_tile_regs   cluster_config[NumClusters] @ ClusterCfgOffset += RegSize;
+    snitch_cluster htile                       @ HtileOffset;
+    gw_tile_regs   htile_config                @ HtileCfgOffset;
 
     // One iDMA and one control register block per L2 tile. The iDMA registers have
     // no SystemRDL description, so they are exposed as memory here just as they are
