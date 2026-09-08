@@ -277,7 +277,6 @@ dependencies = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "peakrdl" },
-    { name = "peakrdl-cheader" },
     { name = "peakrdl-rawheader" },
     { name = "pyyaml" },
     { name = "requests" },
@@ -296,30 +295,13 @@ requires-dist = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "peakrdl", specifier = ">=1.5.0" },
-    { name = "peakrdl-cheader", specifier = ">=1.1.0" },
-    { name = "peakrdl-rawheader", specifier = ">=0.2.8" },
+    { name = "peakrdl-rawheader", specifier = ">=0.2.3" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "setuptools", specifier = "<81" },
     { name = "tabulate" },
     { name = "tclint", specifier = "==0.4.2" },
     { name = "yapf" },
-]
-
-[[package]]
-name = "clang-format"
-version = "10.0.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/65/f6/6c33182b04fe9074beb3ea57b71d069692858087283a786aa9db53b634d0/clang-format-10.0.1.1.tar.gz", hash = "sha256:016480cc99ff8fa9342672608b2e68f9eca9310407d248b1e7d8679c22dc6344", size = 8443, upload-time = "2022-02-17T14:39:42.917Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/53/e0/a056a996290c5b288c0b63ac884c095b9ab4fb3c4f29706d551c3130e070/clang_format-10.0.1.1-py2.py3-none-macosx_10_9_universal2.whl", hash = "sha256:222d6ca46ea8a68db1874ba7772f42efb6ffad4cdadf660da11d3e99a283ca4a", size = 859489, upload-time = "2022-02-17T14:39:31.914Z" },
-    { url = "https://files.pythonhosted.org/packages/8a/1a/2055e3765e1f60cb08a398fe13944489168c96eceaf3abcee89fd9275f94/clang_format-10.0.1.1-py2.py3-none-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:402886a26608ea78d1f759aef71ba5d2f0459ebf2109aca88053e3dbd1fc8254", size = 1097536, upload-time = "2022-02-17T14:39:33.484Z" },
-    { url = "https://files.pythonhosted.org/packages/e5/4e/51b96a7905d1e254bbb1df4894a22d0af1ffd4b2e9add5f6fba0cbdfeb2d/clang_format-10.0.1.1-py2.py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:aae62178afdd482c7b1171d666ef29baf22a583e71ade743093929db4ac245b4", size = 986471, upload-time = "2022-02-17T14:39:34.759Z" },
-    { url = "https://files.pythonhosted.org/packages/57/54/35f1baf05ad2a6cc1863d438530745f8b2d2fb27b3bb83d045750c78503a/clang_format-10.0.1.1-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0df136ac7b5ca9aacec29f656dc7932031a0992594c96f0f386ab757db63c536", size = 998451, upload-time = "2022-02-17T14:39:36.228Z" },
-    { url = "https://files.pythonhosted.org/packages/1d/6b/52a11a066f0a643a64f4075abdedafa5612c9e2d3110b6f284d825e6514e/clang_format-10.0.1.1-py2.py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:dc60fef84b74a3375cd768a39bdf145b268555b6998ca496588cd7471d0ed983", size = 1616850, upload-time = "2022-02-17T14:39:37.508Z" },
-    { url = "https://files.pythonhosted.org/packages/bf/ab/008855a4cf65da825b5aa15c3971d591bfcb674d100b5ecc68edca1d8085/clang_format-10.0.1.1-py2.py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:4696ce1dff189402ea64b9c1158b5058ef1fe2f06d78332a23980871f4c76234", size = 1006431, upload-time = "2022-02-17T14:39:39.116Z" },
-    { url = "https://files.pythonhosted.org/packages/20/9e/f13aa219298ccbae3691624a3014ddd2d269950fa78aaaf1976052098a89/clang_format-10.0.1.1-py2.py3-none-win32.whl", hash = "sha256:d5e2807a3e2a5bfb07051a42deb93f4488661acaf02f2d99b5811fa4a43e20c1", size = 724623, upload-time = "2022-02-17T14:39:40.176Z" },
-    { url = "https://files.pythonhosted.org/packages/17/da/8a32527c09b77fba26aae1a40837c35b42c321d5e7917862c466532f39c2/clang_format-10.0.1.1-py2.py3-none-win_amd64.whl", hash = "sha256:fa1eb6ef143a072b0b350c9b4c74374fa88d93d5ddd8f4e6ad24b04442105990", size = 888808, upload-time = "2022-02-17T14:39:41.617Z" },
 ]
 
 [[package]]
@@ -665,6 +647,7 @@ source = { editable = "." }
 dependencies = [
     { name = "cheshire" },
     { name = "floogen" },
+    { name = "mako" },
     { name = "peakrdl" },
     { name = "peakrdl-rawheader" },
     { name = "snitch", extra = ["kernels"] },
@@ -688,6 +671,7 @@ docs = [
 requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
     { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=0ee94fef9df623f1e6f5aa6d8e504d4e9a9423f6" },
+    { name = "mako", specifier = ">=1.3.0" },
     { name = "peakrdl", specifier = ">=1.5.0" },
     { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
     { name = "snitch", extras = ["kernels"], editable = ".deps/snitch_cluster" },
@@ -2290,14 +2274,6 @@ dependencies = [
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/05/35/298d9410b3635107ce586725cdfbca4c219c08d77a3511551f5e479a78db/reuse-6.2.0.tar.gz", hash = "sha256:4feae057a2334c9a513e6933cdb9be819d8b822f3b5b435a36138bd218897d23", size = 1615611, upload-time = "2025-10-27T15:25:46.336Z" }
 
-[package.optional-dependencies]
-chardet = [
-    { name = "chardet" },
-]
-charset-normalizer = [
-    { name = "charset-normalizer" },
-]
-
 [[package]]
 name = "riscv-opcodes"
 version = "0.1.0"
@@ -2575,6 +2551,7 @@ name = "snitch"
 source = { editable = ".deps/snitch_cluster" }
 dependencies = [
     { name = "dataclasses" },
+    { name = "flake8" },
     { name = "gitpython" },
     { name = "humanize" },
     { name = "json5" },
@@ -2596,10 +2573,12 @@ dependencies = [
     { name = "pytablewriter" },
     { name = "pytest" },
     { name = "pyyaml" },
+    { name = "reuse" },
     { name = "riscv-opcodes" },
     { name = "spatz-vpu" },
     { name = "tabulate" },
     { name = "termcolor" },
+    { name = "yamllint" },
 ]
 
 [package.optional-dependencies]
@@ -2634,19 +2613,13 @@ kernels = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "clang-format" },
-    { name = "flake8" },
-    { name = "prek" },
-    { name = "rdlfmt" },
-    { name = "reuse", extra = ["chardet", "charset-normalizer"] },
     { name = "tsunami-wave" },
-    { name = "verible" },
-    { name = "yamllint" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "dataclasses" },
+    { name = "flake8" },
     { name = "gitpython" },
     { name = "humanize" },
     { name = "json5" },
@@ -2676,31 +2649,25 @@ requires-dist = [
     { name = "pytablewriter" },
     { name = "pytest" },
     { name = "pyyaml" },
+    { name = "reuse" },
     { name = "riscv-opcodes", editable = ".deps/snitch_cluster/sw/deps/riscv-opcodes" },
     { name = "scikit-learn", marker = "extra == 'kernels'" },
     { name = "snitch", extras = ["docs", "kernels"], marker = "extra == 'all'", editable = ".deps/snitch_cluster" },
-    { name = "spatz-vpu", directory = ".deps/snitch_cluster/deps/spatz_vpu" },
+    { name = "spatz-vpu", git = "https://github.com/pulp-platform/spatz_vpu.git?rev=0411cc6278d65bf46ca700ec5cde84cd681ce082" },
     { name = "tabulate" },
     { name = "termcolor" },
     { name = "torch", marker = "extra == 'kernels'", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "yamllint" },
 ]
 provides-extras = ["kernels", "docs", "all"]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "clang-format", specifier = "==10.0.1.1" },
-    { name = "flake8", specifier = "==7.3.0" },
-    { name = "prek", specifier = ">=0.5.3" },
-    { name = "rdlfmt", specifier = ">=0.3.0" },
-    { name = "reuse", extras = ["charset-normalizer", "chardet"], specifier = "==6.2.0" },
-    { name = "tsunami-wave", git = "https://github.com/zarubaf/tsunami.git?rev=4a2d5c02462875fcebaef6f4e84563eb28b99cf8" },
-    { name = "verible", specifier = "==0.0.4071.0" },
-    { name = "yamllint", specifier = "==1.37.1" },
-]
+dev = [{ name = "tsunami-wave", git = "https://github.com/zarubaf/tsunami.git?rev=4a2d5c02462875fcebaef6f4e84563eb28b99cf8" }]
 
 [[package]]
 name = "spatz-vpu"
-source = { directory = ".deps/snitch_cluster/deps/spatz_vpu" }
+version = "0.0.0"
+source = { git = "https://github.com/pulp-platform/spatz_vpu.git?rev=0411cc6278d65bf46ca700ec5cde84cd681ce082#0411cc6278d65bf46ca700ec5cde84cd681ce082" }
 dependencies = [
     { name = "dataclasses" },
     { name = "hjson" },
@@ -2710,17 +2677,6 @@ dependencies = [
     { name = "termcolor" },
     { name = "torch", version = "2.12.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
     { name = "torch", version = "2.12.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "dataclasses" },
-    { name = "hjson" },
-    { name = "jsonref" },
-    { name = "jsonschema" },
-    { name = "mako" },
-    { name = "termcolor" },
-    { name = "torch", index = "https://download.pytorch.org/whl/cpu" },
 ]
 
 [[package]]

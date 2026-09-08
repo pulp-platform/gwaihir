@@ -288,6 +288,16 @@ packages:
       Git: https://github.com/pulp-platform/hwpe-stream.git
     dependencies:
     - tech_cells_generic
+  hyperbus:
+    revision: d89935b7fcb11770ae523b292a74328c6685fdfa
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/hyperbus.git
+    dependencies:
+    - axi
+    - common_cells
+    - register_interface
+    - tech_cells_generic
   idma:
     revision: 04867adf336492eb6ebacad6764a3b442a51f129
     version: 0.7.1
@@ -471,8 +481,8 @@ packages:
     - register_interface
     - tech_cells_generic
   tech_cells_generic:
-    revision: 3a3de73632a06826b1bd9c65a0a2e92b32016845
-    version: 0.2.14
+    revision: a2705ad2025cf4daeb63c49810fb6de9d3b1f3f8
+    version: null
     source:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:
