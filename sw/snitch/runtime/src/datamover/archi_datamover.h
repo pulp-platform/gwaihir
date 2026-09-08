@@ -7,11 +7,13 @@
 
 #pragma once
 
+#include "gw_hwpe_subsystem_addrmap.h"
+
 #define DATAMOVER_ARCHI_CL_EVT_ACC0 0
 #define DATAMOVER_ARCHI_CL_EVT_ACC1 1
 
 // Base address
-#define DATAMOVER_BASE_ADD (unsigned long)snrt_cluster()->zeromem.mem+sizeof(snrt_cluster()->zeromem.mem)+0x100
+#define DATAMOVER_BASE_ADD (GW_HWPE_BASE_ADDR(snrt_cluster()) + GW_HWPE_DATAMOVER_OFFS)
 
 // Commands
 #define DATAMOVER_TRIGGER 0x00
@@ -47,9 +49,10 @@
 // Transposition mode (LSB: 000=none, 001=8b, 010=16b, 100=32b) + Leftover (MSB 31:16)
 #define DATAMOVER_REG_TRANSP_MODE    0x28
 
-#define DATAMOVER_EVT_OFFS 0x94
-#define DATAMOVER_MUX_SEL_OFFS 0x98
-#define DATAMOVER_CK_GATE_OFFS 0x9C
+// Control block of the subsystem, relative to the datamover window
+#define DATAMOVER_EVT_OFFS     (GW_HWPE_EVT_CLR_OFFS - GW_HWPE_DATAMOVER_OFFS)
+#define DATAMOVER_MUX_SEL_OFFS (GW_HWPE_MUX_SEL_OFFS - GW_HWPE_DATAMOVER_OFFS)
+#define DATAMOVER_CK_GATE_OFFS (GW_HWPE_CLK_EN_OFFS - GW_HWPE_DATAMOVER_OFFS)
 
 // Transposition formats
 #define DATAMOVER_TRANSP_NONE 0x0

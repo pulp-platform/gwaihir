@@ -416,6 +416,10 @@ package gwaihir_pkg;
   ////////////////////
 
   // The cluster tiles hold MXCore. The H tile holds the Surya MX accelerator.
+  typedef enum logic {
+    HwpeMxCore = 1'b0,
+    HwpeSurya  = 1'b1
+  } hwpe_acc_e;
   localparam bit UseHWPE = 1'b1;
   localparam bit UseHtileHWPE = 1'b1;
   localparam int unsigned ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
