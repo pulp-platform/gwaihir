@@ -3,8 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Surya MX kernel on the H tile. The workload is one MX GEMM, M=32, N=256,
-// P=32, with a BF16 output. `tests/gwaihir.json` of Surya holds the same
-// workload, so the golden data comes from the Surya model.
+// P=32, with a BF16 output. The Surya-MX model writes `data/surya_mx` for the
+// package defaults of the Surya-MX build:
+//   python -m surya_model.workloads.cli --MX --M 32 --N 256 --P 32
+//     --NUM_ARRAYS 4 --ARRAY_N 32 --ARRAY_P 8 --N_ACCUM 32 --OPTIMAL_BW 1
+//     --ENABLE_PACE 0 --MX_FP_ADD 1 --MX_OUT_TRANSPOSE 1
+//     --output_dir sw/snitch/tests/data/surya_mx
 //
 // The accelerator sits in the `ext_mem` window of the cluster, after the zero
 // memory. `gw_hwpe_subsystem_addrmap.h` holds the map.
@@ -13,15 +17,10 @@
 #include <stdio.h>
 
 #include "snrt.h"
-
-// The subsystem answers the control block above both accelerator windows.
-#define GW_HWPE_BASE                              \
-  ((uintptr_t)snrt_cluster_alias()->zeromem.mem + \
-   sizeof(snrt_cluster_alias()->zeromem.mem))
-
 #include "gw_hwpe_subsystem_addrmap.h"
 
-#define SURYA_BASE_ADDR (GW_HWPE_BASE + GW_HWPE_SURYA_OFFS)
+#define GW_HWPE_BASE    GW_HWPE_BASE_ADDR(snrt_cluster_alias())
+#define SURYA_BASE_ADDR (GW_HWPE_BASE + GW_HWPE_ACC_OFFS)
 
 #include "surya_hal.h"
 #include "surya_workload.h"
@@ -33,16 +32,15 @@ static_assert(sizeof(surya_regif_t) <= GW_HWPE_ACC_WINDOW,
   (*(volatile uint32_t *)(GW_HWPE_BASE + (offs)) = (uint32_t)(value))
 
 static const surya_hw_config_t surya_hw_config = {
-    SURYA_HW_CIM_INNER, SURYA_HW_CIM_OUTER, SURYA_HW_N_ACCUM,
-    SURYA_HW_N_CIM,     SURYA_HW_OPTIMAL_BW,
+    SURYA_HW_ARRAY_N,    SURYA_HW_ARRAY_P, SURYA_HW_N_ACCUM,
+    SURYA_HW_NUM_ARRAYS, SURYA_HW_OPTIMAL_BW,
 };
 
-#define TASK_A_BYTES(i)        (TASK##i##_MATRIX_A_SIZE * sizeof(task##i##_matrix_a[0]))
-#define TASK_B_BYTES(i)        (TASK##i##_MATRIX_B_SIZE * sizeof(task##i##_matrix_b[0]))
-#define TASK_C_BYTES(i)        (TASK##i##_MATRIX_C_SIZE * sizeof(task##i##_matrix_c[0]))
+#define TASK_A_BYTES(i)          (TASK##i##_MATRIX_A_SIZE * sizeof(task##i##_matrix_a[0]))
+#define TASK_B_BYTES(i)          (TASK##i##_MATRIX_B_SIZE * sizeof(task##i##_matrix_b[0]))
+#define TASK_C_BYTES(i)          (TASK##i##_MATRIX_C_SIZE * sizeof(task##i##_matrix_c[0]))
 #define TASK_MX_SCALE_A_BYTES(i) (TASK##i##_MX_SCALE_A_SIZE * sizeof(task##i##_mx_scale_a[0]))
 #define TASK_MX_SCALE_B_BYTES(i) (TASK##i##_MX_SCALE_B_SIZE * sizeof(task##i##_mx_scale_b[0]))
-#define TASK_NQ_BYTES(i)         (TASK##i##_NORMQUANT_SIZE * sizeof(task##i##_normquant[0]))
 
 static uint8_t *local_a[NUM_TASKS];
 static uint8_t *local_b[NUM_TASKS];
@@ -50,66 +48,62 @@ static uint8_t *local_c[NUM_TASKS];
 static uint8_t *local_c_gold[NUM_TASKS];
 static uint8_t *local_mx_scale_a[NUM_TASKS];
 static uint8_t *local_mx_scale_b[NUM_TASKS];
-static uint8_t *local_nq[NUM_TASKS];
 static uint32_t task_c_bytes[NUM_TASKS];
 
 static surya_task_config_t surya_tasks[NUM_TASKS];
 
-#define TASK_ALLOC_AND_DMA(i)                                                              \
-  do {                                                                                     \
-    local_a[i]        = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_A_BYTES(i), 64);       \
-    local_b[i]        = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_B_BYTES(i), 64);       \
-    local_c[i]        = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_C_BYTES(i), 64);       \
-    local_c_gold[i]   = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_C_BYTES(i), 64);       \
+#define TASK_ALLOC_AND_DMA(i)                                                                   \
+  do {                                                                                          \
+    local_a[i]          = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_A_BYTES(i), 64);          \
+    local_b[i]          = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_B_BYTES(i), 64);          \
+    local_c[i]          = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_C_BYTES(i), 64);          \
+    local_c_gold[i]     = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_C_BYTES(i), 64);          \
     local_mx_scale_a[i] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_MX_SCALE_A_BYTES(i), 64); \
     local_mx_scale_b[i] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_MX_SCALE_B_BYTES(i), 64); \
-    local_nq[i]         = (uint8_t *)snrt_l1_alloc_cluster_local(TASK_NQ_BYTES(i), 64);         \
-    task_c_bytes[i]   = TASK_C_BYTES(i);                                                   \
-    snrt_dma_start_1d(local_a[i], task##i##_matrix_a, TASK_A_BYTES(i));                    \
-    snrt_dma_start_1d(local_b[i], task##i##_matrix_b, TASK_B_BYTES(i));                    \
-    snrt_dma_start_1d(local_c_gold[i], task##i##_matrix_c, TASK_C_BYTES(i));               \
-    snrt_dma_start_1d(local_mx_scale_a[i], task##i##_mx_scale_a, TASK_MX_SCALE_A_BYTES(i)); \
-    snrt_dma_start_1d(local_mx_scale_b[i], task##i##_mx_scale_b, TASK_MX_SCALE_B_BYTES(i));   \
-    snrt_dma_start_1d(local_nq[i], task##i##_normquant, TASK_NQ_BYTES(i));                    \
+    task_c_bytes[i]     = TASK_C_BYTES(i);                                                      \
+    snrt_dma_start_1d(local_a[i], task##i##_matrix_a, TASK_A_BYTES(i));                         \
+    snrt_dma_start_1d(local_b[i], task##i##_matrix_b, TASK_B_BYTES(i));                         \
+    snrt_dma_start_1d(local_c_gold[i], task##i##_matrix_c, TASK_C_BYTES(i));                    \
+    snrt_dma_start_1d(local_mx_scale_a[i], task##i##_mx_scale_a, TASK_MX_SCALE_A_BYTES(i));     \
+    snrt_dma_start_1d(local_mx_scale_b[i], task##i##_mx_scale_b, TASK_MX_SCALE_B_BYTES(i));     \
   } while (0);
 
 // Assignment, not a designated initializer. The tests compile as C++, which
 // accepts a designated initializer only in declaration order.
 #define TASK_BUILD_CONFIG(i)                                                  \
   do {                                                                        \
-    surya_task_config_t *t = &surya_tasks[i];                                 \
-    t->a_ptr           = local_a[i];                                          \
-    t->b_ptr           = local_b[i];                                          \
-    t->c_ptr           = (int8_t *)local_c[i];                                \
-    t->nq_ptr          = (uint32_t *)local_nq[i];                             \
-    t->mx_scale_a_ptr  = local_mx_scale_a[i];                                 \
-    t->mx_scale_b_ptr  = local_mx_scale_b[i];                                 \
-    t->out_dim         = TASK##i##_OUT_DIM;                                   \
-    t->mx_out_int8     = TASK##i##_MX_OUT_INT8;                               \
-    t->m               = TASK##i##_M;                                         \
-    t->n               = TASK##i##_N;                                         \
-    t->p               = TASK##i##_P;                                         \
-    t->op_mode         = (cim_op_mode_t)TASK##i##_OP_MODE;                    \
-    t->norm_mode       = (cim_norm_mode_t)TASK##i##_NORM_MODE;                \
-    t->accum_init_mode = (cim_accum_init_mode_t)TASK##i##_ACCUM_INIT_MODE;    \
-    t->dw_stride       = TASK##i##_DW_STRIDE;                                 \
-    t->nq_dim          = TASK##i##_NQ_DIM;                                    \
-    t->a_signed        = TASK##i##_A_SIGNED;                                  \
-    t->b_signed        = TASK##i##_B_SIGNED;                                  \
-    t->relu            = TASK##i##_RELU;                                      \
-    t->out_unsigned    = TASK##i##_OUT_UNSIGNED;                              \
-    t->compute         = TASK##i##_COMPUTE;                                   \
-    t->streamout       = TASK##i##_STREAMOUT;                                 \
-    t->accum_continue  = TASK##i##_ACCUM_CONTINUE;                            \
-    t->cim_context     = TASK##i##_CIM_CONTEXT;                               \
-    t->c_golden        = (int8_t *)local_c_gold[i];                           \
-    t->c_size          = TASK_C_BYTES(i);                                     \
+    surya_task_config_t *t  = &surya_tasks[i];                                \
+    t->a_ptr                = local_a[i];                                     \
+    t->b_ptr                = local_b[i];                                     \
+    t->c_ptr                = (int8_t *)local_c[i];                           \
+    t->mx_scale_a_ptr       = local_mx_scale_a[i];                            \
+    t->mx_scale_b_ptr       = local_mx_scale_b[i];                            \
+    t->mx_out_int8          = TASK##i##_MX_OUT_INT8;                          \
+    t->out_dim              = TASK##i##_OUT_DIM;                              \
+    t->m                    = TASK##i##_M;                                    \
+    t->n                    = TASK##i##_N;                                    \
+    t->p                    = TASK##i##_P;                                    \
+    t->op_mode              = (surya_op_mode_t)TASK##i##_OP_MODE;             \
+    t->pace                 = TASK##i##_PACE;                                 \
+    t->accum_init_mode      = (surya_accum_init_mode_t)TASK##i##_ACCUM_INIT_MODE; \
+    t->a_signed             = TASK##i##_A_SIGNED;                             \
+    t->b_signed             = TASK##i##_B_SIGNED;                             \
+    t->out_unsigned         = TASK##i##_OUT_UNSIGNED;                         \
+    t->force_rr_priority    = TASK##i##_FORCE_RR_PRIORITY;                    \
+    t->weight_ctx           = TASK##i##_WEIGHT_CTX;                           \
+    t->disable_weight_reuse = TASK##i##_DISABLE_WEIGHT_REUSE;                 \
+    t->soft_clear_state     = TASK##i##_SOFT_CLEAR_STATE;                     \
+    t->c_golden             = (int8_t *)local_c_gold[i];                      \
+    t->c_size               = TASK_C_BYTES(i);                                \
   } while (0);
 
 int main(void) {
   const uint32_t core_idx = snrt_cluster_core_idx();
 
   snrt_int_clr_mcip();
+
+  // Only the H tile holds Surya.
+  if (snrt_cluster_idx() != GW_HTILE_CLUSTER_IDX) return 0;
 
   if (snrt_is_dm_core()) {
     SURYA_TASKS(TASK_ALLOC_AND_DMA)
@@ -118,8 +112,8 @@ int main(void) {
   snrt_cluster_hw_barrier();
 
   if (core_idx == 0) {
-    GW_HWPE_WRITE(GW_HWPE_MUX_SEL_OFFS, GW_HWPE_MUX_SEL_SURYA);
-    GW_HWPE_WRITE(GW_HWPE_CLK_EN_OFFS, GW_HWPE_CLK_EN_SURYA);
+    GW_HWPE_WRITE(GW_HWPE_MUX_SEL_OFFS, GW_HWPE_MUX_SEL_ACC);
+    GW_HWPE_WRITE(GW_HWPE_CLK_EN_OFFS, GW_HWPE_CLK_EN_ACC);
     // The clock gate needs a few cycles before the register file answers.
     for (volatile int k = 0; k < 5; k++);
 

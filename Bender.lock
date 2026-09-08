@@ -464,11 +464,11 @@ packages:
     - fpnew
     - reqrsp_interface
     - tech_cells_generic
-  surya:
-    revision: 643a74584490215855736affc1c1967a94c0ec5f
+  surya-mx:
+    revision: ee2d46306f6d6a0052df1059fb8bf975027ab90f
     version: null
     source:
-      Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya.git
+      Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
     dependencies:
     - common_cells
     - fpnew
