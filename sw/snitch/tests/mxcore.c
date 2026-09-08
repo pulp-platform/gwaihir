@@ -6,6 +6,7 @@
 
 #include "snrt.h"
 #include "data/mxcore_data.h"
+#include "gw_hwpe_subsystem_addrmap.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -25,13 +26,13 @@
 #define BLOCK_SIZE      32
 #define QUANTIZE_OUTPUT 1
 
-#define HWPE_ADDR_BASE ((unsigned long)snrt_cluster_alias()->zeromem.mem + sizeof(snrt_cluster_alias()->zeromem.mem))
+#define HWPE_ADDR_BASE GW_HWPE_BASE_ADDR(snrt_cluster_alias())
 #define MXCORE_TRIGGER 0x00
 #define MXCORE_ACQUIRE 0x04
 #define MXCORE_STATUS 0x0C
 #define MXCORE_SOFT_CLEAR 0x14
-#define MXCORE_EVT_OFFS 0x94
-#define MXCORE_CK_GATE_OFFS 0x9C
+#define MXCORE_EVT_OFFS GW_HWPE_EVT_CLR_OFFS
+#define MXCORE_CK_GATE_OFFS GW_HWPE_CLK_EN_OFFS
 #define HWPE_MXIP_ADDR (HWPE_ADDR_BASE + MXCORE_EVT_OFFS)
 #define HWPE_WRITE(value, offset) *(volatile int *)(HWPE_ADDR_BASE + offset) = value
 #define HWPE_READ(offset) *(volatile int *)(HWPE_ADDR_BASE + offset)
@@ -57,7 +58,7 @@ static inline unsigned int hwpe_get_status() { return HWPE_READ(MXCORE_STATUS); 
 
 static inline void hwpe_soft_clear() { HWPE_WRITE(0, MXCORE_SOFT_CLEAR); }
 
-static inline void mxcore_cg_enable() { HWPE_WRITE(1, MXCORE_CK_GATE_OFFS); }
+static inline void mxcore_cg_enable() { HWPE_WRITE(GW_HWPE_CLK_EN_ACC, MXCORE_CK_GATE_OFFS); }
 
 static inline void mxcore_cg_disable() { HWPE_WRITE(0, MXCORE_CK_GATE_OFFS); }
 

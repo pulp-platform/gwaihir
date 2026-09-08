@@ -72,8 +72,8 @@ static inline void datamover_evt_clear(int value) {
   DATAMOVER_WRITE(value, DATAMOVER_EVT_OFFS);
 }
 
-static inline void datamover_cg_enable() { DATAMOVER_WRITE(2, DATAMOVER_CK_GATE_OFFS); }
+static inline void datamover_cg_enable() { DATAMOVER_WRITE(GW_HWPE_CLK_EN_DATAMOVER, DATAMOVER_CK_GATE_OFFS); }
 
 static inline void datamover_cg_disable() { DATAMOVER_WRITE(0, DATAMOVER_CK_GATE_OFFS); }
 
-static inline void datamover_mux_enable() { DATAMOVER_WRITE(1, DATAMOVER_MUX_SEL_OFFS); }
+static inline void datamover_mux_enable() { DATAMOVER_WRITE(GW_HWPE_MUX_SEL_DATAMOVER, DATAMOVER_MUX_SEL_OFFS); }
