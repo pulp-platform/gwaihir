@@ -212,6 +212,8 @@ endpoints:
           ClusterOffset: "${cluster_base & chiplet_win_mask}"
           ClusterSize: "${cluster_size}"
           ClusterCfgOffset: "${cluster_cfg_base & chiplet_win_mask}"
+          HtileOffset: 0x0040_0000
+          HtileCfgOffset: 0x0101_8000
           NumL2Tiles: 4
           L2DmaOffset: "${l2_dma_base & chiplet_win_mask}"
           L2CfgOffset: "${l2_cfg_base & chiplet_win_mask}"
@@ -267,7 +269,7 @@ endpoints:
       - "wide_out"
   - name: "htile"
     addr_range:
-      - base: 0x4000_0000
+      - base: 0x2040_0000
         size: 0x0004_0000
         rdl_name: "snitch_cluster"
         rdl_addrmap_grp: ["64b", "32b"]
