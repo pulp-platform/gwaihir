@@ -16,6 +16,20 @@
 #define RETURN_CODE_ADDR \
   (GW_L2_SPM_BASE_ADDR(0) + GW_L2_SPM_TOTAL_SIZE - 0x1000)
 
+// The job runs on the clusters. With GW_OFFLOAD_HTILE it runs on the H tile alone.
+#ifdef GW_OFFLOAD_HTILE
+#define NUM_TARGETS 1
+static volatile snitch_cluster_t *gw_target(int idx) {
+  (void)idx;
+  return &gwaihir_addrmap_64b.htile;
+}
+#else
+#define NUM_TARGETS SNRT_CLUSTER_NUM
+static volatile snitch_cluster_t *gw_target(int idx) {
+  return (volatile snitch_cluster_t *)&gwaihir_addrmap_64b.cluster[idx];
+}
+#endif
+
 // This needs to be in a region which is not cached
 volatile uint32_t (*return_code_array)[CFG_CLUSTER_NR_CORES] = (uint32_t (*)[CFG_CLUSTER_NR_CORES])RETURN_CODE_ADDR;
 
@@ -24,22 +38,22 @@ int main() {
   // Write entry point to scratch register 1
   // and return code address to scratch register 0
   // Initalize return address loaction before offloading.
-  for (int i = 0; i < SNRT_CLUSTER_NUM; i++) {
-    *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[i].peripheral_reg.scratch[1].w) = (uintptr_t)&gwaihir_addrmap_64b.l2_spm_0;
-    *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[i].peripheral_reg.scratch[0].w) = (uintptr_t)&return_code_array[i];
+  for (int i = 0; i < NUM_TARGETS; i++) {
+    *(volatile uint64_t *)&(gw_target(i)->peripheral_reg.scratch[1].w) = (uintptr_t)&gwaihir_addrmap_64b.l2_spm_0;
+    *(volatile uint64_t *)&(gw_target(i)->peripheral_reg.scratch[0].w) = (uintptr_t)&return_code_array[i];
     for (int j = 0; j < CFG_CLUSTER_NR_CORES; j++) {
       return_code_array[i][j] = 0;
     }
   }
 
-  // Start all cores in Cluster 0, which will wake up all other clusters
-  *(volatile uint64_t *)&(gwaihir_addrmap_64b.cluster[0].peripheral_reg.cl_clint_set.w) = (1 << CFG_CLUSTER_NR_CORES) - 1;
+  // Start all cores of the first target. Cluster 0 wakes up all other clusters.
+  *(volatile uint64_t *)&(gw_target(0)->peripheral_reg.cl_clint_set.w) = (1 << CFG_CLUSTER_NR_CORES) - 1;
 
   // Wait until all cores have finished
   int all_finished = 0;
   while (!all_finished) {
     all_finished = 1;
-    for (int i = 0; i < SNRT_CLUSTER_NUM; i++) {
+    for (int i = 0; i < NUM_TARGETS; i++) {
       for (int j = 0; j < CFG_CLUSTER_NR_CORES; j++) {
         if ((return_code_array[i][j] & 1) == 0) {
           all_finished = 0;
@@ -51,7 +65,7 @@ int main() {
 
   // Sum up the return codes
   uint32_t sum = 0;
-  for (int i = 0; i < SNRT_CLUSTER_NUM; i++) {
+  for (int i = 0; i < NUM_TARGETS; i++) {
     for (int j = 0; j < CFG_CLUSTER_NR_CORES; j++) {
       sum += (return_code_array[i][j] >> 1);
     }
