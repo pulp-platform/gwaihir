@@ -45,7 +45,7 @@ dependencies:
     version: 0.7.1
   hci:
     git: https://github.com/pulp-platform/hci.git
-    rev: c38974f0907969b9efdfd6cf5f23ff5e8a6e31bf
+    rev: lkesting/surya
   iDMA: 0.6.5
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
@@ -68,9 +68,9 @@ dependencies:
     rev: main
   ucie:
     path: .deps/ucie
-  surya:
-    git: git@iis-git.ee.ethz.ch:visual-wakeup/surya.git
-    rev: 643a74584490215855736affc1c1967a94c0ec5f
+  surya-mx:
+    git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
+    rev: main
 
 workspace:
   package_links:
