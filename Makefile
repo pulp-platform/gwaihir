@@ -194,7 +194,8 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 16a629df7c0585d6e2202a1103123c03ca09b782
+# PD Branch: yt/lpddr-grid
+PD_COMMIT ?= 0aa6fac3a5b08982a27c94ae940f5dfb353b916d
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -202,7 +203,8 @@ PCIE_COMMIT ?= 06022572de018f128ad2d21cc6a33e460bbe85df
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
-LPDDR_COMMIT ?= 5296d8eaf1046ae7eb4ec488c272fac2e9896dac
+# LPDDR Branch: yt/constraints
+LPDDR_COMMIT ?= f60e4f566bee12e6de3dbcbccb065c7a196263ce
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 .PHONY: init-pd clean-pd update-pd-commit
