@@ -1,0 +1,40 @@
+// Copyright 2026 ETH Zurich and University of Bologna.
+// Solderpad Hardware License, Version 0.51, see LICENSE for details.
+// SPDX-License-Identifier: SHL-0.51
+
+`ifndef __GW_HYPERBUS_REGS_RDL__
+`define __GW_HYPERBUS_REGS_RDL__
+
+addrmap gw_hyperbus_regs {
+    reg shared {
+        desc = "Routing of the shared LLC output window [0x8000_0000, 0x1_0000_0000)";
+        field {
+            desc = "0: route to LPDDR, 1: route to HyperBus. Set only while the window is
+                    idle, and place the HyperBus chip ranges in the window you intend to
+                    use; they reset to the exclusive one.";
+            hw = r;
+            sw = rw;
+            reset = 0; // LPDDR backs the shared window by default
+        } to_hyper;
+    } shared;
+
+    reg clk_div {
+        desc = "Divider from the SoC clock to the HyperBus clock";
+        field {
+            desc = "Divider value; 0 and 1 both pass the SoC clock through. The PHY halves
+                    this again, so HyperRAM CK is soc_clk / (2 * value).";
+            hw = r;
+            sw = rw;
+            reset = 1; // Passthrough
+        } value[8];
+        field {
+            desc = "Write 1 to apply a new divider value";
+            hw = r;
+            sw = rw;
+            singlepulse;
+            reset = 0;
+        } valid;
+    } clk_div;
+};
+
+`endif // __GW_HYPERBUS_REGS_RDL__

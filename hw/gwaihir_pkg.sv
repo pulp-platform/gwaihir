@@ -339,11 +339,18 @@ package gwaihir_pkg;
   ////////////////
 
   typedef enum bit [MaxExtRegSlvWidth-1:0] {
-    CshRegExtFLL      = 0,  // FLL registers
-    CshRegExtChipCtrl = 1,  // Chip-level registers
-    CshRegLPDDR       = 2,  // LPDDR config
-    CshRegExtNumSlv   = 3   // Number of external register slaves
+    CshRegExtFLL       = 0,  // FLL registers
+    CshRegExtChipCtrl  = 1,  // Chip-level registers
+    CshRegLPDDR        = 2,  // LPDDR config
+    CshRegHyperbusPlat = 3,  // Platform-level HyperBus config: aliasing, clock divider
+    CshRegHyperbusCtrl = 4,  // HyperBus IP config
+    CshRegExtNumSlv    = 5   // Number of external register slaves
   } cheshire_reg_ext_e;
+
+  // Number of APB slaves exported to the chip level
+  localparam int unsigned CshRegExtNumApbSlv = CshRegLPDDR + 1;
+  // Number of slaves converted to APB; the remaining ones stay register interfaces
+  localparam int unsigned CshRegExtNumRegToApb = CshRegHyperbusCtrl;
 
   // Define function to derive configuration from Cheshire defaults.
   function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
@@ -351,28 +358,38 @@ package gwaihir_pkg;
     // Enable the external AXI master and slave interfaces
     ret.AxiExtNumMst   = 1;
     ret.AxiExtNumSlv   = 1;
-    ret.AxiExtNumRules = 1;
+    ret.AxiExtNumRules = 2;
     ret.RegExtNumSlv   = CshRegExtNumSlv;
     ret.RegExtNumRules = CshRegExtNumSlv;
 
     // TODO(fischeti): Inherit these from generated SV/RDL.
-    ret.AxiExtRegionIdx[0]                   = 0;
-    ret.AxiExtRegionStart[0]                 = 'h2000_0000;
-    ret.AxiExtRegionEnd[0]                   = 'h6_0000_0000;
-    ret.RegExtRegionIdx[CshRegExtFLL]        = CshRegExtFLL;
-    ret.RegExtRegionStart[CshRegExtFLL]      = 'h1800_1000;
-    ret.RegExtRegionEnd[CshRegExtFLL]        = 'h1800_2000;
-    ret.RegExtRegionIdx[CshRegExtChipCtrl]   = CshRegExtChipCtrl;
-    ret.RegExtRegionStart[CshRegExtChipCtrl] = 'h1800_2000;
-    ret.RegExtRegionEnd[CshRegExtChipCtrl]   = 'h1800_3000;
-    ret.RegExtRegionIdx[CshRegLPDDR]         = CshRegLPDDR;
-    ret.RegExtRegionStart[CshRegLPDDR]       = 'h1900_0000;
-    ret.RegExtRegionEnd[CshRegLPDDR]         = 'h1a00_1020;
+    ret.AxiExtRegionIdx[0]                    = 0;
+    ret.AxiExtRegionStart[0]                  = 'h2000_0000;
+    ret.AxiExtRegionEnd[0]                    = 'h7000_0000;
+    ret.AxiExtRegionIdx[1]                    = 0;
+    ret.AxiExtRegionStart[1]                  = 'h1_0000_0000;
+    ret.AxiExtRegionEnd[1]                    = 'h6_0000_0000;
+    ret.RegExtRegionIdx[CshRegExtFLL]         = CshRegExtFLL;
+    ret.RegExtRegionStart[CshRegExtFLL]       = 'h1800_1000;
+    ret.RegExtRegionEnd[CshRegExtFLL]         = 'h1800_2000;
+    ret.RegExtRegionIdx[CshRegExtChipCtrl]    = CshRegExtChipCtrl;
+    ret.RegExtRegionStart[CshRegExtChipCtrl]  = 'h1800_2000;
+    ret.RegExtRegionEnd[CshRegExtChipCtrl]    = 'h1800_3000;
+    ret.RegExtRegionIdx[CshRegLPDDR]          = CshRegLPDDR;
+    ret.RegExtRegionStart[CshRegLPDDR]        = 'h1900_0000;
+    ret.RegExtRegionEnd[CshRegLPDDR]          = 'h1a00_1020;
+    ret.RegExtRegionIdx[CshRegHyperbusPlat]   = CshRegHyperbusPlat;
+    ret.RegExtRegionStart[CshRegHyperbusPlat] = 'h1800_3000;
+    ret.RegExtRegionEnd[CshRegHyperbusPlat]   = 'h1800_4000;
+    ret.RegExtRegionIdx[CshRegHyperbusCtrl]   = CshRegHyperbusCtrl;
+    ret.RegExtRegionStart[CshRegHyperbusCtrl] = 'h1800_4000;
+    ret.RegExtRegionEnd[CshRegHyperbusCtrl]   = 'h1800_5000;
 
-    // TODO(fischeti): Currently, I don't see a reason to have a CIE region
-    // Which is why we just set the CIE region to size 0 for now
-    ret.Cva6ExtCieOnTop  = 0;
-    ret.Cva6ExtCieLength = 'h0;
+    // Cheshire hardcodes [0x2.., 0x8..) as non-idempotent, but the LLC out region starts at
+    // 0x7..; the CIE subregion is the only knob to exempt [0x7.., 0x8..) from that.
+    // TODO: drop this once Cheshire derives the non-idempotent end from LlcOutRegionStart.
+    ret.Cva6ExtCieOnTop  = 1;
+    ret.Cva6ExtCieLength = 'h1000_0000;
     ret.AddrWidth        = aw_bt'(AxiCfgN.AddrWidth);
     ret.AxiDataWidth     = dw_bt'(AxiCfgN.DataWidth);
     ret.AxiUserWidth     = dw_bt'(max(AxiCfgN.UserWidth, AxiCfgW.UserWidth));
@@ -385,7 +402,7 @@ package gwaihir_pkg;
     // We do not need/want USB
     ret.Usb            = 1'b0;
 
-    ret.LlcOutRegionStart = 'h8000_0000;
+    ret.LlcOutRegionStart = 'h7000_0000;
     ret.LlcOutRegionEnd   = 'h1_0000_0000;
     ret.SlinkRegionStart  = 'h100_0000_0000;
     ret.SlinkRegionEnd    = 'h200_0000_0000;
@@ -410,6 +427,75 @@ package gwaihir_pkg;
   localparam cheshire_cfg_t CheshireCfg = gen_cheshire_cfg();
 
   `CHESHIRE_TYPEDEF_ALL(csh_, CheshireCfg)
+
+  //////////////////
+  //  LLC Output  //
+  //////////////////
+
+  typedef enum int unsigned {
+    LlcOutLpddr      = 'd0,
+    LlcOutHyperbus   = 'd1,
+    LlcOutNumMstPort = 'd2
+  } llc_demux_sel_e;
+
+  localparam int unsigned LlcOutSelWidth = cf_math_pkg::idx_width(LlcOutNumMstPort);
+
+  typedef struct packed {
+    int unsigned idx;
+    csh_addr_t   start_addr;
+    csh_addr_t   end_addr;
+  } llc_addr_rule_t;
+
+  // The exclusive window is always HyperBus; the shared one follows the routing register
+  localparam int unsigned LlcOutNumRules = 2;
+  localparam csh_addr_t LlcOutExclStart = CheshireCfg.LlcOutRegionStart;
+  localparam csh_addr_t LlcOutExclEnd = 'h8000_0000;
+  localparam csh_addr_t LlcOutSharedStart = LlcOutExclEnd;
+  localparam csh_addr_t LlcOutSharedEnd = CheshireCfg.LlcOutRegionEnd;
+
+  function automatic llc_addr_rule_t [LlcOutNumRules-1:0] gen_llc_addr_map(bit shared_to_hyper);
+    return
+    '{
+        '{idx: LlcOutHyperbus, start_addr: LlcOutExclStart, end_addr: LlcOutExclEnd},
+        '{
+            idx: shared_to_hyper ? LlcOutHyperbus : LlcOutLpddr,
+            start_addr: LlcOutSharedStart,
+            end_addr: LlcOutSharedEnd
+        }
+    }
+    ;
+  endfunction
+
+  ////////////////
+  //  HyperBus  //
+  ////////////////
+
+  localparam int unsigned HyperbusNumChips = 2;
+  localparam int unsigned HyperbusNumPhys = 2;
+  localparam int unsigned HyperbusNumPadCfg = 1;
+  localparam int unsigned HyperbusAxiMaxTrans = 4;
+  localparam int unsigned HyperbusAxiLogDepth = 3;
+  localparam int unsigned HyperbusCdcSyncStages = 2;
+  localparam int unsigned HyperbusRxFifoLogDepth = 2;
+  localparam int unsigned HyperbusTxFifoLogDepth = 2;
+  localparam int unsigned HyperbusMinFreqMHz = 100;
+  localparam int unsigned HyperbusPhyStartupCycles = 300 * 100;
+
+  localparam int unsigned HyperbusRstAddrMaskMsb = 24;
+  localparam logic [31:0] HyperbusRstChipBase = LlcOutExclStart;
+  localparam logic [31:0] HyperbusRstChipSpace = 32'h1 << HyperbusRstAddrMaskMsb;
+
+  function automatic hyperbus_pkg::hyper_cfg_t gen_hyper_rst_cfg();
+    hyperbus_pkg::hyper_cfg_t cfg = hyperbus_pkg::gen_RstCfg(HyperbusNumPhys, HyperbusMinFreqMHz);
+    cfg.address_mask_msb = HyperbusRstAddrMaskMsb;
+    return cfg;
+  endfunction
+
+  localparam hyperbus_pkg::hyper_cfg_t HyperbusRstCfg = gen_hyper_rst_cfg();
+
+  // Keep in sync with the clk_div.value reset in gw_hyperbus_regs.rdl
+  localparam int unsigned HyperbusClkDivWidth = 8;
+  localparam int unsigned HyperbusRstClkDiv = 1;
 
   ////////////////////
   //  Cluster Tile  //

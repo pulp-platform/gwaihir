@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: e00f6adc9e9ec9ac1b9a7828e4a4eae51b6e4089
+    revision: fe41126f101be0efacfcfa7ebb064ba0e7727f1a
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -288,6 +288,16 @@ packages:
       Git: https://github.com/pulp-platform/hwpe-stream.git
     dependencies:
     - tech_cells_generic
+  hyperbus:
+    revision: d89935b7fcb11770ae523b292a74328c6685fdfa
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/hyperbus.git
+    dependencies:
+    - axi
+    - common_cells
+    - register_interface
+    - tech_cells_generic
   idma:
     revision: 28a36e5e07705549e59fc33db96ab681bc1ca88e
     version: 0.6.5
@@ -328,7 +338,7 @@ packages:
     - scm
     - tech_cells_generic
   obi:
-    revision: b69af4aa00630efd14b1c5cbf9bac977f23ce840
+    revision: 7e0bcc1381bb7e3d76e50c25db240a1f02f0203a
     version: null
     source:
       Git: https://github.com/pulp-platform/obi.git
@@ -469,8 +479,8 @@ packages:
     - register_interface
     - tech_cells_generic
   tech_cells_generic:
-    revision: 3a3de73632a06826b1bd9c65a0a2e92b32016845
-    version: 0.2.14
+    revision: a2705ad2025cf4daeb63c49810fb6de9d3b1f3f8
+    version: null
     source:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:
