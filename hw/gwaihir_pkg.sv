@@ -380,9 +380,7 @@ package gwaihir_pkg;
 
     // TODO(fischeti): Check if we need external interrupts for each hart/cluster
     ret.NumExtIrqHarts = doub_bt'(NumClusters);
-`ifdef TARGET_UCIE
-    ret.NumExtInIntrs = NumUcieTiles * 2;  // ucie interrupts
-`endif
+
     // We do not need/want VGA
     ret.Vga = 1'b0;
     // We do not need/want USB
