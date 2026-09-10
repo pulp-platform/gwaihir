@@ -266,6 +266,17 @@ endpoints:
       - "narrow_out"
       - "wide_out"
 
+  # ---- TUM NPU tile ----
+  - name: "TUM_NPU"
+    addr_range:
+      - base: 0x4000_0000
+        size: 0x0040_0000
+        rdl_addrmap_grp: ["64b", "32b"]
+    mgr_port_protocol:
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
 routers:
   - name: "router_right"
     array: [1, 5]
@@ -327,6 +338,11 @@ connections:
   - src: "pcie"
     dst: "router_left"
     dst_idx: [0, 4]
+    dst_dir: "Eject"
+  # TUM NPU tile -> free centre-row slot above the cluster array
+  - src: "TUM_NPU"
+    dst: "router_center"
+    dst_idx: [2, 4]
     dst_dir: "Eject"
   # router_left (x=0) ↔ router_center West boundary (x=4)
   - src: "router_left"

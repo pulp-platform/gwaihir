@@ -484,3 +484,9 @@ packages:
     - axi
     - common_cells
     - register_interface
+  tum_npu:
+    revision: null
+    version: null
+    source:
+      Path: .deps/tum_npu
+    dependencies: []
