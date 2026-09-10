@@ -258,8 +258,8 @@ module ucie_tile
   } addr_rule_t;
 
   // Sam Idx offset between UCIe base and AxiCfg
-  localparam int AxiSerialCfgIdxOffset = int'(Ucie0AxiSerialCfgSamIdx) - int'(Ucie0SamIdx);
-  localparam int TileCfgIdxOffset = int'(Ucie0TileCfgSamIdx) - int'(Ucie0SamIdx);
+  localparam int AxiSerialCfgIdxOffset = int'(Ucie0SamIdx) - int'(Ucie0AxiSerialCfgSamIdx);
+  localparam int TileCfgIdxOffset = int'(Ucie0SamIdx) - int'(Ucie0TileCfgSamIdx);
 
   ucie_rule_t [TileCfgIdxOffset:0] tile_addrmap;
   // 3 rules: 2 for the AXI-Lite config (Tile Cfg + Slink Cfg), 1 for the join path.
