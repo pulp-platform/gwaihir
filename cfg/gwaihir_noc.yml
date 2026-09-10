@@ -265,6 +265,23 @@ endpoints:
     sbr_port_protocol:
       - "narrow_out"
       - "wide_out"
+  - name: "htile"
+    addr_range:
+      - base: 0x4000_0000
+        size: 0x0004_0000
+        rdl_name: "htile"
+        rdl_addrmap_grp: ["64b", "32b"]
+      - base: 0x2101_8000
+        size: 0x0000_1000
+        desc: "config"
+        rdl_name: "gw_tile_regs"
+        rdl_addrmap_grp: ["64b", "32b"]
+    mgr_port_protocol:
+      - "narrow_in"
+      - "wide_in"
+    sbr_port_protocol:
+      - "narrow_out"
+      - "wide_out"
 
 routers:
   - name: "router_right"
@@ -293,9 +310,13 @@ connections:
     - [0, 3]
     - [0, 3]
     dst_dir: "Eject"
-  - src: "cheshire"
+  - src: "htile"
     dst: "router_right"
     dst_idx: [0, 4]
+    dst_dir: "Eject"
+  - src: "cheshire"
+    dst: "router_center"
+    dst_idx: [3, 4]
     dst_dir: "Eject"
   - src: "l2_spm_0"
     dst: "router_left"

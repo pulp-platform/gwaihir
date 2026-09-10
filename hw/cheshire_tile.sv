@@ -94,6 +94,12 @@ module cheshire_tile
   input  floo_req_t  floo_req_west_i,
   output floo_rsp_t  floo_rsp_west_o,
   input  floo_wide_t floo_wide_west_i,
+  output floo_req_t  floo_req_east_o,
+  input  floo_rsp_t  floo_rsp_east_i,
+  output floo_wide_t floo_wide_east_o,
+  input  floo_req_t  floo_req_east_i,
+  output floo_rsp_t  floo_rsp_east_o,
+  input  floo_wide_t floo_wide_east_i,
   output floo_req_t  floo_req_south_o,
   input  floo_rsp_t  floo_rsp_south_i,
   output floo_wide_t floo_wide_south_o,
@@ -146,16 +152,18 @@ module cheshire_tile
   );
 
   assign floo_req_west_o            = router_floo_req_out[West];
+  assign floo_req_east_o            = router_floo_req_out[East];
   assign floo_req_south_o           = router_floo_req_out[South];
   assign router_floo_req_in[West]   = floo_req_west_i;
   assign router_floo_req_in[North]  = '0;  // No North port in this tile
-  assign router_floo_req_in[East]   = '0;  // No East port in this tile
+  assign router_floo_req_in[East]   = floo_req_east_i;
   assign router_floo_req_in[South]  = floo_req_south_i;
   assign floo_rsp_west_o            = router_floo_rsp_out[West];
+  assign floo_rsp_east_o            = router_floo_rsp_out[East];
   assign floo_rsp_south_o           = router_floo_rsp_out[South];
   assign router_floo_rsp_in[West]   = floo_rsp_west_i;
   assign router_floo_rsp_in[North]  = '0;  // No North port in this tile
-  assign router_floo_rsp_in[East]   = '0;  // No East port in this tile
+  assign router_floo_rsp_in[East]   = floo_rsp_east_i;
   assign router_floo_rsp_in[South]  = floo_rsp_south_i;
   //TODO(colluca): Merge with floo_wide
   // assign floo_wide_west_o.valid           = router_floo_wide_out[West].valid;
@@ -165,10 +173,11 @@ module cheshire_tile
   // assign floo_wide_south_o.ready          = router_floo_wide_out[South].ready;
   // assign floo_wide_south_o.wide           = router_floo_wide_out[South].wide[0];
   assign floo_wide_west_o           = router_floo_wide_out[West];
+  assign floo_wide_east_o           = router_floo_wide_out[East];
   assign floo_wide_south_o          = router_floo_wide_out[South];
   assign router_floo_wide_in[West]  = floo_wide_west_i;
   assign router_floo_wide_in[North] = '0;  // No North port in this tile
-  assign router_floo_wide_in[East]  = '0;  // No East port in this tile
+  assign router_floo_wide_in[East]  = floo_wide_east_i;
   assign router_floo_wide_in[South] = floo_wide_south_i;
 
   /////////////
