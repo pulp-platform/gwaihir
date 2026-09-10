@@ -20,6 +20,7 @@ GW_INCDIR = $(GW_SW_DIR)/include
 
 -include $(PD_DIR)/sw/sw.mk
 -include $(PCIE_DIR)/sw/sw.mk
+-include $(UCIE_DIR)/sw/sw.mk
 
 ####################
 ## Snitch Cluster ##
