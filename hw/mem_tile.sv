@@ -480,6 +480,8 @@ module mem_tile
     .JobFifoDepth      (gwaihir_pkg::DmaJobFifoDepth),
     .RAWCouplingAvail  (gwaihir_pkg::DmaRAWCouplingAvail),
     .IsTwoD            (gwaihir_pkg::DmaConfEnableTwoD),
+    .EnableCompute     (gwaihir_pkg::DmaEnableCompute),
+    .ComputeOps        (gwaihir_pkg::DmaComputeOps),
     .axi_mst_req_t     (axi_wide_in_req_t),
     .axi_mst_rsp_t     (axi_wide_in_rsp_t),
     .axi_slv_req_t     (axi_narrow_out_req_t),

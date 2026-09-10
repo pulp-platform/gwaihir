@@ -127,6 +127,9 @@ $(GW_GEN_SW_DIR)/gw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL) | $(GW_GEN_SW
 $(GW_GEN_SW_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL) | $(GW_GEN_SW_DIR)
 	$(PEAKRDL) raw-header $< -o $@ $(PEAKRDL_INCLUDES) $(PEAKRDL_DEFINES) --format c --base-name gw
 
+$(GW_GEN_SW_DIR)/idma_compute.h: $(BENDER_LOCK) | $(GW_GEN_SW_DIR)
+	$(PEAKRDL) raw-header $(IDMA_ROOT)/src/frontend/reg/idma_reg.rdl -o $@ --format c --base-name idma_compute
+
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_64b.svh

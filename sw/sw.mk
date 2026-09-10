@@ -80,7 +80,7 @@ GW_CHS_SW_TEST_ELF  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).elf) $(patsubst 
 GW_CHS_SW_TEST = $(GW_CHS_SW_TEST_DUMP)
 
 $(GW_CHS_SW_TEST_DUMP): $(GW_CHS_SW_TEST_ELF)
-$(GW_CHS_SW_TEST_ELF): $(GW_GEN_SW_DIR)/gw_addrmap_64b.h $(GW_GEN_SW_DIR)/gw_raw_addrmap_64b.h $(SN_RUNTIME_HAL_HDRS)
+$(GW_CHS_SW_TEST_ELF): $(GW_GEN_SW_DIR)/gw_addrmap_64b.h $(GW_GEN_SW_DIR)/gw_raw_addrmap_64b.h $(GW_GEN_SW_DIR)/idma_compute.h $(SN_RUNTIME_HAL_HDRS)
 
 .PHONY: chs-sw-tests chs-sw-tests-clean
 
