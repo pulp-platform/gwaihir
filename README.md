@@ -101,6 +101,14 @@ Tests can be executed by setting the required command-line variables for Cheshir
 
 Use the `PRELMODE=3` flag to enable fast preload of the Snitch binary and speed up simulation.
 
+`PRELMODE=5` runs the cluster job headless: the testbench preloads the firmware, sets the entry point, wakes the clusters and waits for the accelerator return code, with no Cheshire host in the loop. It is the testbench-driven equivalent of `simple_offload`, so it needs only `SN_BINARY`:
+
+```bash
+make vsim-run-batch SN_BINARY=sw/snitch/tests/build/simple.elf PRELMODE=5
+```
+
+Removing the host boot and the on-target verification from the simulated path makes this substantially faster than `PRELMODE=3` for cluster-only tests. The testbench polls the same per-core return codes `simple_offload` does, and dumps L2 at the end, so `VERIFY_PY` works the same way.
+
 #### QuestaSim
 
 To compile the RTL:

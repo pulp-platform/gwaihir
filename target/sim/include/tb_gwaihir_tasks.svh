@@ -196,6 +196,59 @@ task automatic fastmode_elf_preload(input string binary, output cheshire_pkg::do
   $display("[FAST_PRELOAD] Preload complete");
 endtask
 
+// Headless offload (tb-driven simple_offload): preload firmware + optional job, set scratch, wake, poll return codes -- no host.
+task automatic headless_offload(output logic [31:0] exit_code);
+  import floo_gwaihir_noc_pkg::*;
+  // HW counts + L2 aperture come from the SoC cfg/addrmap, never hardcoded.
+  localparam int     NrClusters = NumClusters;
+  localparam int     NrCores    = snitch_cluster_wrapper_pkg::NrCores;  // 8 compute + 1 DM
+  localparam longint L2Base     = Sam[L2Spm0SamIdx].start_addr;
+  localparam longint RcBase     = Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr - 'h1000; // return_code page = top 4K
+  localparam int     PollCycles = 1000;                           // poll every PollCycles clock cycles
+  localparam int     PollIters  = 20000;                          // -> 20 M cycles before giving up
+  int    i, cl, core, iter, ndone, nfail, expect_done;
+  logic [31:0] rc;
+  realtime t_wake;
+
+  // 1) zero the return-code page
+  for (i = 0; i < NrClusters*NrCores; i++)
+    fastmode_write_word(RcBase + i*4, 32'h0);
+
+  // 2) per-cluster scratch: [1]=firmware entry (L2 base), [0]=&return_code_array[cl][0]
+  for (cl = 0; cl < NrClusters; cl++) begin
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1),     L2Base[31:0], 1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1) + 4, 32'h0,         1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0),     (RcBase + cl*NrCores*4), 1'b0);
+    fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0) + 4, 32'h0,         1'b0);
+  end
+
+  // 3) wake cluster 0 (snRuntime fans out to the others through the world barrier); start the timer
+  expect_done = NrClusters*NrCores;
+  t_wake = $realtime;
+  fix.vip.jtag_write_reg32(`CLUSTER_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR(0), ((32'h1 << NrCores) - 1), 1'b0);
+  $display("[OFFLOAD] woke cluster 0, polling %0d return-code slots ...", expect_done);
+
+  // 4) poll return codes (bit0=done, bits[31:1]=rc) until all done or timeout
+  for (iter = 0; iter < PollIters; iter++) begin
+    repeat (PollCycles) @(posedge fix.clk);
+    ndone = 0; nfail = 0;
+    for (cl = 0; cl < NrClusters; cl++)
+      for (core = 0; core < NrCores; core++) begin
+        fastmode_read_word(RcBase + (cl*NrCores + core)*4, rc);
+        if (rc[0]) begin ndone++; if (rc[31:1] != 0) nfail++; end
+      end
+    if (ndone == expect_done) begin
+      $display("[OFFLOAD] COMPLETE done=%0d/%0d fail=%0d  wake->done=%.0f ns", ndone, expect_done, nfail, $realtime - t_wake);
+      exit_code = (nfail != 0);
+      fastmode_read();
+      return;
+    end
+  end
+  $display("[OFFLOAD] TIMEOUT done=%0d/%0d", ndone, expect_done);
+  exit_code = 32'hFF;
+  fastmode_read();
+endtask
+
 // Suitable for loading ELFs with 32b-aligned sections
 task automatic jtag_32b_elf_preload(input string binary, output bit [63:0] entry);
   longint sec_addr, sec_len;
