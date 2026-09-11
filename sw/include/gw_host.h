@@ -17,3 +17,10 @@ static int tile_enable(volatile gw_tile_regs_t *cfg) {
   cfg->rst.f.n = 0x1;
   return (cfg->clk.f.en == 0x1) && (cfg->rst.f.n == 0x1);
 }
+
+static int ucie_tile_enable(volatile gw_ucie_tile_regs_t *cfg) {
+  cfg->clk.f.en = 0x1;
+  cfg->rst_axi.f.n = 0x1;
+  cfg->rst_apb.f.n = 0x1;
+  return (cfg->clk.f.en == 0x1) && (cfg->rst_axi.f.n == 0x1) && (cfg->rst_apb.f.n == 0x1);
+}

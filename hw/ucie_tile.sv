@@ -66,7 +66,7 @@ module ucie_tile
   ucie_slink_reg_pkg::slink_reg__out_t slink_reg2hw;
 
   // Clock/rst configuration registers.
-  gw_tile_regs_pkg::gw_tile_regs__out_t hwif_out;
+  gw_ucie_tile_regs_pkg::gw_ucie_tile_regs__out_t hwif_out;
 
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
@@ -412,20 +412,21 @@ module ucie_tile
   );
 
   // Clk/Rst Enable Registers.
-  gw_tile_regs i_gw_tile_regs (
-    .clk          (clk_i),
-    .arst_n       (rst_ni),
-    .s_apb_paddr  (cfg_apb_req[ApbTile].paddr[gw_tile_regs_pkg::GW_TILE_REGS_MIN_ADDR_WIDTH-1:0]),
+  gw_ucie_tile_regs i_gw_ucie_tile_regs (
+    .clk(clk_i),
+    .arst_n(rst_ni),
+    .s_apb_paddr  (cfg_apb_req[ApbTile].paddr[
+      gw_ucie_tile_regs_pkg::GW_UCIE_TILE_REGS_MIN_ADDR_WIDTH-1:0]),
     .s_apb_penable(cfg_apb_req[ApbTile].penable),
-    .s_apb_psel   (cfg_apb_req[ApbTile].psel),
-    .s_apb_pwrite (cfg_apb_req[ApbTile].pwrite),
-    .s_apb_pprot  (cfg_apb_req[ApbTile].pprot),
-    .s_apb_pwdata (cfg_apb_req[ApbTile].pwdata),
-    .s_apb_pstrb  (cfg_apb_req[ApbTile].pstrb),
-    .s_apb_prdata (cfg_apb_rsp[ApbTile].prdata),
-    .s_apb_pready (cfg_apb_rsp[ApbTile].pready),
+    .s_apb_psel(cfg_apb_req[ApbTile].psel),
+    .s_apb_pwrite(cfg_apb_req[ApbTile].pwrite),
+    .s_apb_pprot(cfg_apb_req[ApbTile].pprot),
+    .s_apb_pwdata(cfg_apb_req[ApbTile].pwdata),
+    .s_apb_pstrb(cfg_apb_req[ApbTile].pstrb),
+    .s_apb_prdata(cfg_apb_rsp[ApbTile].prdata),
+    .s_apb_pready(cfg_apb_rsp[ApbTile].pready),
     .s_apb_pslverr(cfg_apb_rsp[ApbTile].pslverr),
-    .hwif_out     (hwif_out)
+    .hwif_out(hwif_out)
   );
 
   // SLink configuration registers.
@@ -463,7 +464,7 @@ module ucie_tile
   assign tile_rst_n = (clk_rst_bypass_i) ? rst_ni : tile_rst_ni;
 `else
   tc_clk_mux2 i_tc_reset_mux (
-    .clk0_i   (hwif_out.rst.n.value),
+    .clk0_i   (hwif_out.rst_axi.n.value),
     .clk1_i   (rst_ni),
     .clk_sel_i(clk_rst_bypass_i),
     .clk_o    (tile_rst_n)
