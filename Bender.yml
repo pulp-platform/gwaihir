@@ -60,6 +60,8 @@ dependencies:
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: dca
+  ucie:
+    path: .deps/ucie
 
 workspace:
   package_links:
@@ -82,10 +84,12 @@ sources:
       # Level 0.0
       - .generated/hw/floo_gwaihir_noc_pkg.sv
       - .generated/hw/gw_tile_regs_pkg.sv
+      - .generated/hw/gw_ucie_tile_regs_pkg.sv
       - .generated/hw/gw_addrmap_pkg.sv
       - .generated/hw/ucie_slink_reg_pkg.sv
       # Level 0.1
       - .generated/hw/gw_tile_regs.sv
+      - .generated/hw/gw_ucie_tile_regs.sv
       - .generated/hw/ucie_slink_reg.sv
 
   # Level 1
@@ -99,7 +103,13 @@ sources:
   - hw/mem_tile_small.sv
   - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
-  - hw/ucie_tile.sv
+
+  - target: not(ucie)
+    files:
+      - hw/ucie_tile.sv
+  - target: ucie
+    files:
+      - .deps/ucie/hw/ucie_tile.sv
 
   # Level 3
   - hw/cluster_tile.sv

@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-.sw-tests:
+.sw-tests-vsim:
   stage: run
   variables:
     CHS_BUILD_DIR: sw/cheshire/tests
@@ -16,8 +16,6 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/sanity_fail.spm.elf, NZ_EXIT_CODE: 7}
       - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.spm.elf, USTR: "Hello World!" }
       - { CHS_BINARY: $CHS_BUILD_DIR/access_l2.spm.elf, PRELMODE: 1}
-      - { CHS_BINARY: $CHS_BUILD_DIR/ucie_loopback.spm.elf, PRELMODE: 1}
-      - { CHS_BINARY: $CHS_BUILD_DIR/ucie_raw_mode_loopback.spm.elf, PRELMODE: 1}
       - { CHS_BINARY: $CHS_BUILD_DIR/l2_dma.spm.elf, PRELMODE: 3}
       - { CHS_BINARY: $CHS_BUILD_DIR/access_clk_gating_rst_ctrl_reg.spm.elf, PRELMODE: 1}
       - { CHS_BINARY: $CHS_BUILD_DIR/cva6_dcache_spm_1.spm.elf, PRELMODE: 0 }
@@ -28,6 +26,7 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/clic_multiple.spm.elf, PRELMODE: 0 }
       - { CHS_BINARY: $CHS_BUILD_DIR/clic_smode.spm.elf, PRELMODE: 0 }
       - { CHS_BINARY: $CHS_BUILD_DIR/clic_vsmode.spm.elf, PRELMODE: 0 }
+      # Cluster Offload
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 0 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 1 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 3 }
@@ -38,7 +37,6 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/multi_mcast.elf }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/row_col_mcast.elf }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/reduction_benchmark.elf, VERIFY_PY: experiments/reduction/verify.py, PRELMODE: 3 }
-      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/ucie_loopback.elf, PRELMODE: 3 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/mxcore.elf, VERIFY_PY: experiments/mxcore/verify.py, PRELMODE: 3 }
       # - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/gemm_2d/build/gemm_2d.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/gemm/scripts/verify.py, PRELMODE: 3 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/fused_concat_linear/build/fused_concat_linear.elf, VERIFY_PY: $SN_ROOT/sw/kernels/dnn/fused_concat_linear/scripts/verify.py, PRELMODE: 3 }
@@ -46,3 +44,48 @@
       # - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/mha/build/mha.elf, VERIFY_PY: $SN_ROOT/sw/kernels/dnn/mha/scripts/verify.py, PRELMODE: 3 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/gemm/build/gemm.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/gemm/scripts/verify.py, PRELMODE: 3 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/axpy/build/axpy.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/axpy/scripts/verify.py, PRELMODE: 3 }
+
+.sw-tests-vcs:
+  stage: run
+  variables:
+    CHS_BUILD_DIR: sw/cheshire/tests
+    SN_BUILD_DIR: sw/snitch/tests/build
+  parallel:
+    matrix:
+      - { CHS_BINARY: $CHS_BUILD_DIR/sanity.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/sanity.spm.elf, PRELMODE: 1 }
+      # - { CHS_BINARY: $CHS_BUILD_DIR/sanity.spm.elf, PRELMODE: 2 } # UART preloading takes over 1h, maybe enable later again
+      - { CHS_BINARY: $CHS_BUILD_DIR/sanity_fail.spm.elf, NZ_EXIT_CODE: 7}
+      - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.spm.elf, USTR: "Hello World!" }
+      - { CHS_BINARY: $CHS_BUILD_DIR/access_l2.spm.elf, PRELMODE: 1}
+      - { CHS_BINARY: $CHS_BUILD_DIR/l2_dma.spm.elf, PRELMODE: 3}
+      - { CHS_BINARY: $CHS_BUILD_DIR/access_clk_gating_rst_ctrl_reg.spm.elf, PRELMODE: 1}
+      - { CHS_BINARY: $CHS_BUILD_DIR/cva6_dcache_spm_1.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/cva6_dcache_spm_2.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/cva6_icache_spm_1.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/cva6_icache_spm_2.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/clic_basic.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/clic_multiple.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/clic_smode.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/clic_vsmode.spm.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/ucie_loopback.spm.elf, PRELMODE: 1}
+      - { CHS_BINARY: $CHS_BUILD_DIR/ucie_raw_mode_loopback.spm.elf, PRELMODE: 1}
+      # Cluster Offload
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 0 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 1 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 3 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/non_null_exitcode.elf, NZ_EXIT_CODE: 448 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/multicluster_atomics.elf }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/mcast_barrier.elf }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/multicast_benchmark.elf }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/multi_mcast.elf }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/row_col_mcast.elf }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/reduction_benchmark.elf, VERIFY_PY: experiments/reduction/verify.py, PRELMODE: 3 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/mxcore.elf, VERIFY_PY: experiments/mxcore/verify.py, PRELMODE: 3 }
+      # - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/gemm_2d/build/gemm_2d.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/gemm/scripts/verify.py, PRELMODE: 3 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/fused_concat_linear/build/fused_concat_linear.elf, VERIFY_PY: $SN_ROOT/sw/kernels/dnn/fused_concat_linear/scripts/verify.py, PRELMODE: 3 }
+      # TODO: new toolchain does not support -mno-fdiv flag, re-enable once supported or once shared FDIV/FSQRT unit is added to the cluster
+      # - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/mha/build/mha.elf, VERIFY_PY: $SN_ROOT/sw/kernels/dnn/mha/scripts/verify.py, PRELMODE: 3 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/gemm/build/gemm.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/gemm/scripts/verify.py, PRELMODE: 3 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: sw/snitch/apps/axpy/build/axpy.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/axpy/scripts/verify.py, PRELMODE: 3 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/ucie_loopback.elf, PRELMODE: 3 }

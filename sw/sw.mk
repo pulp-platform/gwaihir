@@ -20,6 +20,7 @@ GW_INCDIR = $(GW_SW_DIR)/include
 
 -include $(PD_DIR)/sw/sw.mk
 -include $(PCIE_DIR)/sw/sw.mk
+-include $(UCIE_DIR)/sw/sw.mk
 
 ####################
 ## Snitch Cluster ##
@@ -71,7 +72,7 @@ CHS_SW_INCLUDES += -I$(GW_INCDIR)
 CHS_SW_INCLUDES += -I$(SN_RUNTIME_SRCDIR)
 CHS_SW_INCLUDES += -I$(GW_GEN_SW_DIR)
 
-# Collect tests, which should be build for all modes, and their .dump targets
+# Collect tests, which should be built for all modes, and their .dump targets
 GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_CHS_SW_DIR)/tests/*.c)
 GW_CHS_SW_TEST_SRC_S += $(wildcard $(GW_CHS_SW_DIR)/tests/*.S)
 GW_CHS_SW_TEST_DUMP  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).dump) $(patsubst %.$(GW_LINK_MODE).S,%.$(GW_LINK_MODE).dump,$(GW_CHS_SW_TEST_SRC_S))

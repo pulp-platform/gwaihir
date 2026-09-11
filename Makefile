@@ -66,7 +66,7 @@ DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
-UCIE_SLINK_NUM_LANES ?= 256
+UCIE_SLINK_NUM_LANES ?= 512
 UCIE_SLINK_EN_DDR    ?= 0
 
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
@@ -93,6 +93,10 @@ PEAKRDL_INCLUDES += -I $(GW_GEN_HW_DIR)
 
 $(GW_GEN_HW_DIR)/gw_tile_regs.sv: $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
 $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
+	$(PEAKRDL) regblock $< -o $(GW_GEN_HW_DIR) --cpuif apb4-flat --default-reset arst_n
+
+$(GW_GEN_HW_DIR)/gw_ucie_tile_regs.sv: $(GW_GEN_HW_DIR)/gw_ucie_tile_regs_pkg.sv
+$(GW_GEN_HW_DIR)/gw_ucie_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_ucie_tile_regs.rdl
 	$(PEAKRDL) regblock $< -o $(GW_GEN_HW_DIR) --cpuif apb4-flat --default-reset arst_n
 
 # UCIe SLink registers
@@ -129,6 +133,8 @@ $(GW_GEN_SW_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL) | $(GW_GE
 
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_ucie_tile_regs.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_ucie_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_64b.svh
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv
@@ -197,12 +203,16 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 8e5950988684324e37d5b86e2001352d5fff7922
+PD_COMMIT ?= 472439e8274cf279c38d56fc1c4412555a358cb2
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
 PCIE_COMMIT ?= 37c8c336de8d9bb5c41af0bd5e8e1f135eda747e
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
+
+UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
+UCIE_COMMIT ?= 20896ee2a183eccfe531ce8a5cbe891147af8032
+UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
 LPDDR_COMMIT ?= 6b451f7aab16a080b503863a26af98e967b0ecca
@@ -210,7 +220,7 @@ LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -223,6 +233,10 @@ $(PCIE_DIR):
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
 	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
+$(UCIE_DIR):
+	git clone $(UCIE_REMOTE) $(UCIE_DIR)
+	cd $(UCIE_DIR) && git checkout $(UCIE_COMMIT)
+	ln -sf $(UCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
@@ -232,10 +246,11 @@ update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^LPDDR_COMMIT ?= .*/LPDDR_COMMIT ?= $(shell git -C $(LPDDR_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^UCIE_COMMIT ?= .*/UCIE_COMMIT ?= $(shell git -C $(UCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
 	rm -f $(PCIE_SW_TESTS_VENDORED)
-	rm -rf $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR)
+	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR)
 
 -include $(PD_DIR)/pd.mk
 -include $(LPDDR_DIR)/lpddr.mk
