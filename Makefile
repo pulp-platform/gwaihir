@@ -95,6 +95,10 @@ $(GW_GEN_HW_DIR)/gw_tile_regs.sv: $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
 $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_tile_regs.rdl
 	$(PEAKRDL) regblock $< -o $(GW_GEN_HW_DIR) --cpuif apb4-flat --default-reset arst_n
 
+$(GW_GEN_HW_DIR)/gw_ucie_tile_regs.sv: $(GW_GEN_HW_DIR)/gw_ucie_tile_regs_pkg.sv
+$(GW_GEN_HW_DIR)/gw_ucie_tile_regs_pkg.sv: $(GW_ROOT)/cfg/rdl/gw_ucie_tile_regs.rdl
+	$(PEAKRDL) regblock $< -o $(GW_GEN_HW_DIR) --cpuif apb4-flat --default-reset arst_n
+
 # UCIe SLink registers
 $(GW_GEN_HW_DIR)/ucie_slink_reg.sv: $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv
 $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL)
@@ -129,6 +133,8 @@ $(GW_GEN_SW_DIR)/gw_raw_addrmap_32b.h: $(GW_RDL_SN_ADDR) $(GW_RDL_ALL) | $(GW_GE
 
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_tile_regs_pkg.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_ucie_tile_regs.sv
+GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_ucie_tile_regs_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_64b.svh
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/gw_addrmap_pkg.sv
 GW_RDL_HW_ALL += $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv
