@@ -69,7 +69,7 @@ int main() {
   volatile gw_ucie_tile_regs_t *ucie_cfg0 = (volatile gw_ucie_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie0_tile_cfg;
   volatile gw_ucie_tile_regs_t *ucie_cfg1 = (volatile gw_ucie_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie1_tile_cfg;
 
-  if ( (tile_enable(ucie_cfg0) && (tile_enable(ucie_cfg1))) == 0) return 1;
+  if ( (ucie_tile_enable(ucie_cfg0) && (ucie_tile_enable(ucie_cfg1))) == 0) return 1;
 
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     tx_sample[i] = PATTERN_SEED + i;
