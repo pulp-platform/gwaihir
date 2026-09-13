@@ -15,7 +15,7 @@ dependencies:
   # Alphabetically ordered
   apb:
     git: https://github.com/pulp-platform/apb.git
-    rev: common-cells-v2
+    rev: yt/apb_cut
   apb_fll_if: 0.3.0
   axi:
     git: https://github.com/colluca/axi.git
