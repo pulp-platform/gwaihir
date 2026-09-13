@@ -109,6 +109,8 @@ module mem_tile
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t                     chimney_narrow_out_rsp;
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumDemuxPorts-1:0] axi_demux_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumDemuxPorts-1:0] axi_demux_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t                     axi_demux_out_req_tile_cfg_cut;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t                     axi_demux_out_rsp_tile_cfg_cut;
 
   gw_tile_regs_pkg::gw_tile_regs__out_t hwif_out;
 
@@ -300,6 +302,24 @@ module mem_tile
     .mst_resps_i    (axi_demux_out_rsp)
   );
 
+  // Cut demux master port for tile_cfg
+  axi_cut #(
+    .aw_chan_t (floo_gwaihir_noc_pkg::axi_narrow_out_aw_chan_t),
+    .w_chan_t  (floo_gwaihir_noc_pkg::axi_narrow_out_w_chan_t),
+    .b_chan_t  (floo_gwaihir_noc_pkg::axi_narrow_out_b_chan_t),
+    .ar_chan_t (floo_gwaihir_noc_pkg::axi_narrow_out_ar_chan_t),
+    .r_chan_t  (floo_gwaihir_noc_pkg::axi_narrow_out_r_chan_t),
+    .axi_req_t (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
+    .axi_resp_t(floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t)
+  ) i_axi_cut_tile_cfg (
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
+    .slv_req_i (axi_demux_out_req[TileCfg]),
+    .slv_resp_o(axi_demux_out_rsp[TileCfg]),
+    .mst_req_o (axi_demux_out_req_tile_cfg_cut),
+    .mst_resp_i(axi_demux_out_rsp_tile_cfg_cut)
+  );
+
   axi_to_axi_lite #(
     .AxiAddrWidth   (AxiCfgN.AddrWidth),
     .AxiDataWidth   (AxiCfgN.DataWidth),
@@ -314,8 +334,8 @@ module mem_tile
   ) i_axi_to_axi_lite_tile_cfg (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .slv_req_i (axi_demux_out_req[TileCfg]),
-    .slv_resp_o(axi_demux_out_rsp[TileCfg]),
+    .slv_req_i (axi_demux_out_req_tile_cfg_cut),
+    .slv_resp_o(axi_demux_out_rsp_tile_cfg_cut),
     .mst_req_o (tile_cfg_axi_lite_req),
     .mst_resp_i(tile_cfg_axi_lite_rsp)
   );
