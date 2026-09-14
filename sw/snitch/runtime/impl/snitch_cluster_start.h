@@ -17,7 +17,6 @@
 #define SNRT_CRT0_EXIT
 #define SNRT_CRT0_ALTERNATE_EXIT
 
-#ifdef GW_HTILE_BASE_ADDR
 // The H tile runs a job alone. No cluster 0 clears the .bss for it, and its
 // world communicator holds no other cluster, so no global barrier waits for one.
 #define SNRT_CRT0_CALLBACK0
@@ -43,7 +42,6 @@ static inline void snrt_crt0_callback2() {
         snrt_comm_world_info.is_participant = 0;
     }
 }
-#endif
 
 
 static inline volatile uint32_t* snrt_exit_code_destination() {
