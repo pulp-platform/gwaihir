@@ -724,7 +724,7 @@ module mem_tile
     assign dma_sram_macro_sel[bank] = dma_mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
     // Register the macro selection to select the correct macro for the next cycle
     `FFL(dma_sram_macro_sel_q[bank], dma_sram_macro_sel[bank],
-         dma_sram_req & dma_sram_gnt & ~dma_sram_we, '0);
+         dma_sram_req & dma_sram_gnt & ~dma_sram_we, '0, tile_clk, tile_rst_n);
     // Assign the data
     assign dma_sram_wdata[bank] = dma_mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign dma_sram_be[bank] = dma_mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
@@ -989,7 +989,8 @@ module mem_tile
     assign sram_addr[bank]      = mem_addr[SramAddrWidthOffset+:SramAddrWidth];
     assign sram_macro_sel[bank] = mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
     // Register the macro selection to select the correct macro for the next cycle
-    `FFL(sram_macro_sel_q[bank], sram_macro_sel[bank], sram_req & sram_gnt & ~sram_we, '0);
+    `FFL(sram_macro_sel_q[bank], sram_macro_sel[bank], sram_req & sram_gnt & ~sram_we, '0, tile_clk,
+         tile_rst_n);
     // Assign the data
     assign sram_wdata[bank] = mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign sram_be[bank] = mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
