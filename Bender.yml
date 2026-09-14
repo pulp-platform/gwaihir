@@ -40,6 +40,9 @@ dependencies:
     path: ./pd
   gwaihir_lpddr:
     path: .deps/lpddr
+  hci:
+    git: https://github.com/pulp-platform/hci.git
+    rev: lkesting/surya
   iDMA: 0.6.5
   mxcore:
     git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
@@ -60,6 +63,9 @@ dependencies:
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: dca
+  surya-mx:
+    git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
+    rev: main
 
 workspace:
   package_links:
@@ -103,6 +109,7 @@ sources:
 
   # Level 3
   - hw/cluster_tile.sv
+  - hw/h_tile.sv
   - hw/gwaihir_top.sv
 
   - target: any(simulation, test)

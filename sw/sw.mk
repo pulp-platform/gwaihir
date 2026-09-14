@@ -39,6 +39,9 @@ SN_RVTESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/riscv-tests/build
 
 SN_TESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/tests/build
 SN_TESTS_INCDIRS  = $(SN_ROOT)/sw/kernels/blas
+# The Surya HAL and the generated workload of the H tile test.
+SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
+SN_TESTS_INCDIRS += $(GW_SNITCH_SW_DIR)/tests/data/surya_mx
 
 SN_BUILD_APPS = OFF
 
