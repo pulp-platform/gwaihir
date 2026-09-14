@@ -579,11 +579,10 @@ module mem_tile
 
   // Number of outstanding transactions should be larger than round-trip
   // latency from converter to SRAM
-  // TODO: Not sure if this is enough!!!
-  localparam int unsigned DMAObiLatency = 4;
+  localparam int unsigned DMAObiLatency = 5;
 
   dma_sbr_obi_req_t dma_obi_req, dma_mem_obi_req_cut;
-  dma_sbr_obi_rsp_t dma_obi_rsp, dma_mem_obi_rsp_cut;
+  dma_sbr_obi_rsp_t dma_obi_rsp, dma_mem_obi_rsp_cut, dma_mem_obi_rsp_shim;
 
 `ifndef SYNTHESIS
   // AXI Monitor dumper to improvce debiugging
@@ -690,7 +689,7 @@ module mem_tile
     .clk_i    (tile_clk),
     .rst_ni   (tile_rst_n),
     .obi_req_i(dma_mem_obi_req_cut),
-    .obi_rsp_o(dma_mem_obi_rsp_cut),
+    .obi_rsp_o(dma_mem_obi_rsp_shim),
     .req_o    (dma_mem_req),
     .we_o     (dma_mem_we),
     .addr_o   (dma_mem_addr),
@@ -700,13 +699,28 @@ module mem_tile
     .rdata_i  (dma_mem_rdata)
   );
 
+  // The request pipeline delays the SRAM read data by one cycle,
+  // so delay the shim's read response valid and ID accordingly
+  logic                            dma_mem_obi_rvalid_q;
+  logic [DMASbrObiCfg.IdWidth-1:0] dma_mem_obi_rid_q;
+
+  `FF(dma_mem_obi_rvalid_q, dma_mem_obi_rsp_shim.rvalid, 1'b0, tile_clk, tile_rst_n)
+  `FF(dma_mem_obi_rid_q, dma_mem_obi_rsp_shim.r.rid, '0, tile_clk, tile_rst_n)
+
+  always_comb begin : proc_dma_mem_obi_rsp_delay
+    dma_mem_obi_rsp_cut        = dma_mem_obi_rsp_shim;
+    dma_mem_obi_rsp_cut.rvalid = dma_mem_obi_rvalid_q;
+    dma_mem_obi_rsp_cut.r.rid  = dma_mem_obi_rid_q;
+  end
+
   logic [NumBankRows-1:0] payload_dma_gnt;
 
   // Read data (direct output from SRAM memory macro)
   logic [NumBankRows-1:0][NumBanksPerWord-1:0][SramDataWidth-1:0] arb_sram_rdata_split;
 
   logic dma_sram_req, dma_sram_gnt, dma_sram_we;
-  logic [NumBanksPerWord-1:0][SramMacroSelWidth-1:0] dma_sram_macro_sel, dma_sram_macro_sel_q;
+  logic [NumBanksPerWord-1:0][SramMacroSelWidth-1:0]
+      dma_sram_macro_sel, dma_sram_macro_sel_q, dma_sram_macro_sel_q2;
   logic [  NumBanksPerWord-1:0][SramAddrWidth-1:0] dma_sram_addr;
   logic [AxiCfgW.DataWidth-1:0]                    dma_sram_rdata;
 
@@ -725,11 +739,12 @@ module mem_tile
     // Register the macro selection to select the correct macro for the next cycle
     `FFL(dma_sram_macro_sel_q[bank], dma_sram_macro_sel[bank],
          dma_sram_req & dma_sram_gnt & ~dma_sram_we, '0, tile_clk, tile_rst_n);
+    `FF(dma_sram_macro_sel_q2[bank], dma_sram_macro_sel_q[bank], '0, tile_clk, tile_rst_n);
     // Assign the data
     assign dma_sram_wdata[bank] = dma_mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign dma_sram_be[bank] = dma_mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
     assign dma_sram_rdata[bank*SramDataWidth+:SramDataWidth] =
-        arb_sram_rdata_split[dma_sram_macro_sel_q[bank]][bank];
+        arb_sram_rdata_split[dma_sram_macro_sel_q2[bank]][bank];
   end
 
   assign dma_sram_gnt = |payload_dma_gnt;
@@ -797,7 +812,7 @@ module mem_tile
 
   // Number of outstanding transactions should be larger than round-trip
   // latency from converter to SRAM
-  localparam int unsigned ObiLatency = 4;
+  localparam int unsigned ObiLatency = 5;
 
   logic [AxiCfgMemJoin.OutIdWidth-1:0] axi_in_aw_id, axi_in_ar_id;
   logic [AxiCfgMemJoin.UserWidth-1:0] axi_in_aw_user, axi_in_ar_user;
@@ -811,7 +826,7 @@ module mem_tile
   mgr_obi_req_t obi_req;
   mgr_obi_rsp_t obi_rsp;
   sbr_obi_req_t mem_obi_req, mem_obi_req_cut;
-  sbr_obi_rsp_t mem_obi_rsp, mem_obi_rsp_cut;
+  sbr_obi_rsp_t mem_obi_rsp, mem_obi_rsp_cut, mem_obi_rsp_shim;
 
   if (AxiUserAtop) begin : gen_user_atop
     assign obi_in_write_aid = axi_in_aw_user[AxiUserAtopMsb-1:AxiUserAtopLsb];
@@ -959,7 +974,7 @@ module mem_tile
     .clk_i    (tile_clk),
     .rst_ni   (tile_rst_n),
     .obi_req_i(mem_obi_req_cut),
-    .obi_rsp_o(mem_obi_rsp_cut),
+    .obi_rsp_o(mem_obi_rsp_shim),
     .req_o    (mem_req),
     .we_o     (mem_we),
     .addr_o   (mem_addr),
@@ -969,10 +984,25 @@ module mem_tile
     .rdata_i  (mem_rdata)
   );
 
+  // The request pipeline delays the SRAM read data by one cycle,
+  // so delay the shim's read response valid and ID accordingly
+  logic                         mem_obi_rvalid_q;
+  logic [SbrObiCfg.IdWidth-1:0] mem_obi_rid_q;
+
+  `FF(mem_obi_rvalid_q, mem_obi_rsp_shim.rvalid, 1'b0, tile_clk, tile_rst_n)
+  `FF(mem_obi_rid_q, mem_obi_rsp_shim.r.rid, '0, tile_clk, tile_rst_n)
+
+  always_comb begin : proc_mem_obi_rsp_delay
+    mem_obi_rsp_cut        = mem_obi_rsp_shim;
+    mem_obi_rsp_cut.rvalid = mem_obi_rvalid_q;
+    mem_obi_rsp_cut.r.rid  = mem_obi_rid_q;
+  end
+
   logic [NumBankRows-1:0] payload_ext_gnt;
 
   logic sram_req, sram_gnt, sram_we;
-  logic [NumBanksPerWord-1:0][SramMacroSelWidth-1:0] sram_macro_sel, sram_macro_sel_q;
+  logic [NumBanksPerWord-1:0][SramMacroSelWidth-1:0]
+      sram_macro_sel, sram_macro_sel_q, sram_macro_sel_q2;
   logic [  NumBanksPerWord-1:0][SramAddrWidth-1:0] sram_addr;
   logic [AxiCfgW.DataWidth-1:0]                    sram_rdata;
 
@@ -991,11 +1021,12 @@ module mem_tile
     // Register the macro selection to select the correct macro for the next cycle
     `FFL(sram_macro_sel_q[bank], sram_macro_sel[bank], sram_req & sram_gnt & ~sram_we, '0, tile_clk,
          tile_rst_n);
+    `FF(sram_macro_sel_q2[bank], sram_macro_sel_q[bank], '0, tile_clk, tile_rst_n);
     // Assign the data
     assign sram_wdata[bank] = mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign sram_be[bank] = mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
     assign sram_rdata[bank*SramDataWidth+:SramDataWidth] =
-        arb_sram_rdata_split[sram_macro_sel_q[bank]][bank];
+        arb_sram_rdata_split[sram_macro_sel_q2[bank]][bank];
   end
 
   assign sram_gnt = |payload_ext_gnt;
@@ -1007,11 +1038,12 @@ module mem_tile
   logic [NumBankRows-1:0] payload_ext_req, payload_dma_req;
 
   // Arbitor result signals
-  logic [NumBankRows-1:0]                                           arb_sram_req;
-  logic [NumBankRows-1:0][  SramAddrWidth-1:0]                      arb_sram_addr;
-  logic [NumBankRows-1:0]                                           arb_sram_we;
-  logic [NumBankRows-1:0][NumBanksPerWord-1:0][  SramDataWidth-1:0] arb_sram_wdata;
-  logic [NumBankRows-1:0][NumBanksPerWord-1:0][SramDataWidth/8-1:0] arb_sram_be;
+  logic [NumBankRows-1:0] arb_sram_req_d, arb_sram_req_q;
+  logic [NumBankRows-1:0][SramAddrWidth-1:0] arb_sram_addr_d, arb_sram_addr_q;
+  logic [NumBankRows-1:0] arb_sram_we_d, arb_sram_we_q;
+  logic [NumBankRows-1:0][NumBanksPerWord-1:0][SramDataWidth-1:0]
+      arb_sram_wdata_d, arb_sram_wdata_q;
+  logic [NumBankRows-1:0][NumBanksPerWord-1:0][SramDataWidth/8-1:0] arb_sram_be_d, arb_sram_be_q;
 
   typedef struct packed {
     logic [SramAddrWidth-1:0]                        addr;
@@ -1056,11 +1088,20 @@ module mem_tile
       .data_i({payload_ext[row], payload_dma[row]}),
       .req_i({payload_ext_req[row], payload_dma_req[row]}),
       .gnt_o({payload_ext_gnt[row], payload_dma_gnt[row]}),
-      .data_o({arb_sram_addr[row], arb_sram_we[row], arb_sram_wdata[row], arb_sram_be[row]}),
+      .data_o({
+        arb_sram_addr_d[row], arb_sram_we_d[row], arb_sram_wdata_d[row], arb_sram_be_d[row]
+      }),
       .idx_o(  /* Unused */),
-      .req_o(arb_sram_req[row]),
-      .gnt_i(arb_sram_req[row])  // Acknowledge it directly
+      .req_o(arb_sram_req_d[row]),
+      .gnt_i(arb_sram_req_d[row])  // Acknowledge it directly
     );
+
+    `FF(arb_sram_req_q[row], arb_sram_req_d[row], '0, tile_clk, tile_rst_n);
+    `FFL(arb_sram_we_q[row], arb_sram_we_d[row], arb_sram_req_d[row], '0, tile_clk, tile_rst_n)
+    `FFL(arb_sram_addr_q[row], arb_sram_addr_d[row], arb_sram_req_d[row], '0, tile_clk, tile_rst_n)
+    `FFL(arb_sram_wdata_q[row], arb_sram_wdata_d[row], arb_sram_req_d[row], '0, tile_clk,
+         tile_rst_n)
+    `FFL(arb_sram_be_q[row], arb_sram_be_d[row], arb_sram_req_d[row], '0, tile_clk, tile_rst_n)
 
 `ifndef SYNTHESIS
 `ifndef VERILATOR
@@ -1088,11 +1129,11 @@ module mem_tile
       ) i_mem (
         .clk_i  (tile_clk),
         .rst_ni (tile_rst_n),
-        .req_i  (arb_sram_req[row]),
-        .we_i   (arb_sram_we[row]),
-        .addr_i (arb_sram_addr[row]),
-        .wdata_i(arb_sram_wdata[row][bank]),
-        .be_i   (arb_sram_be[row][bank]),
+        .req_i  (arb_sram_req_q[row]),
+        .we_i   (arb_sram_we_q[row]),
+        .addr_i (arb_sram_addr_q[row]),
+        .wdata_i(arb_sram_wdata_q[row][bank]),
+        .be_i   (arb_sram_be_q[row][bank]),
         .rdata_o(arb_sram_rdata_split[row][bank])
       );
     end
