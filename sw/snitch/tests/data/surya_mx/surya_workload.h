@@ -10,6 +10,7 @@
 #include "task0_matrix_c.h"
 #include "task0_mx_scale_a.h"
 #include "task0_mx_scale_b.h"
+#include "task0_mx_out_scale.h"
 
 #define NUM_TASKS 1
 #define SURYA_HW_ARRAY_N 32
@@ -33,13 +34,13 @@
 #define TASK0_LN_EPS 0
 #define TASK0_MX_SCALE_A_PTR task0_mx_scale_a
 #define TASK0_MX_SCALE_B_PTR task0_mx_scale_b
-#define TASK0_MX_OUT_INT8 0
+#define TASK0_MX_OUT_INT8 1
 #define TASK0_OUT_DIM 0
-#define TASK0_MX_OUT_SCALE_PTR 0
-#define TASK0_MX_OUT_SCALE_SIZE 0
-#define TASK0_M 32
+#define TASK0_MX_OUT_SCALE_PTR task0_mx_out_scale
+#define TASK0_MX_OUT_SCALE_SIZE 512
+#define TASK0_M 128
 #define TASK0_N 256
-#define TASK0_P 32
+#define TASK0_P 128
 #define TASK0_OP_MODE 0
 #define TASK0_PACE 0
 #define TASK0_ACCUM_INIT_MODE 0
@@ -51,8 +52,8 @@
 #define TASK0_DISABLE_WEIGHT_REUSE 0
 #define TASK0_SOFT_CLEAR_STATE 0
 #define TASK0_C_GOLDEN task0_matrix_c
-#define TASK0_C_SIZE 2048
-#define TASK0_C_BUF_SIZE 2048
+#define TASK0_C_SIZE 16384
+#define TASK0_C_BUF_SIZE 16384
 
 #define SURYA_TASKS(APPLY) \
     APPLY(0)
