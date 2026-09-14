@@ -17,7 +17,7 @@
 // Build and run the test on the H tile:
 //   make sn-tests chs-sw-tests
 //   make vsim-run-batch CHS_BINARY=sw/cheshire/tests/simple_htile_offload.spm.elf
-//     SN_BINARY=sw/snitch/tests/build/surya_mx.elf PRELMODE=3
+//     SN_BINARY=sw/snitch/tests/build/htile/surya_mx.elf PRELMODE=3
 //
 // The Surya-MX model writes `data/surya_mx` for the package defaults of the
 // Surya-MX build. Run it in the Surya-MX checkout, keep the `.h` files, and add

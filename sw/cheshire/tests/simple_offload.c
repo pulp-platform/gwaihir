@@ -19,14 +19,16 @@
 // The job runs on the clusters. With GW_OFFLOAD_HTILE it runs on the H tile alone.
 #ifdef GW_OFFLOAD_HTILE
 #define NUM_TARGETS 1
-static volatile snitch_cluster_t *gw_target(int idx) {
+typedef htile_t gw_target_t;
+static volatile gw_target_t *gw_target(int idx) {
   (void)idx;
   return &gwaihir_addrmap_64b.htile;
 }
 #else
 #define NUM_TARGETS SNRT_CLUSTER_NUM
-static volatile snitch_cluster_t *gw_target(int idx) {
-  return (volatile snitch_cluster_t *)&gwaihir_addrmap_64b.cluster[idx];
+typedef snitch_cluster__stride40000_t gw_target_t;
+static volatile gw_target_t *gw_target(int idx) {
+  return &gwaihir_addrmap_64b.cluster[idx];
 }
 #endif
 

@@ -146,8 +146,9 @@ module gwaihir_top
     );
   end
 
-  // Temporary h-tile : replica of a cluster tile
-  logic [NrCores-1:0] htile_debug_req, htile_meip, htile_mtip, htile_msip;
+  // The H tile holds its own cluster configuration, cfg/htile_cluster.json.
+  logic [htile_snitch_cluster_wrapper_pkg::NrCores-1:0]
+      htile_debug_req, htile_meip, htile_mtip, htile_msip;
 
   assign htile_debug_req = '0;
   assign htile_meip      = '0;

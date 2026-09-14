@@ -15,4 +15,5 @@
 #define SNRT_TCDM_START_ADDR GW_CLUSTER_TCDM_BASE_ADDR(0)
 
 #include "snitch_cluster_cfg.h"
+#include "gw_tile_cfg.h"
 #include "start.S"

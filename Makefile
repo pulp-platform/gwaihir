@@ -22,6 +22,7 @@ PEAKRDL          ?= peakrdl
 FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
 SN_CFG	  ?= $(GW_ROOT)/cfg/snitch_cluster.json
 PLIC_CFG  ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
+GW_HTILE_CFG ?= $(GW_ROOT)/cfg/htile_cluster.json
 
 # L2 SPM base address, queried from the FlooNoC config so it stays in sync with FLOO_CFG
 L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) "endpoints.l2_spm_0.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
@@ -74,9 +75,15 @@ UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 $(GW_GEN_SW_DIR):
 	@mkdir -p $@
 
+# Make expands a prerequisite list when it reads the rule, so the H tile paths come first.
+GW_HTILE_RDL         = $(GW_GEN_HW_DIR)/htile.rdl
+GW_HTILE_WRAPPER_PKG = $(GW_GEN_HW_DIR)/htile_snitch_cluster_wrapper_pkg.sv
+GW_HTILE_WRAPPER     = $(GW_GEN_HW_DIR)/htile_snitch_cluster_wrapper.sv
+
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/snitch_cluster.rdl
+GW_RDL_ALL += $(GW_HTILE_RDL)
 GW_RDL_ALL += $(UCIE_SLINK_RDL)
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
@@ -167,9 +174,27 @@ $(SN_CFG): $(FLOO_CFG)
 
 .PHONY: sn-hw-clean sn-hw-all
 
-sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG)
+sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG) $(GW_HTILE_WRAPPER_PKG) $(GW_HTILE_WRAPPER)
 sn-hw-clean:
-	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
+	rm -rf $(SN_CLUSTER_WRAPPER_PKG) $(GW_HTILE_WRAPPER_PKG) $(GW_HTILE_WRAPPER)
+
+# The H tile holds a second cluster configuration. The wrapper is a static file, so `sed`
+# gives the package and the module of the H tile the `htile_` prefix.
+# Arg 1: input file, Arg 2: output file
+define gw_htile_prefix
+	sed -e 's/\<snitch_cluster_wrapper\(_pkg\)\?\>/htile_&/g' $(1) > $(2)
+endef
+
+$(GW_HTILE_WRAPPER_PKG): $(GW_HTILE_CFG) $(SN_CLUSTER_GEN) $(SN_CLUSTER_GEN_SRC) $(SN_CLUSTER_WRAPPER_PKG_TPL) | $(GW_GEN_HW_DIR)
+	$(SN_CLUSTER_GEN) -c $< -o $@.tmp --template $(SN_CLUSTER_WRAPPER_PKG_TPL)
+	$(call gw_htile_prefix,$@.tmp,$@)
+	rm -f $@.tmp
+
+$(GW_HTILE_WRAPPER): $(SN_HW_DIR)/snitch_cluster/src/snitch_cluster_wrapper.sv | $(GW_GEN_HW_DIR)
+	$(call gw_htile_prefix,$<,$@)
+
+$(GW_HTILE_RDL): $(GW_HTILE_CFG) $(SN_CLUSTER_GEN) $(SN_CLUSTER_GEN_SRC) $(SN_CLUSTER_RDL_TPL) | $(GW_GEN_HW_DIR)
+	$(SN_CLUSTER_GEN) -c $< -o $@ --template $(SN_CLUSTER_RDL_TPL)
 
 ###########
 # FlooNoC #

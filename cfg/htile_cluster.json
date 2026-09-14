@@ -1,26 +1,28 @@
-// Copyright 2025 ETH Zurich and University of Bologna.
+// Copyright 2026 ETH Zurich and University of Bologna.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// Cluster configuration for a simple testbench system.
+// Cluster configuration of the H tile. Keep the cores, the widths and the Spatz settings
+// equal to cfg/snitch_cluster.json: the tiles share one runtime and one spatz_pkg.
 {
-    nr_clusters: 16,
+    nr_clusters: 1,
     cluster: {
-        cluster_base_addr: 0x20000000,
-        cluster_base_offset: 0x40000,
-        cluster_base_hartid: 1,
+        name: "htile",
+        cluster_base_addr: 0x20400000,
+        cluster_base_offset: 0x100000,
+        cluster_base_hartid: 33, // 16 x 2 + 1; Cheshire is hart 0
         addr_width: 48,
         data_width: 64,
         atomic_id_width: 6, // clog2(#clusters + 2); must equal AxiCfgN.UserWidth
         tcdm: {
-            size: 128,
+            size: 512,
             banks: 32,
         },
-        cluster_periph_size: 60, // kB
-        zero_mem_size: 60, // kB
+        // The cluster crossbar needs a NAPOT address space: 512 + 4 + 252 + 252 + 4 kB.
+        cluster_periph_size: 252, // kB
+        zero_mem_size: 252, // kB
         ext_mem_size: 4, //kB
         dma_data_width: 512,
-        // TODO(fischeti): Check with Thomas
         dma_axi_req_fifo_depth: 24,
         dma_req_fifo_depth: 8,
         narrow_trans: 4,
@@ -32,8 +34,8 @@
         dca_data_width: 512,
         cluster_base_expose: true,
         alias_region_enable: true,
-        // TODO: Make sure that the region does not overlap the H tile, 0x2040_0000 to 0x2050_0000.
-        alias_region_base: 0x20500000,
+        // The harts boot from the bootrom alias. The region must not overlap the NoC map.
+        alias_region_base: 0x20600000,
         num_exposed_wide_tcdm_ports: 1,
         narrow_axi_port_expose: true,
         collective_width: 4,
@@ -48,7 +50,6 @@
             lat_comp_fp8: 1,
             lat_comp_fp8_alt: 1,
             lat_noncomp: 1,
-            // TODO(fischeti): Check with Luca Bertaccini
             lat_conv: 2,
             lat_sdotp: 3,
             fpu_pipe_config: "BEFORE",

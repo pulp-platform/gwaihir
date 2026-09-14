@@ -42,6 +42,7 @@ variables:
   artifacts:
     paths:
       - sw/snitch/tests/build/*.elf
+      - sw/snitch/tests/build/htile/*.elf
       - sw/snitch/apps/**/build/*.elf
     expire_in: 1 day
 

@@ -39,9 +39,6 @@ SN_RVTESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/riscv-tests/build
 
 SN_TESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/tests/build
 SN_TESTS_INCDIRS  = $(SN_ROOT)/sw/kernels/blas
-# The Surya HAL and the generated workload of the H tile test.
-SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
-SN_TESTS_INCDIRS += $(GW_SNITCH_SW_DIR)/tests/data/surya_mx
 
 SN_BUILD_APPS = OFF
 
@@ -56,12 +53,66 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
 # Spatz kernels
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
 
-SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
+# The Surya test runs on the H tile only, so only the H tile build below holds it.
+SN_TESTS = $(filter-out %/surya_mx.c,$(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c))
 
 $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_SW_DIR) --no-format $<
 
 include $(SN_ROOT)/make/sw.mk
+
+############
+## H tile ##
+############
+
+# The H tile holds a larger TCDM and another cluster layout, so its programs link
+# against a second build of the runtime with GW_HTILE_RUNTIME.
+GW_HTILE_RUNTIME_BUILDDIR = $(SN_RUNTIME_BUILDDIR)/htile
+GW_HTILE_RUNTIME_CFLAGS   = $(SN_RUNTIME_RISCV_CFLAGS) -DGW_HTILE_RUNTIME
+GW_HTILE_RUNTIME_OBJS     = $(addprefix $(GW_HTILE_RUNTIME_BUILDDIR)/,$(addsuffix .o,$(notdir $(SN_RUNTIME_S_SRCS) $(SN_RUNTIME_C_SRCS))))
+GW_HTILE_RUNTIME_DEPS     = $(GW_HTILE_RUNTIME_OBJS:.o=.d)
+GW_HTILE_RUNTIME_LIB      = $(GW_HTILE_RUNTIME_BUILDDIR)/libsnRuntime.a
+
+GW_HTILE_TESTS_BUILDDIR = $(SN_TESTS_BUILDDIR)/htile
+GW_HTILE_TESTS          = simple surya_mx
+GW_HTILE_TEST_ELFS      = $(addprefix $(GW_HTILE_TESTS_BUILDDIR)/,$(addsuffix .elf,$(GW_HTILE_TESTS)))
+GW_HTILE_TEST_DEPS      = $(GW_HTILE_TEST_ELFS:.elf=.d)
+
+GW_HTILE_TESTS_CFLAGS  = $(SN_TESTS_RISCV_CFLAGS) -DGW_HTILE_RUNTIME
+GW_HTILE_TESTS_CFLAGS += -I$(shell $(BENDER) path surya-mx)/sw
+GW_HTILE_TESTS_CFLAGS += -I$(GW_SNITCH_SW_DIR)/tests/data/surya_mx
+# The linker takes the first libsnRuntime.a on the search path.
+GW_HTILE_TESTS_LDFLAGS = -L$(GW_HTILE_RUNTIME_BUILDDIR) $(SN_TESTS_RISCV_LDFLAGS)
+
+$(GW_HTILE_RUNTIME_BUILDDIR) $(GW_HTILE_TESTS_BUILDDIR):
+	mkdir -p $@
+
+$(GW_HTILE_RUNTIME_DEPS): $(GW_HTILE_RUNTIME_BUILDDIR)/%.d: $(SN_RUNTIME_SRCDIR)/% | $(GW_HTILE_RUNTIME_BUILDDIR) $(SN_RUNTIME_HAL_HDRS)
+	$(SN_RISCV_CXX) $(GW_HTILE_RUNTIME_CFLAGS) -MM -MT '$(@:.d=.o)' $< > $@
+
+$(GW_HTILE_RUNTIME_OBJS): $(GW_HTILE_RUNTIME_BUILDDIR)/%.o: $(SN_RUNTIME_SRCDIR)/% $(GW_HTILE_RUNTIME_BUILDDIR)/%.d | $(GW_HTILE_RUNTIME_BUILDDIR)
+	$(SN_RISCV_CXX) $(GW_HTILE_RUNTIME_CFLAGS) -c $< -o $@
+
+$(GW_HTILE_RUNTIME_LIB): $(GW_HTILE_RUNTIME_OBJS) | $(GW_HTILE_RUNTIME_BUILDDIR)
+	$(SN_RISCV_AR) $(SN_RISCV_ARFLAGS) $@ $^
+
+# `simple` comes from the snitch_cluster tests, `surya_mx` from the Gwaihir tests.
+vpath %.c $(GW_SNITCH_SW_DIR)/tests $(SN_TESTS_SRCDIR)
+
+$(GW_HTILE_TEST_DEPS): $(GW_HTILE_TESTS_BUILDDIR)/%.d: %.c | $(GW_HTILE_TESTS_BUILDDIR) $(SN_RUNTIME_HAL_HDRS)
+	$(SN_RISCV_CXX) $(GW_HTILE_TESTS_CFLAGS) -MM -MT '$(@:.d=.elf)' -x c++ $< > $@
+
+$(GW_HTILE_TEST_ELFS): $(GW_HTILE_TESTS_BUILDDIR)/%.elf: %.c $(GW_HTILE_TESTS_BUILDDIR)/%.d $(SN_RUNTIME_LD_DEPS) $(GW_HTILE_RUNTIME_LIB) | $(GW_HTILE_TESTS_BUILDDIR)
+	$(SN_RISCV_CXX) $(GW_HTILE_TESTS_CFLAGS) $(GW_HTILE_TESTS_LDFLAGS) -x c++ $< -o $@
+
+.PHONY: gw-htile-clean-runtime
+
+sn-tests: $(GW_HTILE_TEST_ELFS)
+sn-clean-runtime: gw-htile-clean-runtime
+gw-htile-clean-runtime:
+	rm -rf $(GW_HTILE_RUNTIME_BUILDDIR)
+
+SN_DEPS += $(GW_HTILE_RUNTIME_DEPS) $(GW_HTILE_TEST_DEPS)
 
 ##############
 ## Cheshire ##

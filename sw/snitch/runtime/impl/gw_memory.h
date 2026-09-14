@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// The H tile takes the cluster slot after the cluster array.
-#define GW_HTILE_CLUSTER_IDX SNRT_CLUSTER_NUM
+static_assert(GW_HTILE_TCDM_BASE_ADDR == GW_CLUSTER_TCDM_BASE_ADDR(GW_HTILE_CLUSTER_IDX),
+              "the runtime finds the H tile TCDM at cluster slot 16");
 
 // TODO(colluca): add alias to addrmap so this can be properly implemented
 // Must return a pointer to the snitch_cluster_t struct
@@ -19,7 +19,7 @@ inline volatile snitch_cluster_t* snrt_cluster_alias() {
 // of the cluster selected by cluster_idx.
 inline volatile snitch_cluster_t* snrt_cluster(int cluster_idx) {
     if (cluster_idx == GW_HTILE_CLUSTER_IDX) {
-        return &(gwaihir_addrmap_32b.htile);
+        return (volatile snitch_cluster_t*)&(gwaihir_addrmap_32b.htile);
     }
     return (volatile snitch_cluster_t*)&(gwaihir_addrmap_32b.cluster[cluster_idx]);
 }
