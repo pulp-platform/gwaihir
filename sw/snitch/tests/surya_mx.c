@@ -3,12 +3,29 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Surya MX kernel on the H tile. The workload is one MX GEMM, M=32, N=256,
-// P=32, with a BF16 output. The Surya-MX model writes `data/surya_mx` for the
-// package defaults of the Surya-MX build:
+// P=32, with a BF16 output.
+//
+// The test does these steps:
+//   1. The DM core copies the inputs and the golden output from L2 to the TCDM.
+//   2. Core 0 selects the accelerator, enables its clock and programs each task.
+//   3. Core 0 waits until Surya-MX is idle. Then it clears the event and
+//      disables the clock.
+//   4. Core 0 compares the output with the golden output. It prints PASS or
+//      FAIL for each task and returns the number of wrong bytes.
+//
+// Build and run the test on the H tile:
+//   make sn-tests chs-sw-tests
+//   make vsim-run-batch CHS_BINARY=sw/cheshire/tests/simple_htile_offload.spm.elf
+//     SN_BINARY=sw/snitch/tests/build/surya_mx.elf PRELMODE=3
+//
+// The Surya-MX model writes `data/surya_mx` for the package defaults of the
+// Surya-MX build. Run it in the Surya-MX checkout, keep the `.h` files, and add
+// the license header to each file:
+//   cd $(bender path surya-mx)
 //   python -m surya_model.workloads.cli --MX --M 32 --N 256 --P 32
 //     --NUM_ARRAYS 4 --ARRAY_N 32 --ARRAY_P 8 --N_ACCUM 32 --OPTIMAL_BW 1
-//     --ENABLE_PACE 0 --MX_FP_ADD 1 --MX_OUT_TRANSPOSE 1
-//     --output_dir sw/snitch/tests/data/surya_mx
+//     --ENABLE_PACE 0 --MX_FP_ADD 1 --MX_OUT_TRANSPOSE 1 --no-debug
+//     --output_dir <gwaihir>/sw/snitch/tests/data/surya_mx
 //
 // The accelerator sits in the `ext_mem` window of the cluster, after the zero
 // memory. `gw_hwpe_subsystem_addrmap.h` holds the map.
