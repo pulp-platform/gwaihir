@@ -239,7 +239,7 @@ $(HYPER_PADFRAME): $(HYPERBUS_ROOT)/padframe/padrick_rundir/configs/tsmc7.yml \
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 42e138637161c9c35b6b7b9831a7bd527d08bdab
+PD_COMMIT ?= f34085e3205f23ec457f199ba64f24f45045ea38
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
