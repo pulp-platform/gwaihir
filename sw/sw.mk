@@ -65,7 +65,7 @@ include $(SN_ROOT)/make/sw.mk
 ## Cheshire ##
 ##############
 
-GW_LINK_MODE ?= spm
+GW_LINK_MODE ?= spm dram hyperbus
 
 # We need to include the address map and snitch cluster includes
 CHS_SW_INCLUDES += -I$(GW_INCDIR)
@@ -75,8 +75,11 @@ CHS_SW_INCLUDES += -I$(GW_GEN_SW_DIR)
 # Collect tests, which should be built for all modes, and their .dump targets
 GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_CHS_SW_DIR)/tests/*.c)
 GW_CHS_SW_TEST_SRC_S += $(wildcard $(GW_CHS_SW_DIR)/tests/*.S)
-GW_CHS_SW_TEST_DUMP  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).dump) $(patsubst %.$(GW_LINK_MODE).S,%.$(GW_LINK_MODE).dump,$(GW_CHS_SW_TEST_SRC_S))
-GW_CHS_SW_TEST_ELF  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).elf) $(patsubst %.$(GW_LINK_MODE).S,%.$(GW_LINK_MODE).elf,$(GW_CHS_SW_TEST_SRC_S))
+# Tests that overwrite the DRAM and HyperBus link regions, so they are only built for the SPM
+GW_CHS_SW_TEST_SPM_ONLY += $(GW_CHS_SW_DIR)/tests/hyperbus_addressability_test.c
+gw_chs_sw_test_src = $(if $(filter spm,$(1)),$(GW_CHS_SW_TEST_SRC),$(filter-out $(GW_CHS_SW_TEST_SPM_ONLY),$(GW_CHS_SW_TEST_SRC)))
+GW_CHS_SW_TEST_DUMP  += $(foreach mode,$(GW_LINK_MODE),$(patsubst %.c,%.$(mode).dump,$(call gw_chs_sw_test_src,$(mode)))) $(GW_CHS_SW_TEST_SRC_S:.S=.dump)
+GW_CHS_SW_TEST_ELF   += $(foreach mode,$(GW_LINK_MODE),$(patsubst %.c,%.$(mode).elf,$(call gw_chs_sw_test_src,$(mode)))) $(GW_CHS_SW_TEST_SRC_S:.S=.elf)
 
 GW_CHS_SW_TEST = $(GW_CHS_SW_TEST_DUMP)
 
