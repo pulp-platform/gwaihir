@@ -50,3 +50,4 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.hyperbus.elf, USTR: "Hello World!" }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.hyperbus.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf }
       - { CHS_BINARY: $CHS_BUILD_DIR/hyperbus_addressability_test.spm.elf, PRELMODE: 1 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/lpddr_hyperbus_addressability_test.spm.elf, PRELMODE: 1 }

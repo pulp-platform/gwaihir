@@ -77,6 +77,7 @@ GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_CHS_SW_DIR)/tests/*.c)
 GW_CHS_SW_TEST_SRC_S += $(wildcard $(GW_CHS_SW_DIR)/tests/*.S)
 # Tests that overwrite the DRAM and HyperBus link regions, so they are only built for the SPM
 GW_CHS_SW_TEST_SPM_ONLY += $(GW_CHS_SW_DIR)/tests/hyperbus_addressability_test.c
+GW_CHS_SW_TEST_SPM_ONLY += $(GW_CHS_SW_DIR)/tests/lpddr_hyperbus_addressability_test.c
 gw_chs_sw_test_src = $(if $(filter spm,$(1)),$(GW_CHS_SW_TEST_SRC),$(filter-out $(GW_CHS_SW_TEST_SPM_ONLY),$(GW_CHS_SW_TEST_SRC)))
 GW_CHS_SW_TEST_DUMP  += $(foreach mode,$(GW_LINK_MODE),$(patsubst %.c,%.$(mode).dump,$(call gw_chs_sw_test_src,$(mode)))) $(GW_CHS_SW_TEST_SRC_S:.S=.dump)
 GW_CHS_SW_TEST_ELF   += $(foreach mode,$(GW_LINK_MODE),$(patsubst %.c,%.$(mode).elf,$(call gw_chs_sw_test_src,$(mode)))) $(GW_CHS_SW_TEST_SRC_S:.S=.elf)
