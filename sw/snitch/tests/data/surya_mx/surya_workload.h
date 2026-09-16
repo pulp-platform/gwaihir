@@ -13,10 +13,10 @@
 #include "task0_mx_out_scale.h"
 
 #define NUM_TASKS 1
-#define SURYA_HW_ARRAY_N 32
+#define SURYA_HW_ARRAY_N 64
 #define SURYA_HW_ARRAY_P 8
-#define SURYA_HW_N_ACCUM 32
-#define SURYA_HW_NUM_ARRAYS 4
+#define SURYA_HW_N_ACCUM 64
+#define SURYA_HW_NUM_ARRAYS 8
 #define SURYA_HW_OPTIMAL_BW 1
 #define SURYA_AUTOTRIGGER_N 0
 #define TASK0_A_PTR task0_matrix_a
