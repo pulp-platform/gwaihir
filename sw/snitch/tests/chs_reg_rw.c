@@ -2,21 +2,19 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// Cluster write + read of a Cheshire scratch register (nw_join regression). Read-back value is
-// intentionally unchecked: cluster accesses to Cheshire regs go through Cheshire's IOMMU, which
-// resets with translation off and faults every transaction until configured. Nothing configures
-// it yet, so reads currently come back as a fixed poison value. Fix: program the IOMMU (e.g.
-// ddtp = Bare/pass-through) during boot, before cluster code runs.
+// Cluster write + read of a Cheshire scratch register (nw_join regression). Read-back must work
+// since the IOMMU is by default in bare-metal state (i.e. passthrogh: no address translation).
 
 #include "snrt.h"
 
 int main() {
+    int err = 0;
     if (snrt_global_core_idx() == 0) {
+        const uint32_t test_value = 0x00c0ffee;
         volatile uint32_t *chs_scratch =
             (volatile uint32_t *)GW_CHESHIRE_INTERNAL_CHESHIRE_REGS_SCRATCH_BASE_ADDR(4);
-        *chs_scratch = 0x00c0ffee;
-        uint32_t v = *chs_scratch;
-        (void)v;
+        *chs_scratch = test_value;
+        err = (*chs_scratch != test_value);
     }
-    return 0;
+    return err;
 }
