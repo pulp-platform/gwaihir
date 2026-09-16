@@ -102,12 +102,12 @@ module cluster_tile
   snitch_cluster_wrapper_pkg::wide_in_req_t     cluster_wide_in_req;
   snitch_cluster_wrapper_pkg::wide_in_resp_t    cluster_wide_in_rsp;
 
-  snitch_cluster_wrapper_pkg::narrow_out_req_t  cluster_narrow_ext_req;
-  snitch_cluster_wrapper_pkg::narrow_out_resp_t cluster_narrow_ext_rsp;
-  snitch_cluster_wrapper_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_aligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_misaligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_aligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_misaligned;
+  snitch_cluster_wrapper_pkg::narrow_out_req_t        cluster_narrow_ext_req;
+  snitch_cluster_wrapper_pkg::narrow_out_resp_t       cluster_narrow_ext_rsp;
+  snitch_cluster_wrapper_pkg::tcdm_dma_req_t          cluster_tcdm_ext_req_aligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_req_t    [0:0] cluster_tcdm_ext_req_misaligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t          cluster_tcdm_ext_rsp_aligned;
+  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    [0:0] cluster_tcdm_ext_rsp_misaligned;
 
   cluster_narrow_out_dw_conv_req_t cluster_narrow_out_dw_conv_req, cluster_narrow_out_cut_req;
   cluster_narrow_out_dw_conv_resp_t cluster_narrow_out_dw_conv_rsp, cluster_narrow_out_cut_rsp;
@@ -334,10 +334,10 @@ module cluster_tile
     ) i_snitch_tcdm_aligner (
       .clk_i                (tile_clk),
       .rst_ni               (tile_rst_n),
-      .tcdm_req_misaligned_i(cluster_tcdm_ext_req_misaligned),
+      .tcdm_req_misaligned_i(cluster_tcdm_ext_req_misaligned[0]),
       .tcdm_req_aligned_o   (cluster_tcdm_ext_req_aligned),
       .tcdm_rsp_aligned_i   (cluster_tcdm_ext_rsp_aligned),
-      .tcdm_rsp_misaligned_o(cluster_tcdm_ext_rsp_misaligned)
+      .tcdm_rsp_misaligned_o(cluster_tcdm_ext_rsp_misaligned[0])
     );
 
     snitch_hwpe_subsystem #(

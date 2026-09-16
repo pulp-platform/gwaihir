@@ -99,12 +99,12 @@ module h_tile
   htile_snitch_cluster_wrapper_pkg::wide_in_req_t     cluster_wide_in_req;
   htile_snitch_cluster_wrapper_pkg::wide_in_resp_t    cluster_wide_in_rsp;
 
-  htile_snitch_cluster_wrapper_pkg::narrow_out_req_t  cluster_narrow_ext_req;
+  htile_snitch_cluster_wrapper_pkg::narrow_out_req_t cluster_narrow_ext_req;
   htile_snitch_cluster_wrapper_pkg::narrow_out_resp_t cluster_narrow_ext_rsp;
-  htile_snitch_cluster_wrapper_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_aligned;
-  htile_snitch_cluster_wrapper_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_misaligned;
-  htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_aligned;
-  htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_misaligned;
+  htile_snitch_cluster_wrapper_pkg::tcdm_dma_req_t
+      [htile_snitch_cluster_wrapper_pkg::NumExpWideTcdmPorts-1:0] cluster_tcdm_ext_req;
+  htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t
+      [htile_snitch_cluster_wrapper_pkg::NumExpWideTcdmPorts-1:0] cluster_tcdm_ext_rsp;
 
   cluster_narrow_out_dw_conv_req_t cluster_narrow_out_dw_conv_req, cluster_narrow_out_cut_req;
   cluster_narrow_out_dw_conv_resp_t cluster_narrow_out_dw_conv_rsp, cluster_narrow_out_cut_rsp;
@@ -140,8 +140,8 @@ module h_tile
     .wide_in_resp_o        (cluster_wide_in_rsp),
     .narrow_ext_req_o      (cluster_narrow_ext_req),
     .narrow_ext_resp_i     (cluster_narrow_ext_rsp),
-    .tcdm_ext_req_i        (cluster_tcdm_ext_req_aligned),
-    .tcdm_ext_resp_o       (cluster_tcdm_ext_rsp_aligned),
+    .tcdm_ext_req_i        (cluster_tcdm_ext_req),
+    .tcdm_ext_resp_o       (cluster_tcdm_ext_rsp),
     .dca_req_i             ('0),
     .dca_rsp_o             (),
     .x_issue_req_o         (),
@@ -219,45 +219,32 @@ module h_tile
       .tcdm_rsp_i(hwpectrl_rsp)
     );
 
-    snitch_tcdm_aligner #(
-      .tcdm_req_t   (htile_snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
-      .tcdm_rsp_t   (htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
-      .DataWidth    (htile_snitch_cluster_wrapper_pkg::WideDataWidth),
-      .TCDMDataWidth(htile_snitch_cluster_wrapper_pkg::NarrowDataWidth),
-      .AddrWidth    (htile_snitch_cluster_wrapper_pkg::TcdmAddrWidth)
-    ) i_snitch_tcdm_aligner (
-      .clk_i                (tile_clk),
-      .rst_ni               (tile_rst_n),
-      .tcdm_req_misaligned_i(cluster_tcdm_ext_req_misaligned),
-      .tcdm_req_aligned_o   (cluster_tcdm_ext_req_aligned),
-      .tcdm_rsp_aligned_i   (cluster_tcdm_ext_rsp_aligned),
-      .tcdm_rsp_misaligned_o(cluster_tcdm_ext_rsp_misaligned)
-    );
-
     snitch_hwpe_subsystem #(
-      .tcdm_req_t   (htile_snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
-      .tcdm_rsp_t   (htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
-      .periph_req_t (hwpectrl_req_t),
-      .periph_rsp_t (hwpectrl_rsp_t),
-      .HwpeDataWidth(htile_snitch_cluster_wrapper_pkg::WideDataWidth),
-      .IdWidth      (htile_snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .CtrlDataWidth(HWPECtrlDataWidth),
-      .NrCores      (NrCores),
-      .Accelerator  (HwpeSurya)
+      .tcdm_req_t        (htile_snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
+      .tcdm_rsp_t        (htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
+      .periph_req_t      (hwpectrl_req_t),
+      .periph_rsp_t      (hwpectrl_rsp_t),
+      .HwpeDataWidth     (surya_hwpe_pkg::TotBw),
+      .SbWidth           (htile_snitch_cluster_wrapper_pkg::WideDataWidth),
+      .MisalignedAccesses(1),
+      .IdWidth           (htile_snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
+      .CtrlDataWidth     (HWPECtrlDataWidth),
+      .NrCores           (NrCores),
+      .Accelerator       (HwpeSurya)
     ) i_snitch_hwpe_subsystem (
       .clk_i          (tile_clk),
       .rst_ni         (tile_rst_n),
       .test_mode_i    (1'b0),
-      .tcdm_req_o     (cluster_tcdm_ext_req_misaligned),
-      .tcdm_rsp_i     (cluster_tcdm_ext_rsp_misaligned),
+      .tcdm_req_o     (cluster_tcdm_ext_req),
+      .tcdm_rsp_i     (cluster_tcdm_ext_rsp),
       .hwpe_ctrl_req_i(hwpectrl_req),
       .hwpe_ctrl_rsp_o(hwpectrl_rsp),
       .hwpe_evt_o     (mxip)
     );
   end else begin : gen_no_surya
-    assign mxip                         = '0;
-    assign cluster_tcdm_ext_req_aligned = '0;
-    assign cluster_narrow_ext_rsp       = '0;
+    assign mxip                   = '0;
+    assign cluster_tcdm_ext_req   = '0;
+    assign cluster_narrow_ext_rsp = '0;
   end
 
   ////////////

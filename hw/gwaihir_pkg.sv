@@ -20,6 +20,12 @@ package gwaihir_pkg;
 
   typedef axi_narrow_in_addr_t addr_t;
 
+  function automatic int unsigned ceildiv(input int unsigned num, input int unsigned den);
+    assert (den != 0)
+    else $fatal(1, "ceildiv: den cannot be 0");
+    ceildiv = (num / den) + ((num % den) != 0);
+  endfunction
+
   ///////////////
   //  FlooNoC  //
   ///////////////

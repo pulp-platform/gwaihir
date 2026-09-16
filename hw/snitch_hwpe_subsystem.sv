@@ -9,6 +9,7 @@ module snitch_hwpe_subsystem
   import hwpe_ctrl_package::*;
   import lsu_pkg::amo_op_e;
   import gwaihir_pkg::hwpe_acc_e;
+  import gwaihir_pkg::ceildiv;
 #(
   parameter type tcdm_req_t   = logic,
   parameter type tcdm_rsp_t   = logic,
@@ -16,18 +17,33 @@ module snitch_hwpe_subsystem
   parameter type periph_rsp_t = logic,
 
   parameter int unsigned HwpeDataWidth = 256,
-  parameter int unsigned IdWidth       = 8,
+  parameter int unsigned SbWidth = 512,
+  parameter int unsigned MisalignedAccesses = 0,
+  parameter int unsigned IdWidth = 8,
   parameter int unsigned CtrlDataWidth = 32,
-  parameter int unsigned NrCores       = 8,
-  parameter hwpe_acc_e   Accelerator   = gwaihir_pkg::HwpeMxCore
+  parameter int unsigned NrCores = 8,
+  parameter hwpe_acc_e Accelerator = gwaihir_pkg::HwpeMxCore,
+  // Dependent parameters: do not modify!
+  // The datamover stops at one superbank, so a wider accelerator takes its own plugs.
+  localparam bit SplitPlugs = (HwpeDataWidth > SbWidth),
+  localparam int unsigned DmaDataWidth = SplitPlugs ? SbWidth : HwpeDataWidth,
+  localparam int unsigned AccPlugs = (MisalignedAccesses == 1) ?
+      (HwpeDataWidth / SbWidth) + 1 : ceildiv(
+      HwpeDataWidth, SbWidth
+  ),
+  localparam int unsigned DmaPlugs = (MisalignedAccesses == 1) ?
+      (DmaDataWidth / SbWidth) + 1 : ceildiv(
+      DmaDataWidth, SbWidth
+  ),
+  localparam int unsigned NumTcdmPlugs = SplitPlugs ? AccPlugs + DmaPlugs : 1
 ) (
   input logic clk_i,
   input logic rst_ni,
   input logic test_mode_i,
 
   // TCDM interface (Master)
-  output tcdm_req_t tcdm_req_o,
-  input  tcdm_rsp_t tcdm_rsp_i,
+  output tcdm_req_t [NumTcdmPlugs-1:0] tcdm_req_o,
+  input  tcdm_rsp_t [NumTcdmPlugs-1:0] tcdm_rsp_i,
 
   // HWPE control interface (Slave)
   input  periph_req_t hwpe_ctrl_req_i,
@@ -65,6 +81,15 @@ module snitch_hwpe_subsystem
     EW:  DEFAULT_EW,
     EHW: DEFAULT_EHW
   };
+  localparam hci_size_parameter_t HCISizeDma = '{
+    DW:  DmaDataWidth,
+    AW:  DEFAULT_AW,
+    BW:  DEFAULT_BW,
+    UW:  DEFAULT_UW,
+    IW:  DEFAULT_IW,
+    EW:  DEFAULT_EW,
+    EHW: DEFAULT_EHW
+  };
   // verilog_format: on
 
   logic [     NumHwpe-1:0] hwpe_clk;
@@ -84,7 +109,7 @@ module snitch_hwpe_subsystem
     .DW               (HwpeDataWidth),
     .EW               (DEFAULT_EW),
     .EHW              (DEFAULT_EHW)
-  ) tcdm (
+  ) tcdm_acc (
     .clk(clk_i)
   );
 
@@ -92,32 +117,108 @@ module snitch_hwpe_subsystem
 `ifndef SYNTHESIS
     .WAIVE_RSP3_ASSERT(1'b1),
 `endif
-    .DW               (HwpeDataWidth),
+    .DW               (DmaDataWidth),
     .EW               (DEFAULT_EW),
     .EHW              (DEFAULT_EHW)
-  ) tcdm_to_mux[0:NumHwpe-1] (
+  ) tcdm_dma (
     .clk(clk_i)
   );
 
-  // request channel
-  assign tcdm_req_o.q_valid = tcdm.req;
-  assign tcdm_req_o.q.addr  = tcdm.add;
-  assign tcdm_req_o.q.write = ~tcdm.wen;
-  assign tcdm_req_o.q.strb  = tcdm.be;
-  assign tcdm_req_o.q.data  = tcdm.data;
-  assign tcdm_req_o.q.amo   = lsu_pkg::AMONone;
-  assign tcdm_req_o.q.user  = '0;
-  // response channel
-  assign tcdm.gnt           = tcdm_rsp_i.q_ready;
-  assign tcdm.r_valid       = tcdm_rsp_i.p_valid;
-  assign tcdm.r_data        = tcdm_rsp_i.p.data;
-  assign tcdm.r_opc         = '0;
-  assign tcdm.r_user        = '0;
-  // The accelerators rebuild `r_id` themselves and carry no ECC.
-  assign tcdm.r_id          = tcdm.id;
-  assign tcdm.r_ecc         = '0;
-  assign tcdm.egnt          = '0;
-  assign tcdm.r_evalid      = '0;
+  if (!SplitPlugs) begin : gen_single_plug
+    hci_core_intf #(
+`ifndef SYNTHESIS
+      .WAIVE_RSP3_ASSERT(1'b1),
+`endif
+      .DW               (HwpeDataWidth),
+      .EW               (DEFAULT_EW),
+      .EHW              (DEFAULT_EHW)
+    ) tcdm (
+      .clk(clk_i)
+    );
+
+    hci_core_intf #(
+`ifndef SYNTHESIS
+      .WAIVE_RSP3_ASSERT(1'b1),
+`endif
+      .DW               (HwpeDataWidth),
+      .EW               (DEFAULT_EW),
+      .EHW              (DEFAULT_EHW)
+    ) tcdm_to_mux[0:NumHwpe-1] (
+      .clk(clk_i)
+    );
+
+    hci_core_assign i_assign_acc (
+      .tcdm_target   (tcdm_acc),
+      .tcdm_initiator(tcdm_to_mux[AccPort])
+    );
+
+    hci_core_assign i_assign_dma (
+      .tcdm_target   (tcdm_dma),
+      .tcdm_initiator(tcdm_to_mux[DmaPort])
+    );
+
+    hci_core_mux_static #(
+      .NB_CHAN    (NumHwpe),
+      .HCI_SIZE_in(HCISizeTcdm)
+    ) i_static_mux (
+      .clk_i  (clk_i),
+      .rst_ni (rst_ni),
+      .clear_i(1'b0),
+      .sel_i  (mux_sel),
+      .in     (tcdm_to_mux),
+      .out    (tcdm)
+    );
+
+    // request channel
+    assign tcdm_req_o[0].q_valid = tcdm.req;
+    assign tcdm_req_o[0].q.addr  = tcdm.add;
+    assign tcdm_req_o[0].q.write = ~tcdm.wen;
+    assign tcdm_req_o[0].q.strb  = tcdm.be;
+    assign tcdm_req_o[0].q.data  = tcdm.data;
+    assign tcdm_req_o[0].q.amo   = lsu_pkg::AMONone;
+    assign tcdm_req_o[0].q.user  = '0;
+    // response channel
+    assign tcdm.gnt              = tcdm_rsp_i[0].q_ready;
+    assign tcdm.r_valid          = tcdm_rsp_i[0].p_valid;
+    assign tcdm.r_data           = tcdm_rsp_i[0].p.data;
+    assign tcdm.r_opc            = '0;
+    assign tcdm.r_user           = '0;
+    // The accelerators rebuild `r_id` themselves and carry no ECC.
+    assign tcdm.r_id             = tcdm.id;
+    assign tcdm.r_ecc            = '0;
+    assign tcdm.egnt             = '0;
+    assign tcdm.r_evalid         = '0;
+  end else begin : gen_tcdm_plugs
+    konark_tcdm_aligner #(
+      .tcdm_req_t         (tcdm_req_t),
+      .tcdm_rsp_t         (tcdm_rsp_t),
+      .DATA_WIDTH         (HwpeDataWidth),
+      .SB_WIDTH           (SbWidth),
+      .ADDR_WIDTH         (DEFAULT_AW),
+      .MISALIGNED_ACCESSES(MisalignedAccesses)
+    ) i_konark_tcdm_aligner_acc (
+      .clk_i,
+      .rst_ni,
+      .tcdm_misaligned   (tcdm_acc),
+      .tcdm_req_aligned_o(tcdm_req_o[0+:AccPlugs]),
+      .tcdm_rsp_aligned_i(tcdm_rsp_i[0+:AccPlugs])
+    );
+
+    konark_tcdm_aligner #(
+      .tcdm_req_t         (tcdm_req_t),
+      .tcdm_rsp_t         (tcdm_rsp_t),
+      .DATA_WIDTH         (DmaDataWidth),
+      .SB_WIDTH           (SbWidth),
+      .ADDR_WIDTH         (DEFAULT_AW),
+      .MISALIGNED_ACCESSES(MisalignedAccesses)
+    ) i_konark_tcdm_aligner_dma (
+      .clk_i,
+      .rst_ni,
+      .tcdm_misaligned   (tcdm_dma),
+      .tcdm_req_aligned_o(tcdm_req_o[AccPlugs+:DmaPlugs]),
+      .tcdm_rsp_aligned_i(tcdm_rsp_i[AccPlugs+:DmaPlugs])
+    );
+  end
 
   logic                    ctrl_blk_sel;
   logic [CtrlIdxWidth-1:0] ctrl_blk_idx;
@@ -244,7 +345,7 @@ module snitch_hwpe_subsystem
       .rst_ni(rst_ni),
       .busy_o(busy),
       .evt_o (evt[AccPort]),
-      .tcdm  (tcdm_to_mux[AccPort]),
+      .tcdm  (tcdm_acc),
       .periph(periph[AccPort])
     );
   end else begin : gen_mxcore
@@ -256,7 +357,7 @@ module snitch_hwpe_subsystem
       .test_mode_i(test_mode_i),
       .evt_o      (evt[AccPort]),
       .busy_o     (busy),
-      .tcdm       (tcdm_to_mux[AccPort]),
+      .tcdm       (tcdm_acc),
       .periph     (periph[AccPort])
     );
   end
@@ -264,27 +365,15 @@ module snitch_hwpe_subsystem
   datamover_top #(
     .ID           (IdWidth),
     .N_CORES      (NrCores),
-    .BW           (HwpeDataWidth),
-    .HCI_SIZE_tcdm(HCISizeTcdm)
+    .BW           (DmaDataWidth),
+    .HCI_SIZE_tcdm(HCISizeDma)
   ) i_datamover_top (
     .clk_i      (hwpe_clk[DmaPort]),
     .rst_ni     (rst_ni),
     .test_mode_i(test_mode_i),
     .evt_o      (evt[DmaPort]),
-    .tcdm       (tcdm_to_mux[DmaPort]),
+    .tcdm       (tcdm_dma),
     .periph     (periph[DmaPort])
-  );
-
-  hci_core_mux_static #(
-    .NB_CHAN    (NumHwpe),
-    .HCI_SIZE_in(HCISizeTcdm)
-  ) i_static_mux (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
-    .clear_i(1'b0),
-    .sel_i  (mux_sel),
-    .in     (tcdm_to_mux),
-    .out    (tcdm)
   );
 
 endmodule : snitch_hwpe_subsystem

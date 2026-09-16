@@ -37,6 +37,9 @@ repos:
         language: python
         additional_dependencies: ["verible==0.0.4071.0"]
         files: '\.sv$'
+        # The verible preprocessor cannot expand the hci_helpers macros that the
+        # konark modules take as parameters.
+        exclude: '^hw/konark_'
 
   ##########
   # rdlfmt #
