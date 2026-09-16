@@ -34,6 +34,17 @@ addrmap gw_ucie_tile_regs {
             reset = 0; // Tile is held in reset by default
         } n;
     } rst_apb;
+
+    reg phy_mode {
+        desc = "PHY streaming bandwidth mode for this tile";
+        field {
+            desc = "0 = full bandwidth (native PHY width), 1 = half bandwidth
+                     (PHY width halved, duplicated across both halves of the bus)";
+            hw = r;
+            sw = rw;
+            reset = 0; // Full bandwidth by default
+        } half_bw_en;
+    } phy_mode;
 };
 
 `endif // __GW_UCIE_TILE_REGS_RDL__

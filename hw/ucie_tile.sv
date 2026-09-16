@@ -20,25 +20,24 @@ module ucie_tile
   input logic test_enable_i,
 
   // Router ID
-  input  id_t                               id_i,
-  input  logic                              ucie_id_i,
+  input  id_t                                                    id_i,
+  input  logic                                                   ucie_id_i,
   // Sam idx
-  input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
+  input  logic       [$bits(sam_idx_e)-1:0]                      samidx_i,
   // Router mesh ports
-  output floo_req_t  [          West:North] floo_req_o,
-  input  floo_rsp_t  [          West:North] floo_rsp_i,
-  output floo_wide_t [          West:North] floo_wide_o,
-  input  floo_req_t  [          West:North] floo_req_i,
-  output floo_rsp_t  [          West:North] floo_rsp_o,
-  input  floo_wide_t [          West:North] floo_wide_i,
-
-  // Slink link layer interface for dummy loopback
-  output logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out_o,
-  output logic [NumChannels-1:0]                      phy_data_out_valid_o,
-  input  logic [NumChannels-1:0]                      phy_data_out_ready_i,
-  input  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in_i,
-  input  logic [NumChannels-1:0]                      phy_data_in_valid_i,
-  output logic [NumChannels-1:0]                      phy_data_in_ready_o
+  output floo_req_t  [          West:North]                      floo_req_o,
+  input  floo_rsp_t  [          West:North]                      floo_rsp_i,
+  output floo_wide_t [          West:North]                      floo_wide_o,
+  input  floo_req_t  [          West:North]                      floo_req_i,
+  output floo_rsp_t  [          West:North]                      floo_rsp_o,
+  input  floo_wide_t [          West:North]                      floo_wide_i,
+  // UCIE PHY interface for dummy loopback
+  output logic       [     NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out_o,
+  output logic       [     NumChannels-1:0]                      phy_data_out_valid_o,
+  input  logic       [     NumChannels-1:0]                      phy_data_out_ready_i,
+  input  logic       [     NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in_i,
+  input  logic       [     NumChannels-1:0]                      phy_data_in_valid_i,
+  output logic       [     NumChannels-1:0]                      phy_data_in_ready_o
 );
 
   // Tile-specific reset and clock signals
@@ -67,6 +66,14 @@ module ucie_tile
 
   // Clock/rst configuration registers.
   gw_ucie_tile_regs_pkg::gw_ucie_tile_regs__out_t hwif_out;
+
+  // Slink interface
+  logic [NumChannels-1:0][NumBitsPerCycle-1:0] slink_phy_data_out;
+  logic [NumChannels-1:0]                      slink_phy_data_out_valid;
+  logic [NumChannels-1:0]                      slink_phy_data_out_ready;
+  logic [NumChannels-1:0][NumBitsPerCycle-1:0] slink_phy_data_in;
+  logic [NumChannels-1:0]                      slink_phy_data_in_valid;
+  logic [NumChannels-1:0]                      slink_phy_data_in_ready;
 
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
@@ -601,12 +608,12 @@ module ucie_tile
     .hwif_out_i              (slink_reg2hw),
     .hwif_in_o               (slink_hw2reg),
     // Dummy loopback
-    .phy_data_out_o,
-    .phy_data_out_valid_o,
-    .phy_data_out_ready_i,
-    .phy_data_in_i,
-    .phy_data_in_valid_i,
-    .phy_data_in_ready_o,
+    .phy_data_out_o          (slink_phy_data_out),
+    .phy_data_out_valid_o    (slink_phy_data_out_valid),
+    .phy_data_out_ready_i    (slink_phy_data_out_ready),
+    .phy_data_in_i           (slink_phy_data_in),
+    .phy_data_in_valid_i     (slink_phy_data_in_valid),
+    .phy_data_in_ready_o     (slink_phy_data_in_ready),
     // Unused
     .tx_phy_clk_div_o        (  /* Unconnect */),
     .tx_phy_clk_shift_start_o(  /* Unconnect */),
@@ -616,5 +623,59 @@ module ucie_tile
     .clk_ena_o               (  /* Unconnect */),
     .reset_no                (  /* Unconnect */)
   );
+
+  ////////////////////////////////////
+  // PHY bandwidth-mode mux/adapter //
+  ///////////////////////////////////
+
+  for (genvar ch = 0; ch < NumChannels; ch++) begin : gen_phy_bw_adapt
+    logic [UcieHalfPhyWidth-1:0] tx_half_data;
+    logic tx_half_valid, tx_half_ready;
+
+    cc_stream_downsizer #(
+      .NarrowWidth(UcieHalfPhyWidth),
+      .WideWidth  (NumBitsPerCycle)
+    ) i_phy_tx_downsizer (
+      .clk_i      (tile_clk),
+      .rst_ni     (tile_rst_n),
+      .inp_data_i (slink_phy_data_out[ch]),
+      .inp_valid_i(slink_phy_data_out_valid[ch] && hwif_out.phy_mode.half_bw_en.value),
+      .inp_ready_o(tx_half_ready),
+      .oup_data_o (tx_half_data),
+      .oup_valid_o(tx_half_valid),
+      .oup_ready_i(phy_data_out_ready_i[ch] && hwif_out.phy_mode.half_bw_en.value)
+    );
+
+    assign slink_phy_data_out_ready[ch] =
+        hwif_out.phy_mode.half_bw_en.value ? tx_half_ready : phy_data_out_ready_i[ch];
+    assign phy_data_out_valid_o[ch] =
+        hwif_out.phy_mode.half_bw_en.value ? tx_half_valid : slink_phy_data_out_valid[ch];
+    assign phy_data_out_o[ch] =
+        hwif_out.phy_mode.half_bw_en.value ? {2{tx_half_data}} : slink_phy_data_out[ch];
+
+    logic [NumBitsPerCycle-1:0] rx_full_data;
+    logic rx_full_valid, rx_full_ready;
+
+    cc_stream_upsizer #(
+      .NarrowWidth(UcieHalfPhyWidth),
+      .WideWidth  (NumBitsPerCycle)
+    ) i_phy_rx_upsizer (
+      .clk_i      (tile_clk),
+      .rst_ni     (tile_rst_n),
+      .inp_data_i (phy_data_in_i[ch][UcieHalfPhyWidth-1:0]),
+      .inp_valid_i(phy_data_in_valid_i[ch] && hwif_out.phy_mode.half_bw_en.value),
+      .inp_ready_o(rx_full_ready),
+      .oup_data_o (rx_full_data),
+      .oup_valid_o(rx_full_valid),
+      .oup_ready_i(slink_phy_data_in_ready[ch] && hwif_out.phy_mode.half_bw_en.value)
+    );
+
+    assign phy_data_in_ready_o[ch] =
+        hwif_out.phy_mode.half_bw_en.value ? rx_full_ready : slink_phy_data_in_ready[ch];
+    assign slink_phy_data_in_valid[ch] =
+        hwif_out.phy_mode.half_bw_en.value ? rx_full_valid : phy_data_in_valid_i[ch];
+    assign slink_phy_data_in[ch] =
+        hwif_out.phy_mode.half_bw_en.value ? rx_full_data : phy_data_in_i[ch];
+  end
 
 endmodule : ucie_tile
