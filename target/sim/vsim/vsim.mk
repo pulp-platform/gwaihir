@@ -28,6 +28,12 @@ VSIM_FLAGS_GUI   = -voptargs=+acc
 # it causing errors in vopt for questa-2023.4
 VSIM_FLAGS_BATCH = -voptargs='+acc+hpdcache_flush'
 
+# Annotated at elaboration so that vopt does not inline the HyperRAM cells
+VSIM_SDF_FLAGS  = -sdftyp /$(TB_DUT)/fix/gen_hyper_phy[0]/gen_hyper_chip[0]/dut=$(HYPER_SDF)
+VSIM_SDF_FLAGS += -sdftyp /$(TB_DUT)/fix/gen_hyper_phy[0]/gen_hyper_chip[1]/dut=$(HYPER_SDF)
+VSIM_SDF_FLAGS += -sdftyp /$(TB_DUT)/fix/gen_hyper_phy[1]/gen_hyper_chip[0]/dut=$(HYPER_SDF)
+VSIM_SDF_FLAGS += -sdftyp /$(TB_DUT)/fix/gen_hyper_phy[1]/gen_hyper_chip[1]/dut=$(HYPER_SDF)
+
 define add_vsim_flag
 ifdef $(1)
 	VSIM_FLAGS += +$(1)=$$($(1))
@@ -49,18 +55,19 @@ vsim-clean:
 vsim-compile: $(VSIM_DIR)/compile.tcl $(GW_HW_ALL)
 	$(VSIM) -c $(VSIM_FLAGS) -do "source $<; quit"
 
-$(VSIM_DIR)/compile.tcl: $(BENDER_YML) $(BENDER_LOCK)
+$(VSIM_DIR)/compile.tcl: $(BENDER_YML) $(BENDER_LOCK) $(HYPER_MODEL) $(HYPER_PADFRAME)
 	$(BENDER) script vsim --compilation-mode common $(COMMON_TARGS) $(SIM_TARGS) --vlog-arg="$(VLOG_ARGS)"> $@
 	echo 'vlog -work $(VSIM_WORK) "$(realpath $(CHS_ROOT))/target/sim/src/elfloader.cpp" -ccflags "-std=c++11"' >> $@
+	echo 'vlog -work $(VSIM_WORK) "$(HYPER_MODEL)"' >> $@
 
-vsim-run:
-	cd $(SIM_DIR) && $(VSIM) $(VSIM_FLAGS) $(VSIM_FLAGS_GUI) $(TB_DUT) -do "log -r /*"
+vsim-run: $(HYPER_SDF)
+	cd $(SIM_DIR) && $(VSIM) $(VSIM_FLAGS) $(VSIM_SDF_FLAGS) $(VSIM_FLAGS_GUI) $(TB_DUT) -do "log -r /*"
 
-vsim-run-batch:
-	cd $(SIM_DIR) && $(VSIM) -c $(VSIM_FLAGS) $(VSIM_FLAGS_BATCH) $(TB_DUT) -do "run -all; quit"
+vsim-run-batch: $(HYPER_SDF)
+	cd $(SIM_DIR) && $(VSIM) -c $(VSIM_FLAGS) $(VSIM_SDF_FLAGS) $(VSIM_FLAGS_BATCH) $(TB_DUT) -do "run -all; quit"
 
-vsim-run-batch-wave:
-	cd $(SIM_DIR) && $(VSIM) -c $(VSIM_FLAGS) $(VSIM_FLAGS_GUI) $(TB_DUT) -do "log -r /*; run -all; quit"
+vsim-run-batch-wave: $(HYPER_SDF)
+	cd $(SIM_DIR) && $(VSIM) -c $(VSIM_FLAGS) $(VSIM_SDF_FLAGS) $(VSIM_FLAGS_GUI) $(TB_DUT) -do "log -r /*; run -all; quit"
 
 vsim-run-batch-verify: vsim-run-batch
 ifdef VERIFY_PY
