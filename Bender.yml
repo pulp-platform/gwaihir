@@ -25,7 +25,7 @@ dependencies:
     rev: common-cells-v2
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
-    rev: gwaihir-common-cells-v2
+    rev: 0de089022922beaf3bcd0ec4c819686c83b9526f # yt/iommu-bare
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: c63eada47c050f78b320d0e854a24a9cd9c1cc80
