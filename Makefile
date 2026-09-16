@@ -302,6 +302,12 @@ include $(GW_ROOT)/target/sim/vsim/vsim.mk
 include $(GW_ROOT)/target/sim/vcs/vcs.mk
 include $(GW_ROOT)/target/sim/traces.mk
 
+# Surya build: 8 arrays of 64 x 8 MACs, no PACE. `configs/hw_configs.json` in surya-mx
+# holds the other configurations.
+SURYA_VLOG_DEFS ?= +define+NUM_ARRAYS=8 +define+ARRAY_N=64 +define+ARRAY_P=8 +define+N_ACCUM=64
+VLOG_ARGS   += $(SURYA_VLOG_DEFS)
+VLOGAN_ARGS += $(SURYA_VLOG_DEFS)
+
 ##################
 # Snitch cluster #
 ##################

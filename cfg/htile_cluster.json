@@ -9,18 +9,18 @@
     cluster: {
         name: "htile",
         cluster_base_addr: 0x20400000,
-        cluster_base_offset: 0x100000,
+        cluster_base_offset: 0x40000,
         cluster_base_hartid: 33, // 16 x 2 + 1; Cheshire is hart 0
         addr_width: 48,
         data_width: 64,
         atomic_id_width: 6, // clog2(#clusters + 2); must equal AxiCfgN.UserWidth
         tcdm: {
-            size: 512,
+            size: 128,
             banks: 32,
         },
-        // The cluster crossbar needs a NAPOT address space: 512 + 4 + 252 + 252 + 4 kB.
-        cluster_periph_size: 252, // kB
-        zero_mem_size: 252, // kB
+        // The cluster crossbar needs a NAPOT address space: 128 + 4 + 60 + 60 + 4 kB.
+        cluster_periph_size: 60, // kB
+        zero_mem_size: 60, // kB
         ext_mem_size: 4, //kB
         dma_data_width: 512,
         dma_axi_req_fifo_depth: 24,
@@ -36,7 +36,7 @@
         alias_region_enable: true,
         // The harts boot from the bootrom alias. The region must not overlap the NoC map.
         alias_region_base: 0x20600000,
-        num_exposed_wide_tcdm_ports: 1,
+        num_exposed_wide_tcdm_ports: 5,
         narrow_axi_port_expose: true,
         collective_width: 4,
         enable_external_interrupts: true,
