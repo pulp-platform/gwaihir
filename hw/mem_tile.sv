@@ -99,7 +99,7 @@ module mem_tile
     };
   end
   localparam int unsigned NumTileApbAddrMapRules = 1;
-  addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
+  localparam addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
       '{idx: 0, start_addr: '0, end_addr: '1}
   };
 
