@@ -103,8 +103,6 @@ sources:
   - hw/mem_tile_small.sv
   - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
-  - hw/new_common_cells/cc_stream_downsizer.sv
-  - hw/new_common_cells/cc_stream_upsizer.sv
 
   - target: not(ucie)
     files:
