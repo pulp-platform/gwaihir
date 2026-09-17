@@ -17,6 +17,9 @@ VLOGAN_ARGS += -kdb
 VLOGAN_ARGS += -assert svaext
 VLOGAN_ARGS += -timescale=1ns/1ps
 VLOGAN_ARGS += -nc
+# Extra vlogan args from the command line, e.g. defines:
+#   make vcs-compile-batch EXTRA_VLOGAN_ARGS="+define+UCIE_BRIDGE_DBG"
+VLOGAN_ARGS += $(EXTRA_VLOGAN_ARGS)
 
 VCS_FLAGS_GUI  = -debug_access+all
 
@@ -63,7 +66,7 @@ $(VCS_BUILD)/gwaihir_top_batch.vcs: $(VCS_BUILD)/compile.sh $(GW_HW_ALL)
 vcs-compile-batch: $(VCS_BUILD)/gwaihir_top_batch.vcs
 
 vcs-run-batch:
-	$(VCS_SEPP) $(VCS_BUILD)/gwaihir_top_batch.vcs $(VCS_FLAGS)
+	$(VCS_SEPP) $(VCS_BUILD)/gwaihir_top_batch.vcs $(VCS_FLAGS) -l run_batch.log
 
 vcs-run-batch-verify: vcs-run-batch
 ifdef VERIFY_PY

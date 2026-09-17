@@ -63,7 +63,7 @@ DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
-UCIE_SLINK_NUM_LANES ?= 512
+UCIE_SLINK_NUM_LANES ?= 256
 UCIE_SLINK_EN_DDR    ?= 0
 
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
