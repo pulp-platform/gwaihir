@@ -27,6 +27,7 @@ pd
 
 # Nonfree pcie and ucie sw test sources, vendored into sw/cheshire/tests/ by `make init-pd` (see Makefile)
 sw/cheshire/tests/pcie_*.c
+sw/cheshire/tests/ucie_closed_*.c
 
 # Software
 *build
