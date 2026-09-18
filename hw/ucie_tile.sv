@@ -20,25 +20,29 @@ module ucie_tile
   input logic test_enable_i,
 
   // Router ID
-  input  id_t                                                    id_i,
-  input  logic                                                   ucie_id_i,
+  input  id_t                               id_i,
+  input  logic                              ucie_id_i,
   // Sam idx
-  input  logic       [$bits(sam_idx_e)-1:0]                      samidx_i,
+  input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
   // Router mesh ports
-  output floo_req_t  [          West:North]                      floo_req_o,
-  input  floo_rsp_t  [          West:North]                      floo_rsp_i,
-  output floo_wide_t [          West:North]                      floo_wide_o,
-  input  floo_req_t  [          West:North]                      floo_req_i,
-  output floo_rsp_t  [          West:North]                      floo_rsp_o,
-  input  floo_wide_t [          West:North]                      floo_wide_i,
+  output floo_req_t  [          West:North] floo_req_o,
+  input  floo_rsp_t  [          West:North] floo_rsp_i,
+  output floo_wide_t [          West:North] floo_wide_o,
+  input  floo_req_t  [          West:North] floo_req_i,
+  output floo_rsp_t  [          West:North] floo_rsp_o,
+  input  floo_wide_t [          West:North] floo_wide_i,
+
   // UCIE PHY interface for dummy loopback
-  output logic       [     NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out_o,
-  output logic       [     NumChannels-1:0]                      phy_data_out_valid_o,
-  input  logic       [     NumChannels-1:0]                      phy_data_out_ready_i,
-  input  logic       [     NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in_i,
-  input  logic       [     NumChannels-1:0]                      phy_data_in_valid_i,
-  output logic       [     NumChannels-1:0]                      phy_data_in_ready_o
+  output logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out_o,
+  output logic [NumChannels-1:0]                      phy_data_out_valid_o,
+  input  logic [NumChannels-1:0]                      phy_data_out_ready_i,
+  input  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in_i,
+  input  logic [NumChannels-1:0]                      phy_data_in_valid_i,
+  output logic [NumChannels-1:0]                      phy_data_in_ready_o
 );
+
+  // Half-bandwidth mode for debug output channels
+  localparam int unsigned UcieHalfPhyWidth = NumBitsPerCycle / 2;
 
   // Tile-specific reset and clock signals
   logic tile_clk;

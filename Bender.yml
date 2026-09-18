@@ -28,7 +28,7 @@ dependencies:
     rev: gwaihir-common-cells-v2
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
-    rev: c63eada47c050f78b320d0e854a24a9cd9c1cc80
+    rev: new/stream-sizer
   datamover:
     git: https://github.com/pulp-platform/datamover.git
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2

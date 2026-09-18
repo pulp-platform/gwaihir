@@ -518,9 +518,6 @@ package gwaihir_pkg;
   localparam int unsigned UcieNumAddrRules = Ucie1SamIdx - Ucie0SamIdx;
   localparam int unsigned NumBitsPerCycle = NumLanes * (1 + EnDdr);
 
-  // Half-bandwidth mode for debug output channels
-  localparam int unsigned UcieHalfPhyWidth = NumBitsPerCycle / 2;
-
 
   function automatic addr_t alias_clear_mask();
     addr_t ucie0_base, ucie1_base, canonical_base;
