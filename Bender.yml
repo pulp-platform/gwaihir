@@ -42,8 +42,8 @@ dependencies:
     path: .deps/lpddr
   iDMA: 0.6.5
   mxcore:
-    git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
-    rev: common-cells-v2
+    git: https://github.com/pulp-platform/MXCore.git
+    rev: gwaihir
   obi:
     git: https://github.com/pulp-platform/obi.git
     rev: common-cells-v2

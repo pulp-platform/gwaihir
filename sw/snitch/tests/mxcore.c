@@ -1,4 +1,4 @@
-// Copyright 2024 ETH Zurich and University of Bologna.
+// Copyright 2026 ETH Zurich and University of Bologna.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -24,6 +24,8 @@
 // MX Parameters
 #define BLOCK_SIZE      32
 #define QUANTIZE_OUTPUT 1
+#define SRC_WIDTH       8
+#define DST_WIDTH       32
 
 #define HWPE_ADDR_BASE ((unsigned long)snrt_cluster_alias()->zeromem.mem + sizeof(snrt_cluster_alias()->zeromem.mem))
 #define MXCORE_TRIGGER 0x00
@@ -36,17 +38,20 @@
 #define HWPE_WRITE(value, offset) *(volatile int *)(HWPE_ADDR_BASE + offset) = value
 #define HWPE_READ(offset) *(volatile int *)(HWPE_ADDR_BASE + offset)
 
-void mxcore_cfg (unsigned int vector_a_ptr, unsigned int vectors_b_ptr, unsigned int scale_a_ptr, unsigned int scale_b_ptr, unsigned int result_ptr, unsigned int result_scale_ptr, uint16_t m, uint16_t k, uint16_t n, uint32_t engine_ctrl_reg) {
-  uint32_t nm = ((uint32_t)n << 16) | (uint32_t)m;
+void mxcore_cfg (unsigned int vector_a_ptr, unsigned int vectors_b_ptr, unsigned int scale_a_ptr, unsigned int scale_b_ptr, unsigned int result_ptr, unsigned int result_scale_ptr, uint32_t gemm_size, uint32_t engine_ctrl_reg, uint32_t tile_counts, uint32_t a_tile_size, uint32_t b_tile_size, uint32_t result_tile_size, uint32_t iter_count) {
   HWPE_WRITE(vector_a_ptr,      0x20);
   HWPE_WRITE(vectors_b_ptr,     0x24);
   HWPE_WRITE(scale_a_ptr,       0x28);
   HWPE_WRITE(scale_b_ptr,       0x2C);
   HWPE_WRITE(result_ptr,        0x30);
   HWPE_WRITE(result_scale_ptr,  0x34);
-  HWPE_WRITE(k,                 0x38);
-  HWPE_WRITE(nm,                0x3C);
-  HWPE_WRITE(engine_ctrl_reg,   0x40);
+  HWPE_WRITE(gemm_size,         0x38);
+  HWPE_WRITE(engine_ctrl_reg,   0x3C);
+  HWPE_WRITE(tile_counts,       0x40);
+  HWPE_WRITE(a_tile_size,       0x44);
+  HWPE_WRITE(b_tile_size,       0x48);
+  HWPE_WRITE(result_tile_size,  0x4C);
+  HWPE_WRITE(iter_count,        0x50);
 }
 
 static inline void hwpe_trigger_job() { HWPE_WRITE(0, MXCORE_TRIGGER); }
@@ -91,6 +96,22 @@ int main() {
     // Control Engine Register Value
     uint32_t engine_ctrl = 0x00200678;
 
+    // REG_GEMM_SIZE: [9:0] M, [21:10] K, [31:22] N
+    uint32_t gemm_size = ((uint32_t)M & 0x3FF) | (((uint32_t)K & 0xFFF) << 10) | (((uint32_t)N & 0x3FF) << 22);
+
+    // REG_TILE_COUNTS: [3:0] A_ROW_TILES, [8:4] B_COL_TILES, [15:9] INNER_TILES, [22:16] INNER_BLOCKS
+    uint32_t a_row_tiles  = M / OBuff;
+    uint32_t b_col_tiles  = N / MXU;
+    uint32_t inner_tiles  = K / VS;
+    uint32_t inner_blocks = (K + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    uint32_t tile_counts  = (a_row_tiles & 0xF) | ((b_col_tiles & 0x1F) << 4) |
+                            ((inner_tiles & 0x7F) << 9) | ((inner_blocks & 0x7F) << 16);
+
+    uint32_t a_tile_size      = OBuff * VS * SRC_WIDTH;
+    uint32_t b_tile_size      = VS * MXU * SRC_WIDTH;
+    uint32_t result_tile_size = (QUANTIZE_OUTPUT == 1) ? (MXU * OBuff * SRC_WIDTH) : (MXU * OBuff * DST_WIDTH);
+    uint32_t iter_count       = ((uint32_t)K * OBuff) / VS;
+
     // Allocate space and Copy Data into TCDM
     local_a = snrt_l1_alloc_cluster_local(a_size, 4096);
     local_b = snrt_l1_alloc_cluster_local(b_size, 4096);
@@ -119,7 +140,7 @@ int main() {
             mxstatus = hwpe_acquire_job();
         } while (mxstatus < 0);
 
-        mxcore_cfg((unsigned int) local_a, (unsigned int) local_b, (unsigned int) local_scale_a, (unsigned int) local_scale_b, (unsigned int) local_result, (unsigned int) local_result_scale, M, K, N, engine_ctrl);
+        mxcore_cfg((unsigned int) local_a, (unsigned int) local_b, (unsigned int) local_scale_a, (unsigned int) local_scale_b, (unsigned int) local_result, (unsigned int) local_result_scale, gemm_size, engine_ctrl, tile_counts, a_tile_size, b_tile_size, result_tile_size, iter_count);
 
         hwpe_trigger_job();
 
