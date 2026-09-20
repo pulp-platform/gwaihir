@@ -169,17 +169,78 @@ module cluster_tile
         end
         (floo_pkg::FpMax): begin
           offload_dca_req.q.op          = fpnew_pkg::MINMAX;
-          offload_dca_req.q.rnd_mode    = fpnew_pkg::RNE;
+          // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
+          offload_dca_req.q.rnd_mode    = fpnew_pkg::RTZ;
           offload_dca_req.q.operands[0] = offload_wide_req.req.operand1;
           offload_dca_req.q.operands[1] = offload_wide_req.req.operand2;
           offload_dca_req.q.operands[2] = '0;
         end
         (floo_pkg::FpMin): begin
           offload_dca_req.q.op          = fpnew_pkg::MINMAX;
-          offload_dca_req.q.rnd_mode    = fpnew_pkg::RTZ;
+          offload_dca_req.q.rnd_mode    = fpnew_pkg::RNE;
           offload_dca_req.q.operands[0] = offload_wide_req.req.operand1;
           offload_dca_req.q.operands[1] = offload_wide_req.req.operand2;
           offload_dca_req.q.operands[2] = '0;
+        end
+        (floo_pkg::FpAdd32): begin
+          offload_dca_req.q.op           = fpnew_pkg::ADD;
+          offload_dca_req.q.src_fmt      = fpnew_pkg::FP32;
+          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP32;
+          offload_dca_req.q.vectorial_op = 1'b1;
+          offload_dca_req.q.operands[0]  = '0;
+          offload_dca_req.q.operands[1]  = offload_wide_req.req.operand1;
+          offload_dca_req.q.operands[2]  = offload_wide_req.req.operand2;
+        end
+        (floo_pkg::FpAdd16): begin
+          offload_dca_req.q.op           = fpnew_pkg::ADD;
+          offload_dca_req.q.src_fmt      = fpnew_pkg::FP16;
+          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP16;
+          offload_dca_req.q.vectorial_op = 1'b1;
+          offload_dca_req.q.operands[0]  = '0;
+          offload_dca_req.q.operands[1]  = offload_wide_req.req.operand1;
+          offload_dca_req.q.operands[2]  = offload_wide_req.req.operand2;
+        end
+        (floo_pkg::FpAdd8): begin
+          offload_dca_req.q.op           = fpnew_pkg::ADD;
+          offload_dca_req.q.src_fmt      = fpnew_pkg::FP8;
+          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP8;
+          offload_dca_req.q.vectorial_op = 1'b1;
+          offload_dca_req.q.operands[0]  = '0;
+          offload_dca_req.q.operands[1]  = offload_wide_req.req.operand1;
+          offload_dca_req.q.operands[2]  = offload_wide_req.req.operand2;
+        end
+        (floo_pkg::FpMax32): begin
+          offload_dca_req.q.op           = fpnew_pkg::MINMAX;
+          // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
+          offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
+          offload_dca_req.q.src_fmt      = fpnew_pkg::FP32;
+          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP32;
+          offload_dca_req.q.vectorial_op = 1'b1;
+          offload_dca_req.q.operands[0]  = offload_wide_req.req.operand1;
+          offload_dca_req.q.operands[1]  = offload_wide_req.req.operand2;
+          offload_dca_req.q.operands[2]  = '0;
+        end
+        (floo_pkg::FpMax16): begin
+          offload_dca_req.q.op           = fpnew_pkg::MINMAX;
+          // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
+          offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
+          offload_dca_req.q.src_fmt      = fpnew_pkg::FP16;
+          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP16;
+          offload_dca_req.q.vectorial_op = 1'b1;
+          offload_dca_req.q.operands[0]  = offload_wide_req.req.operand1;
+          offload_dca_req.q.operands[1]  = offload_wide_req.req.operand2;
+          offload_dca_req.q.operands[2]  = '0;
+        end
+        (floo_pkg::FpMax8): begin
+          offload_dca_req.q.op           = fpnew_pkg::MINMAX;
+          // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
+          offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
+          offload_dca_req.q.src_fmt      = fpnew_pkg::FP8;
+          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP8;
+          offload_dca_req.q.vectorial_op = 1'b1;
+          offload_dca_req.q.operands[0]  = offload_wide_req.req.operand1;
+          offload_dca_req.q.operands[1]  = offload_wide_req.req.operand2;
+          offload_dca_req.q.operands[2]  = '0;
         end
         default: begin
           offload_dca_req.q.op          = fpnew_pkg::ADD;

@@ -34,7 +34,7 @@ dependencies:
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
-    rev: main
+    rev: gwaihir/reduction
     upstream_name: FlooNoC
   gwaihir-pd:
     path: ./pd
@@ -59,7 +59,7 @@ dependencies:
     rev: main
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: dca
+    rev: dca-extend
   ucie:
     path: .deps/ucie
 
@@ -82,7 +82,8 @@ sources:
   - target: gw_gen_rtl
     files:
       # Level 0.0
-      - .generated/hw/floo_gwaihir_noc_pkg.sv
+      # TODO(lleone): Point back to generated after extending floogen
+      - hw/floo_gwaihir_noc_pkg.sv
       - .generated/hw/gw_tile_regs_pkg.sv
       - .generated/hw/gw_ucie_tile_regs_pkg.sv
       - .generated/hw/gw_addrmap_pkg.sv

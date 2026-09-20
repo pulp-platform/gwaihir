@@ -41,6 +41,88 @@ typedef enum {
 // being allocated by the compiler in L2.
 __thread double one = 1;
 
+// Opcode used by the HW (DCA) implementation. Defaults to the pre-existing
+// FP64 add. The naive FP32/FP16/FP8 Add/Max opcodes added to floo_pkg.sv /
+// cluster_tile.sv can be selected by overriding both HW_OP and HW_ELEM_BYTES
+// (the source/destination element width in bytes each opcode operates on).
+#ifndef HW_OP
+#define HW_OP SNRT_REDUCTION_FADD
+#endif
+
+#ifndef HW_ELEM_BYTES
+#define HW_ELEM_BYTES 8
+#endif
+
+// Number of independent elements packed per 64-bit DCA lane. Formats
+// narrower than 64 bits use fpnew's vectorial (SIMD) mode
+// (offload_dca_req.q.vectorial_op=1 in cluster_tile.sv), packing
+// SIMD_WIDTH densely-adjacent elements per lane instead of one padded
+// value -- see the SIMD discussion in plans/noc-fp-multiformat-naive-plan.md.
+// fpnew packs sub-element 0 at the lane's LSBs, increasing index towards
+// the MSBs (confirmed in fpnew_opgroup_multifmt_slice.sv).
+#define SIMD_WIDTH (8 / HW_ELEM_BYTES)
+#define N_LOGICAL_ELEMS (N_ELEMS * SIMD_WIDTH)
+
+// Converts a float to its FP8 (fpnew FP8/e5m2: 1 sign, 5 exponent, 2
+// mantissa bits) bit pattern via plain integer bit manipulation, so it can
+// run on any core (in particular the DMA core, which -- unlike the compute
+// core -- has no FPU narrow-format (XF8) support to run a native `fcvt.b.s`
+// conversion). Only handles finite, non-negative values in e5m2's normal
+// range, which is all this test ever needs to encode.
+static inline uint8_t fp8_from_float(float val) {
+    uint32_t bits;
+    __builtin_memcpy(&bits, &val, sizeof(bits));
+    uint32_t sign = (bits >> 31) & 0x1;
+    uint32_t raw_exp = (bits >> 23) & 0xff;
+    uint32_t mant = bits & 0x7fffff;
+
+    if (raw_exp == 0 && mant == 0) return (uint8_t)(sign << 7);
+
+    int32_t e5_exp = (int32_t)raw_exp - 127 + 15;
+    uint32_t mant2 = mant >> 21;
+    uint32_t round_bit = (mant >> 20) & 0x1;
+    uint32_t sticky = mant & 0xfffff;
+    if (round_bit && (sticky || (mant2 & 0x1))) {
+        mant2++;
+        if (mant2 == 4) {
+            mant2 = 0;
+            e5_exp++;
+        }
+    }
+    if (e5_exp >= 31) return (uint8_t)((sign << 7) | (0x1f << 2));
+    if (e5_exp <= 0) return (uint8_t)(sign << 7);
+    return (uint8_t)((sign << 7) | ((e5_exp & 0x1f) << 2) | (mant2 & 0x3));
+}
+
+// Writes `val` as the `e`-th of N_LOGICAL_ELEMS densely-packed elements
+// (SIMD_WIDTH per 64-bit slot, sub-element 0 at each lane's LSBs -- see
+// SIMD_WIDTH's comment). Since fpnew's vectorial mode bypasses the RISC-V
+// NaN-boxing check entirely (is_boxed forced true when vectorial_op=1),
+// no padding/boxing is needed here, unlike the earlier scalar-only version.
+static inline void write_elem(uintptr_t buf, uint32_t e, double val) {
+    uint32_t slot = e / SIMD_WIDTH;
+    uint32_t lane = e % SIMD_WIDTH;
+    uint64_t bits;
+#if HW_ELEM_BYTES == 4
+    float f = (float)val;
+    uint32_t low;
+    __builtin_memcpy(&low, &f, sizeof(f));
+    bits = low;
+#elif HW_ELEM_BYTES == 2
+    _Float16 f = (_Float16)val;
+    uint16_t low;
+    __builtin_memcpy(&low, &f, sizeof(f));
+    bits = low;
+#elif HW_ELEM_BYTES == 1
+    bits = fp8_from_float((float)val);
+#else
+    __builtin_memcpy(&bits, &val, sizeof(val));
+#endif
+    uint64_t *slot_ptr = &((uint64_t *)buf)[slot];
+    if (lane == 0) *slot_ptr = 0;
+    *slot_ptr |= bits << (lane * HW_ELEM_BYTES * 8);
+}
+
 static inline void global_hw_barrier(volatile uint32_t *barrier_ptr,
     uint32_t user) {
 
@@ -77,7 +159,7 @@ static inline void dma_reduction_hw(uintptr_t src, uintptr_t dst,
     if (snrt_is_dm_core() && comm->is_participant) {
         uint32_t remote_cluster;
         uintptr_t remote_dst;
-        snrt_collective_opcode_t op = SNRT_REDUCTION_FADD;
+        snrt_collective_opcode_t op = HW_OP;
 
         // Reduction across rows (destination: first cluster in row)
         snrt_mcycle();
@@ -451,7 +533,12 @@ static inline void dma_reduction(uintptr_t a, uintptr_t b, uintptr_t c,
 // Global variables for verification script
 double output[N_ELEMS];
 extern const uint32_t n_clusters = N_ROWS * gw_cluster_num_in_row();
-extern const uint32_t length = N_ELEMS;
+extern const uint32_t length = N_LOGICAL_ELEMS;
+extern const uint32_t elem_bytes = HW_ELEM_BYTES;
+extern const uint32_t is_max_op = (HW_OP == SNRT_REDUCTION_FMAX32 ||
+                                    HW_OP == SNRT_REDUCTION_FMAX16 ||
+                                    HW_OP == SNRT_REDUCTION_FMAX8 ||
+                                    HW_OP == SNRT_REDUCTION_FMAX);
 
 int main (void){
 
@@ -473,10 +560,10 @@ int main (void){
 
         // Initialize source buffer
         if (snrt_is_dm_core()) {
-            for (uint32_t i = 0; i < N_ELEMS; i++) {
+            for (uint32_t i = 0; i < N_LOGICAL_ELEMS; i++) {
                 uint32_t row_major_cluster_idx = gw_cluster_col_idx() +
                     gw_cluster_row_idx() * gw_cluster_num_in_row();
-                ((double *)a_buffer)[i] = row_major_cluster_idx + i;
+                write_elem(a_buffer, i, (double)(row_major_cluster_idx + i));
             }
         }
         snrt_global_barrier(comm);

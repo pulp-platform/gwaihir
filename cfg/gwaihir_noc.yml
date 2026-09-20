@@ -56,7 +56,7 @@ protocols:
     id_width: 5
     user_width:
       collective_mask: 48
-      collective_op: 4
+      collective_op: 5
       user: 6
   - name: "narrow_out"
     type: "narrow"
@@ -66,7 +66,7 @@ protocols:
     id_width: 2
     user_width:
       collective_mask: 48
-      collective_op: 4
+      collective_op: 5
       user: 6
   - name: "wide_in"
     type: "wide"
@@ -76,7 +76,7 @@ protocols:
     id_width: 3
     user_width:
       collective_mask: 48
-      collective_op: 4
+      collective_op: 5
   - name: "wide_out"
     type: "wide"
     protocol: "AXI4"
@@ -85,7 +85,7 @@ protocols:
     id_width: 1
     user_width:
       collective_mask: 48
-      collective_op: 4
+      collective_op: 5
 
 endpoints:
   - name: "cluster"
