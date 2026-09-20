@@ -5,11 +5,20 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 #include <stdint.h>
+#include "dif/clint.h"
+#include "dif/uart.h"
+#include "params.h"
+#include "regs/cheshire.h"
+#include "util.h"
 #include "gw_addrmap_64b.h"
 #include "gw_raw_addrmap_64b.h"
 #include "gw_memtile.h"
 
 #include "snitch_cluster_cfg.h"
+
+#ifndef GW_UART_BAUDRATE
+#define GW_UART_BAUDRATE __BOOT_BAUDRATE
+#endif
 
 // Return code array placed at the last 4K page of the L2 SPM region.
 // This address scales automatically with the number and size of memory tiles.
@@ -20,6 +29,11 @@
 volatile uint32_t (*return_code_array)[CFG_CLUSTER_NR_CORES] = (uint32_t (*)[CFG_CLUSTER_NR_CORES])RETURN_CODE_ADDR;
 
 int main() {
+
+  // Provide a console for Snitch's printf, including when using JTAG preload.
+  uint32_t rtc_freq = CHS_REGS->rtc_freq.f.ref_freq;
+  uint64_t core_freq = clint_get_core_freq(rtc_freq, 2500);
+  uart_init(&__uart_base_addr__, core_freq, GW_UART_BAUDRATE);
 
   // Write entry point to scratch register 1
   // and return code address to scratch register 0
@@ -57,5 +71,7 @@ int main() {
     }
   }
 
+  // Snitch may have returned while the last character is still on the wire.
+  uart_write_flush(&__uart_base_addr__);
   return sum;
 }

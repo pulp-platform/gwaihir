@@ -51,6 +51,8 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/fused_concat_linear
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/mha
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/summa_gemm
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/mxcore_gemm_mxfp8_mxfp8_fp32
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/mxcore_gemm_mxfp8_mxfp8_mxfp8
 # Spatz kernels
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
 
