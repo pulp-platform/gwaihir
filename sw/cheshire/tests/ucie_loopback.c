@@ -30,19 +30,11 @@ int main() {
   if ( (ucie_tile_enable(ucie_cfg0) && (ucie_tile_enable(ucie_cfg1))) == 0) return 1;
 
 #ifdef GW_UCIE_CLOSED_PCS
-  uintptr_t ucie0_csr = (uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg;
-  uintptr_t ucie1_csr = (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg;
-
-  if (ucie_pcs_bringup(ucie0_csr) != 0u) return 1;
-  if (ucie_pcs_bringup(ucie1_csr) != 0u) return 1;
-
-  volatile uint32_t *slink0 = (volatile uint32_t *)&gwaihir_addrmap_64b.ucie0_axi_serial_cfg;
-  volatile uint32_t *slink1 = (volatile uint32_t *)&gwaihir_addrmap_64b.ucie1_axi_serial_cfg;
-  slink0[0] = 0x00000003u;
-  slink1[0] = 0x00000003u;
-  for (volatile uint64_t d = 0; d < 64; d++) { }
-
-  ucie_pcs_bridge_enable(ucie0_csr, ucie1_csr);
+  if (ucie_link_bringup((uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg,
+                        (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg,
+                        (volatile uint32_t *)&gwaihir_addrmap_64b.ucie0_axi_serial_cfg,
+                        (volatile uint32_t *)&gwaihir_addrmap_64b.ucie1_axi_serial_cfg) != 0u)
+    return 1;
 #endif
 
   // Write to chiplet1's L2 through the ucie0 alias window (routed via UCIe).

@@ -79,17 +79,10 @@ int main() {
   if ( (ucie_tile_enable(ucie_cfg0) && (ucie_tile_enable(ucie_cfg1))) == 0) return 1;
 
 #ifdef GW_UCIE_CLOSED_PCS
-  uintptr_t ucie0_csr = (uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg;
-  uintptr_t ucie1_csr = (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg;
-
-  if (ucie_pcs_bringup(ucie0_csr) != 0u) return 1;
-  if (ucie_pcs_bringup(ucie1_csr) != 0u) return 1;
-
-  ucie0_slink->ctrl.w = 0x00000003u;
-  ucie1_slink->ctrl.w = 0x00000003u;
-  for (volatile uint64_t d = 0; d < 64; d++) { }
-
-  ucie_pcs_bridge_enable(ucie0_csr, ucie1_csr);
+  if (ucie_link_bringup((uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg,
+                        (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg,
+                        &ucie0_slink->ctrl.w, &ucie1_slink->ctrl.w) != 0u)
+    return 1;
 #endif
 
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
