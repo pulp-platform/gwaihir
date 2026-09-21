@@ -211,7 +211,7 @@ PCIE_COMMIT ?= 89fff9c2a6fc8ea8f3ccbc732a05501b87510de3
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
-UCIE_COMMIT ?= f53b7b67887a486ba4554e54aaf0434e7440a9f3
+UCIE_COMMIT ?= 3860ae0911fd2e1901e29fb9b9009f4c066006b1
 UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git

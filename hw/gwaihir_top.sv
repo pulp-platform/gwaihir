@@ -329,7 +329,9 @@ module gwaihir_top
     .phy_data_out_ready_i(phy_data_out_ready[0]),
     .phy_data_in_i       (phy_data_in[0]),
     .phy_data_in_valid_i (phy_data_in_valid[0]),
-    .phy_data_in_ready_o (phy_data_in_ready[0])
+    .phy_data_in_ready_o (phy_data_in_ready[0]),
+    // PCS interrupts are not routed yet
+    .ucie_irq_o          (  /* unconnected */)
   );
 
   ucie_tile i_ucie_tile1 (
@@ -353,7 +355,9 @@ module gwaihir_top
     .phy_data_out_ready_i(phy_data_out_ready[1]),
     .phy_data_in_i       (phy_data_in[1]),
     .phy_data_in_valid_i (phy_data_in_valid[1]),
-    .phy_data_in_ready_o (phy_data_in_ready[1])
+    .phy_data_in_ready_o (phy_data_in_ready[1]),
+    // PCS interrupts are not routed yet
+    .ucie_irq_o          (  /* unconnected */)
   );
 
   // loopback UCIe[0] -> UCIe[1]: connect TX0 -> RX1
