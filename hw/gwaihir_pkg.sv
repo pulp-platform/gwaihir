@@ -500,9 +500,8 @@ package gwaihir_pkg;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
   localparam bit DmaEnableCompute = 1;
-  // MX quant/dequant only; the transpose engine is not elaborated in the mem tile.
   localparam idma_pkg::compute_enable_t DmaComputeOps = '{
-      transpose: 1'b0,
+      transpose: 1'b1,
       mxquant: 1'b1,
       mxdequant: 1'b1,
       mxfp16: 1'b1
