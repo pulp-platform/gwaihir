@@ -67,6 +67,14 @@ module mem_tile_dma_wrap #(
   typedef logic [AxiNarrowDataWidth/8-1:0] narrow_strb_t;
   typedef logic [AxiNarrowAddrWidth-1:0] narrow_addr_t;
 
+  // The iDMA register frontend is a 32b APB slave, so it needs its own typedefs.
+  localparam int unsigned ApbAddrWidth = 32;
+  localparam int unsigned ApbDataWidth = 32;
+
+  typedef logic [ApbAddrWidth-1:0] apb_addr_t;
+  typedef logic [ApbDataWidth-1:0] apb_data_t;
+  typedef logic [ApbDataWidth/8-1:0] apb_strb_t;
+
   typedef logic [AxiAddrWidth-1:0] addr_t;
   // TODO: Check if we should use narrow id (for register configuration) or wide id (for iDMA transfer), now we are using the id in wide AXI type
   typedef logic [AxiIdWidth-1:0] id_t;
@@ -84,8 +92,8 @@ module mem_tile_dma_wrap #(
 
   // iDMA configuration types
   `REG_BUS_TYPEDEF_ALL(dma_regs, narrow_addr_t, narrow_data_t, narrow_strb_t)
-  `APB_TYPEDEF_REQ_T(dma_apb_req_t, logic [31:0], logic [31:0], logic [3:0])
-  `APB_TYPEDEF_RESP_T(dma_apb_rsp_t, logic [31:0])
+  `APB_TYPEDEF_REQ_T(dma_apb_req_t, apb_addr_t, apb_data_t, apb_strb_t)
+  `APB_TYPEDEF_RESP_T(dma_apb_rsp_t, apb_data_t)
 
   typedef struct packed {axi_ar_chan_t ar_chan;} axi_read_meta_channel_t;
 
