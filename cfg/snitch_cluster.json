@@ -23,6 +23,8 @@
         // TODO(fischeti): Check with Thomas
         dma_axi_req_fifo_depth: 24,
         dma_req_fifo_depth: 8,
+        // Elaborates the iDMA compute path (DMOPC) in every cluster's inst64 frontend
+        dma_enable_compute: true,
         narrow_trans: 4,
         wide_trans: 32,
         enable_narrow_collectives: true,
