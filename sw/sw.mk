@@ -71,6 +71,8 @@ GW_LINK_MODE ?= spm
 CHS_SW_INCLUDES += -I$(GW_INCDIR)
 CHS_SW_INCLUDES += -I$(SN_RUNTIME_SRCDIR)
 CHS_SW_INCLUDES += -I$(GW_GEN_SW_DIR)
+# iDMA ships its generated register headers; do not regenerate them here.
+CHS_SW_INCLUDES += -I$(IDMA_ROOT)/target/sw
 
 # Collect tests, which should be built for all modes, and their .dump targets
 GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_CHS_SW_DIR)/tests/*.c)
@@ -81,7 +83,7 @@ GW_CHS_SW_TEST_ELF  += $(GW_CHS_SW_TEST_SRC:.c=.$(GW_LINK_MODE).elf) $(patsubst 
 GW_CHS_SW_TEST = $(GW_CHS_SW_TEST_DUMP)
 
 $(GW_CHS_SW_TEST_DUMP): $(GW_CHS_SW_TEST_ELF)
-$(GW_CHS_SW_TEST_ELF): $(GW_GEN_SW_DIR)/gw_addrmap_64b.h $(GW_GEN_SW_DIR)/gw_raw_addrmap_64b.h $(GW_GEN_SW_DIR)/idma_compute.h $(SN_RUNTIME_HAL_HDRS)
+$(GW_CHS_SW_TEST_ELF): $(GW_GEN_SW_DIR)/gw_addrmap_64b.h $(GW_GEN_SW_DIR)/gw_raw_addrmap_64b.h $(SN_RUNTIME_HAL_HDRS)
 
 .PHONY: chs-sw-tests chs-sw-tests-clean
 
