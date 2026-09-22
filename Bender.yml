@@ -59,9 +59,10 @@ dependencies:
   serial_link:
     git: https://github.com/pulp-platform/serial_link.git
     rev: main
+  # TEMPORARY: PR pulp-platform/snitch_cluster#338 head; revert to pulp `dca` once merged.
   snitch_cluster:
-    git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: dca
+    git: https://github.com/DanielKellerM/snitch_cluster.git
+    rev: dk/idma070-bump
   ucie:
     path: .deps/ucie
 

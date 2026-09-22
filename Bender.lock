@@ -429,7 +429,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: b1d145f2d32cf51b2ef928a453b0b927b2e977a8
+    revision: 2f1a5dacfaef4e8d5956268f66c882d3af7a1e7f
     version: null
     source:
       Git: https://github.com/DanielKellerM/snitch_cluster.git
@@ -443,7 +443,7 @@ packages:
     - core_v_xif
     - fpnew
     - idma
-    - obi
+    - register_interface
     - reqrsp_interface
     - riscv-dbg
     - spatz_vpu
