@@ -32,7 +32,6 @@
 #include "gw_raw_addrmap_64b.h"
 #include "gw_memtile.h"           // GW_L2_SPM_NUM, per-tile bases and sizes
 #include "memtile_idma.h"
-#include "regs/idma.h"
 
 // ---- Topology --------------------------------------------------------------
 // Tile indices (0..GW_L2_SPM_NUM-1). Change these three to retarget the
@@ -183,8 +182,7 @@ int main(void) {
             /*tile=*/ DRIVER_TILE,
             /*dst=*/  (uint64_t)(uintptr_t)&dst[0],
             /*src=*/  (uint64_t)(uintptr_t)&src[0],
-            /*size=*/ P1_LEN_BYTES,
-            /*conf=*/ 0);
+            /*size=*/ P1_LEN_BYTES);
 
         for (uint32_t i = 0; i < n_words; i++) {
             if (dst[i] != i) {
@@ -215,8 +213,7 @@ int main(void) {
             /*tile=*/ DRIVER_TILE,
             /*dst=*/  (uint64_t)(uintptr_t)&dst[dst_w],
             /*src=*/  (uint64_t)(uintptr_t)&src[src_w],
-            /*size=*/ P2_LEN_BYTES,
-            /*conf=*/ 0);
+            /*size=*/ P2_LEN_BYTES);
 
         for (uint32_t i = 0; i < n_words; i++) {
             if (dst[dst_w + i] != (src_w + i)) {
@@ -260,8 +257,7 @@ int main(void) {
             /*size=*/       P3_ROW_BYTES,
             /*dst_stride=*/ P3_DST_STRIDE,
             /*src_stride=*/ P3_SRC_STRIDE,
-            /*num_reps=*/   P3_NUM_ROWS,
-            /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D__CONF__ENABLE_ND_bp));
+            /*num_reps=*/   P3_NUM_ROWS);
 
         // Verify each row, and that each gap stayed poisoned.
         for (uint32_t r = 0; r < P3_NUM_ROWS; r++) {
@@ -308,8 +304,7 @@ int main(void) {
             /*size=*/       P4_ROW_BYTES,
             /*dst_stride=*/ P4_STRIDE,
             /*src_stride=*/ P4_STRIDE,
-            /*num_reps=*/   P4_NUM_ROWS,
-            /*conf=*/       (uint64_t)(1u << IDMA_REG64_2D__CONF__ENABLE_ND_bp));
+            /*num_reps=*/   P4_NUM_ROWS);
 
         for (uint32_t i = 0; i < total_w; i++) {
             if (dst[dst_w + i] != (src_w + i)) {
@@ -346,30 +341,22 @@ int main(void) {
             dst[dst_w + i] = ~(src_w + i);
         }
 
-        // Non-blocking 1D issue (conf=0 => ND off => reps ignored). Reading
-        // Reading next_id inside the helper both launches the transfer and returns its id.
-        uint64_t tf_id = memtile_dma_2d_memcpy(
-            /*tile=*/       SRC_TILE,
-            /*dst=*/        (uint64_t)(uintptr_t)&dst[dst_w],
-            /*src=*/        (uint64_t)(uintptr_t)&src[src_w],
-            /*size=*/       P5_LEN_BYTES,
-            /*dst_stride=*/ 0,
-            /*src_stride=*/ 0,
-            /*num_reps=*/   1,
-            /*conf=*/       0);
+        // Non-blocking 1D issue; the helper reads next_id, which both launches
+        // the transfer and returns its id.
+        uint32_t tf_id = memtile_dma_memcpy(
+            /*tile=*/ SRC_TILE,
+            /*dst=*/  (uint64_t)(uintptr_t)&dst[dst_w],
+            /*src=*/  (uint64_t)(uintptr_t)&src[src_w],
+            /*size=*/ P5_LEN_BYTES);
 
         // Concurrent CVA6 traffic onto SRC_TILE's row-P5_SRC_ROW banks until the
         // DMA is done. src is volatile, so each load is issued (generates
         // payload_ext); the value is consumed by the check, so it is not elided.
-        // GW_L2_SPM_DMA_BASE_ADDR(SRC_TILE) is the base of SRC_TILE's iDMA registers.
-        const uintptr_t done_reg =
-            (uintptr_t)GW_L2_SPM_DMA_BASE_ADDR(SRC_TILE) +
-            offsetof(idma_reg64_2d_t, done_id);
         do {
             for (uint32_t i = 0; i < n_words; i += P5_SWEEP_STRIDE_WORDS) {
                 uint32_t v = src[src_w + i];               // ext read of SRC_TILE
             }
-        } while (*(volatile uint64_t *)done_reg != tf_id);
+        } while (!memtile_dma_is_done(SRC_TILE, tf_id));
 
         // Verify the DMA result (DST_TILE) and the concurrent reads (SRC_TILE).
         for (uint32_t i = 0; i < n_words; i++) {

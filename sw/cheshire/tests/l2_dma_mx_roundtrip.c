@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "memtile_idma.h"   // gw_addrmap_64b.h, gw_memtile.h, regs/idma.h
+#include "memtile_idma.h"   // gw_addrmap_64b.h, gw_memtile.h, iDMA reg headers
 #include "idma_mx_golden.h"
 
 // ---- Topology --------------------------------------------------------------
@@ -69,11 +69,11 @@ int main(void) {
 
     // 2) Quant: FP16 S -> MXFP8 M (descriptor LENGTH = READ bytes = s_bytes).
     memtile_dma_set_compute(DRIVER_TILE, COMPUTE_OP__MXQUANT_FP16);
-    memtile_dma_blk_memcpy(DRIVER_TILE, (uint64_t)(uintptr_t)M, (uint64_t)(uintptr_t)S, s_bytes, 0);
+    memtile_dma_blk_memcpy(DRIVER_TILE, (uint64_t)(uintptr_t)M, (uint64_t)(uintptr_t)S, s_bytes);
 
     // 3) Dequant: MXFP8 M -> FP32 D (LENGTH = READ bytes = m_bytes).
     memtile_dma_set_compute(DRIVER_TILE, COMPUTE_OP__MXDEQUANT);
-    memtile_dma_blk_memcpy(DRIVER_TILE, (uint64_t)(uintptr_t)D, (uint64_t)(uintptr_t)M, m_bytes, 0);
+    memtile_dma_blk_memcpy(DRIVER_TILE, (uint64_t)(uintptr_t)D, (uint64_t)(uintptr_t)M, m_bytes);
 
     // 4) Restore passthrough.
     memtile_dma_passthrough(DRIVER_TILE);

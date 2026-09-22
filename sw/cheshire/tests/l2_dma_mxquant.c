@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "memtile_idma.h"   // gw_addrmap_64b.h, gw_memtile.h, regs/idma.h
+#include "memtile_idma.h"   // gw_addrmap_64b.h, gw_memtile.h, iDMA reg headers
 #include "idma_mx_golden.h"
 
 // ---- Topology --------------------------------------------------------------
@@ -72,8 +72,7 @@ int main(void) {
         /*tile=*/ DRIVER_TILE,
         /*dst=*/  (uint64_t)(uintptr_t)dst,
         /*src=*/  (uint64_t)(uintptr_t)src,
-        /*size=*/ src_bytes,
-        /*conf=*/ 0);
+        /*size=*/ src_bytes);
 
     // 4) Restore passthrough so the sticky op does not leak to later users.
     memtile_dma_passthrough(DRIVER_TILE);
