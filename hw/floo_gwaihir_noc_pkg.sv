@@ -992,7 +992,7 @@ package floo_gwaihir_noc_pkg;
               EnIntMaxU: 1'b0
           },
           NarrRedCfg: RedDefaultCfg,
-          WideRedCfg: '{RdPipelineDepth: 5, CutOffloadIntf: 1'b1}
+          WideRedCfg: '{RdPipelineDepth: 6, CutOffloadIntf: 1'b1}
       }
   };
 

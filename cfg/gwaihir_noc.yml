@@ -42,7 +42,7 @@ routing:
     en_wide_multicast: true
     en_barrier: true
     en_wide_reduction:       # selective FP ops, default hw config
-      rd_pipeline_depth: 5
+      rd_pipeline_depth: 6
       cut_offload_intf: true
   decouple_rw: Phys
   vc_impl: naive
