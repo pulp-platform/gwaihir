@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "idma_reg64_2d_regs.h"       // idma_reg64_2d_t and its field structs
+#include "regs/idma.h"                // idma_reg64_2d_t and its field structs
 #include "idma_reg64_2d_raw_regs.h"   // COMPUTE_OP__* encoding
 #include "gw_addrmap_64b.h"
 #include "gw_raw_addrmap_64b.h"
@@ -24,9 +24,10 @@ static inline uintptr_t memtile_dma_base(uint32_t tile) {
 // Program the descriptor and launch; reading next_id issues it and returns the id
 static inline uint32_t memtile_dma_issue(uint32_t tile, uint64_t dst, uint64_t src,
                                          uint64_t size, uint64_t dst_stride,
-                                         uint64_t src_stride, uint64_t num_reps) {
+                                         uint64_t src_stride, uint64_t num_reps,
+                                         uint64_t extra_conf) {
     uintptr_t base = memtile_dma_base(tile);
-    idma_reg64_2d__conf_t conf = { .w = 0 };
+    idma_reg64_2d__conf_t conf = { .w = (uint32_t)extra_conf };
     conf.f.enable_nd = (num_reps > 1);
 
     *(volatile uint64_t *)(base + offsetof(idma_reg64_2d_t, src_addr)) = src;
@@ -48,7 +49,7 @@ static inline uint32_t memtile_dma_issue(uint32_t tile, uint64_t dst, uint64_t s
 // Non-blocking 1D issue. Returns the transfer id to poll with memtile_dma_is_done.
 static inline uint32_t memtile_dma_memcpy(uint32_t tile, uint64_t dst, uint64_t src,
                                           uint64_t size) {
-    return memtile_dma_issue(tile, dst, src, size, 0, 0, 1);
+    return memtile_dma_issue(tile, dst, src, size, 0, 0, 1, 0);
 }
 
 // True once the transfer that returned `tf_id` has retired.
@@ -63,9 +64,10 @@ static inline void memtile_dma_wait(uint32_t tile, uint32_t tf_id) {
     }
 }
 
+// Blocking 1D copy; `conf` sets extra idma conf bits, 0 for a plain transfer.
 static inline void memtile_dma_blk_memcpy(uint32_t tile, uint64_t dst, uint64_t src,
-                                          uint64_t size) {
-    memtile_dma_wait(tile, memtile_dma_memcpy(tile, dst, src, size));
+                                          uint64_t size, uint64_t conf) {
+    memtile_dma_wait(tile, memtile_dma_issue(tile, dst, src, size, 0, 0, 1, conf));
 }
 
 // Blocking 2D copy: `num_reps` rows of `size` bytes at the given strides.
@@ -73,7 +75,7 @@ static inline void memtile_dma_2d_blk_memcpy(uint32_t tile, uint64_t dst, uint64
                                              uint64_t size, uint64_t dst_stride,
                                              uint64_t src_stride, uint64_t num_reps) {
     memtile_dma_wait(tile, memtile_dma_issue(tile, dst, src, size, dst_stride,
-                                             src_stride, num_reps));
+                                             src_stride, num_reps, 0));
 }
 
 // The generated reg file must fit the l2_spm_dma window in the address map

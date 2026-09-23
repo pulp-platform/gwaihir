@@ -54,10 +54,10 @@ int main(void) {
     // LENGTH is the READ byte count for both stages; compute_cfg is sticky
     memtile_dma_set_compute(DRIVER_TILE, COMPUTE_OP__MXQUANT_FP16);
     memtile_dma_blk_memcpy(DRIVER_TILE, (uint64_t)(uintptr_t)M,
-                           (uint64_t)(uintptr_t)S, s_bytes);
+                           (uint64_t)(uintptr_t)S, s_bytes, 0);
     memtile_dma_set_compute(DRIVER_TILE, COMPUTE_OP__MXDEQUANT);
     memtile_dma_blk_memcpy(DRIVER_TILE, (uint64_t)(uintptr_t)D,
-                           (uint64_t)(uintptr_t)M, m_bytes);
+                           (uint64_t)(uintptr_t)M, m_bytes, 0);
     memtile_dma_passthrough(DRIVER_TILE);
 
     uint32_t scratch[kBlockSize];

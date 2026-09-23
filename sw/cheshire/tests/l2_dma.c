@@ -182,7 +182,8 @@ int main(void) {
             /*tile=*/ DRIVER_TILE,
             /*dst=*/  (uint64_t)(uintptr_t)&dst[0],
             /*src=*/  (uint64_t)(uintptr_t)&src[0],
-            /*size=*/ P1_LEN_BYTES);
+            /*size=*/ P1_LEN_BYTES,
+            /*conf=*/ 0);
 
         for (uint32_t i = 0; i < n_words; i++) {
             if (dst[i] != i) {
@@ -213,7 +214,8 @@ int main(void) {
             /*tile=*/ DRIVER_TILE,
             /*dst=*/  (uint64_t)(uintptr_t)&dst[dst_w],
             /*src=*/  (uint64_t)(uintptr_t)&src[src_w],
-            /*size=*/ P2_LEN_BYTES);
+            /*size=*/ P2_LEN_BYTES,
+            /*conf=*/ 0);
 
         for (uint32_t i = 0; i < n_words; i++) {
             if (dst[dst_w + i] != (src_w + i)) {
