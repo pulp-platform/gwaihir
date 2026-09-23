@@ -4,14 +4,7 @@
 //
 // Author: Hong Pang <hopang@iis.ee.ethz.ch>
 //
-// Mem-tile iDMA helpers. Mirrors cheshire/sw/include/dif/dma.h, rebased onto
-// Gwaihir's mem-tile DMA region from gw_addrmap_64b.h. One set of helpers
-// serves every tile; the leading `tile` argument is the SAM index selecting
-// which tile's iDMA register file is configured.
-//
-// These helpers own all knowledge of the iDMA register layout: callers pass
-// addresses, byte counts and ops, never register offsets or field positions.
-// The register definitions come from iDMA's own generated headers.
+// Mem-tile iDMA helpers; `tile` is the SAM index selecting which tile to configure
 
 #pragma once
 
@@ -28,9 +21,7 @@ static inline uintptr_t memtile_dma_base(uint32_t tile) {
     return (uintptr_t)GW_L2_SPM_DMA_BASE_ADDR(tile);
 }
 
-// Program the common descriptor fields and launch. `reps` > 1 enables the ND
-// path and programs the strides; otherwise the transfer is a plain 1D copy.
-// Reading next_id both issues the transfer and returns its id.
+// Program the descriptor and launch; reading next_id issues it and returns the id
 static inline uint32_t memtile_dma_issue(uint32_t tile, uint64_t dst, uint64_t src,
                                          uint64_t size, uint64_t dst_stride,
                                          uint64_t src_stride, uint64_t num_reps) {
@@ -85,13 +76,11 @@ static inline void memtile_dma_2d_blk_memcpy(uint32_t tile, uint64_t dst, uint64
                                              src_stride, num_reps));
 }
 
-// The reg file (SystemRDL-generated, same source as the RTL reg block) must fit
-// the l2_spm_dma window carved in the Gwaihir address map.
+// The generated reg file must fit the l2_spm_dma window in the address map
 _Static_assert(sizeof(idma_reg64_2d_t) <= GW_L2_SPM_0_DMA_SIZE,
                "iDMA reg file exceeds the Gwaihir l2_spm_dma window");
 
-// Program the tile's compute_cfg register (sticky; sampled when next_id is read
-// to launch a transfer, so set it before issuing).
+// Sticky; sampled when next_id is read, so set it before issuing
 static inline void memtile_dma_set_compute(uint32_t tile, uint32_t op) {
     uintptr_t base = memtile_dma_base(tile);
     idma_reg64_2d__compute_cfg_t c = { .w = 0 };
@@ -100,8 +89,7 @@ static inline void memtile_dma_set_compute(uint32_t tile, uint32_t op) {
     *(volatile uint32_t *)(base + offsetof(idma_reg64_2d_t, compute_cfg)) = c.w;
 }
 
-// Select the transpose op together with its geometry: the element size is
-// 1 << mode bytes, and the engine transposes an `m` x `n` element sub-tile.
+// Transpose with geometry; element size is 1 << mode bytes
 static inline void memtile_dma_set_transpose(uint32_t tile, uint32_t mode,
                                              uint32_t m, uint32_t n) {
     uintptr_t base = memtile_dma_base(tile);

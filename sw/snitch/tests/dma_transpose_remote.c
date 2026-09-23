@@ -1,27 +1,14 @@
 // Copyright 2026 ETH Zurich and University of Bologna.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+//
+// Author: Daniel Keller <dankeller@iis.ee.ethz.ch>
 
-// Cross-cluster DMOPC transpose: a cluster's DM core transposes a tile out of
-// its own L1 into a neighbour cluster's L1 over the NoC. Requires
-// `dma_enable_compute` in cfg/snitch_cluster.json. See idma_legalizer's
-// ComputeTransposeShape for the whole-padded-tile, beat-aligned shape contract.
-//
-// Destinations are allocated with tile-size alignment, a power of two <= 4 KiB,
-// which gives beat alignment and keeps the burst inside one page; phase C
-// deliberately gives up the page alignment to cover the split.
-//
-// Every cluster poisons its own destination tile, so a misrouted write shows up
-// as a poison miss in an uninvolved cluster.
-//
-// gwaihir's `_putchar` is a stub, so results go out over the dump CSR, which
-// the Snitch RTL $displays as "[Dump Core <hart>] ... = 0x<value>". Records
-// are DUMP(tag) followed by DUMP(value); the hart id keeps pairs apart.
+// Cross-cluster DMOPC transpose over the NoC; needs dma_enable_compute in the cfg
 
 #include <snrt.h>
 
-// Deliberately not square: a swapped tensor_m/tensor_n would mask an 8x4
-// result instead of a 4x8 one and fail the poison check.
+// Not square, so a swapped tensor_m/tensor_n fails the poison check
 #define TP_M 4
 #define TP_N 8
 
@@ -33,24 +20,20 @@
 #define TP_TAG_BADEXP 0x7A5A0006u
 #define TP_TAG_PHASE 0x7A5A0007u
 
+// gwaihir's _putchar is a stub, so results go out over the dump CSR
 #define TP_DUMP(tag, val)        \
     do {                         \
         DUMP((uint32_t)(tag));   \
         DUMP((uint32_t)(val));   \
     } while (0)
 
-/// in[r][c] as filled by the sender: position-coded, poison outside the tile.
-/// At 1 B elements r * 100 + c wraps and aliases the poison for a couple of
-/// padding positions; a real leak covers far more cells than that.
+/// in[r][c] as the sender filled it: position-coded, poison outside the tile
 template <typename T>
 static inline T src_val(uint32_t r, uint32_t c, T poison) {
     return (c < TP_N) ? (T)(r * 100 + c) : poison;
 }
 
-/// One transposed tile per cluster: send to `peer`, check what a sender left.
-/// EVERY core of EVERY cluster must call this: the L1 allocator is thread-local
-/// and initialised identically per core, so an identical call sequence hands
-/// every core of a cluster the same addresses, and the clusters stay aligned.
+/// One transposed tile per cluster: send to `peer`, check what a sender left
 template <typename T>
 static uint32_t run_remote_transpose(uint32_t phase, uint32_t mode,
                                      int am_sender, uint32_t peer,
@@ -64,10 +47,7 @@ static uint32_t run_remote_transpose(uint32_t phase, uint32_t mode,
     volatile T *src = (volatile T *)snrt_l1_alloc_cluster_local(
         tile_bytes, SNRT_DMA_BYTES_PER_BEAT);
 
-    // page_cross straddles the tile across a 4 KiB boundary: still beat-
-    // aligned, so `ComputeTransposeShape` accepts it, but the AXI page rule
-    // makes the legalizer emit two bursts for one compute transfer. The block
-    // is poisoned and checked whole, so a shifted or overrunning tile shows.
+    // page_cross straddles a 4 KiB boundary but stays beat-aligned
     const size_t blk_bytes = page_cross ? 0x1000 + tile_bytes : tile_bytes;
     const size_t blk_align = page_cross ? 0x1000 : tile_bytes;
     const size_t off = page_cross ? (0x1000 - tile_bytes / 2) / sizeof(T) : 0;
@@ -82,8 +62,7 @@ static uint32_t run_remote_transpose(uint32_t phase, uint32_t mode,
         (volatile uint32_t *)snrt_l1_alloc_cluster_local(4, 4);
 
     if (!dm) {
-        // Compute cores only load the destination TCDM; the DM core owns the
-        // buffers and every check.
+        // Compute cores only load the destination TCDM; the DM core owns the buffers and checks
         snrt_cluster_hw_barrier();
         if (hammer) {
             volatile uint64_t *line = ham + snrt_cluster_core_idx() * 8;
@@ -102,8 +81,7 @@ static uint32_t run_remote_transpose(uint32_t phase, uint32_t mode,
             src[r * ne + c] = src_val<T>(r, c, poison);
     for (size_t i = 0; i < blk_bytes / sizeof(T); i++) blk[i] = poison;
 
-    // The poison stores go out on the narrow port, the remote DMA writes on
-    // the wide one: fence before publishing the tile to the other clusters.
+    // Narrow-port poison stores race the wide-port DMA; fence before publishing the tile
     snrt_fence();
     snrt_cluster_hw_barrier();
     snrt_inter_cluster_barrier();
@@ -112,8 +90,7 @@ static uint32_t run_remote_transpose(uint32_t phase, uint32_t mode,
     if (am_sender) {
         volatile T *remote_dst = (volatile T *)snrt_remote_l1_ptr(
             (void *)dst, snrt_cluster_idx(), peer);
-        // Structurally guaranteed: the block alignment and `off` are both beat
-        // multiples, as is the cluster stride. Assert it anyway.
+        // Guaranteed by the block alignment, `off` and the cluster stride; assert it anyway
         if ((uintptr_t)remote_dst % SNRT_DMA_BYTES_PER_BEAT) {
             TP_DUMP(TP_TAG_BADPOS, (uintptr_t)remote_dst);
             errors++;
@@ -159,8 +136,7 @@ static uint32_t run_remote_transpose(uint32_t phase, uint32_t mode,
             differ++;
     }
 
-    // r * 100 + c differs from c * 100 + r everywhere but the diagonal; a
-    // DMOPC that never latched leaves a passthrough copy and differ == 0.
+    // r * 100 + c differs from c * 100 + r off the diagonal; a passthrough copy gives 0
     if (am_receiver) {
         TP_DUMP(TP_TAG_DIFFER, differ);
         if (differ != (uint32_t)(TP_M * TP_N - TP_M)) errors++;
@@ -178,28 +154,20 @@ int main() {
 
     uint32_t errors = 0;
 
-    // Phase A: one pair on an otherwise idle NoC, one case per DMOPC operand
-    // (the element-size mode rides rs1, the dimensions ride rs2).
+    // Phase A: one pair on an idle NoC, one case per DMOPC operand (mode rs1, dims rs2)
     errors += run_remote_transpose<uint32_t>(0, 2, me == 0, 1, me == 1);
     errors += run_remote_transpose<uint16_t>(1, 1, me == 0, 1, me == 1);
 
-    // Phase B: every cluster transposes into its neighbour at once, so each
-    // destination TCDM arbitrates incoming W beats against its own traffic.
+    // Phase B: all clusters transpose at once, so each destination TCDM arbitrates W beats
     errors += run_remote_transpose<uint32_t>(2, 2, 1, next, 1);
 
-    // Phase C: same pair as phase A, but the destination tile straddles a
-    // 4 KiB boundary. The legalizer splits the transfer into two bursts while
-    // the compute engine keeps one tile's state across them.
+    // Phase C: same pair as phase A, but the destination tile straddles a 4 KiB boundary
     errors += run_remote_transpose<uint32_t>(3, 2, me == 0, 1, me == 1, 1);
 
-    // Phase D: phase B again, but every receiver's eight compute cores hammer
-    // their own TCDM throughout, so the incoming W beats lose bank arbitration.
+    // Phase D: phase B with every receiver's compute cores hammering its TCDM banks
     errors += run_remote_transpose<uint32_t>(4, 2, 1, next, 1, 0, 1);
 
-    // Phase E: 1 B elements, the longest tile the shape assertion allows at
-    // 64 beats instead of 16, so the destination has four times as long to
-    // push back on the compute engine. Once quiet, once with every cluster
-    // sending and every receiver hammering.
+    // Phase E: 1 B elements, 64 beats instead of 16, so the destination pushes back longer
     errors += run_remote_transpose<uint8_t>(5, 0, me == 0, 1, me == 1);
     errors += run_remote_transpose<uint8_t>(6, 0, 1, next, 1, 0, 1);
 
