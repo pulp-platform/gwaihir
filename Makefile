@@ -215,7 +215,7 @@ UCIE_COMMIT ?= 40ba5cfb8211d2949a1a7ce434ed8ba5f290b762
 UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
-LPDDR_COMMIT ?= ef2b36c0936912d0ca2b0ab5cf6ec7d4bd611dff
+LPDDR_COMMIT ?= af3cd405881ff4c2738e28a6fc842e83128b630e
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 .PHONY: init-pd clean-pd update-pd-commit
