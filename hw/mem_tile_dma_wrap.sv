@@ -67,8 +67,8 @@ module mem_tile_dma_wrap #(
   typedef logic [AxiNarrowDataWidth/8-1:0] narrow_strb_t;
   typedef logic [AxiNarrowAddrWidth-1:0] narrow_addr_t;
 
-  // The iDMA register frontend is a 32b APB slave, so it needs its own typedefs.
-  localparam int unsigned ApbAddrWidth = 32;
+  // The iDMA register frontend is a fixed 32b APB slave; the address follows the bus
+  localparam int unsigned ApbAddrWidth = AxiNarrowAddrWidth;
   localparam int unsigned ApbDataWidth = 32;
 
   typedef logic [ApbAddrWidth-1:0] apb_addr_t;
@@ -151,7 +151,7 @@ module mem_tile_dma_wrap #(
     .AxiDataWidth(AxiNarrowDataWidth),
     .AxiIdWidth  (AxiNarrowIdWidth),
     .AxiUserWidth(AxiNarrowUserWidth),
-    .RegDataWidth(32),
+    .RegDataWidth(ApbDataWidth),
     .CutMemReqs  (1),
     .axi_req_t   (axi_slv_req_t),
     .axi_rsp_t   (axi_slv_rsp_t),
