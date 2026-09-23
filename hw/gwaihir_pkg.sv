@@ -500,8 +500,9 @@ package gwaihir_pkg;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
   localparam bit DmaEnableCompute = 1;
+  // The mem tile does MX; the cluster tiles do the transposes
   localparam idma_pkg::compute_enable_t DmaComputeOps = '{
-      transpose: 1'b1,
+      transpose: 1'b0,
       mxquant: 1'b1,
       mxdequant: 1'b1,
       mxfp16: 1'b1
