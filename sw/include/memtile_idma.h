@@ -4,10 +4,10 @@
 //
 // Author: Hong Pang <hopang@iis.ee.ethz.ch>
 //
-// Mem-tile iDMA helpers. Mirrors the helper set of cheshire/sw/include/dif/dma.h,
-// but rebased onto Gwaihir's mem-tile DMA region exposed by gw_addrmap_64b.h. A single
-// set of inline helpers serves every tile; the target tile's iDMA is selected at
-// run time via the SAM index passed as the first argument.
+// Mem-tile iDMA helpers. Mirrors cheshire/sw/include/dif/dma.h, rebased onto
+// Gwaihir's mem-tile DMA region from gw_addrmap_64b.h. One set of helpers
+// serves every tile; the leading `tile` argument is the SAM index selecting
+// which tile's iDMA register file is configured.
 //
 // These helpers own all knowledge of the iDMA register layout: callers pass
 // addresses, byte counts and ops, never register offsets or field positions.
@@ -23,18 +23,7 @@
 #include "gw_raw_addrmap_64b.h"
 #include "gw_memtile.h"
 
-// Mem-tile iDMA helpers. The leading `tile` argument is the SAM index of the
-// target mem tile; it selects which tile's iDMA register file is configured.
-// `GW_L2_SPM_DMA_BASE_ADDR(tile)` is the base address of that tile's iDMA registers.
-//
-//   - memtile_dma_memcpy(...)         — non-blocking 1D issue; returns tf_id
-//   - memtile_dma_blk_memcpy(...)     — blocking 1D wrapper (polls done_id)
-//   - memtile_dma_2d_blk_memcpy(...)  — blocking 2D wrapper (ND enabled)
-//   - memtile_dma_is_done(...)        — completion test for a returned tf_id
-//   - memtile_dma_set_compute(...)    — select an on-the-fly compute op
-//   - memtile_dma_set_transpose(...)  — select transpose and its tile geometry
-//   - memtile_dma_passthrough(...)    — clear the sticky compute op
-
+// Base address of `tile`'s iDMA register file.
 static inline uintptr_t memtile_dma_base(uint32_t tile) {
     return (uintptr_t)GW_L2_SPM_DMA_BASE_ADDR(tile);
 }

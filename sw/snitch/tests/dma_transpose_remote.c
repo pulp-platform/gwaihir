@@ -3,28 +3,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Cross-cluster DMOPC transpose: a cluster's DM core transposes a tile out of
-// its own L1 into a *neighbour* cluster's L1 over the NoC. Requires
-// `dma_enable_compute` in cfg/snitch_cluster.json.
+// its own L1 into a neighbour cluster's L1 over the NoC. Requires
+// `dma_enable_compute` in cfg/snitch_cluster.json. See idma_legalizer's
+// ComputeTransposeShape for the whole-padded-tile, beat-aligned shape contract.
 //
-// Shape contract, from idma_legalizer_*.sv `ComputeTransposeShape`: a
-// multi-beat transpose is accepted only as one whole padded NE x NE tile
-// (length == NE * beat bytes, M and N <= NE) to a BEAT-ALIGNED destination.
-// The write barrel shifter rotates one registered compute beat, so a
-// misaligned beat would need two compute beats at once.
+// Destinations are allocated with tile-size alignment, a power of two <= 4 KiB,
+// which gives beat alignment and keeps the burst inside one page; phase C
+// deliberately gives up the page alignment to cover the split.
 //
-// The destination is allocated with tile-size alignment, a power of two
-// <= 4 KiB: that gives beat alignment structurally and also keeps the burst
-// inside one 4 KiB page, so the legalizer cannot split it. The last phase
-// deliberately gives up the page alignment (not the beat alignment) to cover
-// the split the shape assertion still permits.
-//
-// Every cluster poisons its own destination tile; only the addressed
-// destinations may change, so a misrouted write shows up as a poison miss in
-// an uninvolved cluster.
-//
-// A parked receiver never stalls the write channel, so the later phases have
-// the receiver's compute cores hammer their own TCDM while the tile lands, and
-// use 1 B elements for the longest tile the shape assertion allows.
+// Every cluster poisons its own destination tile, so a misrouted write shows up
+// as a poison miss in an uninvolved cluster.
 //
 // gwaihir's `_putchar` is a stub, so results go out over the dump CSR, which
 // the Snitch RTL $displays as "[Dump Core <hart>] ... = 0x<value>". Records
