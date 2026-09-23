@@ -104,8 +104,6 @@ sources:
   - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
 
-  # UCIe PCS wrapper: passthrough stub in the open-source build, the real macro
-  # from the closed-source repository with target `ucie`. The tile is shared.
   - target: not(ucie)
     files:
       - hw/ucie_pcs_wrap.sv

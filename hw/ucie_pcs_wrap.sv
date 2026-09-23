@@ -43,9 +43,7 @@ module ucie_pcs_wrap #(
   output logic      [NumChannels-1:0]                      phy_data_in_ready_o,
   // PCS CSRs (ucie_cfg SAM range)
   input  apb_req_t                                         apb_req_i,
-  output apb_resp_t                                        apb_rsp_o,
-  // PCS interrupts (pcs_irq, i3c_irq)
-  output logic      [            1:0]                      irq_o
+  output apb_resp_t                                        apb_rsp_o
 );
 
   // Passthrough: the serializer drives the PHY pins directly.
@@ -60,7 +58,5 @@ module ucie_pcs_wrap #(
   assign apb_rsp_o.pready  = 1'b1;
   assign apb_rsp_o.prdata  = '0;
   assign apb_rsp_o.pslverr = 1'b0;
-
-  assign irq_o = '0;
 
 endmodule : ucie_pcs_wrap

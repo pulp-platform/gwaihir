@@ -38,10 +38,7 @@ module ucie_tile
   input  logic [NumChannels-1:0]                      phy_data_out_ready_i,
   input  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in_i,
   input  logic [NumChannels-1:0]                      phy_data_in_valid_i,
-  output logic [NumChannels-1:0]                      phy_data_in_ready_o,
-
-  // UCIe PCS interrupts
-  output logic [1:0] ucie_irq_o
+  output logic [NumChannels-1:0]                      phy_data_in_ready_o
 );
 
   // Half-bandwidth mode for debug output channels
@@ -585,7 +582,6 @@ module ucie_tile
   `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_atop_filtered_req)
   `AXI_ASSIGN_RESP_STRUCT(axi_narrow_atop_filtered_rsp, axi_narrow_noatop_out_rsp)
 
-
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgNoAtop)),
     .AxiCfgW         (axi_cfg_swap_iw(AxiCfgW)),
@@ -616,17 +612,16 @@ module ucie_tile
 
   // Serializer PHY backend: the stream between the bandwidth-mode adapter and
   // the PCS wrapper (`ucie_pcs_wrap`), which owns everything PHY/PCS-specific.
-  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_be_out_data;
-  logic [NumChannels-1:0]                      phy_be_out_valid;
-  logic [NumChannels-1:0]                      phy_be_out_ready;
-  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_be_in_data;
-  logic [NumChannels-1:0]                      phy_be_in_valid;
-  logic [NumChannels-1:0]                      phy_be_in_ready;
-  logic                                        slink_clk_ena;  // serializer clk_ena_o
+  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_out_data;
+  logic [NumChannels-1:0]                      phy_out_valid;
+  logic [NumChannels-1:0]                      phy_out_ready;
+  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_in_data;
+  logic [NumChannels-1:0]                      phy_in_valid;
+  logic [NumChannels-1:0]                      phy_in_ready;
 
   // TODO (lleone): Check all the parameters
   slink_serializer #(
-    .NumCredits            (70),
+    .NumCredits            (8),
     .NumChannels           (NumChannels),
     .NumLanes              (NumLanes),
     .EnDdr                 (EnDdr),
@@ -666,7 +661,7 @@ module ucie_tile
     .tx_phy_clk_shift_end_o  (  /* Unconnect */),
     .isolated_i              ('0),
     .isolate_o               (  /* Unconnect */),
-    .clk_ena_o               (slink_clk_ena),
+    .clk_ena_o               (  /* Unconnect */),
     .reset_no                (  /* Unconnect */)
   );
 
@@ -689,14 +684,14 @@ module ucie_tile
       .inp_ready_o(tx_half_ready),
       .oup_data_o (tx_half_data),
       .oup_valid_o(tx_half_valid),
-      .oup_ready_i(phy_be_out_ready[ch] && hwif_out.phy_mode.half_bw_en.value)
+      .oup_ready_i(phy_out_ready[ch] && hwif_out.phy_mode.half_bw_en.value)
     );
 
     assign slink_phy_data_out_ready[ch] =
-        hwif_out.phy_mode.half_bw_en.value ? tx_half_ready : phy_be_out_ready[ch];
-    assign phy_be_out_valid[ch] =
+        hwif_out.phy_mode.half_bw_en.value ? tx_half_ready : phy_out_ready[ch];
+    assign phy_out_valid[ch] =
         hwif_out.phy_mode.half_bw_en.value ? tx_half_valid : slink_phy_data_out_valid[ch];
-    assign phy_be_out_data[ch] =
+    assign phy_out_data[ch] =
         hwif_out.phy_mode.half_bw_en.value ? {2{tx_half_data}} : slink_phy_data_out[ch];
 
     logic [NumBitsPerCycle-1:0] rx_full_data;
@@ -708,30 +703,26 @@ module ucie_tile
     ) i_phy_rx_upsizer (
       .clk_i      (tile_clk),
       .rst_ni     (tile_rst_n),
-      .inp_data_i (phy_be_in_data[ch][UcieHalfPhyWidth-1:0]),
-      .inp_valid_i(phy_be_in_valid[ch] && hwif_out.phy_mode.half_bw_en.value),
+      .inp_data_i (phy_in_data[ch][UcieHalfPhyWidth-1:0]),
+      .inp_valid_i(phy_in_valid[ch] && hwif_out.phy_mode.half_bw_en.value),
       .inp_ready_o(rx_full_ready),
       .oup_data_o (rx_full_data),
       .oup_valid_o(rx_full_valid),
       .oup_ready_i(slink_phy_data_in_ready[ch] && hwif_out.phy_mode.half_bw_en.value)
     );
 
-    assign phy_be_in_ready[ch] =
+    assign phy_in_ready[ch] =
         hwif_out.phy_mode.half_bw_en.value ? rx_full_ready : slink_phy_data_in_ready[ch];
     assign slink_phy_data_in_valid[ch] =
-        hwif_out.phy_mode.half_bw_en.value ? rx_full_valid : phy_be_in_valid[ch];
+        hwif_out.phy_mode.half_bw_en.value ? rx_full_valid : phy_in_valid[ch];
     assign slink_phy_data_in[ch] =
-        hwif_out.phy_mode.half_bw_en.value ? rx_full_data : phy_be_in_data[ch];
+        hwif_out.phy_mode.half_bw_en.value ? rx_full_data : phy_in_data[ch];
   end
 
   /////////////////
   // PCS wrapper //
   /////////////////
 
-  // Swapped by the bender target `ucie`: the open-source build wires the
-  // serializer straight to the PHY pins, the closed-source build wraps the PCS
-  // macro. Either way the ucie_cfg APB window is decoded, so software can probe
-  // the PCS ID register to tell the two apart.
   ucie_pcs_wrap #(
     .NumChannels    (NumChannels),
     .NumBitsPerCycle(NumBitsPerCycle),
@@ -741,13 +732,13 @@ module ucie_tile
     .clk_i     (tile_clk),
     .rst_ni    (tile_rst_n),
     .rst_apb_ni(tile_rst_apb_n),
-    .clk_ena_i (slink_clk_ena),
-    .tx_data_i (phy_be_out_data),
-    .tx_valid_i(phy_be_out_valid),
-    .tx_ready_o(phy_be_out_ready),
-    .rx_data_o (phy_be_in_data),
-    .rx_valid_o(phy_be_in_valid),
-    .rx_ready_i(phy_be_in_ready),
+    .clk_ena_i (hwif_out.clk.en.value),
+    .tx_data_i (phy_out_data),
+    .tx_valid_i(phy_out_valid),
+    .tx_ready_o(phy_out_ready),
+    .rx_data_o (phy_in_data),
+    .rx_valid_o(phy_in_valid),
+    .rx_ready_i(phy_in_ready),
     .phy_data_out_o,
     .phy_data_out_valid_o,
     .phy_data_out_ready_i,
@@ -755,8 +746,7 @@ module ucie_tile
     .phy_data_in_valid_i,
     .phy_data_in_ready_o,
     .apb_req_i (cfg_apb_req[ApbUcie]),
-    .apb_rsp_o (cfg_apb_rsp[ApbUcie]),
-    .irq_o     (ucie_irq_o)
+    .apb_rsp_o (cfg_apb_rsp[ApbUcie])
   );
 
 endmodule : ucie_tile
