@@ -24,9 +24,7 @@ int main() {
 
 #ifdef GW_UCIE_CLOSED_PCS
   if (ucie_link_bringup((uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg,
-                        (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg,
-                        (volatile uint32_t *)&gwaihir_addrmap_64b.ucie0_axi_serial_cfg,
-                        (volatile uint32_t *)&gwaihir_addrmap_64b.ucie1_axi_serial_cfg) != 0u)
+                        (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg) != 0u)
     return 1;
 #endif
 
