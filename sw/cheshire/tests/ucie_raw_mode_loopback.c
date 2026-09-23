@@ -20,13 +20,6 @@
 #include "gw_raw_addrmap_64b.h"
 #include "gw_host.h"
 
-#if defined(__has_include)
-#if __has_include("ucie_closed_pcs.h")
-#define GW_UCIE_CLOSED_PCS 1
-#include "ucie_closed_pcs.h"
-#endif
-#endif
-
 #define RAW_WORDS_PER_SAMPLE 8
 #define POLL_TIMEOUT 100000
 
