@@ -5,6 +5,7 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 `include "axi/assign.svh"
+`include "common_cells/assertions.svh"
 
 module cluster_tile
   import floo_pkg::*;
@@ -37,6 +38,13 @@ module cluster_tile
   output floo_rsp_t  [West:North] floo_rsp_o,
   input  floo_wide_t [West:North] floo_wide_i
 );
+
+  // NoC-generated `collect_op_t` and the SW-side `snitch_cluster_wrapper_pkg::CollectiveWidth`
+  // must be the same width to match.
+  `ASSERT_INIT(
+      CollectiveOpWidthMatch, $bits(floo_pkg::collect_op_t)
+      == snitch_cluster_wrapper_pkg::CollectiveWidth,
+      "floo_pkg::collect_op_t width does not match snitch_cluster_wrapper_pkg::CollectiveWidth")
 
   // Tile-specific reset and clock signals
   logic tile_clk;
@@ -139,6 +147,23 @@ module cluster_tile
     assign offload_dca_req.q_valid = offload_wide_req.valid;
     assign offload_wide_rsp.ready  = offload_dca_rsp.q_ready;
 
+    // Zero-based wide-seq-op IDs (opaque at the NoC level -- collect_op_e no longer names
+    // these; this is the Gwaihir-local mapping from ID to FPU decode). Order matches this
+    // build's floogen op declaration (see plans/floonoc-op-agnostic-plan.md).
+    localparam int unsigned FpAddId = 0;
+    localparam int unsigned FpMulId = 1;
+    localparam int unsigned FpMinId = 2;
+    localparam int unsigned FpMaxId = 3;
+    localparam int unsigned FpAdd32Id = 4;
+    localparam int unsigned FpAdd16Id = 5;
+    localparam int unsigned FpAdd8Id = 6;
+    localparam int unsigned FpMax32Id = 7;
+    localparam int unsigned FpMax16Id = 8;
+    localparam int unsigned FpMax8Id = 9;
+
+    logic [$bits(floo_pkg::collect_op_t)-1:0] wide_op_id;
+    assign wide_op_id = offload_wide_req.req.op - floo_pkg::FirstWideSeqOp;
+
     // Parse the FPU Request
     always_comb begin
       // Init default values
@@ -154,20 +179,20 @@ module cluster_tile
       offload_dca_req.q.op           = fpnew_pkg::ADD;
 
       // Define the operation we want to execute on the FPU
-      unique casez (offload_wide_req.req.op)
-        (floo_pkg::FpAdd): begin
+      unique casez (wide_op_id)
+        (FpAddId): begin
           offload_dca_req.q.op          = fpnew_pkg::ADD;
           offload_dca_req.q.operands[0] = '0;
           offload_dca_req.q.operands[1] = offload_wide_req.req.operand1;
           offload_dca_req.q.operands[2] = offload_wide_req.req.operand2;
         end
-        (floo_pkg::FpMul): begin
+        (FpMulId): begin
           offload_dca_req.q.op          = fpnew_pkg::MUL;
           offload_dca_req.q.operands[0] = offload_wide_req.req.operand1;
           offload_dca_req.q.operands[1] = offload_wide_req.req.operand2;
           offload_dca_req.q.operands[2] = '0;
         end
-        (floo_pkg::FpMax): begin
+        (FpMaxId): begin
           offload_dca_req.q.op          = fpnew_pkg::MINMAX;
           // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
           offload_dca_req.q.rnd_mode    = fpnew_pkg::RTZ;
@@ -175,14 +200,14 @@ module cluster_tile
           offload_dca_req.q.operands[1] = offload_wide_req.req.operand2;
           offload_dca_req.q.operands[2] = '0;
         end
-        (floo_pkg::FpMin): begin
+        (FpMinId): begin
           offload_dca_req.q.op          = fpnew_pkg::MINMAX;
           offload_dca_req.q.rnd_mode    = fpnew_pkg::RNE;
           offload_dca_req.q.operands[0] = offload_wide_req.req.operand1;
           offload_dca_req.q.operands[1] = offload_wide_req.req.operand2;
           offload_dca_req.q.operands[2] = '0;
         end
-        (floo_pkg::FpAdd32): begin
+        (FpAdd32Id): begin
           offload_dca_req.q.op           = fpnew_pkg::ADD;
           offload_dca_req.q.src_fmt      = fpnew_pkg::FP32;
           offload_dca_req.q.dst_fmt      = fpnew_pkg::FP32;
@@ -191,7 +216,7 @@ module cluster_tile
           offload_dca_req.q.operands[1]  = offload_wide_req.req.operand1;
           offload_dca_req.q.operands[2]  = offload_wide_req.req.operand2;
         end
-        (floo_pkg::FpAdd16): begin
+        (FpAdd16Id): begin
           offload_dca_req.q.op           = fpnew_pkg::ADD;
           offload_dca_req.q.src_fmt      = fpnew_pkg::FP16;
           offload_dca_req.q.dst_fmt      = fpnew_pkg::FP16;
@@ -200,7 +225,7 @@ module cluster_tile
           offload_dca_req.q.operands[1]  = offload_wide_req.req.operand1;
           offload_dca_req.q.operands[2]  = offload_wide_req.req.operand2;
         end
-        (floo_pkg::FpAdd8): begin
+        (FpAdd8Id): begin
           offload_dca_req.q.op           = fpnew_pkg::ADD;
           offload_dca_req.q.src_fmt      = fpnew_pkg::FP8;
           offload_dca_req.q.dst_fmt      = fpnew_pkg::FP8;
@@ -209,7 +234,7 @@ module cluster_tile
           offload_dca_req.q.operands[1]  = offload_wide_req.req.operand1;
           offload_dca_req.q.operands[2]  = offload_wide_req.req.operand2;
         end
-        (floo_pkg::FpMax32): begin
+        (FpMax32Id): begin
           offload_dca_req.q.op           = fpnew_pkg::MINMAX;
           // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
           offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
@@ -220,7 +245,7 @@ module cluster_tile
           offload_dca_req.q.operands[1]  = offload_wide_req.req.operand2;
           offload_dca_req.q.operands[2]  = '0;
         end
-        (floo_pkg::FpMax16): begin
+        (FpMax16Id): begin
           offload_dca_req.q.op           = fpnew_pkg::MINMAX;
           // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
           offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
@@ -231,7 +256,7 @@ module cluster_tile
           offload_dca_req.q.operands[1]  = offload_wide_req.req.operand2;
           offload_dca_req.q.operands[2]  = '0;
         end
-        (floo_pkg::FpMax8): begin
+        (FpMax8Id): begin
           offload_dca_req.q.op           = fpnew_pkg::MINMAX;
           // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
           offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
