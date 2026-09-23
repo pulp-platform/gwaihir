@@ -95,13 +95,12 @@ static uint32_t run_remote_transpose(uint32_t phase, uint32_t mode,
             TP_DUMP(TP_TAG_BADPOS, (uintptr_t)remote_dst);
             errors++;
         } else {
-            snrt_dma_set_transpose(mode, TP_M, TP_N);
             uint32_t c0 = snrt_mcycle();
-            snrt_dma_start_1d((volatile void *)remote_dst, (volatile void *)src,
-                              tile_bytes);
+            snrt_dma_start_1d_transpose((volatile void *)remote_dst,
+                                        (volatile void *)src, tile_bytes, mode,
+                                        TP_M, TP_N);
             snrt_dma_wait_all();
             TP_DUMP(TP_TAG_CYCLES, snrt_mcycle() - c0);
-            snrt_dma_clear_opcode();
         }
     }
 
