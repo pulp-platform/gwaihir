@@ -429,7 +429,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: 2f1a5dacfaef4e8d5956268f66c882d3af7a1e7f
+    revision: 981aaf1be52767cf7a5625039b8c207cd4c1f130
     version: null
     source:
       Git: https://github.com/DanielKellerM/snitch_cluster.git
