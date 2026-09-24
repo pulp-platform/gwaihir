@@ -42,7 +42,7 @@ dependencies:
     path: .deps/lpddr
   iDMA:
     git: https://github.com/pulp-platform/iDMA.git
-    rev: __deploy__b770669__devel
+    version: 0.7.1
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
     rev: gwaihir
@@ -59,10 +59,10 @@ dependencies:
   serial_link:
     git: https://github.com/pulp-platform/serial_link.git
     rev: main
-  # TEMPORARY: PR pulp-platform/snitch_cluster#338 head; revert to pulp `dca` once merged.
+  # TEMPORARY: PR pulp-platform/snitch_cluster#343 head; revert to pulp `main` once merged.
   snitch_cluster:
     git: https://github.com/DanielKellerM/snitch_cluster.git
-    rev: dk/idma070-bump
+    rev: dk/idma070-bump-main
   ucie:
     path: .deps/ucie
 

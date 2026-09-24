@@ -289,8 +289,8 @@ packages:
     dependencies:
     - tech_cells_generic
   idma:
-    revision: d48dedda12eb454ec5bfd41d47224c51b220b41c
-    version: null
+    revision: 04867adf336492eb6ebacad6764a3b442a51f129
+    version: 0.7.1
     source:
       Git: https://github.com/pulp-platform/iDMA.git
     dependencies:
@@ -429,7 +429,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: f9f42cf25f9b023daa6f12e31aca815b6e10796d
+    revision: 94cb4e0e0ad31b8bd31c5d37624affbd5098602e
     version: null
     source:
       Git: https://github.com/DanielKellerM/snitch_cluster.git
