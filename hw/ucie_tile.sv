@@ -80,22 +80,20 @@ module ucie_tile
   logic [NumChannels-1:0]                      slink_phy_data_in_ready;
 
   floo_nw_router #(
-    .AxiCfgN        (AxiCfgN),
-    .AxiCfgW        (AxiCfgW),
-    .RouteAlgo      (RouteCfgNoMcast.RouteAlgo),
-    .NumRoutes      (5),
-    .InFifoDepth    (2),
-    .OutFifoDepth   (2),
-    .id_t           (id_t),
-    .hdr_t          (hdr_t),
-    .floo_req_t     (floo_req_t),
-    .floo_rsp_t     (floo_rsp_t),
-    .floo_wide_t    (floo_wide_t),
-    .WideRwDecouple (WideRwDecouple),
-    .VcImpl         (VcImpl),
-    .NumNarrowSeqOps(floo_gwaihir_noc_pkg::NumNarrowSeqOps),
-    .NumWideSeqOps  (floo_gwaihir_noc_pkg::NumWideSeqOps),
-    .collect_op_e   (floo_gwaihir_noc_pkg::collect_op_e)
+    .AxiCfgN       (AxiCfgN),
+    .AxiCfgW       (AxiCfgW),
+    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .NumRoutes     (5),
+    .InFifoDepth   (2),
+    .OutFifoDepth  (2),
+    .id_t          (id_t),
+    .hdr_t         (hdr_t),
+    .floo_req_t    (floo_req_t),
+    .floo_rsp_t    (floo_rsp_t),
+    .floo_wide_t   (floo_wide_t),
+    .WideRwDecouple(WideRwDecouple),
+    .VcImpl        (VcImpl),
+    .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -147,9 +145,7 @@ module ucie_tile
     .ChimneyCfgW         (floo_pkg::ChimneyDefaultCfg),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
-    .NumNarrowSeqOps     (floo_gwaihir_noc_pkg::NumNarrowSeqOps),
-    .NumWideSeqOps       (floo_gwaihir_noc_pkg::NumWideSeqOps),
-    .collect_op_e        (floo_gwaihir_noc_pkg::collect_op_e),
+    .collect_op_t        (floo_gwaihir_noc_pkg::collect_op_t),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (3),                                           // TODO: CHECK
