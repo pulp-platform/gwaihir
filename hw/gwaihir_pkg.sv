@@ -356,13 +356,13 @@ package gwaihir_pkg;
     ret.RegExtNumRules = CshRegExtNumSlv;
 
     // TODO(fischeti): Inherit these from generated SV/RDL.
-    ret.RegExtRegionIdx[CshRegExtFLL]        = CshRegExtFLL;
-    ret.RegExtRegionStart[CshRegExtFLL]      = 'h1800_1000;
-    ret.RegExtRegionEnd[CshRegExtFLL]        = 'h1800_2000;
-    ret.RegExtRegionIdx[CshRegExtChipCtrl]   = CshRegExtChipCtrl;
+    ret.RegExtRegionIdx[CshRegExtFLL] = CshRegExtFLL;
+    ret.RegExtRegionStart[CshRegExtFLL] = 'h1800_1000;
+    ret.RegExtRegionEnd[CshRegExtFLL] = 'h1800_2000;
+    ret.RegExtRegionIdx[CshRegExtChipCtrl] = CshRegExtChipCtrl;
     ret.RegExtRegionStart[CshRegExtChipCtrl] = 'h1800_2000;
-    ret.RegExtRegionEnd[CshRegExtChipCtrl]   = 'h1800_3000;
-    ret.RegExtRegionIdx[CshRegLPDDR]         = CshRegLPDDR;
+    ret.RegExtRegionEnd[CshRegExtChipCtrl] = 'h1800_3000;
+    ret.RegExtRegionIdx[CshRegLPDDR] = CshRegLPDDR;
     // LPDDR registers occupy the existing external non-idempotent region.
     ret.RegExtRegionStart[CshRegLPDDR] = gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_BASE_ADDR;
     ret.RegExtRegionEnd[CshRegLPDDR] = gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_BASE_ADDR
@@ -385,8 +385,8 @@ package gwaihir_pkg;
     // We do not need/want USB
     ret.Usb = 1'b0;
 
-    ret.LlcOutRegionStart = 'h8000_0000;
-    ret.LlcOutRegionEnd   = 'h1_0000_0000;
+    ret.LlcOutRegionStart    = 'h8000_0000;
+    ret.LlcOutRegionEnd      = 'h1_0000_0000;
     // External AXI rules have priority over the LLC rule. Leave the DRAM
     // window out of the NoC ranges so these accesses reach the LPDDR port.
     ret.AxiExtRegionIdx[0]   = 0;
@@ -395,8 +395,8 @@ package gwaihir_pkg;
     ret.AxiExtRegionIdx[1]   = 0;
     ret.AxiExtRegionStart[1] = ret.LlcOutRegionEnd;
     ret.AxiExtRegionEnd[1]   = 'h6_0000_0000;
-    ret.SlinkRegionStart  = 'h100_0000_0000;
-    ret.SlinkRegionEnd    = 'h200_0000_0000;
+    ret.SlinkRegionStart     = 'h100_0000_0000;
+    ret.SlinkRegionEnd       = 'h200_0000_0000;
 
     // RT features
     ret.Cva6InstrTlbEntries = 16;
