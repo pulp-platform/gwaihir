@@ -525,7 +525,7 @@ wheels = [
 [[package]]
 name = "floogen"
 version = "0.8.4"
-source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=78593db9b17874d8f99ee6722805f0b2c1b2a043#78593db9b17874d8f99ee6722805f0b2c1b2a043" }
+source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=0ee94fef9df623f1e6f5aa6d8e504d4e9a9423f6#0ee94fef9df623f1e6f5aa6d8e504d4e9a9423f6" }
 dependencies = [
     { name = "mako" },
     { name = "networkx" },
@@ -669,7 +669,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
-    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=78593db9b17874d8f99ee6722805f0b2c1b2a043" },
+    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=0ee94fef9df623f1e6f5aa6d8e504d4e9a9423f6" },
     { name = "peakrdl", specifier = ">=1.5.0" },
     { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
     { name = "snitch", extras = ["kernels"], editable = ".deps/snitch_cluster" },
