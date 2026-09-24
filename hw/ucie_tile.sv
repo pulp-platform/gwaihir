@@ -82,7 +82,7 @@ module ucie_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .RouteAlgo     (RouteCfgMcastOnly.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -92,7 +92,9 @@ module ucie_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .NoLoopback    (1'b0),                            // Collective support requires
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -142,16 +144,20 @@ module ucie_tile
     .AxiCfgW             (floo_gwaihir_noc_pkg::AxiCfgW),
     .ChimneyCfgN         (floo_pkg::ChimneyDefaultCfg),
     .ChimneyCfgW         (floo_pkg::ChimneyDefaultCfg),
-    .RouteCfg            (RouteCfgNoMcast),
+    .RouteCfg            (RouteCfgMcastOnly),
     .AtopSupport         (1'b1),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
-    .MaxAtomicTxns       (3),                                           // TODO: CHECK
-    .Sam                 (floo_gwaihir_noc_pkg::Sam),
+    .MaxAtomicTxns       (3),                                                      // TODO: CHECK
+    .Sam                 (floo_gwaihir_noc_pkg::CollectiveSam),
     .id_t                (floo_gwaihir_noc_pkg::id_t),
     .rob_idx_t           (floo_gwaihir_noc_pkg::rob_idx_t),
     .hdr_t               (floo_gwaihir_noc_pkg::hdr_t),
-    .sam_rule_t          (floo_gwaihir_noc_pkg::sam_rule_t),
+    .sam_rule_t          (floo_gwaihir_noc_pkg::collective_sam_rule_t),
+    .sam_idx_t           (floo_gwaihir_noc_pkg::collective_idx_t),
+    .mask_sel_t          (floo_gwaihir_noc_pkg::collective_mask_sel_t),
+    .user_narrow_struct_t(floo_gwaihir_noc_pkg::collective_axi_narrow_in_user_t),
+    .user_wide_struct_t  (floo_gwaihir_noc_pkg::collective_axi_wide_in_user_t),
     //CHECK PARAMS!!
     .axi_narrow_in_req_t (floo_gwaihir_noc_pkg::axi_narrow_in_req_t),
     .axi_narrow_in_rsp_t (floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t),
