@@ -82,8 +82,7 @@ sources:
   - target: gw_gen_rtl
     files:
       # Level 0.0
-      # TODO(lleone): Point back to generated after extending floogen
-      - hw/floo_gwaihir_noc_pkg.sv
+      - .generated/hw/floo_gwaihir_noc_pkg.sv
       - .generated/hw/gw_tile_regs_pkg.sv
       - .generated/hw/gw_ucie_tile_regs_pkg.sv
       - .generated/hw/gw_addrmap_pkg.sv

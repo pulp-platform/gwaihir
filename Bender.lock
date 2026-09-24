@@ -211,7 +211,7 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: 80b0f8d471604a4461a1bce7f327ea344118d958
+    revision: 78593db9b17874d8f99ee6722805f0b2c1b2a043
     version: null
     source:
       Git: https://github.com/pulp-platform/FlooNoC.git
@@ -428,7 +428,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: b50808237f71bcb870618506419b2afbb28a712b
+    revision: dd9f14eb2e00c0b0f414901ba62a1fba672c4fcf
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git
