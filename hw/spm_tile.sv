@@ -88,19 +88,21 @@ module spm_tile
 
 
   floo_nw_router #(
-    .AxiCfgN       (AxiCfgN),
-    .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
-    .NumRoutes     (5),
-    .InFifoDepth   (2),
-    .OutFifoDepth  (2),
-    .id_t          (id_t),
-    .hdr_t         (hdr_t),
-    .floo_req_t    (floo_req_t),
-    .floo_rsp_t    (floo_rsp_t),
-    .floo_wide_t   (floo_wide_t),
-    .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .AxiCfgN        (AxiCfgN),
+    .AxiCfgW        (AxiCfgW),
+    .RouteAlgo      (RouteCfgNoMcast.RouteAlgo),
+    .NumRoutes      (5),
+    .InFifoDepth    (2),
+    .OutFifoDepth   (2),
+    .id_t           (id_t),
+    .hdr_t          (hdr_t),
+    .floo_req_t     (floo_req_t),
+    .floo_rsp_t     (floo_rsp_t),
+    .floo_wide_t    (floo_wide_t),
+    .WideRwDecouple (WideRwDecouple),
+    .VcImpl         (VcImpl),
+    .NumNarrowSeqOps(floo_gwaihir_noc_pkg::NumNarrowSeqOps),
+    .NumWideSeqOps  (floo_gwaihir_noc_pkg::NumWideSeqOps)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -153,6 +155,8 @@ module spm_tile
     .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, bit'(!IsNarrow), 1'b0)),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
+    .NumNarrowSeqOps     (floo_gwaihir_noc_pkg::NumNarrowSeqOps),
+    .NumWideSeqOps       (floo_gwaihir_noc_pkg::NumWideSeqOps),
     .WideRwDecouple      (WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (1),

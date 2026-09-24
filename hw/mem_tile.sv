@@ -129,19 +129,21 @@ module mem_tile
   floo_wide_t [Eject:North] router_floo_wide_out;
 
   floo_nw_router #(
-    .AxiCfgN       (AxiCfgN),
-    .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
-    .NumRoutes     (5),
-    .InFifoDepth   (2),
-    .OutFifoDepth  (2),
-    .id_t          (id_t),
-    .hdr_t         (hdr_t),
-    .floo_req_t    (floo_req_t),
-    .floo_rsp_t    (floo_rsp_t),
-    .floo_wide_t   (floo_wide_t),
-    .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .AxiCfgN        (AxiCfgN),
+    .AxiCfgW        (AxiCfgW),
+    .RouteAlgo      (RouteCfgNoMcast.RouteAlgo),
+    .NumRoutes      (5),
+    .InFifoDepth    (2),
+    .OutFifoDepth   (2),
+    .id_t           (id_t),
+    .hdr_t          (hdr_t),
+    .floo_req_t     (floo_req_t),
+    .floo_rsp_t     (floo_rsp_t),
+    .floo_wide_t    (floo_wide_t),
+    .WideRwDecouple (WideRwDecouple),
+    .VcImpl         (VcImpl),
+    .NumNarrowSeqOps(floo_gwaihir_noc_pkg::NumNarrowSeqOps),
+    .NumWideSeqOps  (floo_gwaihir_noc_pkg::NumWideSeqOps)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -201,6 +203,8 @@ module mem_tile
     .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b1)),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
+    .NumNarrowSeqOps     (floo_gwaihir_noc_pkg::NumNarrowSeqOps),
+    .NumWideSeqOps       (floo_gwaihir_noc_pkg::NumWideSeqOps),
     .WideRwDecouple      (WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (1),
@@ -1102,29 +1106,41 @@ module mem_tile
   // Add Assertion that no multicast / reduction can enter this tile!
   for (genvar r = 0; r < 4; r++) begin : gen_route_assertions
     `ASSERT(NoCollectivOperation_NReq_In,
-            (!floo_req_i[r].valid | (floo_req_i[r].req[0].generic.hdr.collective_op == Unicast)),
+            (!floo_req_i[r].valid |
+              (floo_req_i[r].req[0].generic.hdr.collective_op == floo_pkg::Unicast)
+            ),
             clk_i, !rst_ni, $sformatf(
             "Unsupported collective attempted with destination: %h",
             floo_req_i[r].req[0].narrow_aw.payload.addr
             ))
     `ASSERT(NoCollectivOperation_NRsp_In,
-            (!floo_rsp_i[r].valid | (floo_rsp_i[r].rsp[0].generic.hdr.collective_op == Unicast)))
+            (!floo_rsp_i[r].valid |
+              (floo_rsp_i[r].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast))
+            )
     `ASSERT(NoCollectivOperation_NWide_In,
-            (!floo_wide_i[r].valid | (floo_wide_i[r].wide[0].generic.hdr.collective_op == Unicast)),
+            (!floo_wide_i[r].valid |
+              (floo_wide_i[r].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)
+            ),
             clk_i, !rst_ni, $sformatf(
             "Unsupported collective attempted with destination: %h",
             floo_wide_i[r].wide[0].wide_aw.payload.addr
             ))
     `ASSERT(NoCollectivOperation_NReq_Out,
-            (!floo_req_o[r].valid | (floo_req_o[r].req[0].generic.hdr.collective_op == Unicast)),
+            (!floo_req_o[r].valid |
+              (floo_req_o[r].req[0].generic.hdr.collective_op == floo_pkg::Unicast)
+            ),
             clk_i, !rst_ni, $sformatf(
             "Unsupported collective attempted with destination: %h",
             floo_req_o[r].req[0].narrow_aw.payload.addr
             ))
     `ASSERT(NoCollectivOperation_NRsp_Out,
-            (!floo_rsp_o[r].valid | (floo_rsp_o[r].rsp[0].generic.hdr.collective_op == Unicast)))
+            (!floo_rsp_o[r].valid |
+             (floo_rsp_o[r].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast))
+            )
     `ASSERT(NoCollectivOperation_NWide_Out,
-            (!floo_wide_o[r].valid | (floo_wide_o[r].wide[0].generic.hdr.collective_op == Unicast)),
+            (!floo_wide_o[r].valid |
+             (floo_wide_o[r].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)
+            ),
             clk_i, !rst_ni, $sformatf(
             "Unsupported collective attempted with destination: %h",
             floo_wide_i[r].wide[0].wide_aw.payload.addr

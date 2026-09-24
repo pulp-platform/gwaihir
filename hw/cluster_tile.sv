@@ -42,9 +42,9 @@ module cluster_tile
   // NoC-generated `collect_op_t` and the SW-side `snitch_cluster_wrapper_pkg::CollectiveWidth`
   // must be the same width to match.
   `ASSERT_INIT(
-      CollectiveOpWidthMatch, $bits(floo_pkg::collect_op_t)
+      CollectiveOpWidthMatch, $bits(floo_gwaihir_noc_pkg::collect_op_t)
       == snitch_cluster_wrapper_pkg::CollectiveWidth,
-      "floo_pkg::collect_op_t width does not match snitch_cluster_wrapper_pkg::CollectiveWidth")
+      "FlooNoC collect_op_t width does not match snitch_cluster_wrapper_pkg CollectiveWidth")
 
   // Tile-specific reset and clock signals
   logic tile_clk;
@@ -161,8 +161,8 @@ module cluster_tile
     localparam int unsigned FpMax16Id = 8;
     localparam int unsigned FpMax8Id = 9;
 
-    logic [$bits(floo_pkg::collect_op_t)-1:0] wide_op_id;
-    assign wide_op_id = offload_wide_req.req.op - floo_pkg::FirstWideSeqOp;
+    logic [$bits(floo_gwaihir_noc_pkg::collect_op_t)-1:0] wide_op_id;
+    assign wide_op_id = offload_wide_req.req.op - floo_gwaihir_noc_pkg::FirstWideSeqOp;
 
     // Parse the FPU Request
     always_comb begin
@@ -462,23 +462,25 @@ module cluster_tile
 
 
   floo_nw_router #(
-    .AxiCfgN       (AxiCfgN),
-    .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfg.RouteAlgo),
-    .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl),
-    .NoLoopback    (1'b0),
-    .NumRoutes     (5),
-    .InFifoDepth   (2),
-    .OutFifoDepth  (2),
-    .id_t          (id_t),
-    .hdr_t         (hdr_t),
-    .floo_req_t    (floo_req_t),
-    .floo_rsp_t    (floo_rsp_t),
-    .floo_wide_t   (floo_wide_t),
-    .red_wide_req_t(red_wide_req_t),
-    .red_wide_rsp_t(red_wide_rsp_t),
-    .CollectiveCfg (RouteCfg.CollectiveCfg)
+    .AxiCfgN        (AxiCfgN),
+    .AxiCfgW        (AxiCfgW),
+    .RouteAlgo      (RouteCfg.RouteAlgo),
+    .WideRwDecouple (WideRwDecouple),
+    .VcImpl         (VcImpl),
+    .NoLoopback     (1'b0),
+    .NumRoutes      (5),
+    .InFifoDepth    (2),
+    .OutFifoDepth   (2),
+    .id_t           (id_t),
+    .hdr_t          (hdr_t),
+    .floo_req_t     (floo_req_t),
+    .floo_rsp_t     (floo_rsp_t),
+    .floo_wide_t    (floo_wide_t),
+    .red_wide_req_t (red_wide_req_t),
+    .red_wide_rsp_t (red_wide_rsp_t),
+    .CollectiveCfg  (RouteCfg.CollectiveCfg),
+    .NumNarrowSeqOps(floo_gwaihir_noc_pkg::NumNarrowSeqOps),
+    .NumWideSeqOps  (floo_gwaihir_noc_pkg::NumWideSeqOps)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -518,6 +520,8 @@ module cluster_tile
     .ChimneyCfgW         (floo_pkg::ChimneyDefaultCfg),
     .RouteCfg            (floo_gwaihir_noc_pkg::RouteCfg),
     .AtopSupport         (1'b1),
+    .NumNarrowSeqOps     (floo_gwaihir_noc_pkg::NumNarrowSeqOps),
+    .NumWideSeqOps       (floo_gwaihir_noc_pkg::NumWideSeqOps),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (3),

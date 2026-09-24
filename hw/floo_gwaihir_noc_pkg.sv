@@ -31,6 +31,17 @@ package floo_gwaihir_noc_pkg;
   localparam int unsigned ChipletWinMask = 33554431;
   localparam int unsigned CshSlinkNumLanes = 8;
 
+  // TODO(lleone): hardcoded until floogen (plans/floonoc-op-agnostic-plan.md Stage 5) computes
+  // and emits these here per-network. This package is the single source of truth for the
+  // project's `collect_op_e`/`collect_op_t` (used below for `hdr_t`) and for the two counts
+  // threaded as real parameters into every "big" NoC module (chimneys/routers) -- there is no
+  // separate copy anywhere else to drift out of sync with.
+  localparam int unsigned NumNarrowSeqOps = 6;
+  localparam int unsigned NumWideSeqOps = 10;
+
+  `FLOO_TYPEDEF_COLLECT_OP_E(collect_op_e, collect_op_t, FirstNarrowSeqOp, FirstWideSeqOp,
+                             NumCollectOps, NumNarrowSeqOps, NumWideSeqOps)
+
 
   /////////////////////////////
   //   Endpoint Dimensions   //
@@ -1111,7 +1122,7 @@ package floo_gwaihir_noc_pkg;
   `FLOO_TYPEDEF_NW_VIRT_CHAN_LINK_ALL(req, rsp, wide, req, rsp, wide, 2, 2)
 
   typedef logic [AxiCfgW.DataWidth-1:0] floo_wide_red_data_t;
-  `FLOO_RED_TYPEDEF_REQ_RSP_LINK(wide, floo_wide_red_data_t, wide_req, wide_rsp)
+  `FLOO_RED_TYPEDEF_REQ_RSP_LINK(wide, floo_wide_red_data_t, wide_req, wide_rsp, collect_op_t)
 
 
 endpackage

@@ -66,19 +66,21 @@ module pcie_tile
   floo_wide_t [Eject:North] router_floo_wide_out;
 
   floo_nw_router #(
-    .AxiCfgN       (AxiCfgN),
-    .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfg.RouteAlgo),
-    .NumRoutes     (5),
-    .InFifoDepth   (2),
-    .OutFifoDepth  (2),
-    .id_t          (id_t),
-    .hdr_t         (hdr_t),
-    .floo_req_t    (floo_req_t),
-    .floo_rsp_t    (floo_rsp_t),
-    .floo_wide_t   (floo_wide_t),
-    .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .AxiCfgN        (AxiCfgN),
+    .AxiCfgW        (AxiCfgW),
+    .RouteAlgo      (RouteCfg.RouteAlgo),
+    .NumRoutes      (5),
+    .InFifoDepth    (2),
+    .OutFifoDepth   (2),
+    .id_t           (id_t),
+    .hdr_t          (hdr_t),
+    .floo_req_t     (floo_req_t),
+    .floo_rsp_t     (floo_rsp_t),
+    .floo_wide_t    (floo_wide_t),
+    .WideRwDecouple (WideRwDecouple),
+    .VcImpl         (VcImpl),
+    .NumNarrowSeqOps(floo_gwaihir_noc_pkg::NumNarrowSeqOps),
+    .NumWideSeqOps  (floo_gwaihir_noc_pkg::NumWideSeqOps)
   ) i_router (
     .clk_i,
     .rst_ni,
