@@ -2,19 +2,19 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 
-`include "hci_helpers.svh"
-
 module snitch_tcdm_aligner
-  import reqrsp_pkg::amo_op_e;
+  import lsu_pkg::amo_op_e;
 #(
-  parameter type         tcdm_req_t    = logic,
-  parameter type         tcdm_rsp_t    = logic,
+  parameter type tcdm_req_t = logic,
+  parameter type tcdm_rsp_t = logic,
+
   parameter int unsigned DataWidth     = 512,
   parameter int unsigned TCDMDataWidth = 64,
   parameter int unsigned AddrWidth     = 48
 ) (
-  input  logic      clk_i,
-  input  logic      rst_ni,
+  input logic clk_i,
+  input logic rst_ni,
+
   input  tcdm_req_t tcdm_req_misaligned_i,
   output tcdm_req_t tcdm_req_aligned_o,
   input  tcdm_rsp_t tcdm_rsp_aligned_i,
