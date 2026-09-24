@@ -94,7 +94,8 @@ module ucie_tile
     .WideRwDecouple (WideRwDecouple),
     .VcImpl         (VcImpl),
     .NumNarrowSeqOps(floo_gwaihir_noc_pkg::NumNarrowSeqOps),
-    .NumWideSeqOps  (floo_gwaihir_noc_pkg::NumWideSeqOps)
+    .NumWideSeqOps  (floo_gwaihir_noc_pkg::NumWideSeqOps),
+    .collect_op_e   (floo_gwaihir_noc_pkg::collect_op_e)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -148,6 +149,7 @@ module ucie_tile
     .AtopSupport         (1'b1),
     .NumNarrowSeqOps     (floo_gwaihir_noc_pkg::NumNarrowSeqOps),
     .NumWideSeqOps       (floo_gwaihir_noc_pkg::NumWideSeqOps),
+    .collect_op_e        (floo_gwaihir_noc_pkg::collect_op_e),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (3),                                           // TODO: CHECK
