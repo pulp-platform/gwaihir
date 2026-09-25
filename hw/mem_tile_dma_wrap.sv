@@ -55,17 +55,12 @@ module mem_tile_dma_wrap #(
   `include "axi/assign.svh"
   `include "axi/typedef.svh"
   `include "idma/typedef.svh"
-  `include "register_interface/typedef.svh"
   `include "apb/typedef.svh"
 
   localparam int unsigned IdCounterWidth = 32;
   localparam int unsigned NumDim = 2;
   localparam int unsigned RepWidth = 32;
   localparam int unsigned TfLenWidth = 32;
-
-  typedef logic [AxiNarrowDataWidth-1:0] narrow_data_t;
-  typedef logic [AxiNarrowDataWidth/8-1:0] narrow_strb_t;
-  typedef logic [AxiNarrowAddrWidth-1:0] narrow_addr_t;
 
   // The iDMA register frontend is a fixed 32b APB slave; the address follows the bus
   localparam int unsigned ApbAddrWidth = AxiNarrowAddrWidth;
@@ -91,7 +86,6 @@ module mem_tile_dma_wrap #(
   `IDMA_TYPEDEF_FULL_ND_REQ_T(idma_nd_req_t, idma_req_t, tf_len_t, addr_t)
 
   // iDMA configuration types
-  `REG_BUS_TYPEDEF_ALL(dma_regs, narrow_addr_t, narrow_data_t, narrow_strb_t)
   `APB_TYPEDEF_REQ_T(dma_apb_req_t, apb_addr_t, apb_data_t, apb_strb_t)
   `APB_TYPEDEF_RESP_T(dma_apb_rsp_t, apb_data_t)
 
@@ -103,10 +97,8 @@ module mem_tile_dma_wrap #(
 
   typedef struct packed {axi_write_meta_channel_t axi;} write_meta_channel_t;
 
-  dma_regs_req_t dma_reg_req;
-  dma_regs_rsp_t dma_reg_rsp;
-  dma_apb_req_t  dma_apb_req;
-  dma_apb_rsp_t  dma_apb_rsp;
+  dma_apb_req_t dma_apb_req;
+  dma_apb_rsp_t dma_apb_rsp;
 
   // 1D FE signals
   idma_req_t burst_req_d;
@@ -146,39 +138,27 @@ module mem_tile_dma_wrap #(
   axi_mst_req_t axi_read_req, axi_write_req;
   axi_mst_rsp_t axi_read_rsp, axi_write_rsp;
 
-  axi_to_reg_v2 #(
+  axi_to_apb #(
+    .NoApbSlaves (1),
+    .NoRules     (0),
     .AxiAddrWidth(AxiNarrowAddrWidth),
     .AxiDataWidth(AxiNarrowDataWidth),
     .AxiIdWidth  (AxiNarrowIdWidth),
     .AxiUserWidth(AxiNarrowUserWidth),
-    .RegDataWidth(ApbDataWidth),
-    .CutMemReqs  (1),
+    .ApbAddrWidth(ApbAddrWidth),
+    .ApbDataWidth(ApbDataWidth),
     .axi_req_t   (axi_slv_req_t),
-    .axi_rsp_t   (axi_slv_rsp_t),
-    .reg_req_t   (dma_regs_req_t),
-    .reg_rsp_t   (dma_regs_rsp_t)
-  ) i_axi_translate (
+    .axi_resp_t  (axi_slv_rsp_t),
+    .apb_req_t   (dma_apb_req_t),
+    .apb_resp_t  (dma_apb_rsp_t)
+  ) i_axi_to_apb (
     .clk_i,
     .rst_ni,
-    .axi_req_i(axi_slv_req_i),
-    .axi_rsp_o(axi_slv_rsp_o),
-    .reg_req_o(dma_reg_req),
-    .reg_rsp_i(dma_reg_rsp),
-    .busy_o   ()
-  );
-
-  reg_to_apb #(
-    .reg_req_t(dma_regs_req_t),
-    .reg_rsp_t(dma_regs_rsp_t),
-    .apb_req_t(dma_apb_req_t),
-    .apb_rsp_t(dma_apb_rsp_t)
-  ) i_reg_to_apb (
-    .clk_i,
-    .rst_ni,
-    .reg_req_i(dma_reg_req),
-    .reg_rsp_o(dma_reg_rsp),
-    .apb_req_o(dma_apb_req),
-    .apb_rsp_i(dma_apb_rsp)
+    .axi_req_i (axi_slv_req_i),
+    .axi_resp_o(axi_slv_rsp_o),
+    .apb_req_o (dma_apb_req),
+    .apb_resp_i(dma_apb_rsp),
+    .addr_map_i('0)
   );
 
   if (!IsTwoD) begin : gen_1d
