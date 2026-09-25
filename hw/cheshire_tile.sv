@@ -115,7 +115,7 @@ module cheshire_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .RouteAlgo     (RouteCfgMcastOnly.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -125,7 +125,10 @@ module cheshire_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    // Forwards multicasts passing through this tile
+    .NoLoopback    (1'b0),
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -403,26 +406,18 @@ module cheshire_tile
     );
   end
 
-  // Add Assertion that no multicast / reduction can enter this tile!
-  for (genvar r = 0; r < 4; r++) begin : gen_virt
-    `ASSERT(NoCollectivOperation_NReq_In,
-            (!router_floo_req_in[r].valid |
-             (router_floo_req_in[r].req[0].generic.hdr.collective_op == Unicast)))
-    `ASSERT(NoCollectivOperation_NRsp_In,
-            (!router_floo_rsp_in[r].valid |
-             (router_floo_rsp_in[r].rsp[0].generic.hdr.collective_op == Unicast)))
-    `ASSERT(NoCollectivOperation_NWide_In,
-            (!router_floo_wide_in[r].valid |
-             (router_floo_wide_in[r].wide[0].generic.hdr.collective_op == Unicast)))
-    `ASSERT(NoCollectivOperation_NReq_Out,
-            (!router_floo_req_out[r].valid |
-             (router_floo_req_out[r].req[0].generic.hdr.collective_op == Unicast)))
-    `ASSERT(NoCollectivOperation_NRsp_Out,
-            (!router_floo_rsp_out[r].valid |
-             (router_floo_rsp_out[r].rsp[0].generic.hdr.collective_op == Unicast)))
-    `ASSERT(NoCollectivOperation_NWide_Out,
-            (!router_floo_wide_out[r].valid |
-             (router_floo_wide_out[r].wide[0].generic.hdr.collective_op == Unicast)))
-  end
+  // The router forwards collectives passing through this tile,
+  // but none may reach the local chimney, which does not support them.
+  // verilog_format: off
+  `ASSERT(NoCollectivOperation_NReq_Eject,
+          (!router_floo_req_out[Eject].valid |
+           (router_floo_req_out[Eject].req[0].generic.hdr.collective_op == Unicast)))
+  `ASSERT(NoCollectivOperation_NRsp_Eject,
+          (!router_floo_rsp_out[Eject].valid |
+           (router_floo_rsp_out[Eject].rsp[0].generic.hdr.collective_op == Unicast)))
+  `ASSERT(NoCollectivOperation_NWide_Eject,
+          (!router_floo_wide_out[Eject].valid |
+           (router_floo_wide_out[Eject].wide[0].generic.hdr.collective_op == Unicast)))
+  // verilog_format: on
 
 endmodule

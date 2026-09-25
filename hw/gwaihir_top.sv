@@ -427,13 +427,7 @@ module gwaihir_top
     localparam int DummyTileX = int'(DummyPhysicalIdx[d].x);
     localparam int DummyTileY = int'(DummyPhysicalIdx[d].y);
 
-    // Multicasts from the UCIe tiles travel along their column first (YX routing)
-    localparam bit DummyEnMcast = (DummyTileId.x == Sam[Ucie0SamIdx].idx.x) ||
-                                  (DummyTileId.x == Sam[Ucie1SamIdx].idx.x);
-
-    dummy_tile #(
-      .EnMcast(DummyEnMcast)
-    ) i_dummy_tile (
+    dummy_tile i_dummy_tile (
       .clk_i,
       .rst_ni,
       .test_enable_i(test_mode_i),
