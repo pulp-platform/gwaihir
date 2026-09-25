@@ -34,7 +34,7 @@ dependencies:
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
-    rev: main
+    rev: chenwu/c2c-mcast
     upstream_name: FlooNoC
   gwaihir-pd:
     path: ./pd

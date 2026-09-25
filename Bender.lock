@@ -211,7 +211,7 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: c58f1bf13baeda147b4e87e961683d389db090a1
+    revision: da510eadb46c6e1cd59e6d238f3d18e80d2a5426
     version: null
     source:
       Git: https://github.com/pulp-platform/FlooNoC.git

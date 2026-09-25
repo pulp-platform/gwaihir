@@ -10,7 +10,10 @@ module dummy_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import gwaihir_pkg::*;
-(
+#(
+  // Route multicasts (needed on multicast paths, e.g. in the UCIe tile columns)
+  parameter bit EnMcast = 1'b0
+) (
   input logic clk_i,
   input logic rst_ni,
   input logic test_enable_i,
@@ -28,6 +31,8 @@ module dummy_tile
   // Router //
   ////////////
 
+  localparam floo_pkg::route_cfg_t RouteCfgRouter = EnMcast ? RouteCfgMcastOnly : RouteCfgNoMcast;
+
   floo_req_t [Eject:North] router_floo_req_out, router_floo_req_in;
   floo_rsp_t [Eject:North] router_floo_rsp_out, router_floo_rsp_in;
   floo_wide_t [Eject:North] router_floo_wide_in;
@@ -36,7 +41,7 @@ module dummy_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .RouteAlgo     (RouteCfgRouter.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -46,7 +51,9 @@ module dummy_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .NoLoopback    (!EnMcast),
+    .CollectiveCfg (RouteCfgRouter.CollectiveCfg)
   ) i_router (
     .clk_i,
     .rst_ni,
