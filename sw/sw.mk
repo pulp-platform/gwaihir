@@ -55,12 +55,7 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
 # Spatz kernels
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
 
-SN_BUILD_TESTS = OFF
-
-SN_TESTS  = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
-# Only the dep tests gwaihir runs; snitch's dma_transpose_remote.c needs the snitch addrmap
-SN_TESTS += $(SN_ROOT)/sw/tests/src/simple.c
-SN_TESTS += $(SN_ROOT)/sw/tests/src/non_null_exitcode.c
+SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 
 $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_SW_DIR) --no-format $<
