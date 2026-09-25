@@ -58,7 +58,7 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
 SN_BUILD_TESTS = OFF
 
 SN_TESTS  = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
-# The dep tests gwaihir runs; the rest assume the snitch address map
+# Only the dep tests gwaihir runs; snitch's dma_transpose_remote.c needs the snitch addrmap
 SN_TESTS += $(SN_ROOT)/sw/tests/src/simple.c
 SN_TESTS += $(SN_ROOT)/sw/tests/src/non_null_exitcode.c
 
