@@ -218,9 +218,13 @@ LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
 LPDDR_COMMIT ?= 6b451f7aab16a080b503863a26af98e967b0ecca
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
+TUM_NPU_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/tum_npu.git
+TUM_NPU_COMMIT ?= 8f38c971814e9fc003303e3b642bd25b5b0ec0f3
+TUM_NPU_DIR = $(GW_ROOT)/.deps/tum_npu
+
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR) $(TUM_NPU_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -242,15 +246,23 @@ $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
 	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT)
 
+$(TUM_NPU_DIR):
+	git clone $(TUM_NPU_REMOTE) $(TUM_NPU_DIR)
+	cd $(TUM_NPU_DIR) && git checkout $(TUM_NPU_COMMIT)
+
+TUM_NPU_SW_TESTS = $(wildcard $(TUM_NPU_DIR)/sw/tests/*.c)
+TUM_NPU_SW_TESTS_VENDORED = $(patsubst $(TUM_NPU_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshire/tests/%,$(TUM_NPU_SW_TESTS))
+
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^LPDDR_COMMIT ?= .*/LPDDR_COMMIT ?= $(shell git -C $(LPDDR_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^UCIE_COMMIT ?= .*/UCIE_COMMIT ?= $(shell git -C $(UCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^TUM_NPU_COMMIT ?= .*/TUM_NPU_COMMIT ?= $(shell git -C $(TUM_NPU_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
 	rm -f $(PCIE_SW_TESTS_VENDORED)
-	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR)
+	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR) $(TUM_NPU_DIR)
 
 -include $(PD_DIR)/pd.mk
 -include $(LPDDR_DIR)/lpddr.mk
