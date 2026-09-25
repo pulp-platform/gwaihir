@@ -72,7 +72,6 @@ GW_LINK_MODE ?= spm
 CHS_SW_INCLUDES += -I$(GW_INCDIR)
 CHS_SW_INCLUDES += -I$(SN_RUNTIME_SRCDIR)
 CHS_SW_INCLUDES += -I$(GW_GEN_SW_DIR)
-# iDMA release files: compute op codes (target/sw) and MX quant/dequant goldens (test)
 CHS_SW_INCLUDES += -I$(IDMA_ROOT)/target/sw
 CHS_SW_INCLUDES += -I$(IDMA_ROOT)/test
 
