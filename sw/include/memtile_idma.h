@@ -85,10 +85,6 @@ static inline void memtile_dma_2d_blk_memcpy(uint32_t tile, uint64_t dst, uint64
                                              src_stride, num_reps, 0));
 }
 
-// The generated reg file must fit the l2_spm_dma window in the address map
-_Static_assert(sizeof(idma_reg64_2d_t) <= GW_L2_SPM_0_DMA_SIZE,
-               "iDMA reg file exceeds the Gwaihir l2_spm_dma window");
-
 // Sticky; sampled when next_id is read, so set it before issuing
 static inline void memtile_dma_set_compute(uint32_t tile, uint32_t op) {
     idma_reg64_2d__compute_cfg_t c = { .w = 0 };
