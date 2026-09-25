@@ -25,7 +25,7 @@ dependencies:
     rev: common-cells-v2
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
-    rev: gwaihir-idma-v070
+    rev: gwaihir
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: new/stream-sizer
