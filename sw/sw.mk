@@ -61,7 +61,6 @@ SN_TESTS  = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 # The dep tests gwaihir runs; the rest assume the snitch address map
 SN_TESTS += $(SN_ROOT)/sw/tests/src/simple.c
 SN_TESTS += $(SN_ROOT)/sw/tests/src/non_null_exitcode.c
-SN_TESTS += $(SN_ROOT)/sw/tests/src/dma_transpose.c
 
 $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_SW_DIR) --no-format $<

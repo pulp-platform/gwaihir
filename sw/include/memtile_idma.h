@@ -91,19 +91,6 @@ static inline void memtile_dma_set_compute(uint32_t tile, uint32_t op) {
     *(volatile uint32_t *)(base + offsetof(idma_reg64_2d_t, compute_cfg)) = c.w;
 }
 
-// Transpose with geometry; element size is 1 << mode bytes
-static inline void memtile_dma_set_transpose(uint32_t tile, uint32_t mode,
-                                             uint32_t m, uint32_t n) {
-    uintptr_t base = memtile_dma_base(tile);
-    idma_reg64_2d__compute_cfg_t c = { .w = 0 };
-    c.f.compute_enable     = 1;
-    c.f.compute_op         = COMPUTE_OP__TRANSPOSE;
-    c.f.transpose_mode     = mode;
-    c.f.transpose_tensor_m = m;
-    c.f.transpose_tensor_n = n;
-    *(volatile uint32_t *)(base + offsetof(idma_reg64_2d_t, compute_cfg)) = c.w;
-}
-
 static inline void memtile_dma_passthrough(uint32_t tile) {
     memtile_dma_set_compute(tile, COMPUTE_OP__NONE);
 }
