@@ -100,7 +100,7 @@ module tb_gwaihir_top;
             $fatal(1, "Preload mode %d (headless offload) requires SN_BINARY!", preload_mode);
           jtag_enable_tiles();
           fastmode_elf_preload(snitch_elf, snitch_entry);
-          headless_offload(exit_code);
+          headless_offload(fix.clk, exit_code);
         end
         default: begin
           $fatal(1, "Unsupported preload mode %d (reserved)!", preload_mode);
