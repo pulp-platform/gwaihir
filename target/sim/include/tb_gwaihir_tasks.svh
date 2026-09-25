@@ -197,7 +197,7 @@ task automatic fastmode_elf_preload(input string binary, output cheshire_pkg::do
 endtask
 
 // Headless offload (tb-driven simple_offload): preload firmware + optional job, set scratch, wake, poll return codes -- no host.
-task automatic headless_offload(input logic clk, output logic [31:0] exit_code);
+task automatic headless_offload(ref logic clk, output logic [31:0] exit_code);
   import floo_gwaihir_noc_pkg::*;
   // HW counts + L2 aperture come from the SoC cfg/addrmap, never hardcoded.
   localparam int     NrClusters = NumClusters;
@@ -207,6 +207,7 @@ task automatic headless_offload(input logic clk, output logic [31:0] exit_code);
   localparam int     PollCycles = 1000;                           // poll every PollCycles clock cycles
   localparam int     PollIters  = 20000;                          // -> 20 M cycles before giving up
   int    i, cl, core, iter, ndone, nfail, expect_done;
+  int unsigned rc_sum;
   logic [31:0] rc;
   realtime t_wake;
 
@@ -231,21 +232,25 @@ task automatic headless_offload(input logic clk, output logic [31:0] exit_code);
   // 4) poll return codes (bit0=done, bits[31:1]=rc) until all done or timeout
   for (iter = 0; iter < PollIters; iter++) begin
     repeat (PollCycles) @(posedge clk);
-    ndone = 0; nfail = 0;
+    ndone = 0; nfail = 0; rc_sum = 0;
     for (cl = 0; cl < NrClusters; cl++)
       for (core = 0; core < NrCores; core++) begin
         fastmode_read_word(RcBase + (cl*NrCores + core)*4, rc);
-        if (rc[0]) begin ndone++; if (rc[31:1] != 0) nfail++; end
+        if (rc[0]) begin ndone++; rc_sum += rc[31:1]; if (rc[31:1] != 0) nfail++; end
       end
     if (ndone == expect_done) begin
       $display("[OFFLOAD] COMPLETE done=%0d/%0d fail=%0d  wake->done=%.0f ns", ndone, expect_done, nfail, $realtime - t_wake);
-      exit_code = (nfail != 0);
+      // Same result strings as the VIP's *_wait_for_eoc, so CI's .check-simulation matches
+      exit_code = rc_sum;
+      if (exit_code) $error("[OFFLOAD] FAILED: return code %0d", exit_code);
+      else $display("[OFFLOAD] SUCCESS");
       fastmode_read();
       return;
     end
   end
   $display("[OFFLOAD] TIMEOUT done=%0d/%0d", ndone, expect_done);
   exit_code = 32'hFF;
+  $error("[OFFLOAD] FAILED: return code %0d (timeout)", exit_code);
   fastmode_read();
 endtask
 
