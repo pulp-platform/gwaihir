@@ -11,6 +11,7 @@ BENDER ?= bender
 CHS_ROOT ?= $(shell $(BENDER) path cheshire)
 #TODO(lleone): remove if not necessary to redefine
 SN_ROOT ?= $(shell $(BENDER) path snitch_cluster)
+IDMA_ROOT ?= $(shell $(BENDER) path idma)
 
 GW_SW_DIR = $(GW_ROOT)/sw
 GW_CHS_SW_DIR = $(GW_SW_DIR)/cheshire
@@ -71,6 +72,8 @@ GW_LINK_MODE ?= spm
 CHS_SW_INCLUDES += -I$(GW_INCDIR)
 CHS_SW_INCLUDES += -I$(SN_RUNTIME_SRCDIR)
 CHS_SW_INCLUDES += -I$(GW_GEN_SW_DIR)
+CHS_SW_INCLUDES += -I$(IDMA_ROOT)/target/sw
+CHS_SW_INCLUDES += -I$(IDMA_ROOT)/test
 
 # Collect tests, which should be built for all modes, and their .dump targets
 GW_CHS_SW_TEST_SRC   += $(wildcard $(GW_CHS_SW_DIR)/tests/*.c)
