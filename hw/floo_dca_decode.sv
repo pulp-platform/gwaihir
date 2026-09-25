@@ -25,20 +25,45 @@ module floo_dca_decode #(
   input  snitch_cluster_wrapper_pkg::dca_rsp_t dca_rsp_i
 );
 
-  // Wide sequential reduction op IDs, zero-based (opaque to the NoC). The order must match the
-  // ops declared in cfg/gwaihir_noc.yml and the software opcode enum.
+  // Supported DCA operations
+  // Follows order of https://github.com/open-mpi/ompi/blob/main/ompi/op/op.h
   typedef enum int unsigned {
-    FpAdd   = 0,
-    FpMul   = 1,
-    FpMin   = 2,
-    FpMax   = 3,
-    FpAdd32 = 4,
-    FpAdd16 = 5,
-    FpAdd8  = 6,
-    FpMax32 = 7,
-    FpMax16 = 8,
-    FpMax8  = 9
-  } wide_red_op_e;
+    DcaOpMax      = 0,
+    DcaOpMin      = 1,
+    DcaOpSum      = 2,
+    DcaOpProd     = 3,
+    NumDcaOpTypes = 4
+  } dca_op_type_e;
+
+  // Supported DCA data types
+  typedef enum int unsigned {
+    DcaDataTypeFp8     = 0,
+    DcaDataTypeFp16    = 1,
+    DcaDataTypeFp16Alt = 2,
+    DcaDataTypeFp32    = 3,
+    DcaDataTypeFp64    = 4,
+    NumDcaDataTypes    = 5
+  } dca_data_type_e;
+
+  // Total number of supported DCA operations
+  localparam int unsigned NumDcaOps = NumDcaOpTypes * NumDcaDataTypes;
+
+  typedef struct packed {
+    logic [$clog2(NumDcaOpTypes)-1:0]   op_type;
+    logic [$clog2(NumDcaDataTypes)-1:0] data_type;
+  } dca_op_t;
+
+  function automatic fpnew_pkg::fp_format_e dca_type_to_fpnew_format(
+      input dca_data_type_e data_type);
+    unique casez (data_type)
+      DcaDataTypeFp8:     return fpnew_pkg::FP8;
+      DcaDataTypeFp16:    return fpnew_pkg::FP16;
+      DcaDataTypeFp16Alt: return fpnew_pkg::FP16ALT;
+      DcaDataTypeFp32:    return fpnew_pkg::FP32;
+      DcaDataTypeFp64:    return fpnew_pkg::FP64;
+      default:            return fpnew_pkg::FP64;
+    endcase
+  endfunction
 
   if (EnWideReduction) begin : gen_wide_offload_reduction
     // Uncut DCA interface, cut below towards the cluster
@@ -50,15 +75,18 @@ module floo_dca_decode #(
     assign offload_rsp_o.ready     = offload_dca_rsp.q_ready;
 
     // The number of wide ops must match the ones declared in the NoC
-    `ASSERT_INIT(WideOpsMatch, int'(FpMax8) + 1 == floo_gwaihir_noc_pkg::NumWideSeqOps,
-                 "wide_red_op_e does not match the wide ops of the NoC")
+    `ASSERT_INIT(WideOpsMatch, NumDcaOps == floo_gwaihir_noc_pkg::NumWideSeqOps, $sformatf(
+                 "NumDcaOps (%0d) does not match floo_gwaihir_noc_pkg::NumWideSeqOps (%0d)",
+                 NumDcaOps,
+                 floo_gwaihir_noc_pkg::NumWideSeqOps
+                 ));
 
     // Wide ops are numbered after the reserved and the narrow ops.
     localparam int unsigned FirstWideOp =
         floo_pkg::NumReservedCollectOps + floo_gwaihir_noc_pkg::NumNarrowSeqOps;
 
-    logic [$bits(floo_gwaihir_noc_pkg::collect_op_t)-1:0] wide_op_id;
-    assign wide_op_id = offload_req_i.req.op - FirstWideOp;
+    dca_op_t dca_op;
+    assign dca_op = dca_op_t'(offload_req_i.req.op - FirstWideOp);
 
     // Parse the FPU Request
     always_comb begin
@@ -66,29 +94,17 @@ module floo_dca_decode #(
       offload_dca_req.q.operands = '0;
 
       // Set default Values
-      offload_dca_req.q.src_fmt      = fpnew_pkg::FP64;
-      offload_dca_req.q.dst_fmt      = fpnew_pkg::FP64;
+      offload_dca_req.q.src_fmt      = dca_type_to_fpnew_format(dca_op.data_type);
+      offload_dca_req.q.dst_fmt      = dca_type_to_fpnew_format(dca_op.data_type);
       offload_dca_req.q.int_fmt      = fpnew_pkg::INT64;
-      offload_dca_req.q.vectorial_op = 1'b0;
+      offload_dca_req.q.vectorial_op = dca_op.data_type != DcaDataTypeFp64;
       offload_dca_req.q.op_mod       = 1'b0;
       offload_dca_req.q.rnd_mode     = fpnew_pkg::RNE;
       offload_dca_req.q.op           = fpnew_pkg::ADD;
 
       // Define the operation we want to execute on the FPU
-      unique casez (wide_red_op_e'(wide_op_id))
-        FpAdd: begin
-          offload_dca_req.q.op          = fpnew_pkg::ADD;
-          offload_dca_req.q.operands[0] = '0;
-          offload_dca_req.q.operands[1] = offload_req_i.req.operand1;
-          offload_dca_req.q.operands[2] = offload_req_i.req.operand2;
-        end
-        FpMul: begin
-          offload_dca_req.q.op          = fpnew_pkg::MUL;
-          offload_dca_req.q.operands[0] = offload_req_i.req.operand1;
-          offload_dca_req.q.operands[1] = offload_req_i.req.operand2;
-          offload_dca_req.q.operands[2] = '0;
-        end
-        FpMax: begin
+      unique casez (dca_op.op_type)
+        DcaOpMax: begin
           offload_dca_req.q.op          = fpnew_pkg::MINMAX;
           // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
           offload_dca_req.q.rnd_mode    = fpnew_pkg::RTZ;
@@ -96,72 +112,24 @@ module floo_dca_decode #(
           offload_dca_req.q.operands[1] = offload_req_i.req.operand2;
           offload_dca_req.q.operands[2] = '0;
         end
-        FpMin: begin
+        DcaOpMin: begin
           offload_dca_req.q.op          = fpnew_pkg::MINMAX;
           offload_dca_req.q.rnd_mode    = fpnew_pkg::RNE;
           offload_dca_req.q.operands[0] = offload_req_i.req.operand1;
           offload_dca_req.q.operands[1] = offload_req_i.req.operand2;
           offload_dca_req.q.operands[2] = '0;
         end
-        FpAdd32: begin
-          offload_dca_req.q.op           = fpnew_pkg::ADD;
-          offload_dca_req.q.src_fmt      = fpnew_pkg::FP32;
-          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP32;
-          offload_dca_req.q.vectorial_op = 1'b1;
-          offload_dca_req.q.operands[0]  = '0;
-          offload_dca_req.q.operands[1]  = offload_req_i.req.operand1;
-          offload_dca_req.q.operands[2]  = offload_req_i.req.operand2;
+        DcaOpSum: begin
+          offload_dca_req.q.op          = fpnew_pkg::ADD;
+          offload_dca_req.q.operands[0] = '0;
+          offload_dca_req.q.operands[1] = offload_req_i.req.operand1;
+          offload_dca_req.q.operands[2] = offload_req_i.req.operand2;
         end
-        FpAdd16: begin
-          offload_dca_req.q.op           = fpnew_pkg::ADD;
-          offload_dca_req.q.src_fmt      = fpnew_pkg::FP16;
-          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP16;
-          offload_dca_req.q.vectorial_op = 1'b1;
-          offload_dca_req.q.operands[0]  = '0;
-          offload_dca_req.q.operands[1]  = offload_req_i.req.operand1;
-          offload_dca_req.q.operands[2]  = offload_req_i.req.operand2;
-        end
-        FpAdd8: begin
-          offload_dca_req.q.op           = fpnew_pkg::ADD;
-          offload_dca_req.q.src_fmt      = fpnew_pkg::FP8;
-          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP8;
-          offload_dca_req.q.vectorial_op = 1'b1;
-          offload_dca_req.q.operands[0]  = '0;
-          offload_dca_req.q.operands[1]  = offload_req_i.req.operand1;
-          offload_dca_req.q.operands[2]  = offload_req_i.req.operand2;
-        end
-        FpMax32: begin
-          offload_dca_req.q.op           = fpnew_pkg::MINMAX;
-          // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
-          offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
-          offload_dca_req.q.src_fmt      = fpnew_pkg::FP32;
-          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP32;
-          offload_dca_req.q.vectorial_op = 1'b1;
-          offload_dca_req.q.operands[0]  = offload_req_i.req.operand1;
-          offload_dca_req.q.operands[1]  = offload_req_i.req.operand2;
-          offload_dca_req.q.operands[2]  = '0;
-        end
-        FpMax16: begin
-          offload_dca_req.q.op           = fpnew_pkg::MINMAX;
-          // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
-          offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
-          offload_dca_req.q.src_fmt      = fpnew_pkg::FP16;
-          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP16;
-          offload_dca_req.q.vectorial_op = 1'b1;
-          offload_dca_req.q.operands[0]  = offload_req_i.req.operand1;
-          offload_dca_req.q.operands[1]  = offload_req_i.req.operand2;
-          offload_dca_req.q.operands[2]  = '0;
-        end
-        FpMax8: begin
-          offload_dca_req.q.op           = fpnew_pkg::MINMAX;
-          // fpnew_noncomp.sv encodes MINMAX via rnd_mode: RNE=MIN, RTZ=MAX.
-          offload_dca_req.q.rnd_mode     = fpnew_pkg::RTZ;
-          offload_dca_req.q.src_fmt      = fpnew_pkg::FP8;
-          offload_dca_req.q.dst_fmt      = fpnew_pkg::FP8;
-          offload_dca_req.q.vectorial_op = 1'b1;
-          offload_dca_req.q.operands[0]  = offload_req_i.req.operand1;
-          offload_dca_req.q.operands[1]  = offload_req_i.req.operand2;
-          offload_dca_req.q.operands[2]  = '0;
+        DcaOpProd: begin
+          offload_dca_req.q.op          = fpnew_pkg::MUL;
+          offload_dca_req.q.operands[0] = offload_req_i.req.operand1;
+          offload_dca_req.q.operands[1] = offload_req_i.req.operand2;
+          offload_dca_req.q.operands[2] = '0;
         end
         default: begin
           offload_dca_req.q.op          = fpnew_pkg::ADD;
@@ -199,5 +167,13 @@ module floo_dca_decode #(
     assign offload_rsp_o.rsp.result = '0;
     assign offload_rsp_o.valid      = '0;
   end
+
+  // Note: a better approach would be to derive collect_op_t from the DCA ops,
+  // but would require more consistent changes in FlooNoC. For the moment we just
+  // ensure the parameterization is consistent.
+  `ASSERT_INIT(CollectiveOpWidthMatch, $bits(floo_gwaihir_noc_pkg::collect_op_t)
+               == cc_pkg::idx_width(NumDcaOps + floo_pkg::NumReservedCollectOps),
+               $sformatf("Invalid FlooNoC collect_op_t width (%0d) given NumDcaOps==%0d",
+                         $bits(floo_gwaihir_noc_pkg::collect_op_t), NumDcaOps))
 
 endmodule

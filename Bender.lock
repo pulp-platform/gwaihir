@@ -149,7 +149,7 @@ packages:
     dependencies:
     - common_cells
   common_cells:
-    revision: 0d1c786be165812c63bfac92326dfccbe6f33cde
+    revision: e73baaec2ca665cd80c3c384e9258e35242b829c
     version: null
     source:
       Git: https://github.com/pulp-platform/common_cells.git
@@ -428,7 +428,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: dd9f14eb2e00c0b0f414901ba62a1fba672c4fcf
+    revision: 36cf97b5ad08453b5f811ed8c6a49e468fee7b7a
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git

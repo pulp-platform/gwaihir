@@ -67,7 +67,7 @@ static inline void dma_reduction_hw_generic(uintptr_t src, uintptr_t dst,
     if (snrt_is_dm_core() && comm->is_participant) {
         uintptr_t remote_dst = (uintptr_t)snrt_remote_l1_ptr(
             (void *)dst, snrt_cluster_idx(), 0);
-        snrt_collective_opcode_t op = SNRT_REDUCTION_FADD;
+        snrt_collective_opcode_t op = snrt_reduction_op(SNRT_REDUCTION_SUM, SNRT_REDUCTION_FP64);
         snrt_dma_start_1d_reduction(remote_dst, src, SIZE, comm, op);
         snrt_dma_wait_all();
     }
@@ -89,7 +89,7 @@ static inline void dma_reduction_hw_simple(uintptr_t src, uintptr_t dst,
     if (snrt_is_dm_core() && comm->is_participant) {
         uint32_t remote_cluster;
         uintptr_t remote_dst;
-        snrt_collective_opcode_t op = SNRT_REDUCTION_FADD;
+        snrt_collective_opcode_t op = snrt_reduction_op(SNRT_REDUCTION_SUM, SNRT_REDUCTION_FP64);
 
         // Reduction across rows (destination: first cluster in row)
         snrt_mcycle();

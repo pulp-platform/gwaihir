@@ -39,13 +39,6 @@ module cluster_tile
   input  floo_wide_t [West:North] floo_wide_i
 );
 
-  // NoC-generated `collect_op_t` and the SW-side `snitch_cluster_wrapper_pkg::CollectiveWidth`
-  // must be the same width to match.
-  `ASSERT_INIT(
-      CollectiveOpWidthMatch, $bits(floo_gwaihir_noc_pkg::collect_op_t)
-      == snitch_cluster_wrapper_pkg::CollectiveWidth,
-      "FlooNoC collect_op_t width does not match snitch_cluster_wrapper_pkg CollectiveWidth")
-
   // Tile-specific reset and clock signals
   logic tile_clk;
   logic tile_rst_n;
