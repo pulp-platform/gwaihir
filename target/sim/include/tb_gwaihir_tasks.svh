@@ -197,7 +197,7 @@ task automatic fastmode_elf_preload(input string binary, output cheshire_pkg::do
 endtask
 
 // Headless offload (tb-driven simple_offload): preload firmware + optional job, set scratch, wake, poll return codes -- no host.
-task automatic headless_offload(ref logic clk, output logic [31:0] exit_code);
+task automatic headless_offload(const ref logic clk, output logic [31:0] exit_code);
   import floo_gwaihir_noc_pkg::*;
   // HW counts + L2 aperture come from the SoC cfg/addrmap, never hardcoded.
   localparam int     NrClusters = NumClusters;
