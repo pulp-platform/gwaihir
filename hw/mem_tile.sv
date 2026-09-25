@@ -414,7 +414,7 @@ module mem_tile
       MaxMstTrans: DmaNumAxInFlight,
       MaxSlvTrans: DmaNumAxInFlight,
       FallThrough: 0,
-      LatencyMode: axi_pkg::NO_LATENCY,
+      LatencyMode: axi_pkg::CUT_MST_PORTS,
       PipelineStages: 0,
       AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
       AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
@@ -666,22 +666,6 @@ module mem_tile
   logic [AxiCfgW.DataWidth/8-1:0] dma_mem_be;
   logic [  AxiCfgW.DataWidth-1:0] dma_mem_rdata;
 
-
-  obi_cut #(
-    .ObiCfg      (DMASbrObiCfg),
-    .obi_a_chan_t(dma_sbr_obi_a_chan_t),
-    .obi_r_chan_t(dma_sbr_obi_r_chan_t),
-    .obi_req_t   (dma_sbr_obi_req_t),
-    .obi_rsp_t   (dma_sbr_obi_rsp_t)
-  ) i_dma_obi_cut (
-    .clk_i         (tile_clk),
-    .rst_ni        (tile_rst_n),
-    .sbr_port_req_i(dma_obi_req),
-    .sbr_port_rsp_o(dma_obi_rsp),
-    .mgr_port_req_o(dma_mem_obi_req_cut),
-    .mgr_port_rsp_i(dma_mem_obi_rsp_cut)
-  );
-
   obi_sram_shim #(
     .ObiCfg   (DMASbrObiCfg),
     .obi_req_t(dma_sbr_obi_req_t),
@@ -689,8 +673,8 @@ module mem_tile
   ) i_dma_sram_shim_bank (
     .clk_i    (tile_clk),
     .rst_ni   (tile_rst_n),
-    .obi_req_i(dma_mem_obi_req_cut),
-    .obi_rsp_o(dma_mem_obi_rsp_cut),
+    .obi_req_i(dma_obi_req),
+    .obi_rsp_o(dma_obi_rsp),
     .req_o    (dma_mem_req),
     .we_o     (dma_mem_we),
     .addr_o   (dma_mem_addr),
@@ -723,6 +707,8 @@ module mem_tile
     assign dma_sram_addr[bank]      = dma_mem_addr[SramAddrWidthOffset+:SramAddrWidth];
     assign dma_sram_macro_sel[bank] = dma_mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
     // Register the macro selection to select the correct macro for the next cycle
+    // `FFL(dma_sram_macro_sel_q[bank], dma_sram_macro_sel[bank],
+    //      dma_sram_req & dma_sram_gnt & ~dma_sram_we, '0);
     `FFL(dma_sram_macro_sel_q[bank], dma_sram_macro_sel[bank],
          dma_sram_req & dma_sram_gnt & ~dma_sram_we, '0, tile_clk, tile_rst_n);
     // Assign the data
@@ -991,6 +977,7 @@ module mem_tile
     // Register the macro selection to select the correct macro for the next cycle
     `FFL(sram_macro_sel_q[bank], sram_macro_sel[bank], sram_req & sram_gnt & ~sram_we, '0, tile_clk,
          tile_rst_n);
+    // `FFL(sram_macro_sel_q[bank], sram_macro_sel[bank], sram_req & sram_gnt & ~sram_we, '0);
     // Assign the data
     assign sram_wdata[bank] = mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign sram_be[bank] = mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
