@@ -131,7 +131,7 @@ module mem_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .RouteAlgo     (RouteCfgMcastOnly.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -141,7 +141,10 @@ module mem_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    // Forwards multicasts injected by the UCIe tile in the same column
+    .NoLoopback    (1'b0),
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -1099,36 +1102,26 @@ module mem_tile
     .clk_o    (tile_rst_n)
   );
 `endif
-  // Add Assertion that no multicast / reduction can enter this tile!
-  for (genvar r = 0; r < 4; r++) begin : gen_route_assertions
-    `ASSERT(NoCollectivOperation_NReq_In,
-            (!floo_req_i[r].valid | (floo_req_i[r].req[0].generic.hdr.collective_op == Unicast)),
-            clk_i, !rst_ni, $sformatf(
-            "Unsupported collective attempted with destination: %h",
-            floo_req_i[r].req[0].narrow_aw.payload.addr
-            ))
-    `ASSERT(NoCollectivOperation_NRsp_In,
-            (!floo_rsp_i[r].valid | (floo_rsp_i[r].rsp[0].generic.hdr.collective_op == Unicast)))
-    `ASSERT(NoCollectivOperation_NWide_In,
-            (!floo_wide_i[r].valid | (floo_wide_i[r].wide[0].generic.hdr.collective_op == Unicast)),
-            clk_i, !rst_ni, $sformatf(
-            "Unsupported collective attempted with destination: %h",
-            floo_wide_i[r].wide[0].wide_aw.payload.addr
-            ))
-    `ASSERT(NoCollectivOperation_NReq_Out,
-            (!floo_req_o[r].valid | (floo_req_o[r].req[0].generic.hdr.collective_op == Unicast)),
-            clk_i, !rst_ni, $sformatf(
-            "Unsupported collective attempted with destination: %h",
-            floo_req_o[r].req[0].narrow_aw.payload.addr
-            ))
-    `ASSERT(NoCollectivOperation_NRsp_Out,
-            (!floo_rsp_o[r].valid | (floo_rsp_o[r].rsp[0].generic.hdr.collective_op == Unicast)))
-    `ASSERT(NoCollectivOperation_NWide_Out,
-            (!floo_wide_o[r].valid | (floo_wide_o[r].wide[0].generic.hdr.collective_op == Unicast)),
-            clk_i, !rst_ni, $sformatf(
-            "Unsupported collective attempted with destination: %h",
-            floo_wide_i[r].wide[0].wide_aw.payload.addr
-            ))
-  end
+  // The router forwards collectives (UCIe multicasts travel along this column),
+  // but none may reach the local chimney, which does not support them.
+  // verilog_format: off
+  `ASSERT(NoCollectivOperation_NReq_Eject,
+          (!router_floo_req_out[Eject].valid |
+           (router_floo_req_out[Eject].req[0].generic.hdr.collective_op == Unicast)),
+          clk_i, !rst_ni, $sformatf(
+          "Unsupported collective attempted with destination: %h",
+          router_floo_req_out[Eject].req[0].narrow_aw.payload.addr
+          ))
+  `ASSERT(NoCollectivOperation_NRsp_Eject,
+          (!router_floo_rsp_out[Eject].valid |
+           (router_floo_rsp_out[Eject].rsp[0].generic.hdr.collective_op == Unicast)))
+  `ASSERT(NoCollectivOperation_NWide_Eject,
+          (!router_floo_wide_out[Eject].valid |
+           (router_floo_wide_out[Eject].wide[0].generic.hdr.collective_op == Unicast)),
+          clk_i, !rst_ni, $sformatf(
+          "Unsupported collective attempted with destination: %h",
+          router_floo_wide_out[Eject].wide[0].wide_aw.payload.addr
+          ))
+  // verilog_format: on
 
 endmodule

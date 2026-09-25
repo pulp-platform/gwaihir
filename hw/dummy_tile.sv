@@ -36,7 +36,7 @@ module dummy_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .RouteAlgo     (RouteCfgMcastOnly.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -46,7 +46,9 @@ module dummy_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .NoLoopback    (1'b0),
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,
     .rst_ni,

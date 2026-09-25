@@ -44,6 +44,13 @@ module ucie_tile
   // Half-bandwidth mode for debug output channels
   localparam int unsigned UcieHalfPhyWidth = NumBitsPerCycle / 2;
 
+  // Shared by the wide fork and the cfg APB demux
+  typedef struct packed {
+    int unsigned idx;
+    addr_t       start_addr;
+    addr_t       end_addr;
+  } addr_rule_t;
+
   // Tile-specific reset and clock signals
   logic tile_clk;
   logic tile_rst_n;
@@ -83,7 +90,7 @@ module ucie_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .RouteAlgo     (RouteCfgMcastOnly.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -93,7 +100,9 @@ module ucie_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .NoLoopback    (1'b0),                            // Collective support requires
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -133,9 +142,9 @@ module ucie_tile
   floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req;
   floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_out_rsp;
 
-  // From IW Converter to chimney
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_req_iw_conv;
-  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t axi_wide_rsp_iw_conv;
+  // Ingress mux output, before unalias
+  floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_in_mux_req;
+  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t axi_wide_in_mux_rsp;
 
 
   floo_nw_chimney #(
@@ -143,16 +152,20 @@ module ucie_tile
     .AxiCfgW             (floo_gwaihir_noc_pkg::AxiCfgW),
     .ChimneyCfgN         (floo_pkg::ChimneyDefaultCfg),
     .ChimneyCfgW         (floo_pkg::ChimneyDefaultCfg),
-    .RouteCfg            (RouteCfgNoMcast),
+    .RouteCfg            (RouteCfgMcastOnly),
     .AtopSupport         (1'b1),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
-    .MaxAtomicTxns       (3),                                           // TODO: CHECK
-    .Sam                 (floo_gwaihir_noc_pkg::Sam),
+    .MaxAtomicTxns       (3),                                                      // TODO: CHECK
+    .Sam                 (floo_gwaihir_noc_pkg::CollectiveSam),
     .id_t                (floo_gwaihir_noc_pkg::id_t),
     .rob_idx_t           (floo_gwaihir_noc_pkg::rob_idx_t),
     .hdr_t               (floo_gwaihir_noc_pkg::hdr_t),
-    .sam_rule_t          (floo_gwaihir_noc_pkg::sam_rule_t),
+    .sam_rule_t          (floo_gwaihir_noc_pkg::collective_sam_rule_t),
+    .sam_idx_t           (floo_gwaihir_noc_pkg::collective_idx_t),
+    .mask_sel_t          (floo_gwaihir_noc_pkg::collective_mask_sel_t),
+    .user_narrow_struct_t(floo_gwaihir_noc_pkg::collective_axi_narrow_in_user_t),
+    .user_wide_struct_t  (floo_gwaihir_noc_pkg::collective_axi_wide_in_user_t),
     //CHECK PARAMS!!
     .axi_narrow_in_req_t (floo_gwaihir_noc_pkg::axi_narrow_in_req_t),
     .axi_narrow_in_rsp_t (floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t),
@@ -179,10 +192,10 @@ module ucie_tile
     .axi_narrow_out_req_o(axi_narrow_out_req),
     .axi_narrow_out_rsp_i(axi_narrow_out_rsp),
     // AXI wide channels:
-    // - Ingress: from the other chiplet (serailizer)
-    // - Egress: towards the other chiplet (nw join -> serializer)
+    // - Ingress: from the other chiplet (serializer) and the local branch
+    // - Egress: into the fork (remote -> nw join, local -> ingress)
     .axi_wide_in_req_i   (axi_wide_in_req),
-    .axi_wide_in_rsp_o   (axi_wide_rsp_iw_conv),
+    .axi_wide_in_rsp_o   (axi_wide_in_mux_rsp),
     .axi_wide_out_req_o  (axi_wide_out_req),
     .axi_wide_out_rsp_i  (axi_wide_out_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
@@ -193,40 +206,177 @@ module ucie_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
+  /////////////////////////
+  // Wide Multicast Fork //
+  /////////////////////////
+
+  // Remote branch: own alias window -> nw join and then remote ucie.
+  // Local branch: peer alias window -> ingress back to the local NoC.
+
+  typedef enum int unsigned {
+    ForkRemote = 0,
+    ForkLocal  = 1
+  } ucie_fork_port_e;
+
+  localparam int unsigned NumForkPorts = 2;
+
+  // Peer UCIe tile, whose alias window selects the local branch
+  sam_idx_e peer_samidx;
+  assign peer_samidx = (sam_idx_e'(samidx_i) == Ucie0SamIdx) ? Ucie1SamIdx : Ucie0SamIdx;
+
+  // Multicast rules must be power-of-2 sized and aligned
+  addr_rule_t [NumForkPorts-1:0] fork_addrmap;
+  always_comb begin
+    fork_addrmap[ForkRemote] = '{
+        idx       : ForkRemote,
+        start_addr: Sam[samidx_i].start_addr,
+        end_addr  : Sam[samidx_i].end_addr
+    };
+    fork_addrmap[ForkLocal] = '{
+        idx       : ForkLocal,
+        start_addr: Sam[peer_samidx].start_addr,
+        end_addr  : Sam[peer_samidx].end_addr
+    };
+  end
+
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t [NumForkPorts-1:0] axi_wide_demux_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t [NumForkPorts-1:0] axi_wide_demux_rsp;
+  logic [NumForkPorts-1:0] fork_is_mcast, fork_aw_commit;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t [NumForkPorts-1:0] axi_wide_commit_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t [NumForkPorts-1:0] axi_wide_commit_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t [NumForkPorts-1:0] axi_wide_fork_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t [NumForkPorts-1:0] axi_wide_fork_rsp;
+
+  axi_mcast_demux_mapped #(
+    .AxiIdWidth      (AxiCfgW.OutIdWidth),
+    .AxiAddrWidth    (AxiCfgW.AddrWidth),
+    .aw_chan_t       (axi_wide_out_aw_chan_t),
+    .w_chan_t        (axi_wide_out_w_chan_t),
+    .b_chan_t        (axi_wide_out_b_chan_t),
+    .ar_chan_t       (axi_wide_out_ar_chan_t),
+    .r_chan_t        (axi_wide_out_r_chan_t),
+    .axi_req_t       (axi_wide_out_req_t),
+    .axi_resp_t      (axi_wide_out_rsp_t),
+    .NoMstPorts      (NumForkPorts),
+    .MaxTrans        (32),
+    .AxiLookBits     (AxiCfgW.OutIdWidth),
+    .rule_t          (addr_rule_t),
+    .NoAddrRules     (NumForkPorts),
+    .NoMulticastRules(NumForkPorts),
+    .NoMulticastPorts(NumForkPorts)
+  ) i_wide_mcast_fork (
+    .clk_i                (tile_clk),
+    .rst_ni               (tile_rst_n),
+    .addr_map_i           (fork_addrmap),
+    .en_default_mst_port_i(1'b0),
+    .default_mst_port_i   ('0),
+    .slv_req_i            (axi_wide_out_req),
+    .slv_resp_o           (axi_wide_out_rsp),
+    .mst_reqs_o           (axi_wide_demux_req),
+    .mst_resps_i          (axi_wide_demux_rsp),
+    .mst_is_mcast_o       (fork_is_mcast),
+    .mst_aw_commit_o      (fork_aw_commit)
+  );
+
+  for (genvar i = 0; i < NumForkPorts; i++) begin : gen_fork_port
+    // Mcast AWs only handshake on commit; capture them here so that plain AXI
+    // slaves don't accept them twice. SpillAw keeps ready independent of downstream.
+    axi_mcast_mux #(
+      .SlvAxiIDWidth(AxiCfgW.OutIdWidth),
+      .slv_aw_chan_t(axi_wide_out_aw_chan_t),
+      .mst_aw_chan_t(axi_wide_out_aw_chan_t),
+      .w_chan_t     (axi_wide_out_w_chan_t),
+      .slv_b_chan_t (axi_wide_out_b_chan_t),
+      .mst_b_chan_t (axi_wide_out_b_chan_t),
+      .slv_ar_chan_t(axi_wide_out_ar_chan_t),
+      .mst_ar_chan_t(axi_wide_out_ar_chan_t),
+      .slv_r_chan_t (axi_wide_out_r_chan_t),
+      .mst_r_chan_t (axi_wide_out_r_chan_t),
+      .slv_req_t    (axi_wide_out_req_t),
+      .slv_resp_t   (axi_wide_out_rsp_t),
+      .mst_req_t    (axi_wide_out_req_t),
+      .mst_resp_t   (axi_wide_out_rsp_t),
+      .NoSlvPorts   (1),
+      .SpillAw      (1'b1),
+      .SpillW       (1'b0),
+      .SpillB       (1'b0),
+      .SpillAr      (1'b0),
+      .SpillR       (1'b0)
+    ) i_fork_commit (
+      .clk_i          (tile_clk),
+      .rst_ni         (tile_rst_n),
+      .slv_is_mcast_i (fork_is_mcast[i]),
+      .slv_aw_commit_i(fork_aw_commit[i]),
+      .slv_reqs_i     (axi_wide_demux_req[i]),
+      .slv_resps_o    (axi_wide_demux_rsp[i]),
+      .mst_req_o      (axi_wide_commit_req[i]),
+      .mst_resp_i     (axi_wide_commit_rsp[i])
+    );
+
+    // Multicast iff this branch's share of the mask is non-empty
+    always_comb begin
+      axi_wide_fork_req[i] = axi_wide_commit_req[i];
+      axi_wide_fork_req[i].aw.user.collective_op =
+          (axi_wide_commit_req[i].aw.user.collective_mask != '0) ? floo_pkg::Multicast :
+                                                                   floo_pkg::Unicast;
+    end
+    assign axi_wide_commit_rsp[i] = axi_wide_fork_rsp[i];
+  end
+
+  ///////////////////////
+  // Wide Ingress Path //
+  ///////////////////////
+
+  typedef enum int unsigned {
+    IngressRemote = 0,
+    IngressLocal  = 1
+  } ucie_ingress_port_e;
+
+  gwaihir_pkg::axi_utile_nw_join_req_t [1:0] axi_wide_ingress_req;
+  gwaihir_pkg::axi_utile_nw_join_rsp_t [1:0] axi_wide_ingress_rsp;
+
+  assign axi_wide_ingress_req[IngressRemote] = axi_utile_nw_join_in_req;
+  assign axi_utile_nw_join_in_rsp            = axi_wide_ingress_rsp[IngressRemote];
+
+  // Zero-extend the local branch ID (1 -> 2 bits); the mux adds 1 bit for the chimney
+  `AXI_ASSIGN_REQ_STRUCT(axi_wide_ingress_req[IngressLocal], axi_wide_fork_req[ForkLocal])
+  `AXI_ASSIGN_RESP_STRUCT(axi_wide_fork_rsp[ForkLocal], axi_wide_ingress_rsp[IngressLocal])
+
+  axi_mux #(
+    .SlvAxiIDWidth(AxiCfgUcieJoin.OutIdWidth),
+    .slv_aw_chan_t(gwaihir_pkg::axi_utile_nw_join_aw_chan_t),
+    .mst_aw_chan_t(axi_wide_in_aw_chan_t),
+    .w_chan_t     (axi_wide_in_w_chan_t),
+    .slv_b_chan_t (gwaihir_pkg::axi_utile_nw_join_b_chan_t),
+    .mst_b_chan_t (axi_wide_in_b_chan_t),
+    .slv_ar_chan_t(gwaihir_pkg::axi_utile_nw_join_ar_chan_t),
+    .mst_ar_chan_t(axi_wide_in_ar_chan_t),
+    .slv_r_chan_t (gwaihir_pkg::axi_utile_nw_join_r_chan_t),
+    .mst_r_chan_t (axi_wide_in_r_chan_t),
+    .slv_req_t    (gwaihir_pkg::axi_utile_nw_join_req_t),
+    .slv_resp_t   (gwaihir_pkg::axi_utile_nw_join_rsp_t),
+    .mst_req_t    (axi_wide_in_req_t),
+    .mst_resp_t   (axi_wide_in_rsp_t),
+    .NoSlvPorts   (2),
+    .MaxWTrans    (32)
+  ) i_wide_ingress_mux (
+    .clk_i      (tile_clk),
+    .rst_ni     (tile_rst_n),
+    .slv_reqs_i (axi_wide_ingress_req),
+    .slv_resps_o(axi_wide_ingress_rsp),
+    .mst_req_o  (axi_wide_in_mux_req),
+    .mst_resp_i (axi_wide_in_mux_rsp)
+  );
+
   // Translate ingress addresses to their canonical form
   // TODO (lleone): The output of serializer has different types from chimney:
   // - user field: narrow = 5, wide = 1
   // - id field: narrow = look into noc fg, weird values.
   always_comb begin
-    axi_wide_in_req         = axi_wide_req_iw_conv;
-    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_req_iw_conv.aw.addr, ucie_id_i);
-    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_req_iw_conv.ar.addr, ucie_id_i);
+    axi_wide_in_req         = axi_wide_in_mux_req;
+    axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_in_mux_req.aw.addr, ucie_id_i);
+    axi_wide_in_req.ar.addr = unalias_ucie_address(axi_wide_in_mux_req.ar.addr, ucie_id_i);
   end
-
-  // ID Converter from Slink to Chimney
-  axi_iw_converter #(
-    .AxiSlvPortIdWidth(AxiCfgUcieJoin.OutIdWidth),  // Chimney Output ID
-    .AxiMstPortIdWidth(AxiCfgW.InIdWidth),  // ID of the chimney's input port
-    .AxiSlvPortMaxUniqIds(2 ** AxiCfgUcieJoin.OutIdWidth),  // Max num of IDs
-    .AxiSlvPortMaxTxnsPerId(32),  // TODO: Probably overkilling, reduce if you have area issue
-    .AxiSlvPortMaxTxns(32),
-    .AxiMstPortMaxUniqIds(2 ** AxiCfgW.InIdWidth),
-    .AxiMstPortMaxTxnsPerId(32),
-    .AxiAddrWidth(AxiCfgW.AddrWidth),
-    .AxiDataWidth(AxiCfgW.DataWidth),
-    .AxiUserWidth(AxiCfgW.UserWidth),  // Convert after ID
-    .slv_req_t(gwaihir_pkg::axi_utile_nw_join_req_t),
-    .slv_resp_t(gwaihir_pkg::axi_utile_nw_join_rsp_t),
-    .mst_req_t(axi_wide_in_req_t),
-    .mst_resp_t(axi_wide_in_rsp_t)
-  ) i_slink2chim_wide_iw_converter (
-    .clk_i     (tile_clk),
-    .rst_ni    (tile_rst_n),
-    .slv_req_i (axi_utile_nw_join_in_req),
-    .slv_resp_o(axi_utile_nw_join_in_rsp),
-    .mst_req_o (axi_wide_req_iw_conv),
-    .mst_resp_i(axi_wide_rsp_iw_conv)
-  );
 
   /////////////////
   // Narrow XBAR //
@@ -262,12 +412,6 @@ module ucie_tile
     axi_narrow_out_addr_t                              start_addr;
     axi_narrow_out_addr_t                              end_addr;
   } ucie_rule_t;
-
-  typedef struct packed {
-    int unsigned idx;
-    addr_t       start_addr;
-    addr_t       end_addr;
-  } addr_rule_t;
 
   // Sam Idx offset between UCIe base and AxiCfg
   localparam int AxiSerialCfgIdxOffset = int'(Ucie0AxiSerialCfgSamIdx) - int'(Ucie0SamIdx);
@@ -600,8 +744,8 @@ module ucie_tile
     .test_enable_i   (test_enable_i),
     .axi_narrow_req_i(axi_narrow_noatop_out_req),
     .axi_narrow_rsp_o(axi_narrow_noatop_out_rsp),
-    .axi_wide_req_i  (axi_wide_out_req),
-    .axi_wide_rsp_o  (axi_wide_out_rsp),
+    .axi_wide_req_i  (axi_wide_fork_req[ForkRemote]),
+    .axi_wide_rsp_o  (axi_wide_fork_rsp[ForkRemote]),
     .axi_req_o       (axi_utile_nw_join_out_req),
     .axi_rsp_i       (axi_utile_nw_join_out_rsp)
   );
