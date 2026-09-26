@@ -206,7 +206,7 @@ module snitch_hwpe_subsystem
   );
 
   mxcore_hwpe_top #(
-    .N_CORES(NrCores)
+    .NumCores(NrCores)
   ) i_mxcore_top (
     .clk_i      (hwpe_clk[0]),
     .rst_ni     (rst_ni),

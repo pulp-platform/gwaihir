@@ -15,7 +15,7 @@ dependencies:
   # Alphabetically ordered
   apb:
     git: https://github.com/pulp-platform/apb.git
-    rev: common-cells-v2
+    rev: gwaihir
   apb_fll_if: 0.3.0
   axi:
     git: https://github.com/colluca/axi.git
@@ -42,8 +42,8 @@ dependencies:
     path: .deps/lpddr
   iDMA: 0.6.5
   mxcore:
-    git: git@iis-git.ee.ethz.ch:mx/mxcore/mxcore-rtl.git
-    rev: common-cells-v2
+    git: https://github.com/pulp-platform/MXCore.git
+    rev: gwaihir
   obi:
     git: https://github.com/pulp-platform/obi.git
     rev: common-cells-v2
@@ -107,12 +107,13 @@ sources:
 
   - target: not(ucie)
     files:
-      - hw/ucie_tile.sv
+      - hw/ucie_pcs_wrap.sv
   - target: ucie
     files:
-      - .deps/ucie/hw/ucie_tile.sv
+      - .deps/ucie/hw/ucie_pcs_wrap.sv
 
   # Level 3
+  - hw/ucie_tile.sv
   - hw/cluster_tile.sv
   - hw/gwaihir_top.sv
 
