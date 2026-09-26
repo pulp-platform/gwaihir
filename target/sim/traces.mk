@@ -35,7 +35,7 @@ chs-trace: $(CHS_TXT_TRACE)
 chs-annotate: $(CHS_ANNOTATED_TRACE)
 
 chs-trace-clean:
-	rm -rf $(CHS_TXT_TRACE)
+	rm -rf $(SIM_DIR)/trace_hart_0.log $(SIM_DIR)/trace_hart_0_commit.log $(CHS_TXT_TRACE)
 
 chs-annotate-clean:
 	rm -rf $(CHS_ANNOTATED_TRACE)
