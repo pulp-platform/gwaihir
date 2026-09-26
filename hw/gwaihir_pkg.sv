@@ -351,23 +351,22 @@ package gwaihir_pkg;
     // Enable the external AXI master and slave interfaces
     ret.AxiExtNumMst   = 1;
     ret.AxiExtNumSlv   = 1;
-    ret.AxiExtNumRules = 1;
+    ret.AxiExtNumRules = 2;
     ret.RegExtNumSlv   = CshRegExtNumSlv;
     ret.RegExtNumRules = CshRegExtNumSlv;
 
     // TODO(fischeti): Inherit these from generated SV/RDL.
-    ret.AxiExtRegionIdx[0]                   = 0;
-    ret.AxiExtRegionStart[0]                 = 'h2000_0000;
-    ret.AxiExtRegionEnd[0]                   = 'h6_0000_0000;
-    ret.RegExtRegionIdx[CshRegExtFLL]        = CshRegExtFLL;
-    ret.RegExtRegionStart[CshRegExtFLL]      = 'h1800_1000;
-    ret.RegExtRegionEnd[CshRegExtFLL]        = 'h1800_2000;
-    ret.RegExtRegionIdx[CshRegExtChipCtrl]   = CshRegExtChipCtrl;
+    ret.RegExtRegionIdx[CshRegExtFLL] = CshRegExtFLL;
+    ret.RegExtRegionStart[CshRegExtFLL] = 'h1800_1000;
+    ret.RegExtRegionEnd[CshRegExtFLL] = 'h1800_2000;
+    ret.RegExtRegionIdx[CshRegExtChipCtrl] = CshRegExtChipCtrl;
     ret.RegExtRegionStart[CshRegExtChipCtrl] = 'h1800_2000;
-    ret.RegExtRegionEnd[CshRegExtChipCtrl]   = 'h1800_3000;
-    ret.RegExtRegionIdx[CshRegLPDDR]         = CshRegLPDDR;
-    ret.RegExtRegionStart[CshRegLPDDR]       = 'h1900_0000;
-    ret.RegExtRegionEnd[CshRegLPDDR]         = 'h1a00_1020;
+    ret.RegExtRegionEnd[CshRegExtChipCtrl] = 'h1800_3000;
+    ret.RegExtRegionIdx[CshRegLPDDR] = CshRegLPDDR;
+    // LPDDR registers occupy the existing external non-idempotent region.
+    ret.RegExtRegionStart[CshRegLPDDR] = gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_BASE_ADDR;
+    ret.RegExtRegionEnd[CshRegLPDDR] = gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_BASE_ADDR
+                                   + gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_SIZE;
 
     // TODO(fischeti): Currently, I don't see a reason to have a CIE region
     // Which is why we just set the CIE region to size 0 for now
@@ -386,10 +385,18 @@ package gwaihir_pkg;
     // We do not need/want USB
     ret.Usb = 1'b0;
 
-    ret.LlcOutRegionStart = 'h8000_0000;
-    ret.LlcOutRegionEnd   = 'h1_0000_0000;
-    ret.SlinkRegionStart  = 'h100_0000_0000;
-    ret.SlinkRegionEnd    = 'h200_0000_0000;
+    ret.LlcOutRegionStart    = 'h8000_0000;
+    ret.LlcOutRegionEnd      = 'h1_0000_0000;
+    // External AXI rules have priority over the LLC rule. Leave the DRAM
+    // window out of the NoC ranges so these accesses reach the LPDDR port.
+    ret.AxiExtRegionIdx[0]   = 0;
+    ret.AxiExtRegionStart[0] = 'h2000_0000;
+    ret.AxiExtRegionEnd[0]   = ret.LlcOutRegionStart;
+    ret.AxiExtRegionIdx[1]   = 0;
+    ret.AxiExtRegionStart[1] = ret.LlcOutRegionEnd;
+    ret.AxiExtRegionEnd[1]   = 'h6_0000_0000;
+    ret.SlinkRegionStart     = 'h100_0000_0000;
+    ret.SlinkRegionEnd       = 'h200_0000_0000;
 
     // RT features
     ret.Cva6InstrTlbEntries = 16;
