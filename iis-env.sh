@@ -27,6 +27,11 @@ export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-pulp-llvm-alm
 
 export UV=/usr/local/uv/uv
 
+# CI: keep the bender db out of the build dir; cached checkouts reference it.
+if [ -n "${CI:-}" ]; then
+    export BENDER_DB_DIR="${CI_BUILDS_DIR}/../cache/bender-db"
+fi
+
 bender checkout
 
 $UV sync --locked
