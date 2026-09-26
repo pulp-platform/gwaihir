@@ -233,25 +233,15 @@ $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
 
-PCIE_SW_TESTS = $(wildcard $(PCIE_DIR)/sw/tests/*.c)
-PCIE_SW_TESTS_VENDORED = $(patsubst $(PCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshire/tests/%,$(PCIE_SW_TESTS))
-
-UCIE_SW_TESTS = $(wildcard $(UCIE_DIR)/sw/tests/*.c)
-UCIE_SW_TESTS_VENDORED = $(patsubst $(UCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshire/tests/%,$(UCIE_SW_TESTS))
-
 $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
-
-$(PCIE_SW_TESTS_VENDORED): $(GW_ROOT)/sw/cheshire/tests/%.c: $(PCIE_DIR)/sw/tests/%.c | $(PCIE_DIR)
-	cp $< $@
+	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
 $(UCIE_DIR):
 	git clone $(UCIE_REMOTE) $(UCIE_DIR)
 	cd $(UCIE_DIR) && git checkout $(UCIE_COMMIT)
-
-$(UCIE_SW_TESTS_VENDORED): $(GW_ROOT)/sw/cheshire/tests/%.c: $(UCIE_DIR)/sw/tests/%.c | $(UCIE_DIR)
-	cp $< $@
+	cp $(UCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
@@ -264,8 +254,8 @@ update-pd-commit:
 	sed -i 's/^UCIE_COMMIT ?= .*/UCIE_COMMIT ?= $(shell git -C $(UCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
-	rm -f $(PCIE_SW_TESTS_VENDORED)
-	rm -f $(UCIE_SW_TESTS_VENDORED)
+	rm -f $(GW_ROOT)/sw/cheshire/tests/pcie_*.c
+	rm -f $(GW_ROOT)/sw/cheshire/tests/ucie_closed_*.c
 	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR)
 
 -include $(PD_DIR)/pd.mk
