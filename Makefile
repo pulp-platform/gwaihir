@@ -242,12 +242,16 @@ UCIE_SW_TESTS_VENDORED = $(patsubst $(UCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshir
 $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
-	cp $(PCIE_SW_TESTS) $(GW_ROOT)/sw/cheshire/tests/
+
+$(PCIE_SW_TESTS_VENDORED): $(GW_ROOT)/sw/cheshire/tests/%.c: $(PCIE_DIR)/sw/tests/%.c | $(PCIE_DIR)
+	cp $< $@
 
 $(UCIE_DIR):
 	git clone $(UCIE_REMOTE) $(UCIE_DIR)
 	cd $(UCIE_DIR) && git checkout $(UCIE_COMMIT)
-	cp $(UCIE_SW_TESTS) $(GW_ROOT)/sw/cheshire/tests/
+
+$(UCIE_SW_TESTS_VENDORED): $(GW_ROOT)/sw/cheshire/tests/%.c: $(UCIE_DIR)/sw/tests/%.c | $(UCIE_DIR)
+	cp $< $@
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
