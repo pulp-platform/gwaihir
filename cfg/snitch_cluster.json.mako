@@ -4,7 +4,7 @@
 
 // Cluster configuration for a simple testbench system.
 {
-    nr_clusters: 16,
+    nr_clusters: ${nr_clusters},
     cluster: {
         cluster_base_addr: 0x20000000,
         cluster_base_offset: 0x40000,
@@ -35,7 +35,7 @@
         alias_region_base: 0x20400000,
         num_exposed_wide_tcdm_ports: 1,
         narrow_axi_port_expose: true,
-        collective_width: 4,
+        collective_width: ${collective_width},
         enable_external_interrupts: true,
         vm_support: false,
         // Timing parameters

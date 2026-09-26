@@ -100,7 +100,8 @@ module spm_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -153,6 +154,7 @@ module spm_tile
     .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, bit'(!IsNarrow), 1'b0)),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
+    .collect_op_t        (floo_gwaihir_noc_pkg::collect_op_t),
     .WideRwDecouple      (WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (1),

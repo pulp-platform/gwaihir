@@ -77,7 +77,8 @@ static inline void dma_reduction_hw(uintptr_t src, uintptr_t dst,
     if (snrt_is_dm_core() && comm->is_participant) {
         uint32_t remote_cluster;
         uintptr_t remote_dst;
-        snrt_collective_opcode_t op = SNRT_REDUCTION_FADD;
+        snrt_collective_opcode_t op = snrt_reduction_op(
+            SNRT_REDUCTION_SUM, SNRT_REDUCTION_FP64);
 
         // Reduction across rows (destination: first cluster in row)
         snrt_mcycle();

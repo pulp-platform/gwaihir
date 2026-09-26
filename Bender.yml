@@ -28,13 +28,13 @@ dependencies:
     rev: gwaihir
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
-    rev: new/stream-sizer
+    rev: master
   datamover:
     git: https://github.com/pulp-platform/datamover.git
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
-    rev: main
+    rev: gwaihir/reduction
     upstream_name: FlooNoC
   gwaihir-pd:
     path: ./pd
@@ -59,7 +59,7 @@ dependencies:
     rev: main
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: dca
+    rev: dca-extend
   ucie:
     path: .deps/ucie
 
@@ -97,6 +97,7 @@ sources:
   # Level 2
   - hw/snitch_tcdm_aligner.sv
   - hw/snitch_hwpe_subsystem.sv
+  - hw/floo_dca_decode.sv
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv

@@ -17,11 +17,16 @@ FLOO_GEN         ?= floogen
 VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
+MAKO_RENDER      ?= mako-render
 
 # Configuration files
-FLOO_CFG  ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
-SN_CFG	  ?= $(GW_ROOT)/cfg/snitch_cluster.json
-PLIC_CFG  ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
+FLOO_CFG   ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
+SN_CFG     ?= $(GW_GEN_DIR)/snitch_cluster.json
+SN_CFG_TPL ?= $(GW_ROOT)/cfg/snitch_cluster.json.mako
+PLIC_CFG   ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
+
+# Query a value at path $(1) from the FlooNoC config
+floo_query = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) "$(1)" 2>/dev/null)
 
 # L2 SPM base address, queried from the FlooNoC config so it stays in sync with FLOO_CFG
 L2_START_ADDR ?= $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) "endpoints.l2_spm_0.addr_range[0].start" 2>/dev/null | xargs printf '0x%x\n')
@@ -71,7 +76,7 @@ UCIE_SLINK_EN_DDR    ?= 0
 
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
-$(GW_GEN_SW_DIR):
+$(GW_GEN_DIR) $(GW_GEN_SW_DIR):
 	@mkdir -p $@
 
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
@@ -167,15 +172,18 @@ include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/toolchain.mk
 include $(SN_ROOT)/make/rtl.mk
 
-$(SN_CFG): SN_CLUSTERS = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) endpoints.cluster.num 2>/dev/null)
-$(SN_CFG): $(FLOO_CFG)
-	@sed -i 's/nr_clusters: .*/nr_clusters: $(SN_CLUSTERS),/' $@
+$(SN_CFG): SN_NUM_CLUSTERS = $(call floo_query,endpoints.cluster.num)
+$(SN_CFG): SN_COLLECTIVE_WIDTH = $(call floo_query,protocols.wide_in.user_width.collective_op)
+$(SN_CFG): $(SN_CFG_TPL) $(FLOO_CFG) | $(GW_GEN_DIR)
+	$(MAKO_RENDER) --var nr_clusters=$(SN_NUM_CLUSTERS) --var collective_width=$(SN_COLLECTIVE_WIDTH) \
+		--output-file $@ $(SN_CFG_TPL)
 
 .PHONY: sn-hw-clean sn-hw-all
 
 sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG)
 sn-hw-clean:
 	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
+	rm -f $(SN_CFG)
 
 ###########
 # FlooNoC #
@@ -228,15 +236,22 @@ $(PD_DIR):
 PCIE_SW_TESTS = $(wildcard $(PCIE_DIR)/sw/tests/*.c)
 PCIE_SW_TESTS_VENDORED = $(patsubst $(PCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshire/tests/%,$(PCIE_SW_TESTS))
 
+UCIE_SW_TESTS = $(wildcard $(UCIE_DIR)/sw/tests/*.c)
+UCIE_SW_TESTS_VENDORED = $(patsubst $(UCIE_DIR)/sw/tests/%,$(GW_ROOT)/sw/cheshire/tests/%,$(UCIE_SW_TESTS))
+
 $(PCIE_DIR):
 	git clone $(PCIE_REMOTE) $(PCIE_DIR)
 	cd $(PCIE_DIR) && git checkout $(PCIE_COMMIT)
-	cp $(PCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
+
+$(PCIE_SW_TESTS_VENDORED): $(GW_ROOT)/sw/cheshire/tests/%.c: $(PCIE_DIR)/sw/tests/%.c | $(PCIE_DIR)
+	cp $< $@
 
 $(UCIE_DIR):
 	git clone $(UCIE_REMOTE) $(UCIE_DIR)
 	cd $(UCIE_DIR) && git checkout $(UCIE_COMMIT)
-	ln -sf $(UCIE_DIR)/sw/tests/*.c $(GW_ROOT)/sw/cheshire/tests/
+
+$(UCIE_SW_TESTS_VENDORED): $(GW_ROOT)/sw/cheshire/tests/%.c: $(UCIE_DIR)/sw/tests/%.c | $(UCIE_DIR)
+	cp $< $@
 
 $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
@@ -250,6 +265,7 @@ update-pd-commit:
 
 clean-pd:
 	rm -f $(PCIE_SW_TESTS_VENDORED)
+	rm -f $(UCIE_SW_TESTS_VENDORED)
 	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR)
 
 -include $(PD_DIR)/pd.mk
