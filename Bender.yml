@@ -64,7 +64,6 @@ dependencies:
     rev: main
   tum_npu:
     path: .deps/tum_npu
-    rev: main
   ucie:
     path: .deps/ucie
 
