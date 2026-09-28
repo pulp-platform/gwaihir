@@ -429,7 +429,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: 36df3b9ffaf1c022213d97f07cf697cb332d4bf3
+    revision: 5ec2bf5e4f80fb75367fc560688f547d71419240
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git
