@@ -429,7 +429,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: 36cf97b5ad08453b5f811ed8c6a49e468fee7b7a
+    revision: 36df3b9ffaf1c022213d97f07cf697cb332d4bf3
     version: null
     source:
       Git: https://github.com/pulp-platform/snitch_cluster.git
@@ -443,6 +443,7 @@ packages:
     - core_v_xif
     - fpnew
     - idma
+    - register_interface
     - reqrsp_interface
     - riscv-dbg
     - spatz_vpu
