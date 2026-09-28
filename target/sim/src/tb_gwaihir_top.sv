@@ -23,17 +23,17 @@ module tb_gwaihir_top;
     $asserton(0, fix);
   end
 
-  string        preload_elf;
-  string        boot_hex;
-  logic  [ 1:0] boot_mode;
-  logic  [ 2:0] preload_mode;
-  bit    [31:0] exit_code;
-  bit           snitch_preload;
-  string        snitch_elf;
-  logic  [63:0] snitch_entry;
-  logic  [63:0] chs_entry;
-  int           snitch_fn;
-  int           chs_fn;
+  string              preload_elf;
+  string              boot_hex;
+  logic        [ 1:0] boot_mode;
+  int unsigned        preload_mode;
+  bit          [31:0] exit_code;
+  bit                 snitch_preload;
+  string              snitch_elf;
+  logic        [63:0] snitch_entry;
+  logic        [63:0] chs_entry;
+  int                 snitch_fn;
+  int                 chs_fn;
 
   initial begin
     // Fetch plusargs or use safe (fail-fast) defaults

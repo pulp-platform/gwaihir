@@ -28,6 +28,9 @@ export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-pulp-llvm-alm
 export UV=/usr/local/uv/uv
 
 bender checkout
+# Bender does not recursively symlink packages so Spatz can't be found at the path
+# required by Snitch's Python package. Explicit invocation in Snitch is required.
+bender checkout --dir .deps/snitch_cluster
 
 $UV sync --locked
 source .venv/bin/activate

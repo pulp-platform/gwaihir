@@ -320,9 +320,9 @@ package gwaihir_pkg;
     return Sam[ep].end_addr - Sam[ep].start_addr;
   endfunction
 
-  /////////////////////
-  //   MULTICAST     //
-  /////////////////////
+  /////////////////
+  // Collectives //
+  /////////////////
 
   function automatic floo_pkg::route_cfg_t gen_nomcast_route_cfg();
     floo_pkg::route_cfg_t ret = floo_gwaihir_noc_pkg::RouteCfg;

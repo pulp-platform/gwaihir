@@ -16,9 +16,6 @@ __pycache__
 # Generated source files
 .generated/*
 
-# Bender
-Bender.local
-
 # Workspace symlinks
 .deps
 

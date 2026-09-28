@@ -125,7 +125,8 @@ module cheshire_tile
     .floo_rsp_t    (floo_rsp_t),
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
-    .VcImpl        (VcImpl)
+    .VcImpl        (VcImpl),
+    .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -193,6 +194,7 @@ module cheshire_tile
     .ChimneyCfgW         (ChimneyCfgW),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
+    .collect_op_t        (floo_gwaihir_noc_pkg::collect_op_t),
     .WideRwDecouple      (WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (AxiCfgN.OutIdWidth - 1),
@@ -407,22 +409,22 @@ module cheshire_tile
   for (genvar r = 0; r < 4; r++) begin : gen_virt
     `ASSERT(NoCollectivOperation_NReq_In,
             (!router_floo_req_in[r].valid |
-             (router_floo_req_in[r].req[0].generic.hdr.collective_op == Unicast)))
+             (router_floo_req_in[r].req[0].generic.hdr.collective_op == floo_pkg::Unicast)))
     `ASSERT(NoCollectivOperation_NRsp_In,
             (!router_floo_rsp_in[r].valid |
-             (router_floo_rsp_in[r].rsp[0].generic.hdr.collective_op == Unicast)))
+             (router_floo_rsp_in[r].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast)))
     `ASSERT(NoCollectivOperation_NWide_In,
             (!router_floo_wide_in[r].valid |
-             (router_floo_wide_in[r].wide[0].generic.hdr.collective_op == Unicast)))
+             (router_floo_wide_in[r].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)))
     `ASSERT(NoCollectivOperation_NReq_Out,
             (!router_floo_req_out[r].valid |
-             (router_floo_req_out[r].req[0].generic.hdr.collective_op == Unicast)))
+             (router_floo_req_out[r].req[0].generic.hdr.collective_op == floo_pkg::Unicast)))
     `ASSERT(NoCollectivOperation_NRsp_Out,
             (!router_floo_rsp_out[r].valid |
-             (router_floo_rsp_out[r].rsp[0].generic.hdr.collective_op == Unicast)))
+             (router_floo_rsp_out[r].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast)))
     `ASSERT(NoCollectivOperation_NWide_Out,
             (!router_floo_wide_out[r].valid |
-             (router_floo_wide_out[r].wide[0].generic.hdr.collective_op == Unicast)))
+             (router_floo_wide_out[r].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)))
   end
 
 endmodule
