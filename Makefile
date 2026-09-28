@@ -264,8 +264,7 @@ update-pd-commit:
 	sed -i 's/^TUM_NPU_COMMIT ?= .*/TUM_NPU_COMMIT ?= $(shell git -C $(TUM_NPU_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
-	rm -f $(GW_ROOT)/sw/cheshire/tests/pcie_*.c
-	rm -f $(GW_ROOT)/sw/cheshire/tests/ucie_closed_*.c
+	rm -f $(PCIE_SW_TESTS_VENDORED)
 	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR) $(TUM_NPU_DIR)
 
 -include $(PD_DIR)/pd.mk
