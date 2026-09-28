@@ -95,6 +95,15 @@ module tb_gwaihir_top;
           fix.vip.jtag_wait_for_eoc(exit_code);
           if (snitch_preload) fastmode_read();
         end
+        4: begin  // DRAM host: preload the host ELF into the DRAM model behind the LLC
+          jtag_enable_tiles();  // Write control registers
+          if (snitch_preload) fastmode_elf_preload(snitch_elf, snitch_entry);
+          fix.vip.jtag_wait_for_llc_config_halt();
+          fix.vip.memh_elf_preload(preload_elf);
+          fix.vip.jtag_elf_run_no_preload(preload_elf);
+          fix.vip.jtag_wait_for_eoc(exit_code);
+          if (snitch_preload) fastmode_read();
+        end
         5: begin  // headless offload: run a cluster job with no host (tb-driven simple_offload)
           if (!snitch_preload)
             $fatal(1, "Preload mode %d (headless offload) requires SN_BINARY!", preload_mode);

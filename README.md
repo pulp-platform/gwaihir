@@ -109,6 +109,14 @@ make vsim-run-batch SN_BINARY=sw/snitch/tests/build/simple.elf PRELMODE=5
 
 Removing the host boot and the on-target verification from the simulated path makes this substantially faster than `PRELMODE=3` for cluster-only tests. The testbench polls the same per-core return codes `simple_offload` does, and dumps L2 at the end, so `VERIFY_PY` works the same way.
 
+`PRELMODE=4` runs the Cheshire host program from DRAM instead of the LLC scratchpad: the testbench preloads the ELF straight into the DRAM model behind the LLC, which leaves the LLC free to be used as a cache. It needs a DRAM build of the test (`make chs-sw-tests GW_LINK_MODE=dram`):
+
+```bash
+make vsim-run-batch CHS_BINARY=sw/cheshire/tests/helloworld.dram.elf PRELMODE=4
+```
+
+`sw/cheshire/tests/llc_cache_dram.c` uses this mode to switch the LLC from scratchpad to cache and check hits, evictions and flushes.
+
 #### QuestaSim
 
 To compile the RTL:
