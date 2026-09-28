@@ -15,6 +15,8 @@
       # - { CHS_BINARY: $CHS_BUILD_DIR/sanity.spm.elf, PRELMODE: 2 } # UART preloading takes over 1h, maybe enable later again
       - { CHS_BINARY: $CHS_BUILD_DIR/sanity_fail.spm.elf, NZ_EXIT_CODE: 7}
       - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.spm.elf, USTR: "Hello World!" }
+      - { CHS_BINARY: $CHS_BUILD_DIR/sanity.dram.elf, PRELMODE: 4 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/helloworld.dram.elf, USTR: "Hello World!", PRELMODE: 4 }
       - { CHS_BINARY: $CHS_BUILD_DIR/access_l2.spm.elf, PRELMODE: 1}
       - { CHS_BINARY: $CHS_BUILD_DIR/ucie_loopback.spm.elf, PRELMODE: 1}
       - { CHS_BINARY: $CHS_BUILD_DIR/ucie_raw_mode_loopback.spm.elf, PRELMODE: 1}
@@ -34,6 +36,7 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 0 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 1 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 3 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.dram.elf, SN_BINARY: $SN_BUILD_DIR/simple.elf, PRELMODE: 4 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/non_null_exitcode.elf, NZ_EXIT_CODE: 448 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/multicluster_atomics.elf }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/mcast_barrier.elf }
