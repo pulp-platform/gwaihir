@@ -62,6 +62,8 @@ dependencies:
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: main
+  tum_npu:
+    path: .deps/tum_npu
   ucie:
     path: .deps/ucie
 
@@ -134,6 +136,14 @@ sources:
   - target: all(pcie, asic)
     files:
       - .deps/pcie/hw/pcie_tile.sv
+
+  - target: not(tum_npu)
+    files:
+      - hw/tum_npu_tile.sv
+
+  - target: tum_npu
+    files:
+      - .deps/tum_npu/hw/tum_npu_tile.sv
 
   - target: asic
     files:
