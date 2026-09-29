@@ -19,7 +19,7 @@ inline volatile snitch_cluster_t* snrt_cluster_alias() {
 // of the cluster selected by cluster_idx.
 inline volatile snitch_cluster_t* snrt_cluster(int cluster_idx) {
     if (cluster_idx == GW_HTILE_CLUSTER_IDX) {
-        return &(gwaihir_addrmap_32b.htile);
+        return (volatile snitch_cluster_t*)&(gwaihir_addrmap_32b.htile);
     }
     return (volatile snitch_cluster_t*)&(gwaihir_addrmap_32b.cluster[cluster_idx]);
 }

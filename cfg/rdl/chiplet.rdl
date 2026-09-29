@@ -15,6 +15,7 @@
 
 `include "gw_tile_regs.rdl"
 `include "snitch_cluster.rdl"
+`include "htile.rdl"
 
 addrmap chiplet #(
     longint unsigned NumClusters      = 16,
@@ -34,7 +35,7 @@ addrmap chiplet #(
 ) {
     snitch_cluster cluster[NumClusters]        @ ClusterOffset    += ClusterSize;
     gw_tile_regs   cluster_config[NumClusters] @ ClusterCfgOffset += RegSize;
-    snitch_cluster htile                       @ HtileOffset;
+    htile          htile                       @ HtileOffset;
     gw_tile_regs   htile_config                @ HtileCfgOffset;
 
     // One iDMA and one control register block per L2 tile. The iDMA registers have

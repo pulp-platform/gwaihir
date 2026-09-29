@@ -11,6 +11,9 @@ GW_GEN_HW_DIR = $(GW_GEN_DIR)/hw
 GW_GEN_SW_DIR = $(GW_GEN_DIR)/sw
 BENDER_ROOT ?= $(GW_ROOT)/.bender
 
+HTILE_CLUSTER_RDL = $(GW_GEN_HW_DIR)/htile.rdl
+HTILE_RDL_GEN     = $(GW_ROOT)/util/gen_htile_rdl.py
+
 # Executables — must be defined before dependency paths that call $(BENDER)
 BENDER           ?= bender --suppress W22 -d $(GW_ROOT)
 FLOO_GEN         ?= floogen
@@ -82,6 +85,7 @@ $(GW_GEN_DIR) $(GW_GEN_SW_DIR):
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/snitch_cluster.rdl
+GW_RDL_ALL += $(HTILE_CLUSTER_RDL)
 GW_RDL_ALL += $(UCIE_SLINK_RDL)
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
@@ -178,12 +182,21 @@ $(SN_CFG): $(SN_CFG_TPL) $(FLOO_CFG) | $(GW_GEN_DIR)
 	$(MAKO_RENDER) --var nr_clusters=$(SN_NUM_CLUSTERS) --var collective_width=$(SN_COLLECTIVE_WIDTH) \
 		--output-file $@ $(SN_CFG_TPL)
 
+$(HTILE_CLUSTER_RDL): $(SN_CFG) $(HTILE_RDL_GEN) $(SN_CLUSTER_GEN) $(SN_CLUSTER_GEN_SRC) \
+    $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster.rdl.tpl | $(GW_GEN_HW_DIR)
+	$(HTILE_RDL_GEN) \
+	  --cfg $(SN_CFG) \
+	  --sn-root $(SN_ROOT) \
+	  --cluster-gen $(SN_CLUSTER_GEN) \
+	  --out-dir $(GW_GEN_HW_DIR)
+
 .PHONY: sn-hw-clean sn-hw-all
 
-sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG)
+sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG) $(HTILE_CLUSTER_RDL)
 sn-hw-clean:
 	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
 	rm -f $(SN_CFG)
+	rm -rf $(HTILE_CLUSTER_RDL)
 
 ###########
 # FlooNoC #
