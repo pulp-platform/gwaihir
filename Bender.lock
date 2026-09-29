@@ -262,7 +262,7 @@ packages:
     - register_interface
     - tech_cells_generic
   hci:
-    revision: c38974f0907969b9efdfd6cf5f23ff5e8a6e31bf
+    revision: 3957551f964aab36454b1da322e5749f7cbb74e0
     version: null
     source:
       Git: https://github.com/pulp-platform/hci.git
