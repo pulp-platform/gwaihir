@@ -429,7 +429,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: 2252aaafc5d8f0e284a7cb0e96db1b015e93fd58
+    revision: a5eddc144b7f2bc7047ad1b2469a31065651cfb4
     version: null
     source:
       Git: https://github.com/DiyouS/snitch_cluster.git
