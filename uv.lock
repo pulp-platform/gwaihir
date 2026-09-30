@@ -665,6 +665,7 @@ source = { editable = "." }
 dependencies = [
     { name = "cheshire" },
     { name = "floogen" },
+    { name = "mako" },
     { name = "peakrdl" },
     { name = "peakrdl-rawheader" },
     { name = "snitch", extra = ["kernels"] },
@@ -688,6 +689,7 @@ docs = [
 requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
     { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=0ee94fef9df623f1e6f5aa6d8e504d4e9a9423f6" },
+    { name = "mako", specifier = ">=1.3.0" },
     { name = "peakrdl", specifier = ">=1.5.0" },
     { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
     { name = "snitch", extras = ["kernels"], editable = ".deps/snitch_cluster" },
