@@ -1,6 +1,6 @@
 packages:
   apb:
-    revision: 6ae8bf8d5eab5dc70d032231c01ab95e1c5774b9
+    revision: af1d5cb90ee9321321e4e1f7d694fdc259be116e
     version: null
     source:
       Git: https://github.com/pulp-platform/apb.git
