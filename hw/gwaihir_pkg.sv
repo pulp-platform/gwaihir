@@ -374,12 +374,17 @@ package gwaihir_pkg;
     ret.RegExtRegionStart[CshRegLPDDR] = gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_BASE_ADDR;
     ret.RegExtRegionEnd[CshRegLPDDR] = gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_BASE_ADDR
                                    + gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_SIZE;
-    ret.RegExtRegionIdx[CshRegHyperbusPlat]   = CshRegHyperbusPlat;
-    ret.RegExtRegionStart[CshRegHyperbusPlat] = 'h1800_3000;
-    ret.RegExtRegionEnd[CshRegHyperbusPlat]   = 'h1800_4000;
-    ret.RegExtRegionIdx[CshRegHyperbusCtrl]   = CshRegHyperbusCtrl;
-    ret.RegExtRegionStart[CshRegHyperbusCtrl] = 'h1800_4000;
-    ret.RegExtRegionEnd[CshRegHyperbusCtrl]   = 'h1800_5000;
+    ret.RegExtRegionIdx[CshRegHyperbusPlat] = CshRegHyperbusPlat;
+    ret.RegExtRegionStart[CshRegHyperbusPlat] =
+        gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_INTERNAL_GW_HYPERBUS_REGS_BASE_ADDR;
+    ret.RegExtRegionEnd[CshRegHyperbusPlat] =
+        gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_INTERNAL_GW_HYPERBUS_CTRL_BASE_ADDR;
+    ret.RegExtRegionIdx[CshRegHyperbusCtrl] = CshRegHyperbusCtrl;
+    ret.RegExtRegionStart[CshRegHyperbusCtrl] =
+        gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_INTERNAL_GW_HYPERBUS_CTRL_BASE_ADDR;
+    ret.RegExtRegionEnd[CshRegHyperbusCtrl] =
+        gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_INTERNAL_GW_HYPERBUS_CTRL_BASE_ADDR
+        + gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_INTERNAL_GW_HYPERBUS_CTRL_SIZE;
 
     // No CIE subregion; external region ends at LLC out (0x7..)
     ret.Cva6ExtCieOnTop  = 0;
