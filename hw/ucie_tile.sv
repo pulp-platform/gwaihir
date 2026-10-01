@@ -100,7 +100,7 @@ module ucie_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
-    .NoLoopback    (1'b0),                            // Collective support requires
+    .NoLoopback    (1'b0),
     .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,

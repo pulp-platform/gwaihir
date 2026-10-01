@@ -126,8 +126,8 @@ module cheshire_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
-    // Forwards multicasts passing through this tile
-    .NoLoopback    (1'b0),
+    // Cheshire only forwards collectives, never initiates them: no loopback needed
+    .NoLoopback    (1'b1),
     .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,
