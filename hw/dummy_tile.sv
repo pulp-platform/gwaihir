@@ -47,7 +47,8 @@ module dummy_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
-    .NoLoopback    (1'b0),
+    // This tile never initiates collectives: no loopback needed
+    .NoLoopback    (1'b1),
     .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,

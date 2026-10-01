@@ -334,9 +334,9 @@ package gwaihir_pkg;
   // Define no multicast RouteCfg for Memory tiles, Cheshire and FhG
   localparam floo_pkg::route_cfg_t RouteCfgNoMcast = gen_nomcast_route_cfg();
 
-  // Multicast-only RouteCfg for the some tiles: they need to inject and route
-  // multicast flits (forking of ingress requests), but they have no reduction
-  // unit attached, so all reduction operations stay disabled.
+  // Multicast-only RouteCfg for some tiles: they need to route multicast flits
+  // (forking of ingress requests), but they have no collective-capable
+  // endpoint attached, so all reduction operations stay disabled.
   function automatic floo_pkg::route_cfg_t gen_mcast_only_route_cfg();
     floo_pkg::route_cfg_t ret = floo_gwaihir_noc_pkg::RouteCfg;
     ret.CollectiveCfg                         = CollectiveDefaultCfg;

@@ -100,7 +100,8 @@ module ucie_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
-    .NoLoopback    (1'b0),                            // Collective support requires
+    // UCIe tile only initiates collective transactions that don't require loopback
+    .NoLoopback    (1'b1),
     .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
   ) i_router (
     .clk_i,
@@ -155,7 +156,7 @@ module ucie_tile
     .AtopSupport         (1'b1),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
-    .MaxAtomicTxns       (3),                                                      // TODO: CHECK
+    .MaxAtomicTxns       (3),
     .Sam                 (floo_gwaihir_noc_pkg::CollectiveSam),
     .id_t                (floo_gwaihir_noc_pkg::id_t),
     .rob_idx_t           (floo_gwaihir_noc_pkg::rob_idx_t),
