@@ -128,7 +128,8 @@ module cheshire_tile
     .VcImpl        (VcImpl),
     // This tile never initiates collectives: no loopback needed
     .NoLoopback    (1'b1),
-    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg),
+    .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -196,6 +197,7 @@ module cheshire_tile
     .ChimneyCfgW         (ChimneyCfgW),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
+    .collect_op_t        (floo_gwaihir_noc_pkg::collect_op_t),
     .WideRwDecouple      (WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (AxiCfgN.OutIdWidth - 1),
@@ -411,13 +413,13 @@ module cheshire_tile
   // verilog_format: off
   `ASSERT(NoCollectivOperation_NReq_Eject,
           (!router_floo_req_out[Eject].valid |
-           (router_floo_req_out[Eject].req[0].generic.hdr.collective_op == Unicast)))
+           (router_floo_req_out[Eject].req[0].generic.hdr.collective_op == floo_pkg::Unicast)))
   `ASSERT(NoCollectivOperation_NRsp_Eject,
           (!router_floo_rsp_out[Eject].valid |
-           (router_floo_rsp_out[Eject].rsp[0].generic.hdr.collective_op == Unicast)))
+           (router_floo_rsp_out[Eject].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast)))
   `ASSERT(NoCollectivOperation_NWide_Eject,
           (!router_floo_wide_out[Eject].valid |
-           (router_floo_wide_out[Eject].wide[0].generic.hdr.collective_op == Unicast)))
+           (router_floo_wide_out[Eject].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)))
   // verilog_format: on
 
 endmodule

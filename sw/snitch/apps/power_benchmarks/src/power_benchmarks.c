@@ -155,7 +155,7 @@ static inline void exp_hw_reduction(double *a, size_t sz, uint64_t mask) {
     if (snrt_is_dm_core()) {
         // Both clusters write to the same physical address: memory tile 0.
         snrt_dma_start_1d_reduction((void *)mat, a, sz, mask,
-                                    SNRT_REDUCTION_FADD);
+            snrt_reduction_op(SNRT_REDUCTION_SUM, SNRT_REDUCTION_FP64));
         snrt_dma_wait_all();
     }
     snrt_cluster_hw_barrier();

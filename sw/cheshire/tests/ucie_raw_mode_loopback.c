@@ -71,6 +71,12 @@ int main() {
 
   if ( (ucie_tile_enable(ucie_cfg0) && (ucie_tile_enable(ucie_cfg1))) == 0) return 1;
 
+#ifdef GW_UCIE_CLOSED_PCS
+  if (ucie_link_bringup((uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg,
+                        (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg) != 0u)
+    return 1;
+#endif
+
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     tx_sample[i] = PATTERN_SEED + i;
   }
@@ -91,7 +97,7 @@ int main() {
     return 2;
   }
 
-  // Pop word by word form the RAW data in register
+  // Pop word by word from the RAW data in register
   for (uint32_t i = 0; i < RAW_WORDS_PER_SAMPLE; i++) {
     rx_sample[i] = ucie1_slink->raw_mode_in_data[i].w;
   }

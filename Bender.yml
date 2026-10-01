@@ -28,7 +28,7 @@ dependencies:
     rev: gwaihir
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
-    rev: new/stream-sizer
+    rev: master
   datamover:
     git: https://github.com/pulp-platform/datamover.git
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
@@ -40,7 +40,9 @@ dependencies:
     path: ./pd
   gwaihir_lpddr:
     path: .deps/lpddr
-  iDMA: 0.6.5
+  iDMA:
+    git: https://github.com/pulp-platform/iDMA.git
+    version: 0.7.1
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
     rev: gwaihir
@@ -59,7 +61,7 @@ dependencies:
     rev: main
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: dca
+    rev: main
   ucie:
     path: .deps/ucie
 
@@ -97,6 +99,7 @@ sources:
   # Level 2
   - hw/snitch_tcdm_aligner.sv
   - hw/snitch_hwpe_subsystem.sv
+  - hw/floo_dca_decode.sv
   - hw/cheshire_tile.sv
   - hw/mem_tile_dma_wrap.sv
   - hw/mem_tile.sv
@@ -106,12 +109,13 @@ sources:
 
   - target: not(ucie)
     files:
-      - hw/ucie_tile.sv
+      - hw/ucie_pcs_wrap.sv
   - target: ucie
     files:
-      - .deps/ucie/hw/ucie_tile.sv
+      - .deps/ucie/hw/ucie_pcs_wrap.sv
 
   # Level 3
+  - hw/ucie_tile.sv
   - hw/cluster_tile.sv
   - hw/gwaihir_top.sv
 

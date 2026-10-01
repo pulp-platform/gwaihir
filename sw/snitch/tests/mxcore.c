@@ -94,7 +94,7 @@ int main() {
     uint16_t result_scale_size = (M*N/BLOCK_SIZE)*NBYTES_SCALE;
 
     // Control Engine Register Value
-    uint32_t engine_ctrl = 0x00200678;
+    uint32_t engine_ctrl = 0x00400678;
 
     // REG_GEMM_SIZE: [9:0] M, [21:10] K, [31:22] N
     uint32_t gemm_size = ((uint32_t)M & 0x3FF) | (((uint32_t)K & 0xFFF) << 10) | (((uint32_t)N & 0x3FF) << 22);

@@ -103,7 +103,8 @@ module spm_tile
     .VcImpl        (VcImpl),
     // This tile never initiates collectives: no loopback needed
     .NoLoopback    (1'b1),
-    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg),
+    .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -156,6 +157,7 @@ module spm_tile
     .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, bit'(!IsNarrow), 1'b0)),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
+    .collect_op_t        (floo_gwaihir_noc_pkg::collect_op_t),
     .WideRwDecouple      (WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (1),

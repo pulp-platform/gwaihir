@@ -144,7 +144,8 @@ module mem_tile
     .VcImpl        (VcImpl),
     // This tile never initiates collectives: no loopback needed
     .NoLoopback    (1'b1),
-    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg),
+    .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -204,6 +205,7 @@ module mem_tile
     .ChimneyCfgW         (set_ports(ChimneyDefaultCfg, 1'b1, 1'b1)),
     .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
+    .collect_op_t        (floo_gwaihir_noc_pkg::collect_op_t),
     .WideRwDecouple      (WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (1),
@@ -483,6 +485,8 @@ module mem_tile
     .JobFifoDepth      (gwaihir_pkg::DmaJobFifoDepth),
     .RAWCouplingAvail  (gwaihir_pkg::DmaRAWCouplingAvail),
     .IsTwoD            (gwaihir_pkg::DmaConfEnableTwoD),
+    .EnableCompute     (gwaihir_pkg::DmaEnableCompute),
+    .ComputeOps        (gwaihir_pkg::DmaComputeOps),
     .axi_mst_req_t     (axi_wide_in_req_t),
     .axi_mst_rsp_t     (axi_wide_in_rsp_t),
     .axi_slv_req_t     (axi_narrow_out_req_t),
@@ -1107,17 +1111,17 @@ module mem_tile
   // verilog_format: off
   `ASSERT(NoCollectivOperation_NReq_Eject,
           (!router_floo_req_out[Eject].valid |
-           (router_floo_req_out[Eject].req[0].generic.hdr.collective_op == Unicast)),
+           (router_floo_req_out[Eject].req[0].generic.hdr.collective_op == floo_pkg::Unicast)),
           clk_i, !rst_ni, $sformatf(
           "Unsupported collective attempted with destination: %h",
           router_floo_req_out[Eject].req[0].narrow_aw.payload.addr
           ))
   `ASSERT(NoCollectivOperation_NRsp_Eject,
           (!router_floo_rsp_out[Eject].valid |
-           (router_floo_rsp_out[Eject].rsp[0].generic.hdr.collective_op == Unicast)))
+           (router_floo_rsp_out[Eject].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast)))
   `ASSERT(NoCollectivOperation_NWide_Eject,
           (!router_floo_wide_out[Eject].valid |
-           (router_floo_wide_out[Eject].wide[0].generic.hdr.collective_op == Unicast)),
+           (router_floo_wide_out[Eject].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)),
           clk_i, !rst_ni, $sformatf(
           "Unsupported collective attempted with destination: %h",
           router_floo_wide_out[Eject].wide[0].wide_aw.payload.addr

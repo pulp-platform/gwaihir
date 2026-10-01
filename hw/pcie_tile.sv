@@ -81,7 +81,8 @@ module pcie_tile
     .VcImpl        (VcImpl),
     // This tile never initiates collectives: no loopback needed
     .NoLoopback    (1'b1),
-    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg)
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg),
+    .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
     .rst_ni,

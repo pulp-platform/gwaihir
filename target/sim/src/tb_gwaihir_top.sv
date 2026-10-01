@@ -23,17 +23,17 @@ module tb_gwaihir_top;
     $asserton(0, fix);
   end
 
-  string        preload_elf;
-  string        boot_hex;
-  logic  [ 1:0] boot_mode;
-  logic  [ 1:0] preload_mode;
-  bit    [31:0] exit_code;
-  bit           snitch_preload;
-  string        snitch_elf;
-  logic  [63:0] snitch_entry;
-  logic  [63:0] chs_entry;
-  int           snitch_fn;
-  int           chs_fn;
+  string              preload_elf;
+  string              boot_hex;
+  logic        [ 1:0] boot_mode;
+  int unsigned        preload_mode;
+  bit          [31:0] exit_code;
+  bit                 snitch_preload;
+  string              snitch_elf;
+  logic        [63:0] snitch_entry;
+  logic        [63:0] chs_entry;
+  int                 snitch_fn;
+  int                 chs_fn;
 
   initial begin
     // Fetch plusargs or use safe (fail-fast) defaults
@@ -95,8 +95,15 @@ module tb_gwaihir_top;
           fix.vip.jtag_wait_for_eoc(exit_code);
           if (snitch_preload) fastmode_read();
         end
+        5: begin  // headless offload: run a cluster job with no host (tb-driven simple_offload)
+          if (!snitch_preload)
+            $fatal(1, "Preload mode %d (headless offload) requires SN_BINARY!", preload_mode);
+          jtag_enable_tiles();
+          fastmode_elf_preload(snitch_elf, snitch_entry);
+          headless_offload(fix.clk, exit_code);
+        end
         default: begin
-          $fatal(1, "Unsupported preload mode %d (reserved)!", boot_mode);
+          $fatal(1, "Unsupported preload mode %d (reserved)!", preload_mode);
         end
       endcase
     end else if (boot_mode == 1) begin

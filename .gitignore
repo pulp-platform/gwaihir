@@ -16,18 +16,16 @@ __pycache__
 # Generated source files
 .generated/*
 
-# Bender
-Bender.local
-
 # Workspace symlinks
 .deps
 
 # Physical design repository
 pd
 
-# Nonfree pcie and ucie sw test sources, vendored into sw/cheshire/tests/ by `make init-pd` (see Makefile)
+# Nonfree pcie, ucie and lpddr sw test sources, vendored into sw/cheshire/tests/ by `make init-pd` (see Makefile)
 sw/cheshire/tests/pcie_*.c
 sw/cheshire/tests/ucie_closed_*.c
+sw/cheshire/tests/*.map
 
 # Software
 *build

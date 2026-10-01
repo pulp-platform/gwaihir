@@ -4,7 +4,7 @@
 
 // Cluster configuration for a simple testbench system.
 {
-    nr_clusters: 16,
+    nr_clusters: ${nr_clusters},
     cluster: {
         cluster_base_addr: 0x20000000,
         cluster_base_offset: 0x40000,
@@ -23,6 +23,11 @@
         // TODO(fischeti): Check with Thomas
         dma_axi_req_fifo_depth: 24,
         dma_req_fifo_depth: 8,
+        // Elaborates the iDMA compute path (DMOPC) in every cluster's inst64 frontend
+        dma_enable_compute: true,
+        // Transpose stays off until it replaces the datamover; half duplex when enabled
+        dma_compute_transpose: false,
+        dma_compute_transpose_full_duplex: false,
         narrow_trans: 4,
         wide_trans: 32,
         enable_narrow_collectives: true,
@@ -35,7 +40,7 @@
         alias_region_base: 0x20400000,
         num_exposed_wide_tcdm_ports: 1,
         narrow_axi_port_expose: true,
-        collective_width: 4,
+        collective_width: ${collective_width},
         enable_external_interrupts: true,
         vm_support: false,
         // Timing parameters

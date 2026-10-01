@@ -8,6 +8,16 @@
 
 #pragma once
 
+// Pull in the closed-source UCIe PCS driver when it is on the include path
+// (i.e. when the closed UCIe dependency is checked out). Tests can then guard
+// PCS-specific link bring-up with `#ifdef GW_UCIE_CLOSED_PCS`.
+#if defined(__has_include)
+#if __has_include("ucie_closed_pcs.h")
+#define GW_UCIE_CLOSED_PCS 1
+#include "ucie_closed_pcs.h"
+#endif
+#endif
+
 // Ungate a tile's clock and release its reset, then read both bits back.
 // `clk_rst_bypass_i` is tied low in simulation, so a tile stays clock-gated and
 // held in reset until software does this. The clock is enabled first, so the

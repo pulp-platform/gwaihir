@@ -18,9 +18,6 @@ addrmap cheshire_tile #(longint unsigned SlinkNumLanes = 8) {
     fll          fll[2]       @ 0x1800_1000 += 0x0000_0010;
     gw_chip_regs gw_chip_regs @ 0x1800_2000;
 `endif
-`ifdef GW_LPDDR_RDL
-    lpddr lpddr @ 0x1900_0000;
-`endif
 };
 
 `endif // __CHESHIRE_TILE_RDL__
