@@ -60,8 +60,8 @@ dependencies:
     git: https://github.com/pulp-platform/serial_link.git
     rev: main
   snitch_cluster:
-    git: https://github.com/DanielKellerM/snitch_cluster.git
-    rev: 9d09426d4bd3f126a58d23a3d9e2cf93090bad23
+    git: https://github.com/pulp-platform/snitch_cluster.git
+    rev: main
   ucie:
     path: .deps/ucie
 

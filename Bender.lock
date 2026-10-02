@@ -429,10 +429,10 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: 9d09426d4bd3f126a58d23a3d9e2cf93090bad23
+    revision: 5ec2bf5e4f80fb75367fc560688f547d71419240
     version: null
     source:
-      Git: https://github.com/DanielKellerM/snitch_cluster.git
+      Git: https://github.com/pulp-platform/snitch_cluster.git
     dependencies:
     - apb
     - axi
