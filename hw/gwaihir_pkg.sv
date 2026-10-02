@@ -529,7 +529,7 @@ package gwaihir_pkg;
 
   localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
 
-  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg_max(AxiCfgN, AxiCfgW);
 
   typedef logic [AxiCfgMemJoin.OutIdWidth-1:0] mtile_nw_join_id_t;
   typedef logic [AxiCfgMemJoin.UserWidth-1:0] mtile_nw_join_user_t;
@@ -592,7 +592,7 @@ package gwaihir_pkg;
   };
 
   // Narrow/wide join types for `floo_nw_join`
-  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg(AxiCfgNoAtop, AxiCfgW);
+  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg_max(AxiCfgNoAtop, AxiCfgW);
 
   typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] utile_nw_join_id_t;
   typedef logic [AxiCfgUcieJoin.UserWidth-1:0] utile_nw_join_user_t;

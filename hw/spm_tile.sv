@@ -142,10 +142,14 @@ module spm_tile
   // Chimney //
   /////////////
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
+  floo_gwaihir_noc_pkg::collective_axi_narrow_out_req_t collective_axi_narrow_out_req;
+  floo_gwaihir_noc_pkg::collective_axi_narrow_out_rsp_t collective_axi_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::collective_axi_wide_out_req_t   collective_axi_wide_out_req;
+  floo_gwaihir_noc_pkg::collective_axi_wide_out_rsp_t   collective_axi_wide_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t            axi_narrow_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t            axi_narrow_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t              axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t              axi_wide_rsp;
 
   axi_to_mem_req_t axi_from_chimney_req, axi_req, axi_req_cut;
   axi_to_mem_rsp_t axi_to_chimney_rsp, axi_rsp, axi_rsp_cut;
@@ -166,17 +170,19 @@ module spm_tile
     .rob_idx_t           (rob_idx_t),
     .hdr_t               (hdr_t),
     .sam_rule_t          (sam_rule_t),
-    .axi_narrow_in_req_t (axi_narrow_in_req_t),
-    .axi_narrow_in_rsp_t (axi_narrow_in_rsp_t),
-    .axi_narrow_out_req_t(axi_narrow_out_req_t),
-    .axi_narrow_out_rsp_t(axi_narrow_out_rsp_t),
-    .axi_wide_in_req_t   (axi_wide_in_req_t),
-    .axi_wide_in_rsp_t   (axi_wide_in_rsp_t),
-    .axi_wide_out_req_t  (axi_wide_out_req_t),
-    .axi_wide_out_rsp_t  (axi_wide_out_rsp_t),
+    .axi_narrow_in_req_t (collective_axi_narrow_in_req_t),
+    .axi_narrow_in_rsp_t (collective_axi_narrow_in_rsp_t),
+    .axi_narrow_out_req_t(collective_axi_narrow_out_req_t),
+    .axi_narrow_out_rsp_t(collective_axi_narrow_out_rsp_t),
+    .axi_wide_in_req_t   (collective_axi_wide_in_req_t),
+    .axi_wide_in_rsp_t   (collective_axi_wide_in_rsp_t),
+    .axi_wide_out_req_t  (collective_axi_wide_out_req_t),
+    .axi_wide_out_rsp_t  (collective_axi_wide_out_rsp_t),
     .floo_req_t          (floo_req_t),
     .floo_rsp_t          (floo_rsp_t),
-    .floo_wide_t         (floo_wide_t)
+    .floo_wide_t         (floo_wide_t),
+    .user_narrow_struct_t(floo_gwaihir_noc_pkg::collective_axi_narrow_in_user_t),
+    .user_wide_struct_t  (floo_gwaihir_noc_pkg::collective_axi_wide_in_user_t)
   ) i_chimney (
     .clk_i,
     .rst_ni,
@@ -186,18 +192,54 @@ module spm_tile
     .sram_cfg_i          ('0),
     .axi_narrow_in_req_i ('0),
     .axi_narrow_in_rsp_o (),
-    .axi_narrow_out_req_o(axi_narrow_req),
-    .axi_narrow_out_rsp_i(axi_narrow_rsp),
+    .axi_narrow_out_req_o(collective_axi_narrow_out_req),
+    .axi_narrow_out_rsp_i(collective_axi_narrow_out_rsp),
     .axi_wide_in_req_i   ('0),
     .axi_wide_in_rsp_o   (),
-    .axi_wide_out_req_o  (axi_wide_req),
-    .axi_wide_out_rsp_i  (axi_wide_rsp),
+    .axi_wide_out_req_o  (collective_axi_wide_out_req),
+    .axi_wide_out_rsp_i  (collective_axi_wide_out_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
     .floo_rsp_o          (router_floo_rsp_in[Eject]),
     .floo_wide_o         (router_floo_wide_in[Eject]),
     .floo_req_i          (router_floo_req_out[Eject]),
     .floo_rsp_i          (router_floo_rsp_out[Eject]),
     .floo_wide_i         (router_floo_wide_out[Eject])
+  );
+
+  nw_axi_collectives_filter #(
+    .collective_axi_narrow_mst_req_t(collective_axi_narrow_out_req_t),
+    .collective_axi_narrow_mst_rsp_t(collective_axi_narrow_out_rsp_t),
+    .collective_axi_narrow_slv_req_t(collective_axi_narrow_in_req_t),
+    .collective_axi_narrow_slv_rsp_t(collective_axi_narrow_in_rsp_t),
+    .collective_axi_wide_mst_req_t  (collective_axi_wide_out_req_t),
+    .collective_axi_wide_mst_rsp_t  (collective_axi_wide_out_rsp_t),
+    .collective_axi_wide_slv_req_t  (collective_axi_wide_in_req_t),
+    .collective_axi_wide_slv_rsp_t  (collective_axi_wide_in_rsp_t),
+    .axi_narrow_mst_req_t           (axi_narrow_out_req_t),
+    .axi_narrow_mst_rsp_t           (axi_narrow_out_rsp_t),
+    .axi_narrow_slv_req_t           (axi_narrow_in_req_t),
+    .axi_narrow_slv_rsp_t           (axi_narrow_in_rsp_t),
+    .axi_wide_mst_req_t             (axi_wide_out_req_t),
+    .axi_wide_mst_rsp_t             (axi_wide_out_rsp_t),
+    .axi_wide_slv_req_t             (axi_wide_in_req_t),
+    .axi_wide_slv_rsp_t             (axi_wide_in_rsp_t)
+  ) i_nw_axi_collectives_filter (
+    .collective_axi_narrow_mst_req_i(collective_axi_narrow_out_req),
+    .collective_axi_narrow_mst_rsp_o(collective_axi_narrow_out_rsp),
+    .axi_narrow_mst_req_o           (axi_narrow_req),
+    .axi_narrow_mst_rsp_i           (axi_narrow_rsp),
+    .axi_narrow_slv_req_i           ('0),
+    .axi_narrow_slv_rsp_o           (),
+    .collective_axi_narrow_slv_req_o(),
+    .collective_axi_narrow_slv_rsp_i('0),
+    .collective_axi_wide_mst_req_i  (collective_axi_wide_out_req),
+    .collective_axi_wide_mst_rsp_o  (collective_axi_wide_out_rsp),
+    .axi_wide_mst_req_o             (axi_wide_req),
+    .axi_wide_mst_rsp_i             (axi_wide_rsp),
+    .axi_wide_slv_req_i             ('0),
+    .axi_wide_slv_rsp_o             (),
+    .collective_axi_wide_slv_req_o  (),
+    .collective_axi_wide_slv_rsp_i  ('0)
   );
 
   if (IsNarrow) begin : gen_narrow_spm

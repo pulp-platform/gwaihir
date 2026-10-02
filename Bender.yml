@@ -84,7 +84,7 @@ sources:
   - target: gw_gen_rtl
     files:
       # Level 0.0
-      - hw/floo_gwaihir_noc_pkg.sv
+      - .generated/hw/floo_gwaihir_noc_pkg.sv
       - .generated/hw/gw_tile_regs_pkg.sv
       - .generated/hw/gw_ucie_tile_regs_pkg.sv
       - .generated/hw/gw_addrmap_pkg.sv
@@ -96,6 +96,7 @@ sources:
 
   # Level 1
   - hw/gwaihir_pkg.sv
+  - hw/nw_axi_collectives_filter.sv
   # Level 2
   - hw/snitch_tcdm_aligner.sv
   - hw/snitch_hwpe_subsystem.sv

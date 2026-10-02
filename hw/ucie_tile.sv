@@ -137,12 +137,12 @@ module ucie_tile
   // Chimney //
   /////////////
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_out_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req;
-  floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    axi_wide_in_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_out_rsp;
+  floo_gwaihir_noc_pkg::collective_axi_narrow_out_req_t axi_narrow_out_req;
+  floo_gwaihir_noc_pkg::collective_axi_narrow_out_rsp_t axi_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::collective_axi_wide_in_req_t    axi_wide_in_req;
+  floo_gwaihir_noc_pkg::collective_axi_wide_in_rsp_t    axi_wide_in_rsp;
+  floo_gwaihir_noc_pkg::collective_axi_wide_out_req_t   axi_wide_out_req;
+  floo_gwaihir_noc_pkg::collective_axi_wide_out_rsp_t   axi_wide_out_rsp;
 
   // Ingress mux output, before unalias
   floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_in_mux_req;
@@ -170,14 +170,14 @@ module ucie_tile
     .user_narrow_struct_t(floo_gwaihir_noc_pkg::collective_axi_narrow_in_user_t),
     .user_wide_struct_t  (floo_gwaihir_noc_pkg::collective_axi_wide_in_user_t),
     //CHECK PARAMS!!
-    .axi_narrow_in_req_t (floo_gwaihir_noc_pkg::axi_narrow_in_req_t),
-    .axi_narrow_in_rsp_t (floo_gwaihir_noc_pkg::axi_narrow_in_rsp_t),
-    .axi_narrow_out_req_t(floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
-    .axi_narrow_out_rsp_t(floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t),
-    .axi_wide_in_req_t   (floo_gwaihir_noc_pkg::axi_wide_in_req_t),
-    .axi_wide_in_rsp_t   (floo_gwaihir_noc_pkg::axi_wide_in_rsp_t),
-    .axi_wide_out_req_t  (floo_gwaihir_noc_pkg::axi_wide_out_req_t),
-    .axi_wide_out_rsp_t  (floo_gwaihir_noc_pkg::axi_wide_out_rsp_t),
+    .axi_narrow_in_req_t (floo_gwaihir_noc_pkg::collective_axi_narrow_in_req_t),
+    .axi_narrow_in_rsp_t (floo_gwaihir_noc_pkg::collective_axi_narrow_in_rsp_t),
+    .axi_narrow_out_req_t(floo_gwaihir_noc_pkg::collective_axi_narrow_out_req_t),
+    .axi_narrow_out_rsp_t(floo_gwaihir_noc_pkg::collective_axi_narrow_out_rsp_t),
+    .axi_wide_in_req_t   (floo_gwaihir_noc_pkg::collective_axi_wide_in_req_t),
+    .axi_wide_in_rsp_t   (floo_gwaihir_noc_pkg::collective_axi_wide_in_rsp_t),
+    .axi_wide_out_req_t  (floo_gwaihir_noc_pkg::collective_axi_wide_out_req_t),
+    .axi_wide_out_rsp_t  (floo_gwaihir_noc_pkg::collective_axi_wide_out_rsp_t),
 
     .floo_req_t (floo_gwaihir_noc_pkg::floo_req_t),
     .floo_rsp_t (floo_gwaihir_noc_pkg::floo_rsp_t),
