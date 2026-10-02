@@ -52,6 +52,7 @@ variables:
     - .init-env
   script:
     - make chs-sw-tests
+    - make chs-sw-tests GW_LINK_MODE=dram
   artifacts:
     paths:
       - sw/cheshire/tests/*.elf
