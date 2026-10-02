@@ -42,6 +42,13 @@ package floo_gwaihir_noc_pkg;
   localparam int unsigned CshSlinkNumLanes = 8;
 
 
+  localparam int unsigned NumNarrowSeqOps = 0;
+  localparam int unsigned NumWideSeqOps = 20;
+  localparam int unsigned NumCollectOps = floo_pkg::NumReservedCollectOps +
+    NumNarrowSeqOps + NumWideSeqOps;
+  typedef logic [$clog2(NumCollectOps)-1:0] collect_op_t;
+
+
   /////////////////////////////
   //   Endpoint Dimensions   //
   /////////////////////////////
@@ -118,28 +125,29 @@ package floo_gwaihir_noc_pkg;
     ClusterConfigX3Y3SamIdx = 30,
     ClusterX3Y3SamIdx       = 31,
     CheshireExternalSamIdx  = 32,
-    CheshireInternalSamIdx  = 33,
-    L2Spm0DmaSamIdx         = 34,
-    L2Spm0ConfigSamIdx      = 35,
-    L2Spm0SamIdx            = 36,
-    L2Spm1DmaSamIdx         = 37,
-    L2Spm1ConfigSamIdx      = 38,
-    L2Spm1SamIdx            = 39,
-    L2Spm2DmaSamIdx         = 40,
-    L2Spm2ConfigSamIdx      = 41,
-    L2Spm2SamIdx            = 42,
-    L2Spm3DmaSamIdx         = 43,
-    L2Spm3ConfigSamIdx      = 44,
-    L2Spm3SamIdx            = 45,
-    Ucie0AxiSerialCfgSamIdx = 46,
-    Ucie0TileCfgSamIdx      = 47,
-    Ucie0UcieCfgSamIdx      = 48,
-    Ucie0SamIdx             = 49,
-    Ucie1AxiSerialCfgSamIdx = 50,
-    Ucie1TileCfgSamIdx      = 51,
-    Ucie1UcieCfgSamIdx      = 52,
-    Ucie1SamIdx             = 53,
-    PcieSamIdx              = 54
+    CheshireLpddrSamIdx     = 33,
+    CheshireInternalSamIdx  = 34,
+    L2Spm0DmaSamIdx         = 35,
+    L2Spm0ConfigSamIdx      = 36,
+    L2Spm0SamIdx            = 37,
+    L2Spm1DmaSamIdx         = 38,
+    L2Spm1ConfigSamIdx      = 39,
+    L2Spm1SamIdx            = 40,
+    L2Spm2DmaSamIdx         = 41,
+    L2Spm2ConfigSamIdx      = 42,
+    L2Spm2SamIdx            = 43,
+    L2Spm3DmaSamIdx         = 44,
+    L2Spm3ConfigSamIdx      = 45,
+    L2Spm3SamIdx            = 46,
+    Ucie0AxiSerialCfgSamIdx = 47,
+    Ucie0TileCfgSamIdx      = 48,
+    Ucie0UcieCfgSamIdx      = 49,
+    Ucie0SamIdx             = 50,
+    Ucie1AxiSerialCfgSamIdx = 51,
+    Ucie1TileCfgSamIdx      = 52,
+    Ucie1UcieCfgSamIdx      = 53,
+    Ucie1SamIdx             = 54,
+    PcieSamIdx              = 55
   } sam_idx_e;
 
 
@@ -163,7 +171,7 @@ package floo_gwaihir_noc_pkg;
     id_t end_addr;
   } route_map_rule_t;
 
-  localparam int unsigned SamNumRules = 55;
+  localparam int unsigned SamNumRules = 56;
 
   typedef struct packed {
     id_t         idx;
@@ -282,6 +290,11 @@ package floo_gwaihir_noc_pkg;
           start_addr: 48'h000000000000,
           end_addr: 48'h000020000000
       },  // CheshireInternal
+      '{
+          idx: '{x: 8, y: 4, port_id: 0},
+          start_addr: 48'h000040000000,
+          end_addr: 48'h000041001020
+      },  // CheshireLpddr
       '{
           idx: '{x: 8, y: 4, port_id: 0},
           start_addr: 48'h000080000000,
@@ -450,7 +463,7 @@ package floo_gwaihir_noc_pkg;
 
   };
 
-  localparam int unsigned CollectiveSamNumRules = 55;
+  localparam int unsigned CollectiveSamNumRules = 56;
 
   typedef struct packed {
     int unsigned offset;
@@ -669,6 +682,15 @@ package floo_gwaihir_noc_pkg;
           start_addr: 48'h000000000000,
           end_addr: 48'h000020000000
       },  // CheshireInternal
+      '{
+          idx: '{
+              id: '{x: 8, y: 4, port_id: 0},
+              mask_x: '{default: '0},
+              mask_y: '{default: '0}
+          },
+          start_addr: 48'h000040000000,
+          end_addr: 48'h000041001020
+      },  // CheshireLpddr
       '{
           idx: '{
               id: '{x: 8, y: 4, port_id: 0},
@@ -977,26 +999,18 @@ package floo_gwaihir_noc_pkg;
       XYAddrOffsetX: 33,
       XYAddrOffsetY: 37,
       IdAddrOffset: 0,
-      NumSamRules: 55,
+      NumSamRules: 56,
       NumRoutes: 0,
       CollectiveCfg: '{
           OpCfg: '{
               EnNarrowMulticast: 1'b1,
               EnWideMulticast: 1'b1,
               EnLsbAnd: 1'b1,
-              EnFpAdd: 1'b1,
-              EnFpMul: 1'b1,
-              EnFpMin: 1'b1,
-              EnFpMax: 1'b1,
-              EnIntAdd: 1'b0,
-              EnIntMul: 1'b0,
-              EnIntMinS: 1'b0,
-              EnIntMinU: 1'b0,
-              EnIntMaxS: 1'b0,
-              EnIntMaxU: 1'b0
+              EnNarrowSeqReduction: 1'b0,
+              EnWideSeqReduction: 1'b1
           },
           NarrRedCfg: RedDefaultCfg,
-          WideRedCfg: '{RdPipelineDepth: 5, CutOffloadIntf: 1'b1}
+          WideRedCfg: '{RdPipelineDepth: 6, CutOffloadIntf: 1'b1}
       }
   };
 
@@ -1010,7 +1024,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [4:0] collective_axi_narrow_in_id_t;
   typedef struct packed {
     logic [47:0] collective_mask;
-    logic [3:0]  collective_op;
+    logic [4:0]  collective_op;
     logic [5:0]  user;
   } collective_axi_narrow_in_user_t;
 
@@ -1026,7 +1040,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [4:0] axi_narrow_in_id_t;
   typedef struct packed {
     logic [47:0] collective_mask;
-    logic [3:0]  collective_op;
+    logic [4:0]  collective_op;
     logic [5:0]  user;
   } axi_narrow_in_user_t;
 
@@ -1041,7 +1055,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [1:0] collective_axi_narrow_out_id_t;
   typedef struct packed {
     logic [47:0] collective_mask;
-    logic [3:0]  collective_op;
+    logic [4:0]  collective_op;
     logic [5:0]  user;
   } collective_axi_narrow_out_user_t;
 
@@ -1057,7 +1071,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [1:0] axi_narrow_out_id_t;
   typedef struct packed {
     logic [47:0] collective_mask;
-    logic [3:0]  collective_op;
+    logic [4:0]  collective_op;
     logic [5:0]  user;
   } axi_narrow_out_user_t;
 
@@ -1072,7 +1086,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [2:0] collective_axi_wide_in_id_t;
   typedef struct packed {
     logic [47:0] collective_mask;
-    logic [3:0]  collective_op;
+    logic [4:0]  collective_op;
   } collective_axi_wide_in_user_t;
 
   `AXI_TYPEDEF_ALL_CT(collective_axi_wide_in, collective_axi_wide_in_req_t,
@@ -1087,7 +1101,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [2:0] axi_wide_in_id_t;
   typedef struct packed {
     logic [47:0] collective_mask;
-    logic [3:0]  collective_op;
+    logic [4:0]  collective_op;
   } axi_wide_in_user_t;
   `AXI_TYPEDEF_ALL_CT(axi_wide_in, axi_wide_in_req_t, axi_wide_in_rsp_t, axi_wide_in_addr_t,
                       axi_wide_in_id_t, axi_wide_in_data_t, axi_wide_in_strb_t, axi_wide_in_user_t)
@@ -1099,7 +1113,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [0:0] collective_axi_wide_out_id_t;
   typedef struct packed {
     logic [47:0] collective_mask;
-    logic [3:0]  collective_op;
+    logic [4:0]  collective_op;
   } collective_axi_wide_out_user_t;
 
   `AXI_TYPEDEF_ALL_CT(collective_axi_wide_out, collective_axi_wide_out_req_t,
@@ -1114,7 +1128,7 @@ package floo_gwaihir_noc_pkg;
   typedef logic [0:0] axi_wide_out_id_t;
   typedef struct packed {
     logic [47:0] collective_mask;
-    logic [3:0]  collective_op;
+    logic [4:0]  collective_op;
   } axi_wide_out_user_t;
   `AXI_TYPEDEF_ALL_CT(axi_wide_out, axi_wide_out_req_t, axi_wide_out_rsp_t, axi_wide_out_addr_t,
                       axi_wide_out_id_t, axi_wide_out_data_t, axi_wide_out_strb_t,
@@ -1128,14 +1142,14 @@ package floo_gwaihir_noc_pkg;
       DataWidth: 64,
       InIdWidth: 5,
       OutIdWidth: 2,
-      UserWidth: 58  // $bits(axi_narrow_in_user_t): collective_mask 48 + collective_op 4 + user 6
+      UserWidth: 59  // $bits(axi_narrow_in_user_t): collective_mask 48 + collective_op 4 + user 6
   };
   localparam axi_cfg_t AxiCfgW = '{
       AddrWidth: 48,
       DataWidth: 512,
       InIdWidth: 3,
       OutIdWidth: 1,
-      UserWidth: 52  // $bits(axi_wide_in_user_t): collective_mask 48 + collective_op 4
+      UserWidth: 53  // $bits(axi_wide_in_user_t): collective_mask 48 + collective_op 4
   };
   `FLOO_TYPEDEF_NW_CHAN_ALL(axi, req, rsp, wide, axi_narrow_in, axi_wide_in, AxiCfgN, AxiCfgW,
                             hdr_t)
@@ -1143,7 +1157,7 @@ package floo_gwaihir_noc_pkg;
   `FLOO_TYPEDEF_NW_VIRT_CHAN_LINK_ALL(req, rsp, wide, req, rsp, wide, 2, 2)
 
   typedef logic [AxiCfgW.DataWidth-1:0] floo_wide_red_data_t;
-  `FLOO_RED_TYPEDEF_REQ_RSP_LINK(wide, floo_wide_red_data_t, wide_req, wide_rsp)
+  `FLOO_RED_TYPEDEF_REQ_RSP_LINK(wide, floo_wide_red_data_t, wide_req, wide_rsp, collect_op_t)
 
 
 endpackage
