@@ -249,7 +249,7 @@ module snitch_hwpe_subsystem
     );
   end else begin : gen_mxcore
     mxcore_hwpe_top #(
-      .N_CORES(NrCores)
+      .NumCores(NrCores)
     ) i_mxcore_top (
       .clk_i      (hwpe_clk[AccPort]),
       .rst_ni     (rst_ni),
