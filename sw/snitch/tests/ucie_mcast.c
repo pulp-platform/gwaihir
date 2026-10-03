@@ -18,7 +18,8 @@
 // ucie0 should fork it into:
 // - the remote branch, towards the peer chiplet (clusters 8-15 in the loopback),
 // - the local branch, back into this chiplet (clusters 0-7).
-// Both branches are then multicast by their chimney. The DMA completes once both
+// At the exit of the ucie0 fork, the opcode is set to MULTICAST, so both
+// branches are then multicast by their chimney. The DMA completes once both
 // branches have returned their B response.
 //
 // Every cluster then checks its destination buffer.

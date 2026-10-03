@@ -591,8 +591,28 @@ package gwaihir_pkg;
       UserWidth: 1
   };
 
-  // Narrow/wide join types for `floo_nw_join`
-  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg_max(AxiCfgNoAtop, AxiCfgW);
+  // Narrow/wide configs carrying only the collective fields in the user signal
+  // (the narrow `user.user` field is stripped before joining).
+  localparam axi_cfg_t AxiCfgNoAtopCollective = '{
+      AddrWidth: AxiCfgNoAtop.AddrWidth,
+      DataWidth: AxiCfgNoAtop.DataWidth,
+      InIdWidth: AxiCfgNoAtop.InIdWidth,
+      OutIdWidth: AxiCfgNoAtop.OutIdWidth,
+      UserWidth: $bits(collective_axi_wide_out_user_t)
+  };
+  localparam axi_cfg_t AxiCfgWCollectiveUcie = '{
+      AddrWidth: AxiCfgW.AddrWidth,
+      DataWidth: AxiCfgW.DataWidth,
+      InIdWidth: AxiCfgW.InIdWidth,
+      OutIdWidth: AxiCfgW.OutIdWidth,
+      UserWidth: $bits(collective_axi_wide_out_user_t)
+  };
+
+  // Narrow/wide join types for `floo_nw_join`. The user signal is wide enough
+  // to carry the collective fields through the serial link.
+  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg_max(
+      AxiCfgNoAtopCollective, AxiCfgWCollectiveUcie
+  );
 
   typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] utile_nw_join_id_t;
   typedef logic [AxiCfgUcieJoin.UserWidth-1:0] utile_nw_join_user_t;
