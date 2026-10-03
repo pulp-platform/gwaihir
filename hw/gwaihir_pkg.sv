@@ -334,6 +334,19 @@ package gwaihir_pkg;
   // Define no multicast RouteCfg for Memory tiles, Cheshire and FhG
   localparam floo_pkg::route_cfg_t RouteCfgNoMcast = gen_nomcast_route_cfg();
 
+  // Multicast-only RouteCfg for some tiles: they need to route multicast flits
+  // (forking of ingress requests), but they have no collective-capable
+  // endpoint attached, so all reduction operations stay disabled.
+  function automatic floo_pkg::route_cfg_t gen_mcast_only_route_cfg();
+    floo_pkg::route_cfg_t ret = floo_gwaihir_noc_pkg::RouteCfg;
+    ret.CollectiveCfg                         = CollectiveDefaultCfg;
+    ret.CollectiveCfg.OpCfg.EnNarrowMulticast = 1'b1;
+    ret.CollectiveCfg.OpCfg.EnWideMulticast   = 1'b1;
+    return ret;
+  endfunction
+
+  localparam floo_pkg::route_cfg_t RouteCfgMcastOnly = gen_mcast_only_route_cfg();
+
   ////////////////
   //  Cheshire  //
   ////////////////
@@ -516,7 +529,7 @@ package gwaihir_pkg;
 
   localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
 
-  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg_max(AxiCfgN, AxiCfgW);
 
   typedef logic [AxiCfgMemJoin.OutIdWidth-1:0] mtile_nw_join_id_t;
   typedef logic [AxiCfgMemJoin.UserWidth-1:0] mtile_nw_join_user_t;
@@ -578,8 +591,28 @@ package gwaihir_pkg;
       UserWidth: 1
   };
 
-  // Narrow/wide join types for `floo_nw_join`
-  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg(AxiCfgNoAtop, AxiCfgW);
+  // Narrow/wide configs carrying only the collective fields in the user signal
+  // (the narrow `user.user` field is stripped before joining).
+  localparam axi_cfg_t AxiCfgNoAtopCollective = '{
+      AddrWidth: AxiCfgNoAtop.AddrWidth,
+      DataWidth: AxiCfgNoAtop.DataWidth,
+      InIdWidth: AxiCfgNoAtop.InIdWidth,
+      OutIdWidth: AxiCfgNoAtop.OutIdWidth,
+      UserWidth: $bits(collective_axi_wide_out_user_t)
+  };
+  localparam axi_cfg_t AxiCfgWCollectiveUcie = '{
+      AddrWidth: AxiCfgW.AddrWidth,
+      DataWidth: AxiCfgW.DataWidth,
+      InIdWidth: AxiCfgW.InIdWidth,
+      OutIdWidth: AxiCfgW.OutIdWidth,
+      UserWidth: $bits(collective_axi_wide_out_user_t)
+  };
+
+  // Narrow/wide join types for `floo_nw_join`. The user signal is wide enough
+  // to carry the collective fields through the serial link.
+  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg_max(
+      AxiCfgNoAtopCollective, AxiCfgWCollectiveUcie
+  );
 
   typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] utile_nw_join_id_t;
   typedef logic [AxiCfgUcieJoin.UserWidth-1:0] utile_nw_join_user_t;

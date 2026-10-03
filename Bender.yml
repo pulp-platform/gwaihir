@@ -34,7 +34,7 @@ dependencies:
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
-    rev: gwaihir/reduction
+    rev: chenwu/c2c-mcast
     upstream_name: FlooNoC
   gwaihir-pd:
     path: ./pd
@@ -96,6 +96,7 @@ sources:
 
   # Level 1
   - hw/gwaihir_pkg.sv
+  - hw/nw_axi_collectives_filter.sv
   # Level 2
   - hw/snitch_tcdm_aligner.sv
   - hw/snitch_hwpe_subsystem.sv

@@ -68,7 +68,7 @@ module pcie_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfg.RouteAlgo),
+    .RouteAlgo     (RouteCfgMcastOnly.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -79,6 +79,9 @@ module pcie_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
+    // This tile never initiates collectives: no loopback needed
+    .NoLoopback    (1'b1),
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg),
     .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
