@@ -465,11 +465,9 @@ module cluster_tile
   assign cluster_narrow_in_req      = axi_demux_out_req[Cluster];
   assign axi_demux_out_rsp[Cluster] = cluster_narrow_in_rsp;
 
-  // The configuration register path does not make use of the wide collective
-  // `user` field (it is only relevant for the collective/multicast path into
-  // the cluster). Down-convert the demuxed request to the plain narrow AXI
-  // type before the AXI-Lite conversion; the struct assign truncates the
-  // collective `user` payload down to the plain AXI user width.
+  // The configuration register path does not make use of the collective `user`
+  // field (it is only relevant for the collective/multicast path into the
+  // cluster). Drop the `user` field before converting to AXI-Lite.
   `AXI_ASSIGN_REQ_STRUCT(tile_cfg_demux_req, axi_demux_out_req[TileCfg])
   `AXI_ASSIGN_RESP_STRUCT(axi_demux_out_rsp[TileCfg], tile_cfg_demux_rsp)
 

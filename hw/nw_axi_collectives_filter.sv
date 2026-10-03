@@ -45,9 +45,21 @@ module nw_axi_collectives_filter #(
 
   always_comb begin
     `AXI_SET_REQ_STRUCT(axi_narrow_mst_req_o, collective_axi_narrow_mst_req_i)
-    axi_narrow_mst_req_o.aw.user.user = collective_axi_narrow_mst_req_i.aw.user.user;
-    axi_narrow_mst_req_o.w.user.user  = collective_axi_narrow_mst_req_i.w.user.user;
-    axi_narrow_mst_req_o.ar.user.user = collective_axi_narrow_mst_req_i.ar.user.user;
+    axi_narrow_mst_req_o.aw.user = '{
+        collective_mask: '0,
+        collective_op: floo_pkg::Unicast,
+        user: collective_axi_narrow_mst_req_i.aw.user.user
+    };
+    axi_narrow_mst_req_o.w.user = '{
+        collective_mask: '0,
+        collective_op: floo_pkg::Unicast,
+        user: collective_axi_narrow_mst_req_i.w.user.user
+    };
+    axi_narrow_mst_req_o.ar.user = '{
+        collective_mask: '0,
+        collective_op: floo_pkg::Unicast,
+        user: collective_axi_narrow_mst_req_i.ar.user.user
+    };
 
     `AXI_SET_RESP_STRUCT(collective_axi_narrow_mst_rsp_o, axi_narrow_mst_rsp_i)
     collective_axi_narrow_mst_rsp_o.b.user = '{
