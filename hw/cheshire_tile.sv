@@ -242,36 +242,17 @@ module cheshire_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
-  /////////////
-  // NW Join //
-  /////////////
-
-  localparam axi_cfg_t AxiCfgJoin = floo_pkg::axi_join_cfg_min(AxiCfgN, AxiCfgW);
-
-  `FLOO_TYPEDEF_AXI_FROM_CFG(nw_join, AxiCfgJoin)
-
-  // The joined bus carries the `axi_mux` slave select in the MSB of the ID, so it is
-  // AxiCfgJoin.OutIdWidth wide. Derive it explicitly, as `mem_tile` does: the `_in_` family is
-  // sized from InIdWidth, which is unused here, and would silently truncate the select bit.
-  typedef logic [AxiCfgJoin.OutIdWidth-1:0] nw_join_mux_id_t;
-
-  `AXI_TYPEDEF_ALL_CT(axi_nw_join, axi_nw_join_req_t, axi_nw_join_rsp_t, nw_join_addr_t,
-                      nw_join_mux_id_t, nw_join_data_t, nw_join_strb_t, nw_join_user_t)
-
-  axi_nw_join_req_t nw_join_req;
-  axi_nw_join_rsp_t nw_join_rsp;
+  ////////////////////////
+  // Collectives Filter //
+  ////////////////////////
 
   axi_narrow_out_req_t narrow_out_plain_req;
   axi_narrow_out_rsp_t narrow_out_plain_rsp;
   axi_wide_out_req_t   wide_out_plain_req;
   axi_wide_out_rsp_t   wide_out_plain_rsp;
 
-  csh_axi_mst_req_t [CheshireCfg.AxiExtNumMst-1:0] axi_ext_mst_req_in;
-  csh_axi_mst_rsp_t [CheshireCfg.AxiExtNumMst-1:0] axi_ext_mst_rsp_out;
   csh_axi_slv_req_t [CheshireCfg.AxiExtNumSlv-1:0] axi_ext_slv_req_out;
   csh_axi_slv_rsp_t [CheshireCfg.AxiExtNumSlv-1:0] axi_ext_slv_rsp_in;
-  csh_reg_req_t     [CheshireCfg.RegExtNumSlv-1:0] reg_ext_req;
-  csh_reg_rsp_t     [CheshireCfg.RegExtNumSlv-1:0] reg_ext_rsp;
 
   nw_axi_collectives_filter #(
     .collective_axi_narrow_mst_req_t(collective_axi_narrow_out_req_t),
@@ -309,10 +290,40 @@ module cheshire_tile
     .collective_axi_wide_slv_rsp_i  ('0)
   );
 
+  /////////////
+  // NW Join //
+  /////////////
+
+  localparam axi_cfg_t AxiCfgJoin = floo_pkg::axi_join_cfg_min(AxiCfgN, AxiCfgW);
+
+  `FLOO_TYPEDEF_AXI_FROM_CFG(nw_join, AxiCfgJoin)
+
+  // The joined bus carries the `axi_mux` slave select in the MSB of the ID, and it feeds
+  // Cheshire's external manager port, whose ID is `CheshireCfg.AxiMstIdWidth` wide.
+  // Within Cheshire, at the output of the SoC XBAR, `AxiMstIdWidth` is further extended
+  // by `$clog2(num_in)`. Since Cheshire's external slave port goes back into the NoC,
+  // AxiCfgN must be sized to accommodate this ID width. We have a circular dependency of
+  // AxiCfgN on itself, which unfortunately arises as a limitation of the current AXI
+  // XBAR implementation. To cope with it, we fix AxiMstIdWidth, we size AxiCfgN
+  // accordingly, and we then remap the IDs of the joined bus feeding Cheshire's external
+  // manager port to match the fixed AxiMstIdWidth. This remapping is done within the NW
+  // join module, through the following parameter.
+  localparam int unsigned NwJoinIdWidth = CheshireCfg.AxiMstIdWidth;
+
+  typedef logic [NwJoinIdWidth-1:0] nw_join_mux_id_t;
+
+  `AXI_TYPEDEF_ALL_CT(axi_nw_join, axi_nw_join_req_t, axi_nw_join_rsp_t, nw_join_addr_t,
+                      nw_join_mux_id_t, nw_join_data_t, nw_join_strb_t, nw_join_user_t)
+
+  axi_nw_join_req_t nw_join_req;
+  axi_nw_join_rsp_t nw_join_rsp;
+
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgN)),
     .AxiCfgW         (axi_cfg_swap_iw(AxiCfgW)),
     .AxiCfgJoin      (axi_cfg_swap_iw(AxiCfgJoin)),
+    // Defaults to `AxiCfgJoin.OutIdWidth`, one bit more than Cheshire's port can carry
+    .AxiIdOutWidth   (NwJoinIdWidth),
     // We should not have any ATOPs in the wide path
     .FilterWideAtops (1'b1),
     // We don't need it since there is one in Cheshire
@@ -339,8 +350,17 @@ module cheshire_tile
   // Cheshire //
   //////////////
 
+  csh_axi_mst_req_t [CheshireCfg.AxiExtNumMst-1:0] axi_ext_mst_req_in;
+  csh_axi_mst_rsp_t [CheshireCfg.AxiExtNumMst-1:0] axi_ext_mst_rsp_out;
+  csh_reg_req_t     [CheshireCfg.RegExtNumSlv-1:0] reg_ext_req;
+  csh_reg_rsp_t     [CheshireCfg.RegExtNumSlv-1:0] reg_ext_rsp;
+
   `AXI_ASSIGN_REQ_STRUCT(axi_ext_mst_req_in[0], nw_join_req)
   `AXI_ASSIGN_RESP_STRUCT(nw_join_rsp, axi_ext_mst_rsp_out[0])
+
+  // The assigns above are field-wise and would truncate silently, so guard the one field whose
+  // width is set on either side of the boundary.
+  `ASSERT_INIT(NwJoinIdWidthMatch, $bits(nw_join_req.aw.id) == $bits(axi_ext_mst_req_in[0].aw.id))
 
   cheshire_soc #(
     .Cfg              (CheshireCfg),
