@@ -115,7 +115,13 @@ sources:
     files:
       - .deps/ucie/hw/ucie_pcs_wrap.sv
 
+  # The closed-source `pcie_top_wrap` comes from the `pcie` package itself, under the same target.
+  - target: not(pcie)
+    files:
+      - hw/pcie_top_wrap.sv
+
   # Level 3
+  - hw/pcie_tile.sv
   - hw/ucie_tile.sv
   - hw/cluster_tile.sv
   - hw/gwaihir_top.sv
@@ -127,14 +133,6 @@ sources:
     files:
       - target/sim/src/fixture_gwaihir_top.sv
       - target/sim/src/tb_gwaihir_top.sv
-
-  - target: not(all(pcie, asic))
-    files:
-      - hw/pcie_tile.sv
-
-  - target: all(pcie, asic)
-    files:
-      - .deps/pcie/hw/pcie_tile.sv
 
   - target: asic
     files:

@@ -631,4 +631,28 @@ package gwaihir_pkg;
   `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite_32, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
   `APB_TYPEDEF_ALL(ucie_cfg_apb, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
 
+  ////////////////
+  // PCIe Tile  //
+  ////////////////
+
+  // The PCIe controller does not understand collectives: it sees only the plain AXI `user` bits
+  // that the NoC's narrow `user` carries next to the collective fields. `cfg/gwaihir_noc.yml`
+  // sizes those bits to the cluster's atomic ID, which is the contract
+  // `cfg/snitch_cluster.json.mako` documents, so take the width from there rather than restate it.
+  // These types live here, and not in the controller's own package, so that the open-source build
+  // needs nothing from the closed-source PCIe repository.
+  // (`NarrowUserWidth` is the whole struct, collective fields included, so it is not the one.)
+  localparam int unsigned PcieAxiUserWidth = snitch_cluster_wrapper_pkg::AtomicIdWidth;
+
+  typedef logic [PcieAxiUserWidth-1:0] pcie_axi_user_t;
+
+  // Subordinate side: requests the NoC sends to the controller.
+  `AXI_TYPEDEF_ALL_CT(pcie_axi_slv, pcie_axi_slv_req_t, pcie_axi_slv_rsp_t, axi_narrow_out_addr_t,
+                      axi_narrow_out_id_t, axi_narrow_out_data_t, axi_narrow_out_strb_t,
+                      pcie_axi_user_t)
+  // Manager side: requests the controller sends into the NoC.
+  `AXI_TYPEDEF_ALL_CT(pcie_axi_mst, pcie_axi_mst_req_t, pcie_axi_mst_rsp_t, axi_narrow_in_addr_t,
+                      axi_narrow_in_id_t, axi_narrow_in_data_t, axi_narrow_in_strb_t,
+                      pcie_axi_user_t)
+
 endpackage
