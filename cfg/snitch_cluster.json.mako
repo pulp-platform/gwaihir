@@ -17,7 +17,6 @@
             banks: 32,
         },
         cluster_periph_size: 60, // kB
-        zero_mem_size: 60, // kB
         ext_mem_size: 4, //kB
         dma_data_width: 512,
         // TODO(fischeti): Check with Thomas
