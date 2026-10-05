@@ -151,6 +151,23 @@ sim-exps:
   artifacts:
     expire_in: 2 days
 
+#################
+# Spyglass lint #
+#################
+
+spyglass:
+  stage: build
+  extends:
+    - .cache-deps
+    - .init-env
+  script:
+    - make spyglass
+  artifacts:
+    when: always
+    paths:
+      - util/lint/build/spyglass.log
+    expire_in: 2 days
+
 ###################
 # Physical Design #
 ###################

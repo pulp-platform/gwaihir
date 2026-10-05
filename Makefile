@@ -18,6 +18,7 @@ VERIBLE_FMT      ?= verible-verilog-format
 VERIBLE_FMT_ARGS ?= --flagfile .verilog_format --inplace --verbose
 PEAKRDL          ?= peakrdl
 MAKO_RENDER      ?= mako-render
+SG_SHELL         ?= sg_shell
 
 # Configuration files
 FLOO_CFG   ?= $(GW_ROOT)/cfg/gwaihir_noc.yml
@@ -287,6 +288,52 @@ clean: gwaihir-hw-clean docs-clean
 
 include $(GW_ROOT)/sw/sw.mk
 
+#################
+# Spyglass lint #
+#################
+
+LINT_DIR       = $(GW_ROOT)/util/lint
+LINT_BUILD_DIR = $(LINT_DIR)/build
+LINT_TOP      ?= gwaihir_top
+LINT_REPORT    = $(LINT_BUILD_DIR)/$(LINT_TOP)/consolidated_reports/$(LINT_TOP)_lint_lint_rtl/moresimple.rpt
+LINT_LOG       = $(LINT_BUILD_DIR)/spyglass.log
+# Generated RTL is only required to exist (order-only), since some of it is regenerated on every
+# make invocation and would otherwise trigger a spurious re-run of Spyglass
+LINT_GEN_RTL   = $(GW_HW_ALL) $(SN_CLUSTER_WRAPPER_PKG) $(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv
+LINT_TILES    ?= gwaihir_top cheshire_tile cluster_tile mem_tile_small mem_tile_large ucie_tile pcie_tile dummy_tile
+
+.PHONY: spyglass $(addprefix spyglass-,$(LINT_TILES)) spyglass-clean
+
+$(LINT_BUILD_DIR):
+	mkdir -p $@
+
+$(LINT_BUILD_DIR)/analyze.tcl: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_BUILD_DIR) $(LINT_GEN_RTL)
+	$(BENDER) script flist-plus $(COMMON_TARGS) --suppress E31 > $@
+
+# Per-tile file lists, trimmed with bender's slang extension to the files reachable from each tile.
+# `--broken keep` is needed since slang cannot resolve the includes of the generated Snitch wrapper
+# package when parsing it standalone.
+$(LINT_BUILD_DIR)/%.f: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_GEN_RTL)
+	@mkdir -p $(@D)
+	$(BENDER) script flist-plus $(COMMON_TARGS) --suppress E31 --top $* --broken keep > $@
+
+# Run Spyglass on the full design
+$(LINT_REPORT): $(LINT_DIR)/spyglass.tcl $(LINT_BUILD_DIR)/analyze.tcl | $(LINT_BUILD_DIR)
+	cd $(LINT_BUILD_DIR) && LINT_TOP=$(LINT_TOP) $(SG_SHELL) -tcl $< > $(LINT_LOG) 2>&1
+
+# Check the report for the whole design
+spyglass: $(LINT_REPORT)
+	$(LINT_DIR)/check_spyglass_lint.py $<
+
+# Check the report for the files reachable from a single tile, e.g. `make spyglass-cluster_tile`
+# The top level is checked against what no tile needs, so it requires all tile file lists
+spyglass-gwaihir_top: $(addprefix $(LINT_BUILD_DIR)/,$(addsuffix .f,$(LINT_TILES)))
+$(addprefix spyglass-,$(LINT_TILES)): spyglass-%: $(LINT_REPORT) $(LINT_BUILD_DIR)/%.f
+	$(LINT_DIR)/check_spyglass_lint.py $< --tile $* --tiles-dir $(LINT_BUILD_DIR)
+
+spyglass-clean:
+	rm -rf $(LINT_BUILD_DIR)
+
 ##############
 # Simulation #
 ##############
@@ -392,6 +439,9 @@ help:
 	@echo -e "Additional miscellaneous targets:"
 	@echo -e "${Green}traces               ${Black}Generate the better readable traces in .logs/trace_hart_<hart_id>.txt."
 	@echo -e "${Green}annotate             ${Black}Annotate the better readable traces in .logs/trace_hart_<hart_id>.s with the source code related with the retired instructions."
+	@echo -e "${Green}spyglass             ${Black}Lint the RTL with Spyglass (top: LINT_TOP)."
+	@echo -e "${Green}spyglass-<tile>      ${Black}Show the Spyglass violations in the files reachable from <tile>, e.g. spyglass-cluster_tile."
+	@echo -e "${Green}spyglass-clean       ${Black}Remove Spyglass build files."
 	@echo -e "${Green}dvt-flist            ${Black}Generate a file list for the VSCode DVT plugin."
 	@echo -e "${Green}slang-flist          ${Black}Generate a file list for the slang LSP."
 	@echo -e "${Green}python-venv          ${Black}Create a Python virtual environment and install the required packages."

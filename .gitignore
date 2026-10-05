@@ -78,3 +78,4 @@ sources.flist
 # documentation
 docs/addressmap.md
 /site
+util/lint/build
