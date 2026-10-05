@@ -36,6 +36,7 @@ SN_RUNTIME_INCDIRS  += $(GW_SNITCH_SW_DIR)/runtime/src
 SN_RUNTIME_HAL_HDRS  = $(GW_GEN_SW_DIR)/gw_addrmap_32b.h
 SN_RUNTIME_HAL_HDRS += $(GW_GEN_SW_DIR)/gw_raw_addrmap_32b.h
 SN_RUNTIME_HAL_HDRS += $(GW_GEN_SW_DIR)/gw_noc_cfg.h
+SN_RUNTIME_HAL_HDRS += $(GW_GEN_SW_DIR)/gw_cluster_cfg.h
 
 #TODO(lleone): do we need this?
 SN_RVTESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/riscv-tests/build
@@ -60,6 +61,8 @@ SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 
 $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_SW_DIR) --no-format $<
+
+$(eval $(call sn_cluster_gen_rule,$(GW_GEN_SW_DIR)/gw_cluster_cfg.h,$(SN_RUNTIME_SRCDIR)/gw_cluster_cfg.h.tpl))
 
 include $(SN_ROOT)/make/sw.mk
 

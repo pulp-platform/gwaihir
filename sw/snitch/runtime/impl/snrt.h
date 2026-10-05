@@ -12,6 +12,7 @@
 
 // Configuration- and system-specific definitions (HAL)
 #include "gw_addrmap_32b.h"
+#include "gw_cluster_cfg.h"
 #include "gw_noc_cfg.h"
 #include "gw_raw_addrmap_32b.h"
 #include "snitch_cluster_cfg.h"

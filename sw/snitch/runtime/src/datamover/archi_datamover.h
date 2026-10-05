@@ -11,7 +11,8 @@
 #define DATAMOVER_ARCHI_CL_EVT_ACC1 1
 
 // Base address
-#define DATAMOVER_BASE_ADD (unsigned long)snrt_cluster()->zeromem.mem+sizeof(snrt_cluster()->zeromem.mem)+0x100
+#define DATAMOVER_BASE_ADD \
+    ((unsigned long)snrt_cluster() + GW_CLUSTER_EXT_MEM_OFFSET + 0x100)
 
 // Commands
 #define DATAMOVER_TRIGGER 0x00

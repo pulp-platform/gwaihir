@@ -27,7 +27,8 @@
 #define SRC_WIDTH       8
 #define DST_WIDTH       32
 
-#define HWPE_ADDR_BASE ((unsigned long)snrt_cluster_alias()->zeromem.mem + sizeof(snrt_cluster_alias()->zeromem.mem))
+#define HWPE_ADDR_BASE \
+    ((unsigned long)snrt_cluster_alias() + GW_CLUSTER_EXT_MEM_OFFSET)
 #define MXCORE_TRIGGER 0x00
 #define MXCORE_ACQUIRE 0x04
 #define MXCORE_STATUS 0x0C
