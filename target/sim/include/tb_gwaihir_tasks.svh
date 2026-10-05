@@ -27,7 +27,7 @@ import gwaihir_pkg::*;
 `CHESHIRE_TYPEDEF_ALL(, fix.vip.DutCfg)
 
 task automatic jtag_enable_tiles();
-  $display("Resetting cluster tiles and enabling clock...");
+  $display("Resetting tiles and enabling clock...");
   fix.vip.jtag_init();
   for (int i = 0; i < NumClusters; i++) begin
     fix.vip.jtag_write_reg32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
@@ -49,7 +49,7 @@ task automatic jtag_enable_tiles();
 endtask
 
 task automatic slink_enable_tiles();
-  $display("[SLINK] Resetting cluster tiles and enabling clock...");
+  $display("[SLINK] Resetting tiles and enabling clock...");
   for (int i = 0; i < NumClusters; i++) begin
     fix.vip.slink_write_32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b1);
     fix.vip.slink_write_32(`CLUSTER_CONFIG_RST_BASE_ADDR(i), 1'b0);
