@@ -30,6 +30,7 @@ inline volatile snitch_cluster_t* snrt_cluster(int cluster_idx) {
 // Must return a pointer to the snitch_cluster_t struct
 // of the cluster invoking the function.
 inline volatile snitch_cluster_t* snrt_cluster() {
+    // Runtime helpers such as snrt_l1_alloc_cluster_local() use this accessor.
     if (snrt_cluster_idx() == GW_HTILE_CLUSTER_IDX) {
         return gw_htile();
     }
