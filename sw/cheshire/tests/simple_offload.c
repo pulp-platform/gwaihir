@@ -19,7 +19,17 @@
 // This needs to be in a region which is not cached
 volatile uint32_t (*return_code_array)[CFG_CLUSTER_NR_CORES] = (uint32_t (*)[CFG_CLUSTER_NR_CORES])RETURN_CODE_ADDR;
 
+int setup_iommu();
+
 int main() {
+  int ret;
+
+#ifdef CONFIG_IOMMU
+  ret = setup_iommu();
+
+  if (ret < 0)
+    return ret;
+#endif
 
   // Write entry point to scratch register 1
   // and return code address to scratch register 0
