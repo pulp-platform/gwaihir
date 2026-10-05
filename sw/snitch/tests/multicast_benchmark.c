@@ -292,9 +292,7 @@ int main() {
     // TODO(colluca): is this needed?
     // Every cluster in row 0 initializes its destination buffer
     if (snrt_is_dm_core() && gw_cluster_in_row(0)) {
-        snrt_dma_start_1d(
-            (uintptr_t)buffer, (uintptr_t)(snrt_cluster()->zeromem.mem), SIZE);
-        snrt_dma_wait_all();
+        snrt_dma_memset(buffer, 0, SIZE);
     }
 
     // Create communicator for first N rows (all other clusters are inactive)
