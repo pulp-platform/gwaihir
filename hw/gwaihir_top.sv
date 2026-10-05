@@ -165,7 +165,7 @@ module gwaihir_top
   localparam axi_wide_in_addr_t HtileBaseAddr = Sam[HtileSamIdx].start_addr;
   localparam axi_wide_in_addr_t HtileBaseOffset = Sam[HtileSamIdx].end_addr - HtileBaseAddr;
 
-  h_tile i_htile_cluster_tile (
+  h_tile i_htile (
     .clk_i,
     .rst_ni,
     .test_enable_i        (test_mode_i),
