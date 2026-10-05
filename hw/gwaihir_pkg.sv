@@ -519,6 +519,18 @@ package gwaihir_pkg;
       mxdequant: 1'b1,
       mxfp16: 1'b1
   };
+  localparam idma_pkg::compute_tuning_t DmaComputeTuning = '1;
+  // iDMA timing cuts = 103; dfe_ready_ahead adds one dataflow entry per lane
+  localparam idma_pkg::timing_cuts_t DmaTimingCuts = '{
+      mx_beat_push: 1'b1,
+      dfe_ready_ahead: 1'b1,
+      mx_in_reg: 1'b0,
+      dfe_ready_cut: 1'b0,
+      dfe_reg_flags: 1'b1,
+      wdp_head_spill: 1'b1,
+      outst_cnt_reg: 1'b1
+  };
+  localparam int unsigned DmaBufferDepth = 3;
 
   localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
 
