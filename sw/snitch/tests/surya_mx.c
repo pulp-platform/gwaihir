@@ -37,7 +37,7 @@
 #include "snrt.h"
 #include "gw_hwpe_subsystem_addrmap.h"
 
-#define GW_HWPE_BASE    GW_HWPE_BASE_ADDR(snrt_cluster_alias())
+#define GW_HWPE_BASE    GW_HWPE_BASE_ADDR(gw_htile())
 #define SURYA_BASE_ADDR (GW_HWPE_BASE + GW_HWPE_ACC_OFFS)
 
 #include "surya_hal.h"

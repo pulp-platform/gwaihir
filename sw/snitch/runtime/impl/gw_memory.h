@@ -8,6 +8,12 @@
 // The H tile takes the cluster slot after the cluster array.
 #define GW_HTILE_CLUSTER_IDX SNRT_CLUSTER_NUM
 
+// Must return a pointer to the snitch_cluster_t struct
+// of the H tile.
+inline volatile snitch_cluster_t* gw_htile() {
+    return (volatile snitch_cluster_t*)&(gwaihir_addrmap_32b.htile);
+}
+
 // TODO(colluca): add alias to addrmap so this can be properly implemented
 // Must return a pointer to the snitch_cluster_t struct
 // of the cluster alias.
@@ -18,14 +24,14 @@ inline volatile snitch_cluster_t* snrt_cluster_alias() {
 // Must return a pointer to the snitch_cluster_t struct
 // of the cluster selected by cluster_idx.
 inline volatile snitch_cluster_t* snrt_cluster(int cluster_idx) {
-    if (cluster_idx == GW_HTILE_CLUSTER_IDX) {
-        return (volatile snitch_cluster_t*)&(gwaihir_addrmap_32b.htile);
-    }
     return (volatile snitch_cluster_t*)&(gwaihir_addrmap_32b.cluster[cluster_idx]);
 }
 
 // Must return a pointer to the snitch_cluster_t struct
 // of the cluster invoking the function.
 inline volatile snitch_cluster_t* snrt_cluster() {
+    if (snrt_cluster_idx() == GW_HTILE_CLUSTER_IDX) {
+        return gw_htile();
+    }
     return snrt_cluster(snrt_cluster_idx());
 }
