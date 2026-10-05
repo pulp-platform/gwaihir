@@ -25,9 +25,6 @@ SN_CFG     ?= $(GW_GEN_DIR)/snitch_cluster.json
 SN_CFG_TPL ?= $(GW_ROOT)/cfg/snitch_cluster.json.mako
 PLIC_CFG   ?= $(GW_ROOT)/cfg/rv_plic.cfg.hjson
 
-HTILE_CLUSTER_RDL = $(GW_GEN_HW_DIR)/htile.rdl
-HTILE_RDL_GEN     = $(GW_ROOT)/util/gen_htile_rdl.py
-
 # Query a value at path $(1) from the FlooNoC config
 floo_query = $(shell $(FLOO_GEN) query -c $(FLOO_CFG) $(FLOO_PARAMS) "$(1)" 2>/dev/null)
 
@@ -77,6 +74,8 @@ DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 UCIE_SLINK_NUM_LANES ?= 512
 UCIE_SLINK_EN_DDR    ?= 0
 
+HTILE_CLUSTER_RDL = $(GW_GEN_HW_DIR)/htile.rdl
+HTILE_RDL_PATCH   = $(GW_ROOT)/util/htile_rdl_patch.py
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
 $(GW_GEN_DIR) $(GW_GEN_SW_DIR):
@@ -193,13 +192,9 @@ sn-hw-clean:
 # H-tile #
 ##########
 
-$(HTILE_CLUSTER_RDL): $(SN_CFG) $(HTILE_RDL_GEN) $(SN_CLUSTER_GEN) $(SN_CLUSTER_GEN_SRC) \
-    $(SN_ROOT)/hw/snitch_cluster/src/snitch_cluster.rdl.tpl | $(GW_GEN_HW_DIR)
-	$(HTILE_RDL_GEN) \
-	  --cfg $(SN_CFG) \
-	  --sn-root $(SN_ROOT) \
-	  --cluster-gen $(SN_CLUSTER_GEN) \
-	  --out-dir $(GW_GEN_HW_DIR)
+$(HTILE_CLUSTER_RDL): $(SN_CLUSTER_RDL) $(HTILE_RDL_PATCH) | $(GW_GEN_HW_DIR)
+	cp $< $@
+	$(HTILE_RDL_PATCH) $@
 
 .PHONY: htile-hw-clean htile-hw-all
 
