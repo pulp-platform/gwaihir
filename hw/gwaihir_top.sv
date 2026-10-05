@@ -146,7 +146,10 @@ module gwaihir_top
     );
   end
 
-  // Temporary h-tile : replica of a cluster tile
+  ////////////
+  // H-tile //
+  ////////////
+
   logic [NrCores-1:0] htile_debug_req, htile_meip, htile_mtip, htile_msip;
 
   assign htile_debug_req = '0;
