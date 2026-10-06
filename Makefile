@@ -227,7 +227,7 @@ LPDDR_COMMIT ?= 70de7b091a83af4f4f764b45b15a308a5498525a
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 TUM_NPU_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/tum_npu.git
-TUM_NPU_COMMIT ?= 4e4f945f77718413f14591dd49d20006c549e1cd
+TUM_NPU_COMMIT ?= 805cd653606e45299117e827446faddd9beac2f0
 TUM_NPU_DIR = $(GW_ROOT)/.deps/tum_npu
 
 .PHONY: init-pd clean-pd update-pd-commit
