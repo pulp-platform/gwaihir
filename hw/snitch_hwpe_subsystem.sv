@@ -56,6 +56,7 @@ module snitch_hwpe_subsystem
 
   // Machine HWPE Interrupt
   logic [NrCores-1:0] hwpe_evt_d, hwpe_evt_q;
+  logic [1:0][NrCores-1:0] hwpe_irq_evt;
 
   hwpe_ctrl_intf_periph #(.ID_WIDTH(IdWidth)) periph[0:1] (.clk(clk_i));
 
@@ -175,11 +176,14 @@ module snitch_hwpe_subsystem
 
 
   for (genvar ii = 0; ii < NrCores; ii++) begin : gen_hwpe_evt
+    assign hwpe_irq_evt[0][ii] = evt[0][ii][1];
+    assign hwpe_irq_evt[1][ii] = |evt[1][ii];
+
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (~rst_ni) begin
         hwpe_evt_q[ii] <= '0;
       end else begin
-        if (evt[mux_sel][ii]) begin
+        if (hwpe_irq_evt[mux_sel][ii]) begin
           hwpe_evt_q[ii] <= 1'b1;
         end
         else if (hwpe_ctrl_req_i.q.addr[7:0] == 'h94 && hwpe_ctrl_req_i.q_valid &&
