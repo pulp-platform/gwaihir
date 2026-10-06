@@ -7,13 +7,7 @@
 module tum_npu_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
-#(
-
-  parameter logic        [AxiCfgW.AddrWidth-1:0] TumNpuBaseAddr  = 48'h0000_4000_0000,
-  /// Max outstanding transactions on the NPU manager port.
-  parameter int unsigned                         MstMaxUniqIds   = 4,
-  parameter int unsigned                         MstMaxTxnsPerId = 4
-) (
+(
   input  logic clk_i,
   input  logic rst_ni,
   input  logic test_enable_i,

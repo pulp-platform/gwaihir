@@ -429,9 +429,7 @@ module gwaihir_top
 
   // TODO: route these to the PLIC / a `gw_tile_regs` block for the TUM_NPU tile.
 
-  tum_npu_tile #(
-    .TumNpuBaseAddr(TumNpuBaseAddr)
-  ) i_tum_npu_tile (
+  tum_npu_tile i_tum_npu_tile (
     .clk_i,
     .rst_ni,
     .test_enable_i(test_mode_i),
