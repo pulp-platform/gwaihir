@@ -41,3 +41,14 @@ static int ucie_tile_set_half_bw(volatile gw_ucie_tile_regs_t *cfg, int half_bw)
   cfg->phy_mode.f.half_bw_en = half_bw ? 0x1 : 0x0;
   return cfg->phy_mode.f.half_bw_en == (half_bw ? 0x1 : 0x0);
 }
+
+// Request the UCIe RDI link to go ACTIVE (`en` = 1) or release it (`en` = 0)
+static int ucie_tile_link_enable(volatile gw_ucie_tile_regs_t *cfg, int en) {
+  cfg->link_ctrl.f.en = en ? 0x1 : 0x0;
+  return cfg->link_ctrl.f.en == (en ? 0x1 : 0x0);
+}
+
+// Returns 1 once the UCIe RDI link reports ACTIVE
+static int ucie_tile_link_active(volatile gw_ucie_tile_regs_t *cfg) {
+  return cfg->link_status.f.active;
+}

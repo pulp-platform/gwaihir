@@ -45,6 +45,46 @@ addrmap gw_ucie_tile_regs {
             reset = 0; // Full bandwidth by default
         } half_bw_en;
     } phy_mode;
+
+    reg link_ctrl {
+        desc = "UCIe RDI link control";
+        field {
+            desc = "Request the RDI ACTIVE state (lp_state_req) and keep the PHY
+                     clocks awake (lp_wake_req)";
+            hw = r;
+            sw = rw;
+            reset = 0; // Link is not requested by default
+        } en;
+    } link_ctrl;
+
+    reg link_status {
+        desc = "UCIe RDI link status";
+        field {
+            desc = "pl_state_sts == ACTIVE";
+            hw = w;
+            sw = r;
+        } active[0:0];
+        field {
+            desc = "Fatal, non-fatal or training error reported by the PHY";
+            hw = w;
+            sw = r;
+        } error[1:1];
+        field {
+            desc = "Sticky: at least one received RDI word was dropped";
+            hw = w;
+            sw = r;
+        } rx_drop_err[2:2];
+        field {
+            desc = "Raw RDI link state (pl_state_sts)";
+            hw = w;
+            sw = r;
+        } state[7:4];
+        field {
+            desc = "Saturating count of dropped RDI words";
+            hw = w;
+            sw = r;
+        } rx_drop_count[31:16];
+    } link_status;
 };
 
 `endif // __GW_UCIE_TILE_REGS_RDL__
