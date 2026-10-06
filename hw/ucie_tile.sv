@@ -24,21 +24,50 @@ module ucie_tile
   input  logic                              ucie_id_i,
   // Sam idx
   input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
-  // Router mesh ports
-  output floo_req_t  [          West:North] floo_req_o,
-  input  floo_rsp_t  [          West:North] floo_rsp_i,
-  output floo_wide_t [          West:North] floo_wide_o,
-  input  floo_req_t  [          West:North] floo_req_i,
-  output floo_rsp_t  [          West:North] floo_rsp_o,
-  input  floo_wide_t [          West:North] floo_wide_i,
+  // Router mesh ports. There is no South port: both UCIe tiles sit on the
+  // bottom row of the mesh, where South is tied off anyway.
+  output floo_req_t                         floo_req_north_o,
+  input  floo_rsp_t                         floo_rsp_north_i,
+  output floo_wide_t                        floo_wide_north_o,
+  input  floo_req_t                         floo_req_north_i,
+  output floo_rsp_t                         floo_rsp_north_o,
+  input  floo_wide_t                        floo_wide_north_i,
+  output floo_req_t                         floo_req_east_o,
+  input  floo_rsp_t                         floo_rsp_east_i,
+  output floo_wide_t                        floo_wide_east_o,
+  input  floo_req_t                         floo_req_east_i,
+  output floo_rsp_t                         floo_rsp_east_o,
+  input  floo_wide_t                        floo_wide_east_i,
+  output floo_req_t                         floo_req_west_o,
+  input  floo_rsp_t                         floo_rsp_west_i,
+  output floo_wide_t                        floo_wide_west_o,
+  input  floo_req_t                         floo_req_west_i,
+  output floo_rsp_t                         floo_rsp_west_o,
+  input  floo_wide_t                        floo_wide_west_i,
 
-  // UCIe PHY interface (to the peer tile)
-  output logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out_o,
-  output logic [NumChannels-1:0]                      phy_data_out_valid_o,
-  input  logic [NumChannels-1:0]                      phy_data_out_ready_i,
-  input  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in_i,
-  input  logic [NumChannels-1:0]                      phy_data_in_valid_i,
-  output logic [NumChannels-1:0]                      phy_data_in_ready_o
+  // UCIe PHY reference clock (100 MHz)
+  input  logic       ucie_refclk_i,
+  // UCIe mainband bumps
+  output logic       ucie_txckp_o,
+  output logic       ucie_txckn_o,
+  output logic [7:0] ucie_txdata_o,
+  output logic       ucie_txtrk_o,
+  output logic       ucie_txvld_o,
+  input  logic       ucie_rxckp_i,
+  input  logic       ucie_rxckn_i,
+  input  logic [7:0] ucie_rxdata_i,
+  input  logic       ucie_rxtrk_i,
+  input  logic       ucie_rxvld_i,
+  // UCIe sideband bumps
+  output logic       ucie_txclksb_o,
+  output logic       ucie_txdatasb_o,
+  input  logic       ucie_rxclksb_i,
+  input  logic       ucie_rxdatasb_i,
+  // UCIe analog / I3C bumps
+  inout  wire        ucie_atest0_io,
+  inout  wire        ucie_rref_io,
+  inout  wire        ucie_scl_io,
+  inout  wire        ucie_sda_io
 );
 
   // Half-bandwidth mode for debug output channels
@@ -71,6 +100,7 @@ module ucie_tile
 
   // Clock/rst configuration registers.
   gw_ucie_tile_regs_pkg::gw_ucie_tile_regs__out_t hwif_out;
+  gw_ucie_tile_regs_pkg::gw_ucie_tile_regs__in_t  hwif_in;
 
   // Slink interface
   logic [NumChannels-1:0][NumBitsPerCycle-1:0] slink_phy_data_out;
@@ -115,13 +145,35 @@ module ucie_tile
     .offload_narrow_rsp_i('0)
   );
 
-  // Connect all 4 mesh directions; top-level mesh handles boundary tie-offs
-  assign floo_req_o                      = router_floo_req_out[West:North];
-  assign router_floo_req_in[West:North]  = floo_req_i;
-  assign floo_rsp_o                      = router_floo_rsp_out[West:North];
-  assign router_floo_rsp_in[West:North]  = floo_rsp_i;
-  assign floo_wide_o                     = router_floo_wide_out[West:North];
-  assign router_floo_wide_in[West:North] = floo_wide_i;
+  // Connect the North, East and West mesh directions; the top-level mesh
+  // handles the remaining boundary tie-offs
+  assign floo_req_north_o           = router_floo_req_out[North];
+  assign floo_rsp_north_o           = router_floo_rsp_out[North];
+  assign floo_wide_north_o          = router_floo_wide_out[North];
+  assign router_floo_req_in[North]  = floo_req_north_i;
+  assign router_floo_rsp_in[North]  = floo_rsp_north_i;
+  assign router_floo_wide_in[North] = floo_wide_north_i;
+
+  assign floo_req_east_o           = router_floo_req_out[East];
+  assign floo_rsp_east_o           = router_floo_rsp_out[East];
+  assign floo_wide_east_o          = router_floo_wide_out[East];
+  assign router_floo_req_in[East]  = floo_req_east_i;
+  assign router_floo_rsp_in[East]  = floo_rsp_east_i;
+  assign router_floo_wide_in[East] = floo_wide_east_i;
+
+  assign floo_req_west_o           = router_floo_req_out[West];
+  assign floo_rsp_west_o           = router_floo_rsp_out[West];
+  assign floo_wide_west_o          = router_floo_wide_out[West];
+  assign router_floo_req_in[West]  = floo_req_west_i;
+  assign router_floo_rsp_in[West]  = floo_rsp_west_i;
+  assign router_floo_wide_in[West] = floo_wide_west_i;
+
+  // South is never used: XY routing sends nothing south of the bottom row.
+  // Tie the inputs off and leave the outputs open, so synthesis removes the
+  // router's South input and output stages.
+  assign router_floo_req_in[South]  = '0;
+  assign router_floo_rsp_in[South]  = '0;
+  assign router_floo_wide_in[South] = '0;
 
   /////////////
   // Chimney //
@@ -459,6 +511,7 @@ module ucie_tile
     .s_apb_prdata(cfg_apb_rsp[ApbTile].prdata),
     .s_apb_pready(cfg_apb_rsp[ApbTile].pready),
     .s_apb_pslverr(cfg_apb_rsp[ApbTile].pslverr),
+    .hwif_in(hwif_in),
     .hwif_out(hwif_out)
   );
 
@@ -613,7 +666,7 @@ module ucie_tile
   /////////////////
 
   // Serializer PHY backend: the stream between the bandwidth-mode adapter and
-  // the PCS wrapper (`ucie_pcs_wrap`), which owns everything PHY/PCS-specific.
+  // the PCS wrapper (`ucie_pcs_wrap_stub`), which owns everything PHY/PCS-specific.
   logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_out_data;
   logic [NumChannels-1:0]                      phy_out_valid;
   logic [NumChannels-1:0]                      phy_out_ready;
@@ -725,30 +778,52 @@ module ucie_tile
   // PCS wrapper //
   /////////////////
 
-  ucie_pcs_wrap #(
+  ucie_pcs_wrap_stub #(
     .NumChannels    (NumChannels),
     .NumBitsPerCycle(NumBitsPerCycle),
     .apb_req_t      (ucie_cfg_apb_req_t),
     .apb_resp_t     (ucie_cfg_apb_resp_t)
   ) i_ucie_pcs_wrap (
-    .clk_i     (tile_clk),
-    .rst_ni    (tile_rst_n),
-    .rst_apb_ni(tile_rst_apb_n),
-    .clk_ena_i (hwif_out.clk.en.value),
-    .tx_data_i (phy_out_data),
-    .tx_valid_i(phy_out_valid),
-    .tx_ready_o(phy_out_ready),
-    .rx_data_o (phy_in_data),
-    .rx_valid_o(phy_in_valid),
-    .rx_ready_i(phy_in_ready),
-    .phy_data_out_o,
-    .phy_data_out_valid_o,
-    .phy_data_out_ready_i,
-    .phy_data_in_i,
-    .phy_data_in_valid_i,
-    .phy_data_in_ready_o,
-    .apb_req_i (cfg_apb_req[ApbUcie]),
-    .apb_rsp_o (cfg_apb_rsp[ApbUcie])
+    .clk_i          (tile_clk),
+    .rst_ni         (tile_rst_n),
+    .rst_apb_ni     (tile_rst_apb_n),
+    .clk_ena_i      (hwif_out.clk.en.value),
+    .tx_data_i      (phy_out_data),
+    .tx_valid_i     (phy_out_valid),
+    .tx_ready_o     (phy_out_ready),
+    .rx_data_o      (phy_in_data),
+    .rx_valid_o     (phy_in_valid),
+    .rx_ready_i     (phy_in_ready),
+    // Link control / status (tile cfg registers)
+    .link_en_i      (hwif_out.link_ctrl.en.value),
+    .link_active_o  (hwif_in.link_status.active.next),
+    .link_state_o   (hwif_in.link_status.state.next),
+    .link_error_o   (hwif_in.link_status.error.next),
+    .rx_drop_err_o  (hwif_in.link_status.rx_drop_err.next),
+    .rx_drop_count_o(hwif_in.link_status.rx_drop_count.next),
+    .refclk_i       (ucie_refclk_i),
+    // Bumps
+    .txckp_o        (ucie_txckp_o),
+    .txckn_o        (ucie_txckn_o),
+    .txdata_o       (ucie_txdata_o),
+    .txtrk_o        (ucie_txtrk_o),
+    .txvld_o        (ucie_txvld_o),
+    .rxckp_i        (ucie_rxckp_i),
+    .rxckn_i        (ucie_rxckn_i),
+    .rxdata_i       (ucie_rxdata_i),
+    .rxtrk_i        (ucie_rxtrk_i),
+    .rxvld_i        (ucie_rxvld_i),
+    .txclksb_o      (ucie_txclksb_o),
+    .txdatasb_o     (ucie_txdatasb_o),
+    .rxclksb_i      (ucie_rxclksb_i),
+    .rxdatasb_i     (ucie_rxdatasb_i),
+    .atest0_io      (ucie_atest0_io),
+    .rref_io        (ucie_rref_io),
+    .scl_io         (ucie_scl_io),
+    .sda_io         (ucie_sda_io),
+    .apb_req_i      (cfg_apb_req[ApbUcie]),
+    .apb_rsp_o      (cfg_apb_rsp[ApbUcie]),
+    .irq_o          (  /* Unconnect */)
   );
 
 endmodule : ucie_tile

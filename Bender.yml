@@ -118,11 +118,10 @@ sources:
 
   - target: not(ucie)
     files:
-      - hw/ucie_pcs_wrap.sv
+      - hw/ucie_pcs_wrap_stub.sv
   - target: ucie
     files:
-      - .deps/ucie/hw/ucie_pcs_wrap.sv
-
+      - .deps/ucie/hw/ucie_pcs_wrap_stub.sv
   # Level 3
   - hw/ucie_tile.sv
   - hw/cluster_tile.sv
