@@ -142,40 +142,6 @@ module ucie_tile
   floo_gwaihir_noc_pkg::collective_axi_wide_in_req_t axi_wide_in_mux_req;
   floo_gwaihir_noc_pkg::collective_axi_wide_in_rsp_t axi_wide_in_mux_rsp;
 
-  localparam floo_pkg::axi_cfg_t AxiCfgWCollective = '{
-      AddrWidth: AxiCfgW.AddrWidth,
-      DataWidth: AxiCfgW.DataWidth,
-      UserWidth: $bits(collective_axi_wide_out_user_t),
-      InIdWidth: AxiCfgW.InIdWidth,
-      OutIdWidth: AxiCfgW.OutIdWidth
-  };
-
-  // Narrow config with the narrow `user.user` field stripped, i.e. with only
-  // the collective fields in the user signal, as in the wide channel
-  localparam floo_pkg::axi_cfg_t AxiCfgNCollective = '{
-      AddrWidth: AxiCfgN.AddrWidth,
-      DataWidth: AxiCfgN.DataWidth,
-      UserWidth: $bits(collective_axi_wide_out_user_t),
-      InIdWidth: AxiCfgN.InIdWidth,
-      OutIdWidth: AxiCfgN.OutIdWidth
-  };
-
-  // Narrow AXI with the narrow `user.user` field stripped
-  `AXI_TYPEDEF_ALL_CT(collective_axi_narrow_nouser, collective_axi_narrow_nouser_req_t,
-                      collective_axi_narrow_nouser_rsp_t, axi_narrow_out_addr_t,
-                      axi_narrow_out_id_t, axi_narrow_out_data_t, axi_narrow_out_strb_t,
-                      collective_axi_wide_out_user_t)
-
-  // NW join AXI interface, carrying the collective fields in the user signal
-  // through the serial link
-  typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] axi_ucie_join_id_t;
-  `AXI_TYPEDEF_ALL_CT(collective_axi_ucie_join, collective_axi_ucie_join_req_t,
-                      collective_axi_ucie_join_rsp_t, axi_wide_out_addr_t, axi_ucie_join_id_t,
-                      axi_wide_out_data_t, axi_wide_out_strb_t, collective_axi_wide_out_user_t)
-
-  collective_axi_ucie_join_req_t axi_ucie_join_out_req;
-  collective_axi_ucie_join_rsp_t axi_ucie_join_out_rsp;
-
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
     .AxiCfgW             (floo_gwaihir_noc_pkg::AxiCfgW),
@@ -348,7 +314,7 @@ module ucie_tile
     .AxiAddrWidth   (AxiCfgN.AddrWidth),
     .AxiDataWidth   (AxiCfgN.DataWidth),
     .AxiIdWidth     (AxiCfgN.OutIdWidth),
-    .AxiUserWidth   ($bits(collective_axi_narrow_out_user_t)),
+    .AxiUserWidth   (AxiCfgN.UserWidth),
     .AxiMaxWriteTxns(floo_pkg::ChimneyDefaultCfg.MaxTxns),
     .AxiMaxReadTxns (floo_pkg::ChimneyDefaultCfg.MaxTxns),
     .full_req_t     (floo_gwaihir_noc_pkg::collective_axi_narrow_out_req_t),
@@ -511,52 +477,101 @@ module ucie_tile
   );
 `endif
 
-  //////////////////
-  // NW Join Path //
-  /////////////////
+  ////////////////////////////////////////////
+  // Drop atomic ID from narrow join branch //
+  ////////////////////////////////////////////
+
+  // Narrow AXI with the narrow `user.user` field stripped, dropping the atomic ID
+  `AXI_TYPEDEF_ALL_CT(collective_axi_narrow_noatop, collective_axi_narrow_noatop_req_t,
+                      collective_axi_narrow_noatop_rsp_t, axi_narrow_out_addr_t,
+                      axi_narrow_out_id_t, axi_narrow_out_data_t, axi_narrow_out_strb_t,
+                      collective_axi_wide_out_user_t)
 
   // Strip the narrow `user.user` field, keeping the collective fields, so the
   // narrow user matches the wide user before joining.
-  collective_axi_narrow_nouser_req_t axi_narrow_nouser_req;
-  collective_axi_narrow_nouser_rsp_t axi_narrow_nouser_rsp;
+  collective_axi_narrow_noatop_req_t axi_narrow_noatop_req;
+  collective_axi_narrow_noatop_rsp_t axi_narrow_noatop_rsp;
 
   always_comb begin
-    `AXI_SET_REQ_STRUCT(axi_narrow_nouser_req, axi_narrow_xbar_out_req[JOIN])
-    axi_narrow_nouser_req.aw.user = '{
+    `AXI_SET_REQ_STRUCT(axi_narrow_noatop_req, axi_narrow_xbar_out_req[JOIN])
+    axi_narrow_noatop_req.aw.user = '{
         collective_mask: axi_narrow_xbar_out_req[JOIN].aw.user.collective_mask,
         collective_op: axi_narrow_xbar_out_req[JOIN].aw.user.collective_op
     };
-    axi_narrow_nouser_req.w.user = '{
+    axi_narrow_noatop_req.w.user = '{
         collective_mask: axi_narrow_xbar_out_req[JOIN].w.user.collective_mask,
         collective_op: axi_narrow_xbar_out_req[JOIN].w.user.collective_op
     };
-    axi_narrow_nouser_req.ar.user = '{
+    axi_narrow_noatop_req.ar.user = '{
         collective_mask: axi_narrow_xbar_out_req[JOIN].ar.user.collective_mask,
         collective_op: axi_narrow_xbar_out_req[JOIN].ar.user.collective_op
     };
 
-    `AXI_SET_RESP_STRUCT(axi_narrow_xbar_out_rsp[JOIN], axi_narrow_nouser_rsp)
+    `AXI_SET_RESP_STRUCT(axi_narrow_xbar_out_rsp[JOIN], axi_narrow_noatop_rsp)
     axi_narrow_xbar_out_rsp[JOIN].b.user = '{
-        collective_mask: axi_narrow_nouser_rsp.b.user.collective_mask,
-        collective_op: axi_narrow_nouser_rsp.b.user.collective_op,
+        collective_mask: axi_narrow_noatop_rsp.b.user.collective_mask,
+        collective_op: axi_narrow_noatop_rsp.b.user.collective_op,
         user: '0
     };
     axi_narrow_xbar_out_rsp[JOIN].r.user = '{
-        collective_mask: axi_narrow_nouser_rsp.r.user.collective_mask,
-        collective_op: axi_narrow_nouser_rsp.r.user.collective_op,
+        collective_mask: axi_narrow_noatop_rsp.r.user.collective_mask,
+        collective_op: axi_narrow_noatop_rsp.r.user.collective_op,
         user: '0
     };
   end
 
+  //////////////////
+  // NW Join Path //
+  //////////////////
+
+  // Narrow config with the `user.user` field stripped
+  localparam axi_cfg_t AxiCfgNNoAtop = '{
+      AddrWidth: AxiCfgN.AddrWidth,
+      DataWidth: AxiCfgN.DataWidth,
+      InIdWidth: AxiCfgN.InIdWidth,
+      OutIdWidth: AxiCfgN.OutIdWidth,
+      UserWidth: AxiCfgW.UserWidth
+  };
+
+  // SLINK does not support out-of-order transactions, so we reduce the ID width
+  // to 1 bit. Note: this currently reduces the input ID width, but the mux inside
+  // the join will add back an extra bit, so narrow and wide transactions could
+  // still happen to complete out of order.
+  localparam int unsigned AxiIdConvWidth = 1;
+
+  // Narrow/wide join config for `floo_nw_join`. The user signal is wide enough
+  // to carry the collective fields through the serial link. The output ID width
+  // is overridden since the join reduces the IDs to `AxiIdConvWidth` bits before
+  // muxing narrow and wide (adding 1 bit).
+  function automatic axi_cfg_t get_ucie_join_cfg();
+    axi_cfg_t cfg;
+    cfg            = floo_pkg::axi_join_cfg_max(AxiCfgNNoAtop, AxiCfgW);
+    cfg.OutIdWidth = AxiIdConvWidth + 1;
+    return cfg;
+  endfunction
+
+  localparam axi_cfg_t AxiCfgUcieJoin = get_ucie_join_cfg();
+
+  // NW join AXI interface, carrying the collective fields in the user signal
+  // through the serial link
+  typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] axi_ucie_join_id_t;
+  `AXI_TYPEDEF_ALL_CT(collective_axi_ucie_join, collective_axi_ucie_join_req_t,
+                      collective_axi_ucie_join_rsp_t, axi_wide_out_addr_t, axi_ucie_join_id_t,
+                      axi_wide_out_data_t, axi_wide_out_strb_t, collective_axi_wide_out_user_t)
+
+  collective_axi_ucie_join_req_t axi_ucie_join_out_req;
+  collective_axi_ucie_join_rsp_t axi_ucie_join_out_rsp;
+
   floo_nw_join #(
-    .AxiCfgN          (axi_cfg_swap_iw(AxiCfgNCollective)),
-    .AxiCfgW          (axi_cfg_swap_iw(AxiCfgWCollective)),
+    .AxiCfgN          (axi_cfg_swap_iw(AxiCfgNNoAtop)),
+    .AxiCfgW          (axi_cfg_swap_iw(AxiCfgW)),
     .AxiCfgJoin       (axi_cfg_swap_iw(AxiCfgUcieJoin)),
+    .AxiIdConvWidth   (AxiIdConvWidth),
     .EnAtopAdapter    (1'b0),
     .FilterNarrowAtops(1'b1),
     .AxiNarrowMaxTxns (32),
-    .axi_narrow_req_t (collective_axi_narrow_nouser_req_t),
-    .axi_narrow_rsp_t (collective_axi_narrow_nouser_rsp_t),
+    .axi_narrow_req_t (collective_axi_narrow_noatop_req_t),
+    .axi_narrow_rsp_t (collective_axi_narrow_noatop_rsp_t),
     .axi_wide_req_t   (collective_axi_wide_out_req_t),
     .axi_wide_rsp_t   (collective_axi_wide_out_rsp_t),
     .axi_req_t        (collective_axi_ucie_join_req_t),
@@ -565,8 +580,8 @@ module ucie_tile
     .clk_i           (tile_clk),
     .rst_ni          (tile_rst_n),
     .test_enable_i   (test_enable_i),
-    .axi_narrow_req_i(axi_narrow_nouser_req),
-    .axi_narrow_rsp_o(axi_narrow_nouser_rsp),
+    .axi_narrow_req_i(axi_narrow_noatop_req),
+    .axi_narrow_rsp_o(axi_narrow_noatop_rsp),
     .axi_wide_req_i  (axi_wide_out_req),
     .axi_wide_rsp_o  (axi_wide_out_rsp),
     .axi_req_o       (axi_ucie_join_out_req),

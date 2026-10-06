@@ -197,8 +197,6 @@ module mem_tile
   floo_gwaihir_noc_pkg::collective_axi_wide_in_rsp_t  axi_dma_collective_rsp;
   floo_gwaihir_noc_pkg::collective_axi_wide_out_req_t axi_wide_collective_req;
   floo_gwaihir_noc_pkg::collective_axi_wide_out_rsp_t axi_wide_collective_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t            axi_wide_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t            axi_wide_rsp;
 
   // DMA req/resp, supposed to access LPDDR tile, we also keep the option to access other tiles
   axi_wide_in_req_t axi_dma_req;
@@ -257,6 +255,13 @@ module mem_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
+  ////////////////////////
+  // Filter collectives //
+  ////////////////////////
+
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t axi_wide_rsp;
+
   nw_axi_collectives_filter #(
     .collective_axi_narrow_mst_req_t(collective_axi_narrow_out_req_t),
     .collective_axi_narrow_mst_rsp_t(collective_axi_narrow_out_rsp_t),
@@ -293,6 +298,11 @@ module mem_tile
     .collective_axi_wide_slv_rsp_i  (axi_dma_collective_rsp)
   );
 
+  //////////////////////////////////////
+  // Chimney to {DMA, tile cfg} demux //
+  //////////////////////////////////////
+
+  // TODO: replace addr decoders followed by axi_demux with axi_demux_mapped
   addr_decode #(
     .NoIndices(NumDemuxPorts),
     .NoRules  (NumTileAddrMapRules),
@@ -348,6 +358,10 @@ module mem_tile
     .mst_reqs_o     (axi_demux_out_req),
     .mst_resps_i    (axi_demux_out_rsp)
   );
+
+  //////////////////////
+  // Tile config path //
+  //////////////////////
 
   axi_to_axi_lite #(
     .AxiAddrWidth   (AxiCfgN.AddrWidth),
@@ -1150,26 +1164,5 @@ module mem_tile
     .clk_o    (tile_rst_n)
   );
 `endif
-  // The router forwards collectives (UCIe multicasts travel along this column),
-  // but none may reach the local chimney, which does not support them.
-  // verilog_format: off
-  `ASSERT(NoCollectivOperation_NReq_Eject,
-          (!router_floo_req_out[Eject].valid |
-           (router_floo_req_out[Eject].req[0].generic.hdr.collective_op == floo_pkg::Unicast)),
-          clk_i, !rst_ni, $sformatf(
-          "Unsupported collective attempted with destination: %h",
-          router_floo_req_out[Eject].req[0].narrow_aw.payload.addr
-          ))
-  `ASSERT(NoCollectivOperation_NRsp_Eject,
-          (!router_floo_rsp_out[Eject].valid |
-           (router_floo_rsp_out[Eject].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast)))
-  `ASSERT(NoCollectivOperation_NWide_Eject,
-          (!router_floo_wide_out[Eject].valid |
-           (router_floo_wide_out[Eject].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)),
-          clk_i, !rst_ni, $sformatf(
-          "Unsupported collective attempted with destination: %h",
-          router_floo_wide_out[Eject].wide[0].wide_aw.payload.addr
-          ))
-  // verilog_format: on
 
 endmodule

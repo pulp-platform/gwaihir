@@ -146,10 +146,6 @@ module spm_tile
   floo_gwaihir_noc_pkg::collective_axi_narrow_out_rsp_t collective_axi_narrow_out_rsp;
   floo_gwaihir_noc_pkg::collective_axi_wide_out_req_t   collective_axi_wide_out_req;
   floo_gwaihir_noc_pkg::collective_axi_wide_out_rsp_t   collective_axi_wide_out_rsp;
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t            axi_narrow_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t            axi_narrow_rsp;
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t              axi_wide_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t              axi_wide_rsp;
 
   axi_to_mem_req_t axi_from_chimney_req, axi_req, axi_req_cut;
   axi_to_mem_rsp_t axi_to_chimney_rsp, axi_rsp, axi_rsp_cut;
@@ -205,6 +201,15 @@ module spm_tile
     .floo_rsp_i          (router_floo_rsp_out[Eject]),
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
+
+  ////////////////////////
+  // Filter collectives //
+  ////////////////////////
+
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_rsp;
 
   nw_axi_collectives_filter #(
     .collective_axi_narrow_mst_req_t(collective_axi_narrow_out_req_t),

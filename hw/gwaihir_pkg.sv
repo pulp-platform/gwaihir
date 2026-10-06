@@ -582,46 +582,6 @@ package gwaihir_pkg;
     return en_half_shift ? ingress_half_shift(cleared) : cleared;
   endfunction
 
-  // Narrow config without ATOP support
-  localparam axi_cfg_t AxiCfgNoAtop = '{
-      AddrWidth: AxiCfgN.AddrWidth,
-      DataWidth: AxiCfgN.DataWidth,
-      InIdWidth: 1,
-      OutIdWidth: 1,
-      UserWidth: 1
-  };
-
-  // Narrow/wide configs carrying only the collective fields in the user signal
-  // (the narrow `user.user` field is stripped before joining).
-  localparam axi_cfg_t AxiCfgNoAtopCollective = '{
-      AddrWidth: AxiCfgNoAtop.AddrWidth,
-      DataWidth: AxiCfgNoAtop.DataWidth,
-      InIdWidth: AxiCfgNoAtop.InIdWidth,
-      OutIdWidth: AxiCfgNoAtop.OutIdWidth,
-      UserWidth: $bits(collective_axi_wide_out_user_t)
-  };
-  localparam axi_cfg_t AxiCfgWCollectiveUcie = '{
-      AddrWidth: AxiCfgW.AddrWidth,
-      DataWidth: AxiCfgW.DataWidth,
-      InIdWidth: AxiCfgW.InIdWidth,
-      OutIdWidth: AxiCfgW.OutIdWidth,
-      UserWidth: $bits(collective_axi_wide_out_user_t)
-  };
-
-  // Narrow/wide join types for `floo_nw_join`. The user signal is wide enough
-  // to carry the collective fields through the serial link.
-  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg_max(
-      AxiCfgNoAtopCollective, AxiCfgWCollectiveUcie
-  );
-
-  typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] utile_nw_join_id_t;
-  typedef logic [AxiCfgUcieJoin.UserWidth-1:0] utile_nw_join_user_t;
-
-  `AXI_TYPEDEF_ALL_CT(axi_utile_nw_join, axi_utile_nw_join_req_t, axi_utile_nw_join_rsp_t,
-                      axi_wide_in_addr_t, utile_nw_join_id_t, axi_wide_in_data_t,
-                      axi_wide_in_strb_t, utile_nw_join_user_t)
-
-
   localparam int unsigned UcieCfgRegDataWidth = UCIE_SLINK_REG_DATA_WIDTH;
 
   typedef logic [UcieCfgRegDataWidth-1:0] ucie_cfg_reg_data_t;
@@ -635,13 +595,6 @@ package gwaihir_pkg;
   // PCIe Tile  //
   ////////////////
 
-  // The PCIe controller does not understand collectives: it sees only the plain AXI `user` bits
-  // that the NoC's narrow `user` carries next to the collective fields. `cfg/gwaihir_noc.yml`
-  // sizes those bits to the cluster's atomic ID, which is the contract
-  // `cfg/snitch_cluster.json.mako` documents, so take the width from there rather than restate it.
-  // These types live here, and not in the controller's own package, so that the open-source build
-  // needs nothing from the closed-source PCIe repository.
-  // (`NarrowUserWidth` is the whole struct, collective fields included, so it is not the one.)
   localparam int unsigned PcieAxiUserWidth = snitch_cluster_wrapper_pkg::AtomicIdWidth;
 
   typedef logic [PcieAxiUserWidth-1:0] pcie_axi_user_t;

@@ -463,18 +463,4 @@ module cheshire_tile
     );
   end
 
-  // The router forwards collectives passing through this tile,
-  // but none may reach the local chimney, which does not support them.
-  // verilog_format: off
-  `ASSERT(NoCollectivOperation_NReq_Eject,
-          (!router_floo_req_out[Eject].valid |
-           (router_floo_req_out[Eject].req[0].generic.hdr.collective_op == floo_pkg::Unicast)))
-  `ASSERT(NoCollectivOperation_NRsp_Eject,
-          (!router_floo_rsp_out[Eject].valid |
-           (router_floo_rsp_out[Eject].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast)))
-  `ASSERT(NoCollectivOperation_NWide_Eject,
-          (!router_floo_wide_out[Eject].valid |
-           (router_floo_wide_out[Eject].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)))
-  // verilog_format: on
-
 endmodule
