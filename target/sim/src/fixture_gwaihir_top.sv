@@ -53,6 +53,17 @@ module fixture_gwaihir_top;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o;
 
+  logic [NumUcieTiles-1:0]      ucie_txckp, ucie_txckn, ucie_txtrk, ucie_txvld;
+  logic [NumUcieTiles-1:0]      ucie_rxckp, ucie_rxckn, ucie_rxtrk, ucie_rxvld;
+  logic [NumUcieTiles-1:0][7:0] ucie_txdata, ucie_rxdata;
+
+  // UCIe PHY reference clock (100 MHz), needed by the closed-source PHY model
+  logic ucie_refclk;
+  initial begin
+    ucie_refclk = 1'b0;
+    forever #(5ns) ucie_refclk = ~ucie_refclk;
+  end
+
   axi_llc_req_t axi_llc_mst_req;
   axi_llc_rsp_t axi_llc_mst_rsp;
 
@@ -121,9 +132,35 @@ module fixture_gwaihir_top;
     .pcie_jtag_phys_tms_i  (1'b0),
     .pcie_jtag_phys_trst_ni(1'b1),
     .pcie_jtag_phys_tdo_o  (),
+    .ucie_refclk_i         ({NumUcieTiles{ucie_refclk}}),
+    .ucie_txckp_o          (ucie_txckp),
+    .ucie_txckn_o          (ucie_txckn),
+    .ucie_txdata_o         (ucie_txdata),
+    .ucie_txtrk_o          (ucie_txtrk),
+    .ucie_txvld_o          (ucie_txvld),
+    .ucie_rxckp_i          (ucie_rxckp),
+    .ucie_rxckn_i          (ucie_rxckn),
+    .ucie_rxdata_i         (ucie_rxdata),
+    .ucie_rxtrk_i          (ucie_rxtrk),
+    .ucie_rxvld_i          (ucie_rxvld),
     .axi_llc_mst_req_o     (axi_llc_mst_req),
     .axi_llc_mst_rsp_i     (axi_llc_mst_rsp)
   );
+
+  ////////////////////////
+  //  UCIe bump wiring  //
+  ////////////////////////
+
+  // Package-level loopback: the TX bumps of each UCIe tile drive the RX bumps
+  // of the other one.
+  for (genvar i = 0; i < NumUcieTiles; i++) begin : gen_ucie_loopback
+    localparam int unsigned Peer = NumUcieTiles - 1 - i;
+    assign ucie_rxckp[i]  = ucie_txckp[Peer];
+    assign ucie_rxckn[i]  = ucie_txckn[Peer];
+    assign ucie_rxdata[i] = ucie_txdata[Peer];
+    assign ucie_rxtrk[i]  = ucie_txtrk[Peer];
+    assign ucie_rxvld[i]  = ucie_txvld[Peer];
+  end
 
   ////////////////////////
   //  Tristate Adapter  //

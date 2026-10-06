@@ -92,6 +92,19 @@ module gwaihir_top
   input  logic       pcie_jtag_phys_trst_ni,
   output logic       pcie_jtag_phys_tdo_o,
 
+  // UCIe interface (one module per UCIe tile)
+  input  logic [NumUcieTiles-1:0]      ucie_refclk_i,
+  output logic [NumUcieTiles-1:0]      ucie_txckp_o,
+  output logic [NumUcieTiles-1:0]      ucie_txckn_o,
+  output logic [NumUcieTiles-1:0][7:0] ucie_txdata_o,
+  output logic [NumUcieTiles-1:0]      ucie_txtrk_o,
+  output logic [NumUcieTiles-1:0]      ucie_txvld_o,
+  input  logic [NumUcieTiles-1:0]      ucie_rxckp_i,
+  input  logic [NumUcieTiles-1:0]      ucie_rxckn_i,
+  input  logic [NumUcieTiles-1:0][7:0] ucie_rxdata_i,
+  input  logic [NumUcieTiles-1:0]      ucie_rxtrk_i,
+  input  logic [NumUcieTiles-1:0]      ucie_rxvld_i,
+
   // AXI ports to DRAM
   output csh_axi_llc_req_t axi_llc_mst_req_o,
   input  csh_axi_llc_rsp_t axi_llc_mst_rsp_i
@@ -351,13 +364,6 @@ module gwaihir_top
   // UCIe tiles //
   ////////////////
 
-  logic [NumUcieTiles-1:0][NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out;
-  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_out_valid;
-  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_out_ready;
-  logic [NumUcieTiles-1:0][NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in;
-  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_in_valid;
-  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_in_ready;
-
   localparam int Ucie0X = int'(SamPhysical[Ucie0SamIdx].idx.x);
   localparam int Ucie0Y = int'(SamPhysical[Ucie0SamIdx].idx.y);
   localparam int Ucie1X = int'(SamPhysical[Ucie1SamIdx].idx.x);
@@ -366,60 +372,90 @@ module gwaihir_top
   ucie_tile i_ucie_tile0 (
     .clk_i,
     .rst_ni,
-    .test_enable_i       (test_mode_i),
-    .clk_rst_bypass_i    (clk_rst_bypass_i),
-    .id_i                (Sam[Ucie0SamIdx].idx),
-    .samidx_i            (Ucie0SamIdx),
+    .test_enable_i    (test_mode_i),
+    .clk_rst_bypass_i (clk_rst_bypass_i),
+    .id_i             (Sam[Ucie0SamIdx].idx),
+    .samidx_i         (Ucie0SamIdx),
     // ucie0 (chiplet0) ingress is pass-through.
-    .ucie_id_i           (1'b0),
-    .floo_req_o          (floo_req_out[Ucie0X][Ucie0Y]),
-    .floo_rsp_i          (floo_rsp_in[Ucie0X][Ucie0Y]),
-    .floo_wide_o         (floo_wide_out[Ucie0X][Ucie0Y]),
-    .floo_req_i          (floo_req_in[Ucie0X][Ucie0Y]),
-    .floo_rsp_o          (floo_rsp_out[Ucie0X][Ucie0Y]),
-    .floo_wide_i         (floo_wide_in[Ucie0X][Ucie0Y]),
-    // loopback
-    .phy_data_out_o      (phy_data_out[0]),
-    .phy_data_out_valid_o(phy_data_out_valid[0]),
-    .phy_data_out_ready_i(phy_data_out_ready[0]),
-    .phy_data_in_i       (phy_data_in[0]),
-    .phy_data_in_valid_i (phy_data_in_valid[0]),
-    .phy_data_in_ready_o (phy_data_in_ready[0])
+    .ucie_id_i        (1'b0),
+    .floo_req_north_o (floo_req_out[Ucie0X][Ucie0Y][North]),
+    .floo_rsp_north_i (floo_rsp_in[Ucie0X][Ucie0Y][North]),
+    .floo_wide_north_o(floo_wide_out[Ucie0X][Ucie0Y][North]),
+    .floo_req_north_i (floo_req_in[Ucie0X][Ucie0Y][North]),
+    .floo_rsp_north_o (floo_rsp_out[Ucie0X][Ucie0Y][North]),
+    .floo_wide_north_i(floo_wide_in[Ucie0X][Ucie0Y][North]),
+    .floo_req_east_o  (floo_req_out[Ucie0X][Ucie0Y][East]),
+    .floo_rsp_east_i  (floo_rsp_in[Ucie0X][Ucie0Y][East]),
+    .floo_wide_east_o (floo_wide_out[Ucie0X][Ucie0Y][East]),
+    .floo_req_east_i  (floo_req_in[Ucie0X][Ucie0Y][East]),
+    .floo_rsp_east_o  (floo_rsp_out[Ucie0X][Ucie0Y][East]),
+    .floo_wide_east_i (floo_wide_in[Ucie0X][Ucie0Y][East]),
+    .floo_req_west_o  (floo_req_out[Ucie0X][Ucie0Y][West]),
+    .floo_rsp_west_i  (floo_rsp_in[Ucie0X][Ucie0Y][West]),
+    .floo_wide_west_o (floo_wide_out[Ucie0X][Ucie0Y][West]),
+    .floo_req_west_i  (floo_req_in[Ucie0X][Ucie0Y][West]),
+    .floo_rsp_west_o  (floo_rsp_out[Ucie0X][Ucie0Y][West]),
+    .floo_wide_west_i (floo_wide_in[Ucie0X][Ucie0Y][West]),
+    // UCIe bumps
+    .ucie_refclk_i    (ucie_refclk_i[0]),
+    .ucie_txckp_o     (ucie_txckp_o[0]),
+    .ucie_txckn_o     (ucie_txckn_o[0]),
+    .ucie_txdata_o    (ucie_txdata_o[0]),
+    .ucie_txtrk_o     (ucie_txtrk_o[0]),
+    .ucie_txvld_o     (ucie_txvld_o[0]),
+    .ucie_rxckp_i     (ucie_rxckp_i[0]),
+    .ucie_rxckn_i     (ucie_rxckn_i[0]),
+    .ucie_rxdata_i    (ucie_rxdata_i[0]),
+    .ucie_rxtrk_i     (ucie_rxtrk_i[0]),
+    .ucie_rxvld_i     (ucie_rxvld_i[0])
   );
+  assign floo_req_out[Ucie0X][Ucie0Y][South]  = '0;
+  assign floo_rsp_out[Ucie0X][Ucie0Y][South]  = '0;
+  assign floo_wide_out[Ucie0X][Ucie0Y][South] = '0;
 
   ucie_tile i_ucie_tile1 (
     .clk_i,
     .rst_ni,
-    .test_enable_i       (test_mode_i),
-    .clk_rst_bypass_i    (clk_rst_bypass_i),
-    .id_i                (Sam[Ucie1SamIdx].idx),
-    .samidx_i            (Ucie1SamIdx),
+    .test_enable_i    (test_mode_i),
+    .clk_rst_bypass_i (clk_rst_bypass_i),
+    .id_i             (Sam[Ucie1SamIdx].idx),
+    .samidx_i         (Ucie1SamIdx),
     // ucie1 (chiplet1) ingress applies the half-shift.
-    .ucie_id_i           (1'b1),
-    .floo_req_o          (floo_req_out[Ucie1X][Ucie1Y]),
-    .floo_rsp_i          (floo_rsp_in[Ucie1X][Ucie1Y]),
-    .floo_wide_o         (floo_wide_out[Ucie1X][Ucie1Y]),
-    .floo_req_i          (floo_req_in[Ucie1X][Ucie1Y]),
-    .floo_rsp_o          (floo_rsp_out[Ucie1X][Ucie1Y]),
-    .floo_wide_i         (floo_wide_in[Ucie1X][Ucie1Y]),
-    // loopback
-    .phy_data_out_o      (phy_data_out[1]),
-    .phy_data_out_valid_o(phy_data_out_valid[1]),
-    .phy_data_out_ready_i(phy_data_out_ready[1]),
-    .phy_data_in_i       (phy_data_in[1]),
-    .phy_data_in_valid_i (phy_data_in_valid[1]),
-    .phy_data_in_ready_o (phy_data_in_ready[1])
+    .ucie_id_i        (1'b1),
+    .floo_req_north_o (floo_req_out[Ucie1X][Ucie1Y][North]),
+    .floo_rsp_north_i (floo_rsp_in[Ucie1X][Ucie1Y][North]),
+    .floo_wide_north_o(floo_wide_out[Ucie1X][Ucie1Y][North]),
+    .floo_req_north_i (floo_req_in[Ucie1X][Ucie1Y][North]),
+    .floo_rsp_north_o (floo_rsp_out[Ucie1X][Ucie1Y][North]),
+    .floo_wide_north_i(floo_wide_in[Ucie1X][Ucie1Y][North]),
+    .floo_req_east_o  (floo_req_out[Ucie1X][Ucie1Y][East]),
+    .floo_rsp_east_i  (floo_rsp_in[Ucie1X][Ucie1Y][East]),
+    .floo_wide_east_o (floo_wide_out[Ucie1X][Ucie1Y][East]),
+    .floo_req_east_i  (floo_req_in[Ucie1X][Ucie1Y][East]),
+    .floo_rsp_east_o  (floo_rsp_out[Ucie1X][Ucie1Y][East]),
+    .floo_wide_east_i (floo_wide_in[Ucie1X][Ucie1Y][East]),
+    .floo_req_west_o  (floo_req_out[Ucie1X][Ucie1Y][West]),
+    .floo_rsp_west_i  (floo_rsp_in[Ucie1X][Ucie1Y][West]),
+    .floo_wide_west_o (floo_wide_out[Ucie1X][Ucie1Y][West]),
+    .floo_req_west_i  (floo_req_in[Ucie1X][Ucie1Y][West]),
+    .floo_rsp_west_o  (floo_rsp_out[Ucie1X][Ucie1Y][West]),
+    .floo_wide_west_i (floo_wide_in[Ucie1X][Ucie1Y][West]),
+    // UCIe bumps
+    .ucie_refclk_i    (ucie_refclk_i[1]),
+    .ucie_txckp_o     (ucie_txckp_o[1]),
+    .ucie_txckn_o     (ucie_txckn_o[1]),
+    .ucie_txdata_o    (ucie_txdata_o[1]),
+    .ucie_txtrk_o     (ucie_txtrk_o[1]),
+    .ucie_txvld_o     (ucie_txvld_o[1]),
+    .ucie_rxckp_i     (ucie_rxckp_i[1]),
+    .ucie_rxckn_i     (ucie_rxckn_i[1]),
+    .ucie_rxdata_i    (ucie_rxdata_i[1]),
+    .ucie_rxtrk_i     (ucie_rxtrk_i[1]),
+    .ucie_rxvld_i     (ucie_rxvld_i[1])
   );
-
-  // loopback UCIe[0] -> UCIe[1]: connect TX0 -> RX1
-  assign phy_data_in[1]        = phy_data_out[0];
-  assign phy_data_in_valid[1]  = phy_data_out_valid[0];
-  assign phy_data_out_ready[0] = phy_data_in_ready[1];
-
-  // loopback UCIe[1] -> UCIe[0]: connect TX1 -> RX0
-  assign phy_data_in[0]        = phy_data_out[1];
-  assign phy_data_in_valid[0]  = phy_data_out_valid[1];
-  assign phy_data_out_ready[1] = phy_data_in_ready[0];
+  assign floo_req_out[Ucie1X][Ucie1Y][South]  = '0;
+  assign floo_rsp_out[Ucie1X][Ucie1Y][South]  = '0;
+  assign floo_wide_out[Ucie1X][Ucie1Y][South] = '0;
 
   ////////////////
   // PCIe tile  //
