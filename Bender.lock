@@ -230,7 +230,7 @@ packages:
       Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: 1f8d6924ba83d1610c28fd5757a7b2d2c5e74b10
+    revision: ebb114059e1b5b0e2520e031fd5aad5a57068371
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -289,8 +289,8 @@ packages:
     dependencies:
     - tech_cells_generic
   idma:
-    revision: 04867adf336492eb6ebacad6764a3b442a51f129
-    version: 0.7.1
+    revision: 6d814ab525a961cd47b9a9b1da1281e38473c617
+    version: 0.7.3
     source:
       Git: https://github.com/pulp-platform/iDMA.git
     dependencies:
@@ -316,7 +316,7 @@ packages:
       Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
     dependencies: []
   mxcore:
-    revision: 2f9cd437521fd0c39dfc8fceb2fcc8149a516b8b
+    revision: 1ca16ad793b8b4151e8eb395a77be397b266c868
     version: null
     source:
       Git: https://github.com/pulp-platform/MXCore.git

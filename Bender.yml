@@ -42,7 +42,7 @@ dependencies:
     path: .deps/lpddr
   iDMA:
     git: https://github.com/pulp-platform/iDMA.git
-    version: 0.7.1
+    version: 0.7.3
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
     rev: gwaihir
