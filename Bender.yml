@@ -21,8 +21,8 @@ dependencies:
     git: https://github.com/colluca/axi.git
     rev: multicast
   axi_obi:
-    git: https://github.com/pulp-platform/axi_obi.git
-    rev: common-cells-v2
+    git: https://github.com/DanielKellerM/axi_obi.git
+    rev: bf84f43c1467ea9d2abc5db871c6f13e79082b89
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
     rev: gwaihir
@@ -42,7 +42,7 @@ dependencies:
     path: .deps/lpddr
   iDMA:
     git: https://github.com/pulp-platform/iDMA.git
-    version: 0.7.3
+    rev: 0b8c0a30576f3c40c25e5c6cd1673bc594ceb169
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
     rev: gwaihir
