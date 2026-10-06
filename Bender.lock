@@ -45,10 +45,10 @@ packages:
     - register_interface
     - tech_cells_generic
   axi_obi:
-    revision: 26fa0b8d4b00d8f401c8c1ae7b5293baa2099362
+    revision: bf84f43c1467ea9d2abc5db871c6f13e79082b89
     version: null
     source:
-      Git: https://github.com/pulp-platform/axi_obi.git
+      Git: https://github.com/DanielKellerM/axi_obi.git
     dependencies:
     - axi
     - common_cells
@@ -296,7 +296,7 @@ packages:
     dependencies:
     - tech_cells_generic
   idma:
-    revision: e9d0524781c840798229fd4f5685e6bb085d3cf9
+    revision: 378fa46c949d90b45c78d4baf19b9967ae4f7df5
     version: null
     source:
       Git: https://github.com/pulp-platform/iDMA.git
