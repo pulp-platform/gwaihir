@@ -42,7 +42,7 @@ dependencies:
     path: .deps/lpddr
   iDMA:
     git: https://github.com/pulp-platform/iDMA.git
-    version: 0.7.3
+    rev: e9d0524781c840798229fd4f5685e6bb085d3cf9
   hci:
     git: https://github.com/pulp-platform/hci.git
     rev: lkesting/surya
