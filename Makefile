@@ -74,6 +74,8 @@ DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 UCIE_SLINK_NUM_LANES ?= 512
 UCIE_SLINK_EN_DDR    ?= 0
 
+HTILE_CLUSTER_RDL = $(GW_GEN_HW_DIR)/htile.rdl
+HTILE_RDL_PATCH   = $(GW_ROOT)/util/htile_rdl_patch.py
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
 $(GW_GEN_DIR) $(GW_GEN_SW_DIR):
@@ -82,6 +84,7 @@ $(GW_GEN_DIR) $(GW_GEN_SW_DIR):
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/snitch_cluster.rdl
+GW_RDL_ALL += $(HTILE_CLUSTER_RDL)
 GW_RDL_ALL += $(UCIE_SLINK_RDL)
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
@@ -185,6 +188,20 @@ sn-hw-clean:
 	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
 	rm -f $(SN_CFG)
 
+##########
+# H-tile #
+##########
+
+$(HTILE_CLUSTER_RDL): $(SN_CLUSTER_RDL) $(HTILE_RDL_PATCH) | $(GW_GEN_HW_DIR)
+	cp $< $@
+	$(HTILE_RDL_PATCH) $@
+
+.PHONY: htile-hw-clean htile-hw-all
+
+htile-hw-all: $(HTILE_CLUSTER_RDL)
+htile-hw-clean:
+	rm -rf $(HTILE_CLUSTER_RDL)
+
 ###########
 # FlooNoC #
 ###########
@@ -211,7 +228,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 3abf568878c6e7ea44a5e61a99cd920e35848c79
+PD_COMMIT ?= fa356ec2cf2483e52b198b937ad19314d2d4a6f6
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -272,9 +289,9 @@ GW_HW_ALL += $(GW_RDL_HW_ALL)
 
 .PHONY: gwaihir-hw-all gwaihir-hw-clean clean
 
-gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
+gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all htile-hw-all floo-hw-all
 
-gwaihir-hw-clean: sn-hw-clean floo-clean
+gwaihir-hw-clean: sn-hw-clean htile-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)
 	rm -rf $(GW_GEN_HW_DIR)
 
@@ -361,6 +378,8 @@ help:
 	@echo -e "${Green}floo-clean           ${Black}Clean FlooNoC RTL."
 	@echo -e "${Green}sn-hw-all            ${Black}Generate Snitch Cluster wrapper RTL."
 	@echo -e "${Green}sn-hw-clean          ${Black}Clean Snitch Cluster wrapper RTL."
+	@echo -e "${Green}htile-hw-all         ${Black}Generate H-tile RDL."
+	@echo -e "${Green}htile-hw-clean       ${Black}Clean H-tile RDL."
 	@echo -e "${Green}chs-hw-all           ${Black}Generate Cheshire RTL."
 	@echo -e "${Green}rdl-markdown         ${Black}Generate RDL Markdown documentation."
 	@echo -e "${Green}docs                 ${Black}Generate documentation sources."
