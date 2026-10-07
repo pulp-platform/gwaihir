@@ -81,15 +81,18 @@ static void mxcore_run(void *a, void *b, void *sa, void *sb, void *res,
     HWPE_REG(0x28) = (uint32_t)sa;
     HWPE_REG(0x2C) = (uint32_t)sb;
     HWPE_REG(0x30) = (uint32_t)res;
-    HWPE_REG(0x34) = (uint32_t)res_scale;
-    HWPE_REG(0x38) = MX_M | (MX_K << 10) | (MX_N << 22);
-    HWPE_REG(0x3C) = ctrl;
-    HWPE_REG(0x40) = MX_MT | (MX_NT << 4) | (MX_KT << 9) |
-                     ((MX_K / MX_BLK) << 16);
-    HWPE_REG(0x44) = OBUFF * VS * 8;
-    HWPE_REG(0x48) = VS * MXU * 8;
-    HWPE_REG(0x4C) = MXU * OBUFF * (mxfp8 ? 8 : 32);
-    HWPE_REG(0x50) = MX_K * OBUFF / VS;
+    HWPE_REG(0x34) = (uint32_t)res;
+    HWPE_REG(0x38) = (uint32_t)res_scale;
+    HWPE_REG(0x3C) = MX_M | (MX_K << 10) | (MX_N << 22);
+    HWPE_REG(0x40) = ctrl;
+    HWPE_REG(0x44) = MX_MT | (MX_NT << 4) | (MX_KT << 9) |
+                     ((MX_K / MX_BLK) << 16) | ((MX_BLK / VS) << 23);
+    HWPE_REG(0x48) = OBUFF * VS * 8;
+    HWPE_REG(0x4C) = VS * MXU * 8;
+    HWPE_REG(0x50) = MXU * OBUFF * 32;
+    HWPE_REG(0x54) = MXU * OBUFF * (mxfp8 ? 8 : 32);
+    HWPE_REG(0x58) = (MXU / MX_BLK) * OBUFF * 8;
+    HWPE_REG(0x5C) = MX_K * OBUFF / VS;
     HWPE_REG(0x00) = 0;
     snrt_interrupt_enable(IRQ_M_ACC);
     while (HWPE_REG(0x0C) != 0) snrt_wfi();
