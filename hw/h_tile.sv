@@ -16,6 +16,7 @@ module h_tile
   input logic rst_ni,
   input logic test_enable_i,
   input logic clk_rst_bypass_i,
+
   // Cluster ports
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] debug_req_i,
   input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] meip_i,
@@ -24,15 +25,23 @@ module h_tile
   input logic [9:0] hart_base_id_i,
   input snitch_cluster_wrapper_pkg::addr_t cluster_base_addr_i,
   input snitch_cluster_wrapper_pkg::addr_t cluster_base_offset_i,
+
   // Chimney ports
   input id_t id_i,
+
   // Router ports
-  output floo_req_t [West:North] floo_req_o,
-  input floo_rsp_t [West:North] floo_rsp_i,
-  output floo_wide_t [West:North] floo_wide_o,
-  input floo_req_t [West:North] floo_req_i,
-  output floo_rsp_t [West:North] floo_rsp_o,
-  input floo_wide_t [West:North] floo_wide_i
+  output floo_req_t  floo_req_west_o,
+  input  floo_rsp_t  floo_rsp_west_i,
+  output floo_wide_t floo_wide_west_o,
+  input  floo_req_t  floo_req_west_i,
+  output floo_rsp_t  floo_rsp_west_o,
+  input  floo_wide_t floo_wide_west_i,
+  output floo_req_t  floo_req_south_o,
+  input  floo_rsp_t  floo_rsp_south_i,
+  output floo_wide_t floo_wide_south_o,
+  input  floo_req_t  floo_req_south_i,
+  output floo_rsp_t  floo_rsp_south_o,
+  input  floo_wide_t floo_wide_south_i
 );
 
   // Tile-specific reset and clock signals
@@ -269,7 +278,6 @@ module h_tile
   floo_wide_t [Eject:North] router_floo_wide_in;
   floo_wide_t [Eject:North] router_floo_wide_out;
 
-
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
@@ -304,17 +312,28 @@ module h_tile
     .offload_narrow_rsp_i('0)
   );
 
-  assign floo_req_o                      = router_floo_req_out[West:North];
-  assign router_floo_req_in[West:North]  = floo_req_i;
-  assign floo_rsp_o                      = router_floo_rsp_out[West:North];
-  assign router_floo_rsp_in[West:North]  = floo_rsp_i;
-  assign router_floo_wide_in[West:North] = floo_wide_i;
-  assign floo_wide_o[West:North]         = router_floo_wide_out[West:North];
+  assign floo_req_west_o            = router_floo_req_out[West];
+  assign floo_req_south_o           = router_floo_req_out[South];
+  assign router_floo_req_in[West]   = floo_req_west_i;
+  assign router_floo_req_in[North]  = '0;  // No North port in this tile
+  assign router_floo_req_in[East]   = '0;  // No East port in this tile
+  assign router_floo_req_in[South]  = floo_req_south_i;
+  assign floo_rsp_west_o            = router_floo_rsp_out[West];
+  assign floo_rsp_south_o           = router_floo_rsp_out[South];
+  assign router_floo_rsp_in[West]   = floo_rsp_west_i;
+  assign router_floo_rsp_in[North]  = '0;  // No North port in this tile
+  assign router_floo_rsp_in[East]   = '0;  // No East port in this tile
+  assign router_floo_rsp_in[South]  = floo_rsp_south_i;
+  assign floo_wide_west_o           = router_floo_wide_out[West];
+  assign floo_wide_south_o          = router_floo_wide_out[South];
+  assign router_floo_wide_in[West]  = floo_wide_west_i;
+  assign router_floo_wide_in[North] = '0;  // No North port in this tile
+  assign router_floo_wide_in[East]  = '0;  // No East port in this tile
+  assign router_floo_wide_in[South] = floo_wide_south_i;
 
   /////////////
   // Chimney //
   /////////////
-
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
