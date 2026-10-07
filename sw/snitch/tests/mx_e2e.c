@@ -48,22 +48,23 @@ typedef float mx_src_t;
 #define C_BYTES (MX_M * MX_N)
 #define C_DEQ_BYTES (C_BYTES * sizeof(mx_src_t))
 
-// Outputs read back by verify.py, each between two GUARD-byte canaries
+// Outputs read back by verify.py, each between two GUARD-byte canaries. The
+// canaries are preloaded: core stores to them made MXCore hang.
 #define GUARD 64
-#define CANARY 0xA5
-#define GUARDED(n) ((n) + 2 * GUARD)
-uint8_t a_mx[GUARDED(A_BYTES)] __attribute__((aligned(64)));
-uint8_t a_scale[GUARDED(A_BYTES / MX_BLK)] __attribute__((aligned(64)));
-uint8_t b_mx[GUARDED(B_BYTES)] __attribute__((aligned(64)));
-uint8_t b_scale[GUARDED(B_BYTES / MX_BLK)] __attribute__((aligned(64)));
-uint8_t c_fp32[GUARDED(C_BYTES * sizeof(float))] __attribute__((aligned(64)));
-uint8_t c_mx[GUARDED(C_BYTES)] __attribute__((aligned(64)));
-uint8_t c_scale[GUARDED(C_BYTES / MX_BLK)] __attribute__((aligned(64)));
-uint8_t c_deq[GUARDED(C_DEQ_BYTES)] __attribute__((aligned(64)));
-
-static void set_canaries(uint8_t *p, uint32_t n) {
-    for (uint32_t i = 0; i < GUARD; i++) p[i] = p[GUARD + n + i] = CANARY;
-}
+#define C8 0xA5, 0xA5, 0xA5, 0xA5, 0xA5, 0xA5, 0xA5, 0xA5
+#define C64 C8, C8, C8, C8, C8, C8, C8, C8
+#define GUARDED(name, n)                                     \
+    struct {                                                 \
+        uint8_t pre[GUARD], buf[n], post[GUARD];             \
+    } name __attribute__((aligned(64))) = {{C64}, {}, {C64}}
+GUARDED(a_mx, A_BYTES);
+GUARDED(a_scale, A_BYTES / MX_BLK);
+GUARDED(b_mx, B_BYTES);
+GUARDED(b_scale, B_BYTES / MX_BLK);
+GUARDED(c_fp32, C_BYTES * sizeof(float));
+GUARDED(c_mx, C_BYTES);
+GUARDED(c_scale, C_BYTES / MX_BLK);
+GUARDED(c_deq, C_DEQ_BYTES);
 
 static uint8_t *l1_alloc(uint32_t n) {
     return (uint8_t *)snrt_l1_alloc_cluster_local(n, 64);
@@ -134,7 +135,7 @@ int main() {
 
     snrt_int_clr_mcip();
 
-    // Same TCDM layout for both variants: MXCore hangs on some layouts
+    // Same TCDM layout for both variants
     mx_src_t *scratch = (mx_src_t *)l1_alloc(MX_KT * OBUFF * VS * sizeof(float));
     uint8_t *la = l1_alloc(A_BYTES);
     uint8_t *lsa = l1_alloc(A_BYTES / MX_BLK);
@@ -146,14 +147,6 @@ int main() {
 
     uint32_t err = 0;
     if (snrt_is_dm_core()) {
-        set_canaries(a_mx, A_BYTES);
-        set_canaries(a_scale, A_BYTES / MX_BLK);
-        set_canaries(b_mx, B_BYTES);
-        set_canaries(b_scale, B_BYTES / MX_BLK);
-        set_canaries(c_fp32, C_BYTES * sizeof(float));
-        set_canaries(c_mx, C_BYTES);
-        set_canaries(c_scale, C_BYTES / MX_BLK);
-        set_canaries(c_deq, C_DEQ_BYTES);
         for (uint32_t mt = 0; mt < MX_MT; mt++)
             err += mx_tile_quant(la + mt * MX_KT * OBUFF * VS,
                                  lsa + mt * MX_KT * OBUFF,
@@ -162,10 +155,10 @@ int main() {
             err += mx_tile_quant(lb + nt * MX_KT * MXU * VS,
                                  lsb + nt * MX_KT * MXU,
                                  mx_b + nt * MXU * MX_K, MXU, scratch);
-        snrt_dma_start_1d(a_mx + GUARD, la, A_BYTES);
-        snrt_dma_start_1d(a_scale + GUARD, lsa, A_BYTES / MX_BLK);
-        snrt_dma_start_1d(b_mx + GUARD, lb, B_BYTES);
-        snrt_dma_start_1d(b_scale + GUARD, lsb, B_BYTES / MX_BLK);
+        snrt_dma_start_1d(a_mx.buf, la, A_BYTES);
+        snrt_dma_start_1d(a_scale.buf, lsa, A_BYTES / MX_BLK);
+        snrt_dma_start_1d(b_mx.buf, lb, B_BYTES);
+        snrt_dma_start_1d(b_scale.buf, lsb, B_BYTES / MX_BLK);
         snrt_dma_wait_all();
     }
     snrt_cluster_hw_barrier();
@@ -177,13 +170,13 @@ int main() {
     snrt_cluster_hw_barrier();
 
     if (snrt_is_dm_core()) {
-        snrt_dma_start_1d(c_fp32 + GUARD, lc, C_BYTES * sizeof(float));
-        snrt_dma_start_1d(c_mx + GUARD, lcq, C_BYTES);
-        snrt_dma_start_1d(c_scale + GUARD, lcs, C_BYTES / MX_BLK);
+        snrt_dma_start_1d(c_fp32.buf, lc, C_BYTES * sizeof(float));
+        snrt_dma_start_1d(c_mx.buf, lcq, C_BYTES);
+        snrt_dma_start_1d(c_scale.buf, lcs, C_BYTES / MX_BLK);
         snrt_dma_wait_all();
         mx_set_scale_addr((uint32_t)lcs);
         snrt_dma_set_opcode(MX_OPC_DEQUANT | MX_OPTS_E5M2_G64);
-        if (!snrt_dma_start_1d(c_deq + GUARD, lcq, C_BYTES)) err++;
+        if (!snrt_dma_start_1d(c_deq.buf, lcq, C_BYTES)) err++;
         snrt_dma_wait_all();
         snrt_dma_disable_compute();
     }
