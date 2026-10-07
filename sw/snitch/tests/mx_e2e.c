@@ -5,15 +5,26 @@
 // Author: Daniel Keller <dankeller@iis.ee.ethz.ch>
 //
 // iDMA -> MXCore -> iDMA on cluster 0, checked by experiments/mx_e2e/verify.py.
-// FP32 A [M][K] and B [N][K] in L2 are gathered per (tile, k-tile) and
-// quantized by the cluster DMA into MXCore's operand layout: A [mt][kt][r][32],
-// B [nt][kt][n][32], scales [mt][kt][r] and [nt][kt][n] (MXFP8 E5M2, E8M0).
-// MXCore computes C once in FP32 and once quantized; the DMA dequantizes the
-// quantized result planes back to FP32.
+// FP32 (FP16 with MX_E2E_FP16) A [M][K] and B [N][K] in L2 are gathered per
+// (tile, k-tile) and quantized by the cluster DMA into MXCore's operand layout:
+// A [mt][kt][r][32], B [nt][kt][n][32], scales [mt][kt][r] and [nt][kt][n]
+// (MXFP8 E5M2, E8M0). MXCore computes C once in FP32 and once quantized; the
+// DMA dequantizes the quantized result planes back to the source format.
 
 #include "snrt.h"
-#include "data/mx_e2e_data.h"
 #include "gw_hwpe_subsystem_addrmap.h"
+
+#ifdef MX_E2E_FP16
+#include "data/mx_e2e_fp16_data.h"
+typedef uint16_t mx_src_t;
+#define MX_OPC_QUANT IDMA_DMOPC_OPC_MX_QUANT_FP16
+#define MX_OPC_DEQUANT IDMA_DMOPC_OPC_MX_DEQUANT_FP16
+#else
+#include "data/mx_e2e_data.h"
+typedef float mx_src_t;
+#define MX_OPC_QUANT IDMA_DMOPC_OPC_MX_QUANT
+#define MX_OPC_DEQUANT IDMA_DMOPC_OPC_MX_DEQUANT
+#endif
 
 #define VS 32
 #define MXU 32
@@ -32,15 +43,31 @@
 
 #define MX_OPTS_E5M2_G64 0u
 
-// Outputs read back by verify.py
-uint8_t a_mx[MX_M * MX_K] __attribute__((aligned(64)));
-uint8_t a_scale[MX_M * MX_K / MX_BLK] __attribute__((aligned(64)));
-uint8_t b_mx[MX_N * MX_K] __attribute__((aligned(64)));
-uint8_t b_scale[MX_N * MX_K / MX_BLK] __attribute__((aligned(64)));
-float c_fp32[MX_M * MX_N] __attribute__((aligned(64)));
-uint8_t c_mx[MX_M * MX_N] __attribute__((aligned(64)));
-uint8_t c_scale[MX_M * MX_N / MX_BLK] __attribute__((aligned(64)));
-float c_deq[MX_M * MX_N] __attribute__((aligned(64)));
+#define A_BYTES (MX_M * MX_K)
+#define B_BYTES (MX_N * MX_K)
+#define C_BYTES (MX_M * MX_N)
+#define C_DEQ_BYTES (C_BYTES * sizeof(mx_src_t))
+
+// Outputs read back by verify.py, each between two GUARD-byte canaries
+#define GUARD 64
+#define CANARY 0xA5
+#define GUARDED(n) ((n) + 2 * GUARD)
+uint8_t a_mx[GUARDED(A_BYTES)] __attribute__((aligned(64)));
+uint8_t a_scale[GUARDED(A_BYTES / MX_BLK)] __attribute__((aligned(64)));
+uint8_t b_mx[GUARDED(B_BYTES)] __attribute__((aligned(64)));
+uint8_t b_scale[GUARDED(B_BYTES / MX_BLK)] __attribute__((aligned(64)));
+uint8_t c_fp32[GUARDED(C_BYTES * sizeof(float))] __attribute__((aligned(64)));
+uint8_t c_mx[GUARDED(C_BYTES)] __attribute__((aligned(64)));
+uint8_t c_scale[GUARDED(C_BYTES / MX_BLK)] __attribute__((aligned(64)));
+uint8_t c_deq[GUARDED(C_DEQ_BYTES)] __attribute__((aligned(64)));
+
+static void set_canaries(uint8_t *p, uint32_t n) {
+    for (uint32_t i = 0; i < GUARD; i++) p[i] = p[GUARD + n + i] = CANARY;
+}
+
+static uint8_t *l1_alloc(uint32_t n) {
+    return (uint8_t *)snrt_l1_alloc_cluster_local(n, 64);
+}
 
 // Same as snrt_dma_set_mx_scale_addr() from snitch_cluster#353
 static inline void mx_set_scale_addr(uint32_t addr) {
@@ -51,20 +78,20 @@ static inline void mx_set_scale_addr(uint32_t addr) {
         v >> IDMA_DMOPC_RS1_MX_SADDR_LO_WIDTH);
 }
 
-// Gather `rows` x 32 FP32 per k-tile into `scratch` as [kt][row][32], then
+// Gather `rows` x 32 elements per k-tile into `scratch` as [kt][row][32], then
 // quantize it in one pass: data [kt][row][32], scales [kt][row]
-static uint32_t mx_tile_quant(uint8_t *data, uint8_t *scale, float *src,
-                              uint32_t rows, float *scratch) {
+static uint32_t mx_tile_quant(uint8_t *data, uint8_t *scale, mx_src_t *src,
+                              uint32_t rows, mx_src_t *scratch) {
     snrt_dma_disable_compute();
     for (uint32_t kt = 0; kt < MX_KT; kt++)
         snrt_dma_start_2d(scratch + kt * rows * VS, src + kt * VS,
-                          VS * sizeof(float), VS * sizeof(float),
-                          MX_K * sizeof(float), rows);
+                          VS * sizeof(mx_src_t), VS * sizeof(mx_src_t),
+                          MX_K * sizeof(mx_src_t), rows);
     snrt_dma_wait_all();
     mx_set_scale_addr((uint32_t)scale);
-    snrt_dma_set_opcode(IDMA_DMOPC_OPC_MX_QUANT | MX_OPTS_E5M2_G64);
+    snrt_dma_set_opcode(MX_OPC_QUANT | MX_OPTS_E5M2_G64);
     uint32_t id = snrt_dma_start_1d(data, scratch,
-                                    MX_KT * rows * VS * sizeof(float));
+                                    MX_KT * rows * VS * sizeof(mx_src_t));
     snrt_dma_wait_all();
     snrt_dma_disable_compute();
     return id == 0;
@@ -107,18 +134,26 @@ int main() {
 
     snrt_int_clr_mcip();
 
-    float *scratch = (float *)snrt_l1_alloc_cluster_local(
-        MX_KT * OBUFF * VS * sizeof(float), 64);
-    uint8_t *la = (uint8_t *)snrt_l1_alloc_cluster_local(sizeof(a_mx), 64);
-    uint8_t *lsa = (uint8_t *)snrt_l1_alloc_cluster_local(sizeof(a_scale), 64);
-    uint8_t *lb = (uint8_t *)snrt_l1_alloc_cluster_local(sizeof(b_mx), 64);
-    uint8_t *lsb = (uint8_t *)snrt_l1_alloc_cluster_local(sizeof(b_scale), 64);
-    float *lc = (float *)snrt_l1_alloc_cluster_local(sizeof(c_fp32), 64);
-    uint8_t *lcq = (uint8_t *)snrt_l1_alloc_cluster_local(sizeof(c_mx), 64);
-    uint8_t *lcs = (uint8_t *)snrt_l1_alloc_cluster_local(sizeof(c_scale), 64);
+    // Same TCDM layout for both variants: MXCore hangs on some layouts
+    mx_src_t *scratch = (mx_src_t *)l1_alloc(MX_KT * OBUFF * VS * sizeof(float));
+    uint8_t *la = l1_alloc(A_BYTES);
+    uint8_t *lsa = l1_alloc(A_BYTES / MX_BLK);
+    uint8_t *lb = l1_alloc(B_BYTES);
+    uint8_t *lsb = l1_alloc(B_BYTES / MX_BLK);
+    uint8_t *lc = l1_alloc(C_BYTES * sizeof(float));
+    uint8_t *lcq = l1_alloc(C_BYTES);
+    uint8_t *lcs = l1_alloc(C_BYTES / MX_BLK);
 
     uint32_t err = 0;
     if (snrt_is_dm_core()) {
+        set_canaries(a_mx, A_BYTES);
+        set_canaries(a_scale, A_BYTES / MX_BLK);
+        set_canaries(b_mx, B_BYTES);
+        set_canaries(b_scale, B_BYTES / MX_BLK);
+        set_canaries(c_fp32, C_BYTES * sizeof(float));
+        set_canaries(c_mx, C_BYTES);
+        set_canaries(c_scale, C_BYTES / MX_BLK);
+        set_canaries(c_deq, C_DEQ_BYTES);
         for (uint32_t mt = 0; mt < MX_MT; mt++)
             err += mx_tile_quant(la + mt * MX_KT * OBUFF * VS,
                                  lsa + mt * MX_KT * OBUFF,
@@ -127,10 +162,10 @@ int main() {
             err += mx_tile_quant(lb + nt * MX_KT * MXU * VS,
                                  lsb + nt * MX_KT * MXU,
                                  mx_b + nt * MXU * MX_K, MXU, scratch);
-        snrt_dma_start_1d(a_mx, la, sizeof(a_mx));
-        snrt_dma_start_1d(a_scale, lsa, sizeof(a_scale));
-        snrt_dma_start_1d(b_mx, lb, sizeof(b_mx));
-        snrt_dma_start_1d(b_scale, lsb, sizeof(b_scale));
+        snrt_dma_start_1d(a_mx + GUARD, la, A_BYTES);
+        snrt_dma_start_1d(a_scale + GUARD, lsa, A_BYTES / MX_BLK);
+        snrt_dma_start_1d(b_mx + GUARD, lb, B_BYTES);
+        snrt_dma_start_1d(b_scale + GUARD, lsb, B_BYTES / MX_BLK);
         snrt_dma_wait_all();
     }
     snrt_cluster_hw_barrier();
@@ -142,13 +177,13 @@ int main() {
     snrt_cluster_hw_barrier();
 
     if (snrt_is_dm_core()) {
-        snrt_dma_start_1d(c_fp32, lc, sizeof(c_fp32));
-        snrt_dma_start_1d(c_mx, lcq, sizeof(c_mx));
-        snrt_dma_start_1d(c_scale, lcs, sizeof(c_scale));
+        snrt_dma_start_1d(c_fp32 + GUARD, lc, C_BYTES * sizeof(float));
+        snrt_dma_start_1d(c_mx + GUARD, lcq, C_BYTES);
+        snrt_dma_start_1d(c_scale + GUARD, lcs, C_BYTES / MX_BLK);
         snrt_dma_wait_all();
         mx_set_scale_addr((uint32_t)lcs);
-        snrt_dma_set_opcode(IDMA_DMOPC_OPC_MX_DEQUANT | MX_OPTS_E5M2_G64);
-        if (!snrt_dma_start_1d(c_deq, lcq, sizeof(c_mx))) err++;
+        snrt_dma_set_opcode(MX_OPC_DEQUANT | MX_OPTS_E5M2_G64);
+        if (!snrt_dma_start_1d(c_deq + GUARD, lcq, C_BYTES)) err++;
         snrt_dma_wait_all();
         snrt_dma_disable_compute();
     }

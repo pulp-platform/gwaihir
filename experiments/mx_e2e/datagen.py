@@ -5,7 +5,7 @@
 #
 # Author: Daniel Keller <dankeller@iis.ee.ethz.ch>
 #
-# Generates the inputs of `mx_e2e.c`: FP32 A [M][K] and B [N][K]
+# Generates the inputs of `mx_e2e.c`: FP32 (--fp16: FP16) A [M][K] and B [N][K]
 
 import argparse
 from pathlib import Path
@@ -26,7 +26,8 @@ def gen(rows, cols, rng):
 
 
 def c_array(ctype, name, vals):
-    body = ',\n'.join('    ' + ', '.join(repr(float(v)) + 'f' for v in vals[i:i + 8])
+    fmt = (lambda v: f'0x{int(v):04x}') if ctype == 'uint16_t' else (lambda v: repr(float(v)) + 'f')
+    body = ',\n'.join('    ' + ', '.join(fmt(v) for v in vals[i:i + 8])
                       for i in range(0, len(vals), 8))
     return f'{ctype} {name}[{len(vals)}] __attribute__((aligned(64))) = {{\n{body}\n}};\n'
 
@@ -34,6 +35,7 @@ def c_array(ctype, name, vals):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-o', '--output', type=Path, required=True)
+    parser.add_argument('--fp16', action='store_true')
     args = parser.parse_args()
     rng = np.random.default_rng(SEED)
     a = gen(M, K, rng)
@@ -41,6 +43,14 @@ def main():
     # Every partial sum of C is exact in FP32, so the golden is order independent
     c = a.astype(np.float64) @ b.astype(np.float64).T
     assert np.array_equal(c, c.astype(np.float32).astype(np.float64))
+    # Inputs and the dequantized C stay in the FP16 normal range
+    assert np.abs(c).max() * 1.125 < np.finfo(np.float16).max
+    if args.fp16:
+        assert np.array_equal(a, a.astype(np.float16)) and np.array_equal(b, b.astype(np.float16))
+        ctype = 'uint16_t'
+        a, b = (x.astype(np.float16).view(np.uint16) for x in (a, b))
+    else:
+        ctype = 'float'
     hdr = [
         '// Copyright 2026 ETH Zurich and University of Bologna.',
         '// Licensed under the Apache License, Version 2.0, see LICENSE for details.',
@@ -54,8 +64,8 @@ def main():
         f'#define MX_N {N}',
         f'#define MX_K {K}',
         '',
-        c_array('float', 'mx_a', a.flatten()),
-        c_array('float', 'mx_b', b.flatten()),
+        c_array(ctype, 'mx_a', a.flatten()),
+        c_array(ctype, 'mx_b', b.flatten()),
     ]
     args.output.write_text('\n'.join(hdr))
 
