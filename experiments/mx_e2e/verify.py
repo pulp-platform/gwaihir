@@ -86,20 +86,10 @@ class Verifier(vu.Verifier):
 
     def check_results(self, actual, expected):
         fails = 0
-        # Gating: iDMA operand planes and the MXCore FP32 GEMM on them
-        for uid in ['a_mx', 'a_scale', 'b_mx', 'b_scale', 'c_fp32']:
+        for uid in self.OUTPUT_UIDS:
             bad = int(np.count_nonzero(actual[uid] != expected[uid]))
             print(f'{uid}: {bad}/{actual[uid].size} mismatches')
             fails += bad != 0
-        # Not gating until gwaihir#119: MXCore writes result scales signed, not E8M0
-        cs, es = actual['c_scale'], expected['c_scale']
-        signed = np.count_nonzero(cs == ((es.astype(int) - 127) & 0xFF).astype(np.uint8))
-        print(f'c_mx: {np.count_nonzero(actual["c_mx"] != expected["c_mx"])}/{cs.size * 32}'
-              f' mismatches (not gating)')
-        print(f'c_scale: {np.count_nonzero(cs == es)}/{cs.size} E8M0, {signed}/{cs.size}'
-              f' signed (BLOCKED by gwaihir#119, not gating)')
-        print(f'c_deq: {np.count_nonzero(actual["c_deq"] != expected["c_deq"])}/'
-              f'{actual["c_deq"].size} mismatches (BLOCKED by gwaihir#119, not gating)')
         return int(fails != 0)
 
 
