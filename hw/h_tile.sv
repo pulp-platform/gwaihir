@@ -65,7 +65,7 @@ module h_tile
   // actual address range for this exact tile, but it is sufficient since
   // the NoC will take care of routing the request to the correct tile.
   localparam int unsigned NumTileAddrMapRules = 1;
-  addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
+  localparam addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
       '{
           idx: TileCfg,
           start_addr: Sam[HtileConfigSamIdx].start_addr,
@@ -73,7 +73,7 @@ module h_tile
       }
   };
   localparam int unsigned NumTileApbAddrMapRules = 1;
-  addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
+  localparam addr_rule_t [NumTileApbAddrMapRules-1:0] TileApbAddrMap = '{
       '{idx: 0, start_addr: '0, end_addr: '1}
   };
 
