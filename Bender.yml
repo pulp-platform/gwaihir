@@ -47,8 +47,8 @@ dependencies:
     git: https://github.com/pulp-platform/hci.git
     rev: lkesting/surya
   mxcore:
-    git: https://github.com/pulp-platform/MXCore.git
-    rev: gwaihir
+    git: https://github.com/DanielKellerM/MXCore.git
+    rev: be345c069627487ce5637febae8f3f9ba8cebd5d
   obi:
     git: https://github.com/pulp-platform/obi.git
     rev: common-cells-v2
