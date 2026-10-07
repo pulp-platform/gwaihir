@@ -48,7 +48,10 @@ def idma_golden():
     lib = Path(tempfile.mkdtemp()) / 'idma_mx_golden.so'
     subprocess.run(['cc', '-shared', '-fPIC', '-O2', '-I', f'{bender_path("idma")}/test',
                     '-x', 'c', '-', '-o', str(lib)], input=src, text=True, check=True)
-    return ctypes.CDLL(str(lib))
+    golden = ctypes.CDLL(str(lib))
+    for op in OPS:
+        getattr(golden, op).argtypes = [ctypes.c_void_p] * 3 + [ctypes.c_uint32]
+    return golden
 
 
 GOLDEN = idma_golden()
