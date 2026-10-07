@@ -75,6 +75,9 @@ module snitch_hwpe_subsystem
   logic                                               busy;
   logic [NrCores-1:0]                                 hwpe_evt_q;
 
+  // MXCore interrupts on job done only (evt bit 1)
+  logic [NumHwpe-1:0][NrCores-1:0] hwpe_irq_evt;
+
   hwpe_ctrl_intf_periph #(.ID_WIDTH(IdWidth)) periph[0:NumHwpe-1] (.clk(clk_i));
 
   hci_core_intf #(
@@ -201,11 +204,14 @@ module snitch_hwpe_subsystem
 
 
   for (genvar ii = 0; ii < NrCores; ii++) begin : gen_hwpe_evt
+    assign hwpe_irq_evt[AccPort][ii] = IsSurya ? |evt[AccPort][ii] : evt[AccPort][ii][1];
+    assign hwpe_irq_evt[DmaPort][ii] = |evt[DmaPort][ii];
+
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (~rst_ni) begin
         hwpe_evt_q[ii] <= '0;
       end else begin
-        if (evt[mux_sel][ii]) begin
+        if (hwpe_irq_evt[mux_sel][ii]) begin
           hwpe_evt_q[ii] <= 1'b1;
         end
         else if (ctrl_blk_sel && (ctrl_blk_idx == CtrlEvtClr) &&
