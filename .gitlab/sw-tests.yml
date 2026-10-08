@@ -45,6 +45,8 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/chs_reg_rw.elf }
       - { SN_BINARY: $SN_BUILD_DIR/reduction_benchmark.elf, VERIFY_PY: experiments/reduction/verify.py, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/ucie_loopback.elf, PRELMODE: 5 }
+      - { SN_BINARY: $SN_BUILD_DIR/ucie_wide_mcast.elf, PRELMODE: 5 }
+      - { SN_BINARY: $SN_BUILD_DIR/ucie_narrow_mcast.elf, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/mxcore.elf, VERIFY_PY: experiments/mxcore/verify.py, PRELMODE: 5 }
       # - { SN_BINARY: sw/snitch/apps/gemm_2d/build/gemm_2d.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/gemm/scripts/verify.py, PRELMODE: 5 }
       - { SN_BINARY: sw/snitch/apps/fused_concat_linear/build/fused_concat_linear.elf, VERIFY_PY: $SN_ROOT/sw/kernels/dnn/fused_concat_linear/scripts/verify.py, PRELMODE: 5 }

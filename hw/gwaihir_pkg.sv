@@ -334,6 +334,19 @@ package gwaihir_pkg;
   // Define no multicast RouteCfg for Memory tiles, Cheshire and FhG
   localparam floo_pkg::route_cfg_t RouteCfgNoMcast = gen_nomcast_route_cfg();
 
+  // Multicast-only RouteCfg for some tiles: they need to route multicast flits
+  // (forking of ingress requests), but they have no collective-capable
+  // endpoint attached, so all reduction operations stay disabled.
+  function automatic floo_pkg::route_cfg_t gen_mcast_only_route_cfg();
+    floo_pkg::route_cfg_t ret = floo_gwaihir_noc_pkg::RouteCfg;
+    ret.CollectiveCfg                         = CollectiveDefaultCfg;
+    ret.CollectiveCfg.OpCfg.EnNarrowMulticast = 1'b1;
+    ret.CollectiveCfg.OpCfg.EnWideMulticast   = 1'b1;
+    return ret;
+  endfunction
+
+  localparam floo_pkg::route_cfg_t RouteCfgMcastOnly = gen_mcast_only_route_cfg();
+
   ////////////////
   //  Cheshire  //
   ////////////////
@@ -522,7 +535,7 @@ package gwaihir_pkg;
 
   localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
 
-  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg(AxiCfgN, AxiCfgW);
+  localparam axi_cfg_t AxiCfgMemJoin = floo_pkg::axi_join_cfg_max(AxiCfgN, AxiCfgW);
 
   typedef logic [AxiCfgMemJoin.OutIdWidth-1:0] mtile_nw_join_id_t;
   typedef logic [AxiCfgMemJoin.UserWidth-1:0] mtile_nw_join_user_t;
@@ -575,26 +588,6 @@ package gwaihir_pkg;
     return en_half_shift ? ingress_half_shift(cleared) : cleared;
   endfunction
 
-  // Narrow config without ATOP support
-  localparam axi_cfg_t AxiCfgNoAtop = '{
-      AddrWidth: AxiCfgN.AddrWidth,
-      DataWidth: AxiCfgN.DataWidth,
-      InIdWidth: 1,
-      OutIdWidth: 1,
-      UserWidth: 1
-  };
-
-  // Narrow/wide join types for `floo_nw_join`
-  localparam axi_cfg_t AxiCfgUcieJoin = floo_pkg::axi_join_cfg(AxiCfgNoAtop, AxiCfgW);
-
-  typedef logic [AxiCfgUcieJoin.OutIdWidth-1:0] utile_nw_join_id_t;
-  typedef logic [AxiCfgUcieJoin.UserWidth-1:0] utile_nw_join_user_t;
-
-  `AXI_TYPEDEF_ALL_CT(axi_utile_nw_join, axi_utile_nw_join_req_t, axi_utile_nw_join_rsp_t,
-                      axi_wide_in_addr_t, utile_nw_join_id_t, axi_wide_in_data_t,
-                      axi_wide_in_strb_t, utile_nw_join_user_t)
-
-
   localparam int unsigned UcieCfgRegDataWidth = UCIE_SLINK_REG_DATA_WIDTH;
 
   typedef logic [UcieCfgRegDataWidth-1:0] ucie_cfg_reg_data_t;
@@ -603,5 +596,22 @@ package gwaihir_pkg;
   `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite, addr_t, axi_narrow_out_data_t, axi_narrow_out_strb_t)
   `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite_32, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
   `APB_TYPEDEF_ALL(ucie_cfg_apb, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
+
+  ////////////////
+  // PCIe Tile  //
+  ////////////////
+
+  localparam int unsigned PcieAxiUserWidth = snitch_cluster_wrapper_pkg::AtomicIdWidth;
+
+  typedef logic [PcieAxiUserWidth-1:0] pcie_axi_user_t;
+
+  // Subordinate side: requests the NoC sends to the controller.
+  `AXI_TYPEDEF_ALL_CT(pcie_axi_slv, pcie_axi_slv_req_t, pcie_axi_slv_rsp_t, axi_narrow_out_addr_t,
+                      axi_narrow_out_id_t, axi_narrow_out_data_t, axi_narrow_out_strb_t,
+                      pcie_axi_user_t)
+  // Manager side: requests the controller sends into the NoC.
+  `AXI_TYPEDEF_ALL_CT(pcie_axi_mst, pcie_axi_mst_req_t, pcie_axi_mst_rsp_t, axi_narrow_in_addr_t,
+                      axi_narrow_in_id_t, axi_narrow_in_data_t, axi_narrow_in_strb_t,
+                      pcie_axi_user_t)
 
 endpackage
