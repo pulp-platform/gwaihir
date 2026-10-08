@@ -27,30 +27,32 @@ module floo_dca_decode #(
 
   // Supported DCA operations
   // Follows order of https://github.com/open-mpi/ompi/blob/main/ompi/op/op.h
-  typedef enum int unsigned {
-    DcaOpMax      = 0,
-    DcaOpMin      = 1,
-    DcaOpSum      = 2,
-    DcaOpProd     = 3,
-    NumDcaOpTypes = 4
+  localparam int unsigned NumDcaOpTypes = 4;
+  localparam int unsigned DcaOpTypeWidth = $clog2(NumDcaOpTypes);
+  typedef enum logic [DcaOpTypeWidth-1:0] {
+    DcaOpMax  = 0,
+    DcaOpMin  = 1,
+    DcaOpSum  = 2,
+    DcaOpProd = 3
   } dca_op_type_e;
 
   // Supported DCA data types
-  typedef enum int unsigned {
+  localparam int unsigned NumDcaDataTypes = 5;
+  localparam int unsigned DcaDataTypeWidth = $clog2(NumDcaDataTypes);
+  typedef enum logic [DcaDataTypeWidth-1:0] {
     DcaDataTypeFp8     = 0,
     DcaDataTypeFp16    = 1,
     DcaDataTypeFp16Alt = 2,
     DcaDataTypeFp32    = 3,
-    DcaDataTypeFp64    = 4,
-    NumDcaDataTypes    = 5
+    DcaDataTypeFp64    = 4
   } dca_data_type_e;
 
   // Total number of supported DCA operations
   localparam int unsigned NumDcaOps = NumDcaOpTypes * NumDcaDataTypes;
 
   typedef struct packed {
-    logic [$clog2(NumDcaOpTypes)-1:0]   op_type;
-    logic [$clog2(NumDcaDataTypes)-1:0] data_type;
+    dca_op_type_e   op_type;
+    dca_data_type_e data_type;
   } dca_op_t;
 
   function automatic fpnew_pkg::fp_format_e dca_type_to_fpnew_format(
