@@ -178,13 +178,25 @@ module gwaihir_top
     .cluster_base_addr_i  (HtileBaseAddr),
     .cluster_base_offset_i(HtileBaseOffset),
     .id_i                 (HtileId),
-    .floo_req_o           (floo_req_out[HtileX][HtileY]),
-    .floo_rsp_i           (floo_rsp_in[HtileX][HtileY]),
-    .floo_wide_o          (floo_wide_out[HtileX][HtileY]),
-    .floo_req_i           (floo_req_in[HtileX][HtileY]),
-    .floo_rsp_o           (floo_rsp_out[HtileX][HtileY]),
-    .floo_wide_i          (floo_wide_in[HtileX][HtileY])
+    .floo_req_west_o      (floo_req_out[HtileX][HtileY][West]),
+    .floo_rsp_west_i      (floo_rsp_in[HtileX][HtileY][West]),
+    .floo_wide_west_o     (floo_wide_out[HtileX][HtileY][West]),
+    .floo_req_west_i      (floo_req_in[HtileX][HtileY][West]),
+    .floo_rsp_west_o      (floo_rsp_out[HtileX][HtileY][West]),
+    .floo_wide_west_i     (floo_wide_in[HtileX][HtileY][West]),
+    .floo_req_south_o     (floo_req_out[HtileX][HtileY][South]),
+    .floo_rsp_south_i     (floo_rsp_in[HtileX][HtileY][South]),
+    .floo_wide_south_o    (floo_wide_out[HtileX][HtileY][South]),
+    .floo_req_south_i     (floo_req_in[HtileX][HtileY][South]),
+    .floo_rsp_south_o     (floo_rsp_out[HtileX][HtileY][South]),
+    .floo_wide_south_i    (floo_wide_in[HtileX][HtileY][South])
   );
+  assign floo_req_out[HtileX][HtileY][North]  = '0;
+  assign floo_rsp_out[HtileX][HtileY][North]  = '0;
+  assign floo_wide_out[HtileX][HtileY][North] = '0;
+  assign floo_req_out[HtileX][HtileY][East]   = '0;
+  assign floo_rsp_out[HtileX][HtileY][East]   = '0;
+  assign floo_wide_out[HtileX][HtileY][East]  = '0;
 
   ///////////////////
   // Cheshire tile //
