@@ -43,6 +43,9 @@ dependencies:
   iDMA:
     git: https://github.com/pulp-platform/iDMA.git
     version: 0.7.3
+  hci:
+    git: https://github.com/pulp-platform/hci.git
+    rev: lkesting/surya
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
     rev: gwaihir
@@ -64,6 +67,10 @@ dependencies:
     rev: main
   ucie:
     path: .deps/ucie
+  # surya-mx is private; use SSH because CI has SSH access but no HTTPS token.
+  surya-mx:
+    git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
+    rev: main
 
 workspace:
   package_links:
@@ -117,6 +124,7 @@ sources:
   # Level 3
   - hw/ucie_tile.sv
   - hw/cluster_tile.sv
+  - hw/h_tile.sv
   - hw/gwaihir_top.sv
 
   - target: any(simulation, test)
