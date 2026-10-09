@@ -23,7 +23,8 @@ VCS_FLAGS_GUI  = -debug_access+all
 # The HyperRAM model is plain Verilog and does not tolerate `-assert svaext`
 VLOGAN_ARGS_HYPER := $(filter-out -assert svaext,$(VLOGAN_ARGS))
 
-VCS_SDF_FLAGS  = -sdf typ:$(TB_DUT).fix.gen_hyper_phy[0].gen_hyper_chip[0].dut:$(HYPER_SDF)
+VCS_SDF_FLAGS  = -auto_tchk_local_precision
+VCS_SDF_FLAGS += -sdf typ:$(TB_DUT).fix.gen_hyper_phy[0].gen_hyper_chip[0].dut:$(HYPER_SDF)
 VCS_SDF_FLAGS += -sdf typ:$(TB_DUT).fix.gen_hyper_phy[0].gen_hyper_chip[1].dut:$(HYPER_SDF)
 VCS_SDF_FLAGS += -sdf typ:$(TB_DUT).fix.gen_hyper_phy[1].gen_hyper_chip[0].dut:$(HYPER_SDF)
 VCS_SDF_FLAGS += -sdf typ:$(TB_DUT).fix.gen_hyper_phy[1].gen_hyper_chip[1].dut:$(HYPER_SDF)
