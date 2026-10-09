@@ -41,6 +41,10 @@ task automatic jtag_enable_tiles();
     fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
     fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_CLK_BASE_ADDR(i), 1'b1, 1'b0);
   end
+  fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1, 1'b0);
+  fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b0, 1'b0);
+  fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1, 1'b0);
+  fix.vip.jtag_write_reg32(`HTILE_CONFIG_CLK_BASE_ADDR, 1'b1, 1'b0);
 endtask
 
 task automatic slink_enable_tiles();
@@ -57,6 +61,10 @@ task automatic slink_enable_tiles();
     fix.vip.slink_write_32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1);
     fix.vip.slink_write_32(`L2_SPM_CONFIG_CLK_BASE_ADDR(i), 1'b1);
   end
+  fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1);
+  fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b0);
+  fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1);
+  fix.vip.slink_write_32(`HTILE_CONFIG_CLK_BASE_ADDR, 1'b1);
 endtask
 
 // FAST_PRELOAD mode trick with virtual class to write directly to L2 sram module inside various for generate

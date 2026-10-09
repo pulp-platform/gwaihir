@@ -43,9 +43,13 @@ dependencies:
   hyperbus:
     git: https://github.com/pulp-platform/hyperbus.git
     rev: gwaihir
+    pass_targets: ["hyperbus_macro"]
   iDMA:
     git: https://github.com/pulp-platform/iDMA.git
-    version: 0.7.1
+    version: 0.7.3
+  hci:
+    git: https://github.com/pulp-platform/hci.git
+    rev: lkesting/surya
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
     rev: gwaihir
@@ -65,12 +69,14 @@ dependencies:
   snitch_cluster:
     git: https://github.com/pulp-platform/snitch_cluster.git
     rev: main
+  tum_npu:
+    path: .deps/tum_npu
   ucie:
     path: .deps/ucie
-  hyperbus:
-    git: https://github.com/pulp-platform/hyperbus.git
-    rev: gwaihir
-    pass_targets: ["hyperbus_macro"]
+  # surya-mx is private; use SSH because CI has SSH access but no HTTPS token.
+  surya-mx:
+    git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
+    rev: main
 
 workspace:
   package_links:
@@ -127,6 +133,7 @@ sources:
   # Level 3
   - hw/ucie_tile.sv
   - hw/cluster_tile.sv
+  - hw/h_tile.sv
   - hw/gwaihir_top.sv
 
   - target: any(simulation, test)
@@ -144,6 +151,14 @@ sources:
   - target: all(pcie, asic)
     files:
       - .deps/pcie/hw/pcie_tile.sv
+
+  - target: not(tum_npu)
+    files:
+      - hw/tum_npu_tile.sv
+
+  - target: tum_npu
+    files:
+      - .deps/tum_npu/hw/tum_npu_tile.sv
 
   - target: asic
     files:
