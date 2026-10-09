@@ -109,6 +109,8 @@ module mem_tile
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t                     chimney_narrow_out_rsp;
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumDemuxPorts-1:0] axi_demux_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumDemuxPorts-1:0] axi_demux_out_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t                     axi_demux_out_req_tile_cfg_cut;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t                     axi_demux_out_rsp_tile_cfg_cut;
 
   gw_tile_regs_pkg::gw_tile_regs__out_t hwif_out;
 
@@ -302,6 +304,24 @@ module mem_tile
     .mst_resps_i    (axi_demux_out_rsp)
   );
 
+  // Cut demux master port for tile_cfg
+  axi_cut #(
+    .aw_chan_t (floo_gwaihir_noc_pkg::axi_narrow_out_aw_chan_t),
+    .w_chan_t  (floo_gwaihir_noc_pkg::axi_narrow_out_w_chan_t),
+    .b_chan_t  (floo_gwaihir_noc_pkg::axi_narrow_out_b_chan_t),
+    .ar_chan_t (floo_gwaihir_noc_pkg::axi_narrow_out_ar_chan_t),
+    .r_chan_t  (floo_gwaihir_noc_pkg::axi_narrow_out_r_chan_t),
+    .axi_req_t (floo_gwaihir_noc_pkg::axi_narrow_out_req_t),
+    .axi_resp_t(floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t)
+  ) i_axi_cut_tile_cfg (
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
+    .slv_req_i (axi_demux_out_req[TileCfg]),
+    .slv_resp_o(axi_demux_out_rsp[TileCfg]),
+    .mst_req_o (axi_demux_out_req_tile_cfg_cut),
+    .mst_resp_i(axi_demux_out_rsp_tile_cfg_cut)
+  );
+
   axi_to_axi_lite #(
     .AxiAddrWidth   (AxiCfgN.AddrWidth),
     .AxiDataWidth   (AxiCfgN.DataWidth),
@@ -316,8 +336,8 @@ module mem_tile
   ) i_axi_to_axi_lite_tile_cfg (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .slv_req_i (axi_demux_out_req[TileCfg]),
-    .slv_resp_o(axi_demux_out_rsp[TileCfg]),
+    .slv_req_i (axi_demux_out_req_tile_cfg_cut),
+    .slv_resp_o(axi_demux_out_rsp_tile_cfg_cut),
     .mst_req_o (tile_cfg_axi_lite_req),
     .mst_resp_i(tile_cfg_axi_lite_rsp)
   );
@@ -393,10 +413,10 @@ module mem_tile
   localparam axi_pkg::xbar_cfg_t AxiWideXbarCfg = '{
       NoSlvPorts: 1,
       NoMstPorts: 2,
-      MaxMstTrans: 4,
-      MaxSlvTrans: 4,
+      MaxMstTrans: DmaNumAxInFlight,
+      MaxSlvTrans: DmaNumAxInFlight,
       FallThrough: 0,
-      LatencyMode: axi_pkg::NO_LATENCY,
+      LatencyMode: axi_pkg::CUT_SLV_PORTS,
       PipelineStages: 0,
       AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
       AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
@@ -653,22 +673,6 @@ module mem_tile
   logic [AxiCfgW.DataWidth/8-1:0] dma_mem_be;
   logic [  AxiCfgW.DataWidth-1:0] dma_mem_rdata;
 
-
-  obi_cut #(
-    .ObiCfg      (DMASbrObiCfg),
-    .obi_a_chan_t(dma_sbr_obi_a_chan_t),
-    .obi_r_chan_t(dma_sbr_obi_r_chan_t),
-    .obi_req_t   (dma_sbr_obi_req_t),
-    .obi_rsp_t   (dma_sbr_obi_rsp_t)
-  ) i_dma_obi_cut (
-    .clk_i         (tile_clk),
-    .rst_ni        (tile_rst_n),
-    .sbr_port_req_i(dma_obi_req),
-    .sbr_port_rsp_o(dma_obi_rsp),
-    .mgr_port_req_o(dma_mem_obi_req_cut),
-    .mgr_port_rsp_i(dma_mem_obi_rsp_cut)
-  );
-
   obi_sram_shim #(
     .ObiCfg   (DMASbrObiCfg),
     .obi_req_t(dma_sbr_obi_req_t),
@@ -676,8 +680,8 @@ module mem_tile
   ) i_dma_sram_shim_bank (
     .clk_i    (tile_clk),
     .rst_ni   (tile_rst_n),
-    .obi_req_i(dma_mem_obi_req_cut),
-    .obi_rsp_o(dma_mem_obi_rsp_cut),
+    .obi_req_i(dma_obi_req),
+    .obi_rsp_o(dma_obi_rsp),
     .req_o    (dma_mem_req),
     .we_o     (dma_mem_we),
     .addr_o   (dma_mem_addr),
@@ -711,7 +715,7 @@ module mem_tile
     assign dma_sram_macro_sel[bank] = dma_mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
     // Register the macro selection to select the correct macro for the next cycle
     `FFL(dma_sram_macro_sel_q[bank], dma_sram_macro_sel[bank],
-         dma_sram_req & dma_sram_gnt & ~dma_sram_we, '0);
+         dma_sram_req & dma_sram_gnt & ~dma_sram_we, '0, tile_clk, tile_rst_n);
     // Assign the data
     assign dma_sram_wdata[bank] = dma_mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign dma_sram_be[bank] = dma_mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
@@ -976,7 +980,8 @@ module mem_tile
     assign sram_addr[bank]      = mem_addr[SramAddrWidthOffset+:SramAddrWidth];
     assign sram_macro_sel[bank] = mem_addr[SramMacroSelOffset+:SramMacroSelWidth];
     // Register the macro selection to select the correct macro for the next cycle
-    `FFL(sram_macro_sel_q[bank], sram_macro_sel[bank], sram_req & sram_gnt & ~sram_we, '0);
+    `FFL(sram_macro_sel_q[bank], sram_macro_sel[bank], sram_req & sram_gnt & ~sram_we, '0, tile_clk,
+         tile_rst_n);
     // Assign the data
     assign sram_wdata[bank] = mem_wdata[bank*SramDataWidth+:SramDataWidth];
     assign sram_be[bank] = mem_be[bank*SramDataWidth/8+:SramDataWidth/8];
