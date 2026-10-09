@@ -5,9 +5,8 @@
 // Author: Tim Fischer <fischeti@iis.ee.ethz.ch>
 
 `include "axi/assign.svh"
-`include "common_cells/assertions.svh"
 
-module cluster_tile
+module h_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
   import snitch_cluster_wrapper_pkg::*;
@@ -31,12 +30,18 @@ module cluster_tile
   input id_t id_i,
 
   // Router ports
-  output floo_req_t  [West:North] floo_req_o,
-  input  floo_rsp_t  [West:North] floo_rsp_i,
-  output floo_wide_t [West:North] floo_wide_o,
-  input  floo_req_t  [West:North] floo_req_i,
-  output floo_rsp_t  [West:North] floo_rsp_o,
-  input  floo_wide_t [West:North] floo_wide_i
+  output floo_req_t  floo_req_west_o,
+  input  floo_rsp_t  floo_rsp_west_i,
+  output floo_wide_t floo_wide_west_o,
+  input  floo_req_t  floo_req_west_i,
+  output floo_rsp_t  floo_rsp_west_o,
+  input  floo_wide_t floo_wide_west_i,
+  output floo_req_t  floo_req_south_o,
+  input  floo_rsp_t  floo_rsp_south_i,
+  output floo_wide_t floo_wide_south_o,
+  input  floo_req_t  floo_req_south_i,
+  output floo_rsp_t  floo_rsp_south_o,
+  input  floo_wide_t floo_wide_south_i
 );
 
   // Tile-specific reset and clock signals
@@ -63,8 +68,8 @@ module cluster_tile
   localparam addr_rule_t [NumTileAddrMapRules-1:0] TileAddrMap = '{
       '{
           idx: TileCfg,
-          start_addr: Sam[ClusterConfigX0Y0SamIdx].start_addr,
-          end_addr: Sam[ClusterConfigX3Y3SamIdx].end_addr
+          start_addr: Sam[HtileConfigSamIdx].start_addr,
+          end_addr: Sam[HtileConfigSamIdx].end_addr
       }
   };
   localparam int unsigned NumTileApbAddrMapRules = 1;
@@ -119,33 +124,6 @@ module cluster_tile
   logic [NrCores-1:0] mxip;
 
 
-  ////////////////////////
-  // Wide FPU Reduction //
-  ////////////////////////
-
-  // Signals to connect the NW router to the DCA decode
-  red_wide_req_t offload_wide_req;
-  red_wide_rsp_t offload_wide_rsp;
-
-  // Snitch cluster DCA interface
-  snitch_cluster_wrapper_pkg::dca_req_t offload_dca_req;
-  snitch_cluster_wrapper_pkg::dca_rsp_t offload_dca_rsp;
-
-  floo_dca_decode #(
-    .EnWideReduction(en_wide_reduction(RouteCfg.CollectiveCfg.OpCfg)),
-    .CutOffloadIntf (RouteCfg.CollectiveCfg.WideRedCfg.CutOffloadIntf)
-  ) i_dca_decode (
-    .clk_i,
-    .rst_ni,
-    .offload_req_i(offload_wide_req),
-    .offload_rsp_o(offload_wide_rsp),
-    .dca_req_o    (offload_dca_req),
-    .dca_rsp_i    (offload_dca_rsp)
-  );
-
-  // TODO(lleone): Add the narrow ALU reduction unit and connections here
-
-
   snitch_cluster_wrapper i_cluster (
     .clk_i                 (tile_clk),
     .rst_ni                (tile_rst_n),
@@ -173,12 +151,12 @@ module cluster_tile
     .narrow_ext_resp_i     (cluster_narrow_ext_rsp),
     .tcdm_ext_req_i        (cluster_tcdm_ext_req_aligned),
     .tcdm_ext_resp_o       (cluster_tcdm_ext_rsp_aligned),
-    .dca_req_i             (offload_dca_req),
-    .dca_rsp_o             (offload_dca_rsp),
+    .dca_req_i             ('0),
+    .dca_rsp_o             (),
     .x_issue_req_o         (),
     .x_issue_resp_i        ('0),
     .x_issue_valid_o       (),
-    .x_issue_ready_i       ('1),
+    .x_issue_ready_i       ('0),
     .x_register_o          (),
     .x_register_valid_o    (),
     .x_register_ready_i    ('0),
@@ -189,7 +167,7 @@ module cluster_tile
     .x_result_ready_o      ()
   );
 
-  if (UseHWPE) begin : gen_hwpe
+  if (UseHtileHWPE) begin : gen_surya
 
     // Convert narrow AXI's 64 bit DW down to 32
     axi_dw_converter #(
@@ -274,7 +252,7 @@ module cluster_tile
       .IdWidth      (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
       .CtrlDataWidth(HWPECtrlDataWidth),
       .NrCores      (NrCores),
-      .Accelerator  (HwpeMxCore)
+      .Accelerator  (HwpeSurya)
     ) i_snitch_hwpe_subsystem (
       .clk_i          (tile_clk),
       .rst_ni         (tile_rst_n),
@@ -285,7 +263,7 @@ module cluster_tile
       .hwpe_ctrl_rsp_o(hwpectrl_rsp),
       .hwpe_evt_o     (mxip)
     );
-  end else begin : gen_no_mxcore
+  end else begin : gen_no_surya
     assign mxip                         = '0;
     assign cluster_tcdm_ext_req_aligned = '0;
     assign cluster_narrow_ext_rsp       = '0;
@@ -300,14 +278,12 @@ module cluster_tile
   floo_wide_t [Eject:North] router_floo_wide_in;
   floo_wide_t [Eject:North] router_floo_wide_out;
 
-
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfg.RouteAlgo),
+    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
-    .NoLoopback    (1'b0),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -315,11 +291,7 @@ module cluster_tile
     .hdr_t         (hdr_t),
     .floo_req_t    (floo_req_t),
     .floo_rsp_t    (floo_rsp_t),
-    .floo_wide_t   (floo_wide_t),
-    .red_wide_req_t(red_wide_req_t),
-    .red_wide_rsp_t(red_wide_rsp_t),
-    .CollectiveCfg (RouteCfg.CollectiveCfg),
-    .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
+    .floo_wide_t   (floo_wide_t)
   ) i_router (
     .clk_i,
     .rst_ni,
@@ -333,43 +305,51 @@ module cluster_tile
     .floo_wide_i         (router_floo_wide_in),
     .floo_wide_o         (router_floo_wide_out),
     // Wide Reduction offload port
-    .offload_wide_req_o  (offload_wide_req),
-    .offload_wide_rsp_i  (offload_wide_rsp),
+    .offload_wide_req_o  (),
+    .offload_wide_rsp_i  ('0),
     // Narrow Reduction offload port
     .offload_narrow_req_o(),
     .offload_narrow_rsp_i('0)
   );
 
-  assign floo_req_o                      = router_floo_req_out[West:North];
-  assign router_floo_req_in[West:North]  = floo_req_i;
-  assign floo_rsp_o                      = router_floo_rsp_out[West:North];
-  assign router_floo_rsp_in[West:North]  = floo_rsp_i;
-  assign router_floo_wide_in[West:North] = floo_wide_i;
-  assign floo_wide_o[West:North]         = router_floo_wide_out[West:North];
+  assign floo_req_west_o            = router_floo_req_out[West];
+  assign floo_req_south_o           = router_floo_req_out[South];
+  assign router_floo_req_in[West]   = floo_req_west_i;
+  assign router_floo_req_in[North]  = '0;  // No North port in this tile
+  assign router_floo_req_in[East]   = '0;  // No East port in this tile
+  assign router_floo_req_in[South]  = floo_req_south_i;
+  assign floo_rsp_west_o            = router_floo_rsp_out[West];
+  assign floo_rsp_south_o           = router_floo_rsp_out[South];
+  assign router_floo_rsp_in[West]   = floo_rsp_west_i;
+  assign router_floo_rsp_in[North]  = '0;  // No North port in this tile
+  assign router_floo_rsp_in[East]   = '0;  // No East port in this tile
+  assign router_floo_rsp_in[South]  = floo_rsp_south_i;
+  assign floo_wide_west_o           = router_floo_wide_out[West];
+  assign floo_wide_south_o          = router_floo_wide_out[South];
+  assign router_floo_wide_in[West]  = floo_wide_west_i;
+  assign router_floo_wide_in[North] = '0;  // No North port in this tile
+  assign router_floo_wide_in[East]  = '0;  // No East port in this tile
+  assign router_floo_wide_in[South] = floo_wide_south_i;
 
   /////////////
   // Chimney //
   /////////////
-
 
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
     .AxiCfgW             (floo_gwaihir_noc_pkg::AxiCfgW),
     .ChimneyCfgN         (floo_pkg::ChimneyDefaultCfg),
     .ChimneyCfgW         (floo_pkg::ChimneyDefaultCfg),
-    .RouteCfg            (floo_gwaihir_noc_pkg::RouteCfg),
+    .RouteCfg            (RouteCfgNoMcast),
     .AtopSupport         (1'b1),
-    .collect_op_t        (floo_gwaihir_noc_pkg::collect_op_t),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
     .MaxAtomicTxns       (3),
-    .Sam                 (floo_gwaihir_noc_pkg::CollectiveSam),
+    .Sam                 (floo_gwaihir_noc_pkg::Sam),
     .id_t                (floo_gwaihir_noc_pkg::id_t),
     .rob_idx_t           (floo_gwaihir_noc_pkg::rob_idx_t),
     .hdr_t               (floo_gwaihir_noc_pkg::hdr_t),
-    .sam_rule_t          (floo_gwaihir_noc_pkg::collective_sam_rule_t),
-    .sam_idx_t           (floo_gwaihir_noc_pkg::collective_idx_t),
-    .mask_sel_t          (floo_gwaihir_noc_pkg::collective_mask_sel_t),
+    .sam_rule_t          (floo_gwaihir_noc_pkg::sam_rule_t),
     .axi_narrow_in_req_t (snitch_cluster_wrapper_pkg::narrow_out_req_t),
     .axi_narrow_in_rsp_t (snitch_cluster_wrapper_pkg::narrow_out_resp_t),
     .axi_narrow_out_req_t(snitch_cluster_wrapper_pkg::narrow_in_req_t),
@@ -381,9 +361,7 @@ module cluster_tile
     .floo_req_t          (floo_gwaihir_noc_pkg::floo_req_t),
     .floo_rsp_t          (floo_gwaihir_noc_pkg::floo_rsp_t),
     .floo_wide_t         (floo_gwaihir_noc_pkg::floo_wide_t),
-    .sram_cfg_t          (snitch_cluster_wrapper_pkg::sram_cfg_t),
-    .user_narrow_struct_t(floo_gwaihir_noc_pkg::collective_axi_narrow_in_user_t),
-    .user_wide_struct_t  (floo_gwaihir_noc_pkg::collective_axi_wide_in_user_t)
+    .sram_cfg_t          (snitch_cluster_wrapper_pkg::sram_cfg_t)
   ) i_chimney (
     .clk_i               (clk_i),
     .rst_ni              (rst_ni),

@@ -542,8 +542,8 @@ wheels = [
 
 [[package]]
 name = "floogen"
-version = "0.8.4"
-source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=0ee94fef9df623f1e6f5aa6d8e504d4e9a9423f6#0ee94fef9df623f1e6f5aa6d8e504d4e9a9423f6" }
+version = "0.9.0"
+source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=main#6ea0648407e7d989b7ec3a1ce6eaa2045b7cd114" }
 dependencies = [
     { name = "mako" },
     { name = "networkx" },
@@ -688,7 +688,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "cheshire", virtual = ".deps/cheshire" },
-    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=0ee94fef9df623f1e6f5aa6d8e504d4e9a9423f6" },
+    { name = "floogen", git = "https://github.com/pulp-platform/FlooNoC.git?rev=main" },
     { name = "mako", specifier = ">=1.3.0" },
     { name = "peakrdl", specifier = ">=1.5.0" },
     { name = "peakrdl-rawheader", specifier = ">=0.2.5" },
