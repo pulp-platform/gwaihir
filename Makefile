@@ -228,7 +228,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= e23fabe4e9893cea634d9b40c64dd742246ecb34
+PD_COMMIT ?= 88dff5531dfa0b7e1fc0e26fcba42b2a7922b998
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -243,9 +243,13 @@ LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
 LPDDR_COMMIT ?= 70de7b091a83af4f4f764b45b15a308a5498525a
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
+TUM_NPU_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/tum_npu.git
+TUM_NPU_COMMIT ?= 99918bee90c1a8a366ada4580e09f7a621aa69c1
+TUM_NPU_DIR = $(GW_ROOT)/.deps/tum_npu
+
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR) $(TUM_NPU_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -264,16 +268,21 @@ $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
 	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT)
 
+$(TUM_NPU_DIR):
+	git clone $(TUM_NPU_REMOTE) $(TUM_NPU_DIR)
+	cd $(TUM_NPU_DIR) && git checkout $(TUM_NPU_COMMIT)
+
+
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^LPDDR_COMMIT ?= .*/LPDDR_COMMIT ?= $(shell git -C $(LPDDR_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^UCIE_COMMIT ?= .*/UCIE_COMMIT ?= $(shell git -C $(UCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^TUM_NPU_COMMIT ?= .*/TUM_NPU_COMMIT ?= $(shell git -C $(TUM_NPU_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
-	rm -f $(GW_ROOT)/sw/cheshire/tests/pcie_*.c
-	rm -f $(GW_ROOT)/sw/cheshire/tests/ucie_closed_*.c
-	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR)
+	rm -f $(PCIE_SW_TESTS_VENDORED)
+	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR) $(TUM_NPU_DIR)
 
 -include $(PD_DIR)/pd.mk
 -include $(LPDDR_DIR)/lpddr.mk
