@@ -88,6 +88,13 @@ def main():
               (df.file.str.contains(r'snitch(?:_sequencer)?\.sv')))]
     print(f'Ignore SYNTH_12604 in snitch and snitch_sequencer. {len(df)} messages remaining.')
 
+    # Ignore the width mismatch between the case labels and the selector in the FlooNoC reduction
+    # arbiter. The labels are the (narrower) reserved opcodes: SystemVerilog zero-extends them to
+    # the selector width, so the comparison is correct.
+    df = df[~((df.rule == 'W263') &
+              (df.file.str.contains(r'floo_reduction_arbiter\.sv')))]
+    print(f'Ignore W263 in floo_reduction_arbiter. {len(df)} messages remaining.')
+
     # Waive unused macro warnings for macros created implicitly by bender
     df = df[~((df.rule == 'CMD_define02') &
               (df.message.str.contains('|'.join(IMPLICIT_MACROS))))]
