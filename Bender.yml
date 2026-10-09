@@ -70,6 +70,7 @@ dependencies:
   hyperbus:
     git: https://github.com/pulp-platform/hyperbus.git
     rev: gwaihir
+    pass_targets: ["hyperbus_macro"]
 
 workspace:
   package_links:
