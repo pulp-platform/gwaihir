@@ -118,6 +118,11 @@ def main():
     df = df[~(df.rule.isin(DCA_RULES) & df.file.str.contains(r'floo_dca_decode\.sv'))]
     print(f'Ignore {", ".join(DCA_RULES)} in floo_dca_decode. {len(df)} messages remaining.')
 
+    # Ignore everything in the deprecated common_cells wrappers (src/deprecated/*). They are thin
+    # compatibility shims for the old module names and are not used by FlooNoC.
+    df = df[~df.file.str.contains(r'common_cells[^/]*/src/deprecated/')]
+    print(f'Ignore common_cells/src/deprecated. {len(df)} messages remaining.')
+
     # Waive unused macro warnings for macros created implicitly by bender
     df = df[~((df.rule == 'CMD_define02') &
               (df.message.str.contains('|'.join(IMPLICIT_MACROS))))]
