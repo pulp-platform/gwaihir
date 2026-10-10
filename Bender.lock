@@ -45,7 +45,7 @@ packages:
     - register_interface
     - tech_cells_generic
   axi_obi:
-    revision: bf84f43c1467ea9d2abc5db871c6f13e79082b89
+    revision: 030136e2e199b17c61606b54f57823df2cdbfd14
     version: null
     source:
       Git: https://github.com/DanielKellerM/axi_obi.git
