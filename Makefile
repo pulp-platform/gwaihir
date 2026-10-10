@@ -301,6 +301,7 @@ LINT_LOG       = $(LINT_BUILD_DIR)/spyglass.log
 # make invocation and would otherwise trigger a spurious re-run of Spyglass
 LINT_GEN_RTL   = $(GW_HW_ALL) $(SN_CLUSTER_WRAPPER_PKG) $(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv
 LINT_TILES    ?= gwaihir_top cheshire_tile cluster_tile mem_tile_small mem_tile_large ucie_tile pcie_tile dummy_tile
+LINT_TARGS    ?= $(COMMON_TARGS) -t synthesis
 
 .PHONY: spyglass $(addprefix spyglass-,$(LINT_TILES)) spyglass-clean
 
@@ -308,14 +309,14 @@ $(LINT_BUILD_DIR):
 	mkdir -p $@
 
 $(LINT_BUILD_DIR)/analyze.tcl: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_BUILD_DIR) $(LINT_GEN_RTL)
-	$(BENDER) script flist-plus $(COMMON_TARGS) --suppress E31 > $@
+	$(BENDER) script flist-plus $(LINT_TARGS) --suppress E31 > $@
 
 # Per-tile file lists, trimmed with bender's slang extension to the files reachable from each tile.
 # `--broken keep` is needed since slang cannot resolve the includes of the generated Snitch wrapper
 # package when parsing it standalone.
 $(LINT_BUILD_DIR)/%.f: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_GEN_RTL)
 	@mkdir -p $(@D)
-	$(BENDER) script flist-plus $(COMMON_TARGS) --suppress E31 --top $* --broken keep > $@
+	$(BENDER) script flist-plus $(LINT_TARGS) --suppress E31 --top $* --broken keep > $@
 
 # Run Spyglass on the full design
 $(LINT_REPORT): $(LINT_DIR)/spyglass.tcl $(LINT_BUILD_DIR)/analyze.tcl | $(LINT_BUILD_DIR)
