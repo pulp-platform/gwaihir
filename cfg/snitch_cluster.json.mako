@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Cluster configuration for a simple testbench system.
+<% htile = name == "htile" %>
 {
     nr_clusters: ${nr_clusters},
     cluster: {
@@ -14,11 +15,12 @@
         data_width: 64,
         atomic_id_width: 6, // clog2(#clusters + 2); must equal AxiCfgN.UserWidth
         tcdm: {
-            size: 128,
+            size: ${512 if htile else 128},
             banks: 32,
         },
-        cluster_periph_size: 60, // kB
-        zero_mem_size: 60, // kB
+        // The cluster crossbar needs a power-of-two address space: TCDM + 4 + periph + zero + 4 kB.
+        cluster_periph_size: ${252 if htile else 60}, // kB
+        zero_mem_size: ${252 if htile else 60}, // kB
         ext_mem_size: 4, //kB
         dma_data_width: 512,
         // TODO(fischeti): Check with Thomas
@@ -38,7 +40,8 @@
         dca_data_width: 512,
         cluster_base_expose: true,
         alias_region_enable: true,
-        alias_region_base: 0x20440000,
+        // The alias must not overlap the NoC map. The H tile ends at 0x2050_0000.
+        alias_region_base: 0x20500000,
         num_exposed_wide_tcdm_ports: 1,
         narrow_axi_port_expose: true,
         collective_width: ${collective_width},
