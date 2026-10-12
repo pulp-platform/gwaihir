@@ -42,6 +42,7 @@ variables:
   artifacts:
     paths:
       - sw/snitch/tests/build/*.elf
+      - sw/snitch/tests/build/htile/*.elf
       - sw/snitch/apps/**/build/**/*.elf
       # The PACE verifier reads the generated data.h next to the ELF
       - sw/snitch/apps/**/build/**/data.h
