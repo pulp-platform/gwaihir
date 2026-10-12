@@ -292,7 +292,7 @@ endpoints:
   - name: "htile"
     addr_range:
       - base: "${cluster_base + cluster_x * cluster_y * cluster_size}"
-        size: 0x0004_0000
+        size: 0x0010_0000
         rdl_name: "htile"
         rdl_addrmap_grp: ["64b", "32b"]
       - base: 0x2101_8000
