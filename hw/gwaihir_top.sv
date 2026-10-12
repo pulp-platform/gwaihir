@@ -150,7 +150,8 @@ module gwaihir_top
   // H-tile //
   ////////////
 
-  logic [NrCores-1:0] htile_debug_req, htile_meip, htile_mtip, htile_msip;
+  logic [htile_snitch_cluster_wrapper_pkg::NrCores-1:0]
+      htile_debug_req, htile_meip, htile_mtip, htile_msip;
 
   assign htile_debug_req = '0;
   assign htile_meip      = '0;
