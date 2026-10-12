@@ -29,6 +29,9 @@ dependencies:
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: master
+  core_ips:
+    git: https://github.com/pulp-platform/core_ips.git
+    rev: 5cc30f0da57c7a7168452c1e30f96d158ccfa016
   datamover:
     git: https://github.com/pulp-platform/datamover.git
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
@@ -97,10 +100,12 @@ sources:
       - .generated/hw/gw_tile_regs_pkg.sv
       - .generated/hw/gw_ucie_tile_regs_pkg.sv
       - .generated/hw/gw_addrmap_pkg.sv
+      - .generated/hw/htile_snitch_cluster_wrapper_pkg.sv
       - .generated/hw/ucie_slink_reg_pkg.sv
       # Level 0.1
       - .generated/hw/gw_tile_regs.sv
       - .generated/hw/gw_ucie_tile_regs.sv
+      - .generated/hw/htile_snitch_cluster_wrapper.sv
       - .generated/hw/ucie_slink_reg.sv
 
   # Level 1
