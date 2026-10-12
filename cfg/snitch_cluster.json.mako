@@ -6,6 +6,7 @@
 {
     nr_clusters: ${nr_clusters},
     cluster: {
+        name: "${name}",
         cluster_base_addr: 0x20000000,
         cluster_base_offset: 0x40000,
         cluster_base_hartid: 1,
