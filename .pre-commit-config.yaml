@@ -37,6 +37,8 @@ repos:
         language: python
         additional_dependencies: ["verible==0.0.4071.0"]
         files: '\.sv$'
+        # Verible cannot expand the hci_helpers macros of the copied konark modules.
+        exclude: '^hw/konark_'
 
   ##########
   # rdlfmt #
