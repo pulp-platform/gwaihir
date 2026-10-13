@@ -88,6 +88,22 @@ def main():
               (df.file.str.contains(r'snitch(?:_sequencer)?\.sv')))]
     print(f'Ignore SYNTH_12604 in snitch and snitch_sequencer. {len(df)} messages remaining.')
 
+    # Ignore "read but never set" on the fields of the decoder's request port
+    # (ignore W123 on decoder_req_i in spatz_decoder.sv)
+    # This is a fake error, which we have verified multiple times
+    df = df[~((df.rule == 'W123') &
+              (df.file.str.contains(r'spatz_decoder\.sv')) &
+              (df.message.str.contains(r"Variable 'decoder_req_i\.")))]
+    print(f'Ignore W123 on decoder_req_i in spatz_decoder. {len(df)} messages remaining.')
+
+    # Ignore "read but never set" on the reorder buffer IDs in the VLSU
+    # (ignore W123 on rob_id and rob_rid in spatz_vlsu.sv)
+    # This is a fake error, the field is not in use without out-of-order read.
+    df = df[~((df.rule == 'W123') &
+              (df.file.str.contains(r'spatz_vlsu\.sv')) &
+              (df.message.str.contains(r"Variable 'rob_r?id'")))]
+    print(f'Ignore W123 on rob_id and rob_rid in spatz_vlsu. {len(df)} messages remaining.')
+
     # Waive unused macro warnings for macros created implicitly by bender
     df = df[~((df.rule == 'CMD_define02') &
               (df.message.str.contains('|'.join(IMPLICIT_MACROS))))]
