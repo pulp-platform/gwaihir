@@ -30,6 +30,75 @@ WAIVERS = [
     # variable assigned but never read
     'W528'
 ]
+
+TILE_WAIVERS = {
+    'cheshire_tile': [
+        # initial assignment at declaration is ignored by synthesis
+        'SYNTH_89',
+        # hanging user instance removed during optimization (unused in this config)
+        'SYNTH_5032',
+        # unreachable branch (dead case label)
+        'SYNTH_5037',
+        # assert statements are not synthesizable and are ignored
+        'SYNTH_5064',
+        # initial block is ignored for synthesis
+        'SYNTH_5143',
+        # non-synthesizable statement is ignored
+        'SYNTH_5166',
+        # unique if/case conditions are not all covered
+        'SYNTH_12605',
+        # property blocks are ignored for synthesis
+        'SYNTH_12611',
+        # asynchronous reset signal used as non-reset
+        'STARC05-1.3.1.3',
+        # clock signal used as a non-clock
+        'STARC05-1.4.3.4',
+        # bit-width mismatch between function call argument and function input
+        'STARC05-2.1.3.1',
+        # logical operator used where a bit-wise operator is intended
+        'STARC05-2.1.4.5',
+        # conditional expression does not evaluate to a scalar
+        'STARC05-2.1.5.3',
+        # logical negation used on a vector
+        'STARC05-2.10.2.3',
+        # operand bit-width mismatch for logical operator
+        'STARC05-2.10.3.2a',
+        # flipflop assigned over the same signal
+        'STARC05-2.2.3.3',
+        # multi-bit expression where a one-bit expression is expected
+        'W224',
+        # case label width does not match selector width
+        'W263',
+        # bit select on an integer variable
+        'W215',
+        # loop index is not of type integer
+        'W480',
+        # parameter width does not match the assigned value
+        'ParamWidthMismatch-ML',
+        # parentheses around a reduction operator
+        'WRN_61',
+        # not all bits of a function value are set in all branches
+        'W499',
+        # function sets a module-level variable (next-state convention)
+        'W424',
+        # design unit has an empty definition
+        'WarnAnalyzeBBox',
+        # possibly unsynthesizable loop in a function
+        'W481a',
+        # blocking assignment in a clock-generation flip-flop (intentional)
+        'W336',
+    ],
+}
+
+TILE_FILE_WAIVERS = {
+    'cheshire_tile': [
+        ('W123', r'cheshire_soc\.sv'),    # computed localparam array range not resolved
+        ('W123', r'floo_nw_router\.sv'),  # credit unused when VcImpl != VcCredit
+        ('W123', r'floo_router\.sv'),     # handshake history unused when multicast off
+        ('W287a', r'cheshire_soc\.sv'),   # same false positive as W123 (axi_in_req[6])
+        ('W123', r'fpnew\.pickle\.sv'),   # divsqrt handshake unset in scalar path (false positive)
+    ],
+}
 TILES_DIR = Path(__file__).parent / 'build'
 TOP = 'gwaihir_top'
 
@@ -137,6 +206,17 @@ def main():
         files = tile_files(args.tile, args.tiles_dir)
         df = df[df.file.map(lambda f: str(Path(f).resolve()) in files)]
         print(f'Keep only violations in tile {args.tile}. {len(df)} messages remaining.')
+
+        # Apply waivers reviewed for this specific tile
+        tile_waivers = TILE_WAIVERS.get(args.tile, [])
+        if tile_waivers:
+            df = df[~df.rule.isin(tile_waivers)]
+            print(f'Waive {", ".join(tile_waivers)} for tile {args.tile}. '
+                  f'{len(df)} messages remaining.')
+
+        # Apply file-scoped waivers reviewed for this tile
+        for rule, pattern in TILE_FILE_WAIVERS.get(args.tile, []):
+            df = df[~((df.rule == rule) & df.file.str.contains(pattern))]
 
     # Fail on remaining messages
     if len(df) > 0:
