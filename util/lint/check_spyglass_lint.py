@@ -123,6 +123,21 @@ def main():
     df = df[~df.file.str.contains(r'common_cells[^/]*/src/deprecated/')]
     print(f'Ignore common_cells/src/deprecated. {len(df)} messages remaining.')
 
+    # In hwpe-ctrl/rtl/deprecated/hwpe_ctrl_regfile.sv:314, the int unsigned EXT_IN_REGGED parameter
+    # is passed as ~EXT_IN_REGGED to an if() condition: A logical NOT (!) is expected instead of bitwise
+    # NOT (~). This anyway, is harmless for MXCore and can be waived rather than fixing it upstream,
+    # since hwpe-ctrl is used outside MXCore too.
+    df = df[~((df.rule == 'W224') &
+              (df.message.str.contains('EXT_IN_REGGED')))]
+    print(f'Ignore W224 for EXT_IN_REGGED in hwpe-ctrl. {len(df)} messages remaining.')
+
+    # In hwpe-ctrl/rtl/deprecated/hwpe_ctrl_slave.sv:266, ignore the undriven regfile_flags.is_working
+    # signal. This is a dead field and genuinely unused, never assigned and never read.
+    df = df[~((df.rule == 'W287a') &
+              (df.file.str.contains(r'hwpe_ctrl_slave\.sv')) &
+              (df.message.str.contains('is_working')))]
+    print(f'Ignore W287a for regfile_flags.is_working in hwpe_ctrl_slave. {len(df)} messages remaining.')
+
     # Waive unused macro warnings for macros created implicitly by bender
     df = df[~((df.rule == 'CMD_define02') &
               (df.message.str.contains('|'.join(IMPLICIT_MACROS))))]
