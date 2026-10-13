@@ -316,7 +316,7 @@ package gwaihir_pkg;
   endfunction
 
   // Returns the address size of a FlooNoC endpoint
-  function automatic addr_t ep_addr_size(sam_idx_e ep);
+  function automatic int unsigned ep_addr_size(sam_idx_e ep);
     return Sam[ep].end_addr - Sam[ep].start_addr;
   endfunction
 
@@ -430,7 +430,7 @@ package gwaihir_pkg;
   } hwpe_acc_e;
   localparam bit UseHWPE = 1'b1;
   localparam bit UseHtileHWPE = 1'b1;
-  localparam addr_t ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
+  localparam int unsigned ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
 
   typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH-1:0] tile_cfg_reg_data_t;
   typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH/8-1:0] tile_cfg_reg_strb_t;
@@ -480,13 +480,13 @@ package gwaihir_pkg;
   localparam int unsigned L2SpmIdxStride = int'(L2Spm1SamIdx) - int'(L2Spm0SamIdx);
 
   // Function to get the memory size.
-  function automatic addr_t mem_tile_size(int unsigned t);
+  function automatic int unsigned mem_tile_size(int unsigned t);
     return ep_addr_size(sam_idx_e'(int'(L2Spm0SamIdx) + L2SpmIdxStride * t));
   endfunction
 
   // Number of SRAM macro rows of mem tile `t`.
   function automatic int unsigned mem_tile_num_bank_rows(int unsigned t);
-    return int unsigned'((mem_tile_size(t) / (AxiCfgW.DataWidth / 8)) / SramNumWords);
+    return (mem_tile_size(t) / (AxiCfgW.DataWidth / 8)) / SramNumWords;
   endfunction
 
   // Largest row count across all mem tiles, for statically sizing arrays used in tb_gwaihir_tasks.svh.
@@ -498,8 +498,8 @@ package gwaihir_pkg;
     return max_rows;
   endfunction
   //Heterogeneous memory tile size
-  localparam int unsigned MemTileSizeLarge = int unsigned'(mem_tile_size(0));
-  localparam int unsigned MemTileSizeSmall = int unsigned'(mem_tile_size(1));
+  localparam int unsigned MemTileSizeLarge = mem_tile_size(0);
+  localparam int unsigned MemTileSizeSmall = mem_tile_size(1);
 
   localparam int unsigned MaxNumBankRows = get_max_num_bank_rows();
   // Macro-row select width of the largest tile. Also a safe extraction width
