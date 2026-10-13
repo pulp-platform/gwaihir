@@ -104,6 +104,25 @@ def main():
               (df.message.str.contains(r"Variable 'rob_r?id'")))]
     print(f'Ignore W123 on rob_id and rob_rid in spatz_vlsu. {len(df)} messages remaining.')
 
+    # Ignore the width mismatch between the case labels and the selector in the FlooNoC reduction
+    # arbiter. The labels are the (narrower) reserved opcodes: SystemVerilog zero-extends them to
+    # the selector width, so the comparison is correct.
+    df = df[~((df.rule == 'W263') &
+              (df.file.str.contains(r'floo_reduction_arbiter\.sv')))]
+    print(f'Ignore W263 in floo_reduction_arbiter. {len(df)} messages remaining.')
+
+    # Ignore the width and enum type findings in the NoC reduction -> DCA decoder. Its enums use the
+    # default 32-bit base type and are compared with, or assigned from, the narrower fields of
+    # `dca_op_t`. SystemVerilog zero-extends them, so the decoding is correct.
+    DCA_RULES = ['W263', 'STARC05-2.1.3.1', 'WRN_1459']
+    df = df[~(df.rule.isin(DCA_RULES) & df.file.str.contains(r'floo_dca_decode\.sv'))]
+    print(f'Ignore {", ".join(DCA_RULES)} in floo_dca_decode. {len(df)} messages remaining.')
+
+    # Ignore everything in the deprecated common_cells wrappers (src/deprecated/*). They are thin
+    # compatibility shims for the old module names and are not used by FlooNoC.
+    df = df[~df.file.str.contains(r'common_cells[^/]*/src/deprecated/')]
+    print(f'Ignore common_cells/src/deprecated. {len(df)} messages remaining.')
+
     # Waive unused macro warnings for macros created implicitly by bender
     df = df[~((df.rule == 'CMD_define02') &
               (df.message.str.contains('|'.join(IMPLICIT_MACROS))))]
