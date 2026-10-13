@@ -29,6 +29,7 @@ module tb_gwaihir_top;
   int unsigned        preload_mode;
   bit          [31:0] exit_code;
   bit                 snitch_preload;
+  bit                 offload_htile;
   string              snitch_elf;
   logic        [63:0] snitch_entry;
   logic        [63:0] chs_entry;
@@ -39,6 +40,7 @@ module tb_gwaihir_top;
     // Fetch plusargs or use safe (fail-fast) defaults
     if (!$value$plusargs("BOOTMODE=%d", boot_mode)) boot_mode = 0;
     if (!$value$plusargs("PRELMODE=%d", preload_mode)) preload_mode = 1;
+    if (!$value$plusargs("OFFLOAD_HTILE=%d", offload_htile)) offload_htile = 0;
     if (!$value$plusargs("IMAGE=%s", boot_hex)) boot_hex = "";
 
     if ($value$plusargs("CHS_BINARY=%s", preload_elf)) begin
@@ -100,7 +102,7 @@ module tb_gwaihir_top;
             $fatal(1, "Preload mode %d (headless offload) requires SN_BINARY!", preload_mode);
           jtag_enable_tiles();
           fastmode_elf_preload(snitch_elf, snitch_entry);
-          headless_offload(fix.clk, exit_code);
+          headless_offload(fix.clk, offload_htile, exit_code);
         end
         default: begin
           $fatal(1, "Unsupported preload mode %d (reserved)!", preload_mode);
