@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Cluster configuration for a simple testbench system.
+<% htile = name == "htile" %>
 {
     nr_clusters: ${nr_clusters},
     cluster: {
@@ -39,7 +40,8 @@
         cluster_base_expose: true,
         alias_region_enable: true,
         alias_region_base: 0x20440000,
-        num_exposed_wide_tcdm_ports: 1,
+        // The 1024-bit Surya takes 3 superbank plugs and the datamover 2, with misaligned accesses.
+        num_exposed_wide_tcdm_ports: ${5 if htile else 1},
         narrow_axi_port_expose: true,
         collective_width: ${collective_width},
         enable_external_interrupts: true,
