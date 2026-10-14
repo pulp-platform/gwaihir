@@ -5,7 +5,7 @@
 // Authors: Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 //          Cyrill Durrer <cdurrer@iis.ee.ethz.ch>
 //
-// Copied from konark-cluster 86ab306.
+// Copied from konark-cluster cf58dce.
 
 `include "hci_helpers.svh"
 
@@ -50,7 +50,8 @@ module konark_tcdm_aligner
   assign sb_offset_d = (tcdm_misaligned.req && tcdm_misaligned.gnt) ? tcdm_misaligned.add[SbAddrBits-1:0] : sb_offset_q;
   assign req_base_addr = (MISALIGNED_ACCESSES == 1) ? (tcdm_misaligned.add & SbAddrMask)
                                                      : tcdm_misaligned.add;
-  assign req_offset_bytes = (MISALIGNED_ACCESSES == 1) ? sb_offset_d : '0;
+  // The split can send a part to a free superbank before gnt, so shift by the current address
+  assign req_offset_bytes = (MISALIGNED_ACCESSES == 1) ? tcdm_misaligned.add[SbAddrBits-1:0] : '0;
 
   // Barrel-shift data and strobe into the aligned window
   always_comb begin
@@ -92,7 +93,7 @@ module konark_tcdm_aligner
   assign tcdm_aligned_wide.r_eready = '1;
 
   // Split the aligned window into NumPlugs superbank-width ports.
-  // konark_tcdm_split: no request buffering (gnt only when all banks simultaneously ready),
+  // konark_tcdm_split: no request buffering (plugs commit independently, gnt once all are committed),
   // response buffering per-channel so r_valid always fires exactly gnt+1.
   konark_tcdm_split #(
     .DW                          (AlignedDW),

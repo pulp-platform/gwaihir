@@ -4,7 +4,7 @@
 
 // Authors: Sergio Mazzola <smazzola@iis.ee.ethz.ch>
 //
-// Copied from konark-cluster 86ab306.
+// Copied from konark-cluster cf58dce.
 
 `include "hci_helpers.svh"
 
@@ -13,12 +13,13 @@
 // Accepts a single DW-bit HCI-Core transaction from the accelerator and splits it into
 // NB_OUT_CHAN narrower (DW/NB_OUT_CHAN-bit) sub-transactions on plain Snitch TCDM bus ports.
 //
-// Grant semantics: the accelerator sees gnt=1 only when all sub-channel banks simultaneously
-// assert q_ready. Partially-committed sub-channels are tracked and their requests suppressed
-// so already-granted banks are freed for other initiators while remaining ones are pending.
+// Grant semantics: each plug commits as soon as its bank asserts q_ready. The accelerator
+// sees gnt=1 once all plugs are committed. Partially-committed plugs are tracked and
+// their requests suppressed so already-granted banks are freed for other initiators while remaining
+// ones are pending.
 //
-// Response semantics: responses from early-completing sub-channels are buffered in per-channel
-// registers. When the last sub-channel's p_valid arrives, it bypasses its register and is
+// Response semantics: responses from early-completing plugs are buffered in per-channel
+// registers. When the last plug's p_valid arrives, it bypasses its register and is
 // combined combinatorially with already-buffered data. The accelerator sees r_valid as a
 // one-cycle pulse exactly one cycle after gnt, with no dependence on r_ready.
 //
@@ -53,12 +54,12 @@ module konark_tcdm_split
   // ---------------------------------------------------------------------------
 
   // sub_granted_q[ii]: bank ii was granted in a previous cycle; its request is suppressed
-  // until the overall transaction commits (all banks simultaneously grant).
+  // until the overall transaction commits (gnt).
   logic [NB_OUT_CHAN-1:0] sub_granted_q;
 
   logic [NB_OUT_CHAN-1:0] chan_req;       // q_valid forwarded to each bank
   logic [NB_OUT_CHAN-1:0] chan_gnt;       // q_ready from each bank
-  logic [NB_OUT_CHAN-1:0] chan_committed; // sub-channel committed this cycle
+  logic [NB_OUT_CHAN-1:0] chan_committed; // plug committed this cycle
 
   for (genvar ii = 0; ii < NB_OUT_CHAN; ii++) begin : gen_req_binding
     assign chan_req[ii]       = tcdm_target.req & ~sub_granted_q[ii];
@@ -74,7 +75,7 @@ module konark_tcdm_split
     assign tcdm_req_o[ii].q.user  = '0;
   end
 
-  // Grant to accelerator only when every sub-channel has been committed to its bank.
+  // Grant to accelerator only when every plug has been committed to its bank.
   assign tcdm_target.gnt = tcdm_target.req & (&chan_committed);
 
   // Accumulate partial grants; cleared when all committed or on req drop.
@@ -109,6 +110,7 @@ module konark_tcdm_split
   logic [NB_OUT_CHAN-1:0][DW_OUT-1:0] mux_r_data;    // per-channel bypass mux output
   logic                               all_r_avail;
   logic                               retire;
+  logic                               abort;
 
   for (genvar ii = 0; ii < NB_OUT_CHAN; ii++) begin : gen_rsp_binding
     assign chan_r_valid[ii] = tcdm_rsp_i[ii].p_valid;
@@ -124,9 +126,11 @@ module konark_tcdm_split
 
   assign all_r_avail = &sub_r_avail;
 
-  // r_valid is a one-cycle pulse: asserted when all sub-channel responses are available,
+  // r_valid is a one-cycle pulse: asserted when all plug responses are available,
   // cleared the following cycle when registers are reset. No dependence on r_ready.
   assign retire              = all_r_avail;
+  // A soft clear in the accelerator drops req before gnt: discard the partial responses.
+  assign abort               = ~tcdm_target.req & |sub_granted_q;
   assign tcdm_target.r_valid = all_r_avail;
 
   // Reconstruction: channel 0 at LSB, channel NB_OUT_CHAN-1 at MSB.
@@ -148,7 +152,7 @@ module konark_tcdm_split
     end else if (clear_i) begin
       sub_r_valid_q <= '0;
       sub_r_data_q  <= '0;
-    end else if (retire) begin
+    end else if (retire | abort) begin
       sub_r_valid_q <= '0;
     end else begin
       for (int ii = 0; ii < NB_OUT_CHAN; ii++) begin
@@ -188,7 +192,7 @@ module konark_tcdm_split
   // bank responses for the new transaction cannot arrive until the following cycle.
   no_grant_during_pending_rsp : assert property (
     @(posedge clk_i) disable iff (!rst_ni || clear_i)
-    (tcdm_target.gnt & |sub_r_valid_q) |-> retire
+    (tcdm_target.gnt & |(sub_r_valid_q & ~sub_granted_q)) |-> retire
   ) else $error("konark_tcdm_split: new gnt while previous response still pending");
 `endif
 `endif
