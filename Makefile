@@ -174,6 +174,9 @@ docs-clean:
 ##################
 
 SN_GEN_DIR = $(GW_GEN_HW_DIR)
+# Must match `double_bw` and `xpace` in cfg/snitch_cluster.json.mako
+SN_SPATZ_DOUBLE_BW ?= ON
+SN_SPATZ_PACE      ?= ON
 include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/toolchain.mk
 include $(SN_ROOT)/make/rtl.mk
@@ -186,9 +189,9 @@ $(SN_CFG): $(SN_CFG_TPL) $(FLOO_CFG) | $(GW_GEN_DIR)
 
 .PHONY: sn-hw-clean sn-hw-all
 
-sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG)
+sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG) $(SN_SPATZ_PKG)
 sn-hw-clean:
-	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
+	rm -rf $(SN_CLUSTER_WRAPPER_PKG) $(SN_SPATZ_PKG) $(SN_SPATZ_CFG)
 	rm -f $(SN_CFG)
 
 ##########

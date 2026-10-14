@@ -10,9 +10,9 @@
 
 #include <stdint.h>
 
-// The subsystem sits in the `ext_mem` window of the cluster, after the zero memory.
+// The subsystem sits in the `ext_mem` window of the cluster, after the PACE memory.
 #define GW_HWPE_BASE_ADDR(cluster) \
-  ((uintptr_t)(cluster)->zeromem.mem + sizeof((cluster)->zeromem.mem))
+  ((uintptr_t)(cluster)->pacemem.mem + sizeof((cluster)->pacemem.mem))
 
 #define GW_HWPE_ACC_WINDOW 0x200
 
