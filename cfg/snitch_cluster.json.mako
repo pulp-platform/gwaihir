@@ -15,11 +15,12 @@
         data_width: 64,
         atomic_id_width: 6, // clog2(#clusters + 2); must equal AxiCfgN.UserWidth
         tcdm: {
-            size: 128,
+            size: ${256 if htile else 128},
             banks: 32,
         },
-        cluster_periph_size: 60, // kB
-        zero_mem_size: 60, // kB
+        // The cluster crossbar needs a power-of-two address space: TCDM + 4 + periph + zero + 4 kB.
+        cluster_periph_size: ${124 if htile else 60}, // kB
+        zero_mem_size: ${124 if htile else 60}, // kB
         ext_mem_size: 4, //kB
         dma_data_width: 512,
         // TODO(fischeti): Check with Thomas
@@ -39,7 +40,8 @@
         dca_data_width: 512,
         cluster_base_expose: true,
         alias_region_enable: true,
-        alias_region_base: 0x20440000,
+        // The alias must not overlap the NoC map. The H tile ends at 0x2048_0000.
+        alias_region_base: 0x20480000,
         // The 1024-bit Surya takes 3 superbank plugs and the datamover 2, with misaligned accesses.
         num_exposed_wide_tcdm_ports: ${5 if htile else 1},
         narrow_axi_port_expose: true,
