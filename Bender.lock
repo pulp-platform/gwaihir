@@ -469,7 +469,7 @@ packages:
     - reqrsp_interface
     - tech_cells_generic
   surya-mx:
-    revision: 39aac3bf49ae9c74a153e737835203c9d2742169
+    revision: c5fbba3fcba1a512594d0dd8b2a93f699468657e
     version: null
     source:
       Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
