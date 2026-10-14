@@ -139,6 +139,8 @@ int main(void) {
   if (snrt_cluster_idx() != GW_HTILE_CLUSTER_IDX) return 0;
 
   if (snrt_is_dm_core()) {
+    // Skip the first 128 KiB, so that Surya and the DMA also use a larger H tile TCDM.
+    snrt_l1_alloc_cluster_local(SNRT_TCDM_SIZE - 0x20000, 64);
     SURYA_TASKS(TASK_ALLOC_AND_DMA)
     snrt_dma_wait_all();
   }
