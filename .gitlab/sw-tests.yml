@@ -45,6 +45,7 @@
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/chs_reg_rw.elf }
       - { SN_BINARY: $SN_BUILD_DIR/reduction_benchmark.elf, VERIFY_PY: experiments/reduction/verify.py, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/ucie_loopback.elf, PRELMODE: 5 }
+      - { SN_BINARY: $SN_BUILD_DIR/datamover.elf, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/mxcore.elf, VERIFY_PY: experiments/mxcore/verify.py, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/mx_e2e.elf, VERIFY_PY: experiments/mx_e2e/verify.py, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/mx_e2e_fp16.elf, VERIFY_PY: experiments/mx_e2e/verify.py, PRELMODE: 5 }
