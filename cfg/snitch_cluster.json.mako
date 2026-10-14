@@ -17,7 +17,15 @@
             banks: 32,
         },
         cluster_periph_size: 60, // kB
-        zero_mem_size: 60, // kB
+        zero_mem_size: 56, // kB
+        pace_enable: true,
+        pace_mem_size: 4, // kB
+        pace_degree: 2,
+        pace_parts: 16,
+        pace_eps: 1,
+        pace_data_width: 32,
+        pace_pipe_dist: 0x04,
+        pace_fmt_config: 0x150,
         ext_mem_size: 4, //kB
         dma_data_width: 512,
         // TODO(fischeti): Check with Thomas
@@ -105,6 +113,7 @@
         xfrep: false,
         xcopift: false,
         xdma: false,
+        xpace: true,
         zfh: true,
         xf16alt: true,
         xf8: true,
@@ -128,7 +137,6 @@
             spatz_fpu: true,
             mempool: false,
             buf_fpu: 1,
-            pace: true,
             rvf: true,
             rvd: true,
             fp64: false,

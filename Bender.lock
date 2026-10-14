@@ -436,7 +436,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: a5eddc144b7f2bc7047ad1b2469a31065651cfb4
+    revision: f1520d09e03ea670cc039f174e9fd102dbc7af11
     version: null
     source:
       Git: https://github.com/DiyouS/snitch_cluster.git
@@ -456,7 +456,7 @@ packages:
     - spatz_vpu
     - tech_cells_generic
   spatz_vpu:
-    revision: 6202b7a072478b2f7dee86425d3e8034b08c027c
+    revision: 5b43f4e903ca446a99395671a80075b40861a41e
     version: null
     source:
       Git: https://github.com/pulp-platform/spatz_vpu.git
