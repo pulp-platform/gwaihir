@@ -62,5 +62,6 @@ typedef snitch_cluster__stride40000_t snitch_cluster_t;
 #include "datamover/hal_datamover.h"
 
 // Gwaihir specific
+#include "gw_dma.h"
 #include "gw_team.h"
 #include "gw_sync.h"
