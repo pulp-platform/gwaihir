@@ -35,6 +35,9 @@
 #define TASK0_MX_SCALE_A_PTR task0_mx_scale_a
 #define TASK0_MX_SCALE_B_PTR task0_mx_scale_b
 #define TASK0_MX_OUT_INT8 1
+#define TASK0_A_MXINT4 0
+#define TASK0_B_MXINT4 0
+#define TASK0_C_MXINT4 0
 #define TASK0_OUT_DIM 0
 #define TASK0_MX_OUT_SCALE_PTR task0_mx_out_scale
 #define TASK0_MX_OUT_SCALE_SIZE 512
