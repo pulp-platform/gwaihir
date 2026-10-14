@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: ed482b90c10a8b288e0f0d590cc103b47e9a5b66
+    revision: 2ae57b52a544bccbbe04c89afa961d428a5cd60e
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -180,7 +180,7 @@ packages:
     dependencies:
     - common_cells
   cva6:
-    revision: 6071f79154068620f3d67ba2b55b91bcccd55394
+    revision: 92611d8f93b4e5939abcd0cd2475706cdede1c76
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
