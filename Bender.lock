@@ -34,7 +34,7 @@ packages:
     - common_verification
     - tech_cells_generic
   axi_llc:
-    revision: 9e95ab79be2ae99d51f71d33f873ac254b17c221
+    revision: 6952b8d2316bbf75dd743dbbc3ddced367360331
     version: null
     source:
       Git: https://github.com/pulp-platform/axi_llc.git
@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 5e3ce49fe01f7a4c77174bfe0f8fcbafc8f6a35c
+    revision: ed482b90c10a8b288e0f0d590cc103b47e9a5b66
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
