@@ -19,7 +19,7 @@ GW_SNITCH_SW_DIR = $(GW_SW_DIR)/snitch
 
 GW_INCDIR = $(GW_SW_DIR)/include
 
-#-include $(PD_DIR)/sw/sw.mk
+-include $(PD_DIR)/sw/sw.mk
 -include $(PCIE_DIR)/sw/sw.mk
 -include $(LPDDR_DIR)/sw/sw.mk
 -include $(UCIE_DIR)/sw/sw.mk
