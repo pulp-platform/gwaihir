@@ -252,9 +252,9 @@ $(HYPER_MODEL) $(HYPER_SDF):
 			$(MAKE) -C $(HYPERBUS_ROOT) models/s27ks0641; \
 		fi'
 
-$(HYPER_PADFRAME): $(HYPERBUS_ROOT)/padframe/padrick_rundir/configs/tsmc7.yml \
+$(HYPER_PADFRAME): $(HYPERBUS_ROOT)/padframe/padrick_rundir/configs/tech.yml \
                    $(HYPERBUS_ROOT)/src/hyperbus_wrap.sv.mako
-	$(MAKE) -C $(HYPERBUS_ROOT) padframe PAD_TECH=tsmc7 \
+	$(MAKE) -C $(HYPERBUS_ROOT) padframe PAD_TECH=tech \
 		PADRICK=$(PADRICK) MAKO_RENDER=$(MAKO_RENDER)
 	touch $@
 

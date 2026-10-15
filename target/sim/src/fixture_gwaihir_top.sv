@@ -56,14 +56,23 @@ module fixture_gwaihir_top;
   axi_llc_req_t axi_llc_mst_req;
   axi_llc_rsp_t axi_llc_mst_rsp;
 
-  wire [HyperbusNumPadCfg-1:0]                      hyper_pad_config;
-  assign hyper_pad_config = '0; // No pad retention in simulation
   wire [HyperbusNumPhys-1:0]                        hyper_ck;
   wire [HyperbusNumPhys-1:0]                        hyper_ck_n;
   wire [HyperbusNumPhys-1:0][HyperbusNumChips-1:0]  hyper_cs_n;
   wire [HyperbusNumPhys-1:0]                        hyper_rwds;
   wire [HyperbusNumPhys-1:0][                  7:0] hyper_dq;
   wire [HyperbusNumPhys-1:0]                        hyper_reset_n;
+
+  logic [HyperbusNumPhys-1:0][HyperbusNumChips-1:0]  hyper_cs_no;
+  logic [HyperbusNumPhys-1:0]                        hyper_ck_o;
+  logic [HyperbusNumPhys-1:0]                        hyper_ck_no;
+  logic [HyperbusNumPhys-1:0]                        hyper_rwds_o;
+  logic [HyperbusNumPhys-1:0]                        hyper_rwds_i;
+  logic [HyperbusNumPhys-1:0]                        hyper_rwds_oe_o;
+  logic [HyperbusNumPhys-1:0][7:0]                   hyper_dq_i;
+  logic [HyperbusNumPhys-1:0][7:0]                   hyper_dq_o;
+  logic [HyperbusNumPhys-1:0][7:0]                   hyper_dq_oe_o;
+  logic [HyperbusNumPhys-1:0]                        hyper_reset_no;
 
   // Set to 1 to bypass tile-specific clock gating and reset (use global signals instead)
   logic   clk_rst_bypass;
@@ -132,14 +141,43 @@ module fixture_gwaihir_top;
     .pcie_jtag_phys_tdo_o  (),
     .axi_llc_mst_req_o     (axi_llc_mst_req),
     .axi_llc_mst_rsp_i     (axi_llc_mst_rsp),
-    .hyper_pad_config      (hyper_pad_config),
-    .hyper_ck              (hyper_ck),
-    .hyper_ck_n            (hyper_ck_n),
-    .hyper_cs_n            (hyper_cs_n),
-    .hyper_rwds            (hyper_rwds),
-    .hyper_dq              (hyper_dq),
-    .hyper_reset_n         (hyper_reset_n)
+    .hyper_cs_no           (hyper_cs_no),
+    .hyper_ck_o            (hyper_ck_o),
+    .hyper_ck_no           (hyper_ck_no),
+    .hyper_rwds_o          (hyper_rwds_o),
+    .hyper_rwds_i          (hyper_rwds_i),
+    .hyper_rwds_oe_o       (hyper_rwds_oe_o),
+    .hyper_dq_i            (hyper_dq_i),
+    .hyper_dq_o            (hyper_dq_o),
+    .hyper_dq_oe_o         (hyper_dq_oe_o),
+    .hyper_reset_no        (hyper_reset_no),
+    .hyper_pad_cfg_o       ()
   );
+
+  /////////////////////////////////
+  //  HyperBus Tristate Adapter  //
+  /////////////////////////////////////////////////////////
+  // Used to simulate the same beavior as a physical pad //
+  for (genvar i = 0; i < HyperbusNumPhys; i++) begin : gen_hyper_tristate
+    // Control signals
+    assign hyper_ck[i]      = hyper_ck_o[i];
+    assign hyper_ck_n[i]    = hyper_ck_no[i];
+    assign hyper_reset_n[i] = hyper_reset_no[i];
+    // Chip selects
+    for (genvar j = 0; j < HyperbusNumChips; j++) begin : gen_cs
+      assign hyper_cs_n[i][j] = hyper_cs_no[i][j];
+    end
+
+    // RWDS
+    assign hyper_rwds[i]   = hyper_rwds_oe_o[i] ? hyper_rwds_o[i] : 1'bz;
+    assign hyper_rwds_i[i] = hyper_rwds_oe_o[i] ? hyper_rwds[i] : 1'bz;
+
+    // DQ
+    for (genvar b = 0; b < 8; b++) begin : gen_dq
+      assign hyper_dq[i][b]   = hyper_dq_oe_o[i][b] ? hyper_dq_o[i][b] : 1'bz;
+      assign hyper_dq_i[i][b] = hyper_dq_oe_o[i][b] ? 1'bz : hyper_dq[i][b];
+    end
+  end
 
   //////////////////
   //  HyperRAM    //
