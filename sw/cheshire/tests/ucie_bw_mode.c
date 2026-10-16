@@ -24,13 +24,10 @@ int main() {
   volatile gw_ucie_tile_regs_t *ucie_cfg0 = (volatile gw_ucie_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie0_tile_cfg;
   volatile gw_ucie_tile_regs_t *ucie_cfg1 = (volatile gw_ucie_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie1_tile_cfg;
 
-  if ((ucie_tile_enable(ucie_cfg0) && ucie_tile_enable(ucie_cfg1)) == 0) return 1;
-
-#ifdef GW_UCIE_CLOSED_PCS
-  if (ucie_link_bringup((uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg,
-                        (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg) != 0u)
+  if (!ucie_tiles_enable(ucie_cfg0, ucie_cfg1,
+                         (uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg,
+                         (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg))
     return 1;
-#endif
 
   // Write to chiplet1's L2 through the ucie0 alias window (routed via UCIe).
   volatile uint32_t *alias_wr = (volatile uint32_t *)&gwaihir_addrmap_64b.ucie0.l2_spm_0;
