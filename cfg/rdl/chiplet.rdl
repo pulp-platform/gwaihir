@@ -30,7 +30,7 @@ addrmap chiplet #(
     longint unsigned L2SpmOffset      = 0x0120_0000,
     longint unsigned L2SpmStride      = 0x0020_0000,
     longint unsigned L2SpmSizeLarge   = 0x0020_0000,
-    longint unsigned L2SpmSizeSmall   = 0x0010_0000,
+    longint unsigned L2SpmSizeSmall   = 0x0008_0000,
     longint unsigned RegSize          = 0x0000_1000
 ) {
     snitch_cluster cluster[NumClusters]        @ ClusterOffset    += ClusterSize;
