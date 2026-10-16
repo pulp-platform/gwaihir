@@ -58,6 +58,13 @@ module fixture_gwaihir_top;
   logic [NumUcieTiles-1:0][7:0] ucie_txdata, ucie_rxdata;
   logic [NumUcieTiles-1:0]      ucie_txclksb, ucie_txdatasb, ucie_rxclksb, ucie_rxdatasb;
 
+  // UCIe PHY reference clock (100 MHz), needed by the closed-source PHY model
+  logic ucie_refclk;
+  initial begin
+    ucie_refclk = 1'b0;
+    forever #(5ns) ucie_refclk = ~ucie_refclk;
+  end
+
   axi_llc_req_t axi_llc_mst_req;
   axi_llc_rsp_t axi_llc_mst_rsp;
 
@@ -126,7 +133,7 @@ module fixture_gwaihir_top;
     .pcie_jtag_phys_tms_i  (1'b0),
     .pcie_jtag_phys_trst_ni(1'b1),
     .pcie_jtag_phys_tdo_o  (),
-    .ucie_refclk_i         ('0),
+    .ucie_refclk_i         ({NumUcieTiles{ucie_refclk}}),
     .ucie_txckp_o          (ucie_txckp),
     .ucie_txckn_o          (ucie_txckn),
     .ucie_txdata_o         (ucie_txdata),
