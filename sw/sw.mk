@@ -59,6 +59,9 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/summa_gemm
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
 # Spatz kernels
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fgemv
+# Spatz PACE kernels
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz_pace_loop
 
 SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 
