@@ -30,6 +30,7 @@ $(eval $(call add_vcs_flag,CHS_BINARY))
 $(eval $(call add_vcs_flag,SN_BINARY))
 $(eval $(call add_vcs_flag,BOOTMODE))
 $(eval $(call add_vcs_flag,PRELMODE))
+$(eval $(call add_vcs_flag,OFFLOAD_HTILE))
 
 .PHONY: vcs-compile vcs-compile-batch vcs-clean vcs-run vcs-run-batch
 
