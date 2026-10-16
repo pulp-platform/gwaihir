@@ -71,7 +71,7 @@ DOCS_DIR         ?= $(GW_ROOT)/docs
 DOCS_ADDRMAP_MD  ?= $(DOCS_DIR)/addressmap.md
 DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 
-UCIE_SLINK_NUM_LANES ?= 512
+UCIE_SLINK_NUM_LANES ?= 256
 UCIE_SLINK_EN_DDR    ?= 0
 
 HTILE_CLUSTER_RDL = $(GW_GEN_HW_DIR)/htile.rdl
@@ -228,7 +228,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= b76c7501ea253e816ce9b4e35983989fd84f12d6
+PD_COMMIT ?= 0c57add8ef0a1b07408f7e0043d704a904d66c20
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -236,7 +236,7 @@ PCIE_COMMIT ?= 456127dfcfd18f7a6227e10a81382f4160887179
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
-UCIE_COMMIT ?= 40ba5cfb8211d2949a1a7ce434ed8ba5f290b762
+UCIE_COMMIT ?= b5d8363709e1e6de153f1664bd04d30df086d65f
 UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git

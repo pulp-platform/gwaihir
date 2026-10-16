@@ -116,13 +116,16 @@ sources:
   - hw/mem_tile_large.sv
   - hw/dummy_tile.sv
 
+  # UCIe macro wrapper: open-source behavioral model, or the closed-source
+  # version from the `ucie` package (target `ucie`)
   - target: not(ucie)
     files:
-      - hw/ucie_pcs_wrap.sv
+      - hw/ucie_macro_wrap.sv
   - target: ucie
     files:
-      - .deps/ucie/hw/ucie_pcs_wrap.sv
-
+      - .deps/ucie/hw/ucie_macro_wrap.sv
+  - hw/stream2rdi.sv
+  - hw/rdi2stream.sv
   # Level 3
   - hw/ucie_tile.sv
   - hw/cluster_tile.sv
