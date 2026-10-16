@@ -480,7 +480,7 @@ package gwaihir_pkg;
 
   localparam int unsigned HyperbusNumChips = 2;
   localparam int unsigned HyperbusNumPhys = 2;
-  localparam int unsigned HyperbusNumPadCfg = 1;
+  localparam int unsigned HyperbusNumPadCfg = 16;
   localparam int unsigned HyperbusAxiMaxTrans = 4;
   localparam int unsigned HyperbusAxiLogDepth = 3;
   localparam int unsigned HyperbusCdcSyncStages = 2;
