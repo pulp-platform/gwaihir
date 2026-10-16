@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: SHL-0.51
 
 `include "common_cells/assertions.svh"
+`include "common_cells/registers.svh"
 
 module snitch_hwpe_subsystem
   import hci_package::*;
@@ -20,7 +21,6 @@ module snitch_hwpe_subsystem
   parameter int unsigned CtrlDataWidth = 32,
   parameter int unsigned NrCores       = 8,
   parameter hwpe_acc_e   Accelerator   = gwaihir_pkg::HwpeMxCore,
-  // The datamover is optional, the DMA transpose can replace it
   parameter bit          UseDatamover  = 1'b1
 ) (
   input logic clk_i,
@@ -40,16 +40,18 @@ module snitch_hwpe_subsystem
 
   localparam bit IsSurya = (Accelerator == gwaihir_pkg::HwpeSurya);
 
-  // Address frame: one window per HWPE, the accelerator first, then the datamover,
-  // and the control block after the windows. `gw_hwpe_subsystem_addrmap.h` mirrors it.
-  // The frame is the same without the datamover, its window is then not decoded.
   localparam int unsigned NumHwpe = UseDatamover ? 2 : 1;
   localparam int unsigned AccPort = 0;
   localparam int unsigned DmaPort = 1;
-  // At least one bit, so the control block does not move when there is a single HWPE
   localparam int unsigned HwpeSelWidth = cc_pkg::idx_width(NumHwpe);
+
   localparam int unsigned AccWindowWidth = 9;
-  localparam int unsigned CtrlBlkBit = AccWindowWidth + HwpeSelWidth;
+  localparam int unsigned SlotWidth = 2;
+  localparam int unsigned FrameWidth = AccWindowWidth + SlotWidth;
+  localparam logic [SlotWidth-1:0] CtrlSlot = 1;
+  localparam logic [SlotWidth-1:0] DmaSlot = 2;
+  localparam logic [SlotWidth-1:0] UnusedSlot = 3;
+
   localparam int unsigned NumCtrlRegs = 3;
   localparam int unsigned CtrlIdxWidth = $clog2(NumCtrlRegs);
   localparam int unsigned CtrlIdxOffset = $clog2(CtrlDataWidth / 8);
@@ -58,7 +60,8 @@ module snitch_hwpe_subsystem
   localparam logic [CtrlIdxWidth-1:0] CtrlMuxSel = 1;
   localparam logic [CtrlIdxWidth-1:0] CtrlClkEn = 2;
 
-  `ASSERT_INIT(FrameIsFixed, HwpeSelWidth == 1, "Another HWPE would move the control block")
+  `ASSERT_INIT(CtrlRegsFitSlot, NumCtrlRegs * (CtrlDataWidth / 8) <= (1 << AccWindowWidth),
+               "The control registers must fit in one slot")
 
   // MXCore sizes its HCI ports with the hci defaults and its id filter asserts that
   // the port matches. Surya sizes its ports from the port.
@@ -127,32 +130,30 @@ module snitch_hwpe_subsystem
   assign tcdm.egnt          = '0;
   assign tcdm.r_evalid      = '0;
 
+  logic [   SlotWidth-1:0] slot;
   logic                    ctrl_blk_sel;
   logic [CtrlIdxWidth-1:0] ctrl_blk_idx;
-  logic [HwpeSelWidth-1:0] periph_sel_q, periph_sel_d;
-  assign ctrl_blk_sel = hwpe_ctrl_req_i.q.addr[CtrlBlkBit];
+  assign slot         = hwpe_ctrl_req_i.q.addr[AccWindowWidth+:SlotWidth];
+  assign ctrl_blk_sel = (slot == CtrlSlot);
   assign ctrl_blk_idx = hwpe_ctrl_req_i.q.addr[CtrlIdxOffset+:CtrlIdxWidth];
-  // Without the datamover there is only window 0, so a stray access to window 1 lands there
-  assign periph_sel_d = UseDatamover ?
-      hwpe_ctrl_req_i.q.addr[AccWindowWidth+:HwpeSelWidth] : HwpeSelWidth'(AccPort);
 
-  // The window and the TCDM mux can only be chosen if there is a datamover
-  if (UseDatamover) begin : gen_hwpe_sel
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (~rst_ni) begin
-        periph_sel_q <= '0;
-        mux_sel      <= '0;
-      end else begin
-        periph_sel_q <= periph_sel_d;
-        if (ctrl_blk_sel && (ctrl_blk_idx == CtrlMuxSel) && hwpe_ctrl_req_i.q_valid &&
-            hwpe_ctrl_req_i.q.write) begin
-          mux_sel <= hwpe_ctrl_req_i.q.data[HwpeSelWidth-1:0];
-        end
-      end
-    end
-  end else begin : gen_no_hwpe_sel
-    assign periph_sel_q = HwpeSelWidth'(AccPort);
-    assign mux_sel      = HwpeSelWidth'(AccPort);
+  logic ctrl_write;
+  assign ctrl_write = ctrl_blk_sel && hwpe_ctrl_req_i.q_valid && hwpe_ctrl_req_i.q.write;
+
+  // One-hot HWPE of the request. The accelerator takes every slot that is not the datamover's,
+  // so each request is answered.
+  logic [NumHwpe-1:0] hwpe_sel;
+  assign hwpe_sel[AccPort] = !(UseDatamover && (slot == DmaSlot));
+  if (UseDatamover) begin : gen_dm_sel
+    assign hwpe_sel[DmaPort] = (slot == DmaSlot);
+  end
+
+  // The TCDM mux can only be set if there is a datamover
+  if (UseDatamover) begin : gen_mux_sel
+    `FFL(mux_sel, hwpe_ctrl_req_i.q.data[HwpeSelWidth-1:0],
+         ctrl_write && (ctrl_blk_idx == CtrlMuxSel), '0)
+  end else begin : gen_no_mux_sel
+    assign mux_sel = HwpeSelWidth'(AccPort);
   end
 
   // Request to the selected HWPE, answers of all of them
@@ -161,7 +162,7 @@ module snitch_hwpe_subsystem
   logic [NumHwpe-1:0][31:0] hwpe_r_data;
 
   for (genvar i = 0; i < NumHwpe; i++) begin : gen_periph
-    assign periph[i].req  = hwpe_ctrl_req_i.q_valid && !ctrl_blk_sel && (periph_sel_d == i);
+    assign periph[i].req  = hwpe_ctrl_req_i.q_valid && !ctrl_blk_sel && hwpe_sel[i];
     assign periph[i].add  = AccWindowWidth'(hwpe_ctrl_req_i.q.addr);
     assign periph[i].wen  = ~hwpe_ctrl_req_i.q.write;
     assign periph[i].be   = hwpe_ctrl_req_i.q.strb;
@@ -182,22 +183,21 @@ module snitch_hwpe_subsystem
       hwpe_ctrl_rsp_o.q_ready = hwpe_ctrl_req_i.q_valid;
       hwpe_ctrl_rsp_o.p_valid = '1;
     end else begin
-      hwpe_ctrl_rsp_o.q_ready = hwpe_gnt[periph_sel_d];
-      hwpe_ctrl_rsp_o.p.data  = hwpe_r_data[periph_sel_q];
-      hwpe_ctrl_rsp_o.p_valid = hwpe_r_valid[periph_sel_q];
-    end
-  end
-
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (~rst_ni) begin
-      clk_en <= '0;
-    end else begin
-      if (ctrl_blk_sel && (ctrl_blk_idx == CtrlClkEn) && hwpe_ctrl_req_i.q_valid &&
-          hwpe_ctrl_req_i.q.write) begin
-        clk_en <= hwpe_ctrl_req_i.q.data[NumHwpe-1:0];
+      hwpe_ctrl_rsp_o.q_ready = |(hwpe_gnt & hwpe_sel);
+      // Only the HWPE that was asked answers
+      for (int i = 0; i < NumHwpe; i++) begin
+        if (hwpe_r_valid[i]) begin
+          hwpe_ctrl_rsp_o.p.data  = hwpe_r_data[i];
+          hwpe_ctrl_rsp_o.p_valid = 1'b1;
+        end
       end
     end
   end
+
+  `FFL(clk_en, hwpe_ctrl_req_i.q.data[NumHwpe-1:0], ctrl_write && (ctrl_blk_idx == CtrlClkEn), '0)
+
+  // An event of the selected HWPE sets the flag of its core, a write of that core's bit clears it
+  logic [NrCores-1:0] hwpe_evt_d;
 
   for (genvar ii = 0; ii < NrCores; ii++) begin : gen_hwpe_evt
     assign hwpe_irq_evt[AccPort][ii] = IsSurya ? |evt[AccPort][ii] : evt[AccPort][ii][1];
@@ -205,21 +205,17 @@ module snitch_hwpe_subsystem
       assign hwpe_irq_evt[DmaPort][ii] = |evt[DmaPort][ii];
     end
 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (~rst_ni) begin
-        hwpe_evt_q[ii] <= '0;
-      end else begin
-        if (hwpe_irq_evt[mux_sel][ii]) begin
-          hwpe_evt_q[ii] <= 1'b1;
-        end
-        else if (ctrl_blk_sel && (ctrl_blk_idx == CtrlEvtClr) &&
-                 hwpe_ctrl_req_i.q_valid && hwpe_ctrl_req_i.q.write &&
-                 hwpe_ctrl_req_i.q.data == (1 << ii)) begin
-          hwpe_evt_q[ii] <= 1'b0;
-        end
+    always_comb begin
+      hwpe_evt_d[ii] = hwpe_evt_q[ii];
+      if (hwpe_irq_evt[mux_sel][ii]) begin
+        hwpe_evt_d[ii] = 1'b1;
+      end else if (ctrl_write && (ctrl_blk_idx == CtrlEvtClr) &&
+                   hwpe_ctrl_req_i.q.data == (1 << ii)) begin
+        hwpe_evt_d[ii] = 1'b0;
       end
     end
   end
+  `FF(hwpe_evt_q, hwpe_evt_d, '0)
   assign hwpe_evt_o = hwpe_evt_q;
 
   tc_clk_gating i_acc_clk_gate (
@@ -299,20 +295,22 @@ module snitch_hwpe_subsystem
     );
   end
 
-  // Every access must hit a register: the accelerator window, the datamover window (if there is
-  // one) or a control register. The decode above ignores the other address bits, so anything
-  // else would alias a register. That is a software bug.
+  // Every access must hit a register: the accelerator slot, the datamover slot (if there is one)
+  // or a control register. The decode above ignores the other address bits, so anything else
+  // would alias a register. That is a software bug.
 `ifdef INC_ASSERT
   logic unmapped_access;
   always_comb begin
     // Above the frame, which is 2 KiB of the 4 KiB `ext_mem` window of the cluster
-    unmapped_access = hwpe_ctrl_req_i.q.addr[CtrlBlkBit+1];
+    unmapped_access = hwpe_ctrl_req_i.q.addr[FrameWidth] || (slot == UnusedSlot);
+    if (slot == DmaSlot && !UseDatamover) begin
+      unmapped_access = 1'b1;
+    end
+    // Only the registers 0 to NumCtrlRegs-1, word aligned, exist in the control slot
     if (ctrl_blk_sel) begin
-      unmapped_access |= (ctrl_blk_idx >= NumCtrlRegs)  // no such control register
-      | (|hwpe_ctrl_req_i.q.addr[CtrlBlkBit-1:CtrlIdxOffset+CtrlIdxWidth])
-                       | (|hwpe_ctrl_req_i.q.addr[CtrlIdxOffset-1:0]);  // not a word
-    end else if (!UseDatamover) begin
-      unmapped_access |= hwpe_ctrl_req_i.q.addr[AccWindowWidth];  // the removed datamover window
+      unmapped_access |= (ctrl_blk_idx >= NumCtrlRegs) ||
+                         (|hwpe_ctrl_req_i.q.addr[AccWindowWidth-1:CtrlIdxOffset+CtrlIdxWidth]) ||
+                         (|hwpe_ctrl_req_i.q.addr[CtrlIdxOffset-1:0]);
     end
   end
 `endif
