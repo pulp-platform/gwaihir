@@ -29,12 +29,13 @@
         ext_mem_size: 4, //kB
         dma_data_width: 512,
         // TODO(fischeti): Check with Thomas
-        dma_axi_req_fifo_depth: 24,
+        // Increased from 24 to 64 for transposition, check with Daniel
+        dma_axi_req_fifo_depth: 64,
         dma_req_fifo_depth: 8,
         // Elaborates the iDMA compute path (DMOPC) in every cluster's inst64 frontend
         dma_enable_compute: true,
-        // Transpose stays off until it replaces the datamover; half duplex when enabled
-        dma_compute_transpose: false,
+        // Half duplex transpose: one tile bank, as big as the datamover's matrix
+        dma_compute_transpose: true,
         dma_compute_transpose_full_duplex: false,
         narrow_trans: 4,
         wide_trans: 32,
