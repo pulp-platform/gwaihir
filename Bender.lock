@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 2d011dd767b96785d3f5b487d0b7cad2c8632c68
+    revision: e8b05c99d0796b630b57869e4f6493896497d6b7
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -180,7 +180,7 @@ packages:
     dependencies:
     - common_cells
   cva6:
-    revision: 99b32d28a86309fab4fd6803169809fb0e225bf0
+    revision: cc2093e45dfb964d8ed11803df59c1e10e508e9a
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
@@ -497,6 +497,12 @@ packages:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:
     - common_verification
+  tum_npu:
+    revision: null
+    version: null
+    source:
+      Path: .deps/tum_npu
+    dependencies: []
   ucie:
     revision: null
     version: null
@@ -514,9 +520,3 @@ packages:
     - axi
     - common_cells
     - register_interface
-  tum_npu:
-    revision: null
-    version: null
-    source:
-      Path: .deps/tum_npu
-    dependencies: []
