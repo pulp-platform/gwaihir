@@ -33,6 +33,9 @@ module mem_tile_dma_wrap #(
 
   parameter bit                        EnableCompute = 0,
   parameter idma_pkg::compute_enable_t ComputeOps    = '0,
+  parameter idma_pkg::compute_tuning_t ComputeTuning = '1,
+  parameter idma_pkg::timing_cuts_t    TimingCuts    = '0,
+  parameter int unsigned               BufferDepth   = 3,
   // iDMA transfer req/resp type
   parameter type                       axi_mst_req_t = logic,
   parameter type                       axi_mst_rsp_t = logic,
@@ -61,6 +64,7 @@ module mem_tile_dma_wrap #(
   localparam int unsigned NumDim = 2;
   localparam int unsigned RepWidth = 32;
   localparam int unsigned TfLenWidth = 32;
+  localparam idma_pkg::compute_enable_t FeComputeOps = EnableCompute ? ComputeOps : '0;
 
   // The iDMA register frontend is a fixed 32b APB slave; the address follows the bus
   localparam int unsigned ApbAddrWidth = AxiNarrowAddrWidth;
@@ -167,6 +171,8 @@ module mem_tile_dma_wrap #(
       .NumRegs       (32'd1),
       .NumStreams    (32'd1),
       .IdCounterWidth(IdCounterWidth),
+      .DataWidth     (AxiDataWidth),
+      .ComputeOps    (FeComputeOps),
       .apb_req_t     (dma_apb_req_t),
       .apb_rsp_t     (dma_apb_rsp_t),
       .dma_req_t     (idma_req_t)
@@ -223,6 +229,8 @@ module mem_tile_dma_wrap #(
       .NumRegs       (1),
       .NumStreams    (1),
       .IdCounterWidth(IdCounterWidth),
+      .DataWidth     (AxiDataWidth),
+      .ComputeOps    (FeComputeOps),
       .apb_req_t     (dma_apb_req_t),
       .apb_rsp_t     (dma_apb_rsp_t),
       .dma_req_t     (idma_nd_req_t)
@@ -304,6 +312,8 @@ module mem_tile_dma_wrap #(
   idma_backend_rw_axi #(
     .EnableCompute       (EnableCompute),
     .ComputeOps          (ComputeOps),
+    .ComputeTuning       (ComputeTuning),
+    .TimingCuts          (TimingCuts),
     .CombinedShifter     (1'b0),
     .DataWidth           (AxiDataWidth),
     .AddrWidth           (AxiAddrWidth),
@@ -311,7 +321,7 @@ module mem_tile_dma_wrap #(
     .UserWidth           (AxiUserWidth),
     .TFLenWidth          (TfLenWidth),
     .MaskInvalidData     (1),
-    .BufferDepth         (3),
+    .BufferDepth         (BufferDepth),
     .RAWCouplingAvail    (RAWCouplingAvail),
     .HardwareLegalizer   (1),
     .RejectZeroTransfers (1),
