@@ -9,7 +9,11 @@
 #include "gw_raw_addrmap_64b.h"
 #include "gw_memtile.h"
 
+#ifdef GW_OFFLOAD_HTILE
+#include "htile_cfg.h"
+#else
 #include "snitch_cluster_cfg.h"
+#endif
 
 // Return code array placed at the last 4K page of the L2 SPM region.
 // This address scales automatically with the number and size of memory tiles.

@@ -36,15 +36,13 @@ SN_RUNTIME_INCDIRS  += $(GW_SNITCH_SW_DIR)/runtime/src
 SN_RUNTIME_HAL_HDRS  = $(GW_GEN_SW_DIR)/gw_addrmap_32b.h
 SN_RUNTIME_HAL_HDRS += $(GW_GEN_SW_DIR)/gw_raw_addrmap_32b.h
 SN_RUNTIME_HAL_HDRS += $(GW_GEN_SW_DIR)/gw_noc_cfg.h
+SN_RUNTIME_HAL_HDRS += $(GW_GEN_SW_DIR)/htile_cfg.h
 
 #TODO(lleone): do we need this?
 SN_RVTESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/riscv-tests/build
 
 SN_TESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/tests/build
 SN_TESTS_INCDIRS  = $(SN_ROOT)/sw/kernels/blas
-# The Surya HAL and the generated workload of the H tile test.
-SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
-SN_TESTS_INCDIRS += $(GW_SNITCH_SW_DIR)/tests/data/surya_mx
 
 SN_BUILD_APPS = OFF
 
@@ -59,12 +57,39 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
 # Spatz kernels
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
 
-SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
+SN_TESTS = $(filter-out %/surya_mx.c,$(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c))
+
+############
+## H tile ##
+############
+
+# The H tile has its own cluster config, so a sub-make builds its runtime and tests into `htile/`.
+ifdef GW_HTILE_RUNTIME
+SN_BUILD_TESTS           = OFF
+SN_TESTS                 = $(SN_ROOT)/sw/tests/src/simple.c $(GW_SNITCH_SW_DIR)/tests/surya_mx.c
+SN_RUNTIME_BUILDDIR     := $(SN_RUNTIME_BUILDDIR)/htile
+SN_TESTS_BUILDDIR       := $(SN_TESTS_BUILDDIR)/htile
+SN_RUNTIME_RISCV_CFLAGS += -DGW_HTILE_RUNTIME
+SN_TESTS_RISCV_CFLAGS   += -DGW_HTILE_RUNTIME
+# The Surya HAL and the generated workload of the H tile test.
+SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
+SN_TESTS_INCDIRS += $(GW_SNITCH_SW_DIR)/tests/data/surya_mx
+endif
 
 $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_SW_DIR) --no-format $<
 
 include $(SN_ROOT)/make/sw.mk
+
+$(GW_GEN_SW_DIR)/htile_cfg.h: $(HTILE_CFG) $(SN_CLUSTER_GEN) $(SN_CLUSTER_GEN_SRC) $(SN_SNITCH_CLUSTER_CFG_H_TPL) | $(GW_GEN_SW_DIR)
+	$(SN_CLUSTER_GEN) -c $< -o $@ --template $(SN_SNITCH_CLUSTER_CFG_H_TPL)
+
+ifndef GW_HTILE_RUNTIME
+.PHONY: gw-htile-tests
+sn-tests: gw-htile-tests
+gw-htile-tests: | $(SN_RUNTIME_HAL_HDRS)
+	$(MAKE) sn-tests GW_HTILE_RUNTIME=1
+endif
 
 ##############
 ## Cheshire ##
