@@ -20,7 +20,7 @@
 // ---- Topology --------------------------------------------------------------
 #define SRC_TILE     3   // FP16 source S (offset 0) and FP32 result D (D_OFF)
 #define MID_TILE     1   // MXFP8 data plane M (offset 0) and scale plane SC (SC_OFF)
-#define DRIVER_TILE  1   // whose iDMA drives both transfers
+#define DRIVER_TILE  0   // whose iDMA drives both transfers (large tiles only)
 #define D_OFF        0x10000u  // D lives well past S inside SRC_TILE's L2 SPM
 #define SC_OFF       0x1000u   // SC past M, on a 64 B scale line
 
