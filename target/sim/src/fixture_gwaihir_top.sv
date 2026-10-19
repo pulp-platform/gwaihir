@@ -170,12 +170,12 @@ module fixture_gwaihir_top;
 
     // RWDS
     assign hyper_rwds[i]   = hyper_rwds_oe_o[i] ? hyper_rwds_o[i] : 1'bz;
-    assign hyper_rwds_i[i] = hyper_rwds_oe_o[i] ? hyper_rwds[i] : 1'bz;
+    assign hyper_rwds_i[i] = hyper_rwds[i];
 
     // DQ
     for (genvar b = 0; b < 8; b++) begin : gen_dq
       assign hyper_dq[i][b]   = hyper_dq_oe_o[i][b] ? hyper_dq_o[i][b] : 1'bz;
-      assign hyper_dq_i[i][b] = hyper_dq_oe_o[i][b] ? 1'bz : hyper_dq[i][b];
+      assign hyper_dq_i[i][b] = hyper_dq[i][b];
     end
   end
 
