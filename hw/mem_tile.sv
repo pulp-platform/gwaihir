@@ -728,9 +728,73 @@ module mem_tile
     end
   end
 
-  ///////////////////
-  // Optional iDMA //
-  ///////////////////
+  //////////
+  // iDMA //
+  //////////
+
+  // Configure AXI Xbar
+  localparam axi_pkg::xbar_cfg_t AxiWideXbarCfg = '{
+      NoSlvPorts: 1,
+      NoMstPorts: 2,
+      MaxMstTrans: DmaNumAxInFlight,
+      MaxSlvTrans: DmaNumAxInFlight,
+      FallThrough: 0,
+      LatencyMode: axi_pkg::CUT_SLV_PORTS,
+      PipelineStages: 0,
+      AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
+      AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
+      UniqueIds: 0,
+      AxiAddrWidth: $bits(axi_wide_in_addr_t),
+      AxiDataWidth: $bits(axi_wide_in_data_t),
+      NoAddrRules: 2,
+      default: '0
+  };
+
+  typedef struct packed {
+    // Only two regions: MEM and DMA
+    logic [$clog2(AxiWideXbarCfg.NoMstPorts)-1:0] idx;
+    axi_wide_in_addr_t                            start_addr;
+    axi_wide_in_addr_t                            end_addr;
+  } dma_rule_t;
+
+  typedef enum logic {
+    Local    = 1'b0,
+    External = 1'b1
+  } wide_axi_sel_e;
+
+  // iDMA never issues atomics (aw.atop is hardcoded to '0 in the iDMA
+  // legalizer and the frontend has no software-visible register to set it),
+  // so the DMA local-memory path uses a single non-atop OBI cfg end-to-end
+  // and no atop resolver.
+  localparam obi_pkg::obi_optional_cfg_t DMASbrObiOptionalCfg = '{
+      UseAtop: 1'b0,
+      UseMemtype: 1'b0,
+      UseProt: 1'b0,
+      UseDbg: 1'b0,
+      AUserWidth: 0,
+      WUserWidth: 0,
+      RUserWidth: 0,
+      MidWidth: 0,
+      AChkWidth: 0,
+      RChkWidth: 0
+  };
+  localparam obi_pkg::obi_cfg_t DMASbrObiCfg = obi_pkg::obi_default_cfg(
+      AxiCfgW.AddrWidth, AxiCfgW.DataWidth, AxiCfgW.InIdWidth, DMASbrObiOptionalCfg
+  );
+  `OBI_TYPEDEF_MINIMAL_A_OPTIONAL(dma_sbr_obi_a_optional_t)
+  `OBI_TYPEDEF_A_CHAN_T(dma_sbr_obi_a_chan_t, DMASbrObiCfg.AddrWidth, DMASbrObiCfg.DataWidth,
+                        DMASbrObiCfg.IdWidth, dma_sbr_obi_a_optional_t)
+  `OBI_TYPEDEF_DEFAULT_REQ_T(dma_sbr_obi_req_t, dma_sbr_obi_a_chan_t)
+  `OBI_TYPEDEF_MINIMAL_R_OPTIONAL(dma_sbr_obi_r_optional_t)
+  `OBI_TYPEDEF_R_CHAN_T(dma_sbr_obi_r_chan_t, DMASbrObiCfg.DataWidth, DMASbrObiCfg.IdWidth,
+                        dma_sbr_obi_r_optional_t)
+  `OBI_TYPEDEF_RSP_T(dma_sbr_obi_rsp_t, dma_sbr_obi_r_chan_t)
+
+  // Number of outstanding transactions should be larger than round-trip
+  // latency from converter to SRAM
+  // TODO: Not sure if this is enough!!!
+  localparam int unsigned DMAObiLatency = 4;
+
 
   if (EnableDma) begin : gen_dma
     ////////////////////////
@@ -740,38 +804,8 @@ module mem_tile
     // This module demuxes DMA AXI requests to local memory banks and external tiles.
     // Without this demux, floo_noc would have loopback.
 
-    // Configure AXI Xbar
-    localparam axi_pkg::xbar_cfg_t AxiWideXbarCfg = '{
-        NoSlvPorts: 1,
-        NoMstPorts: 2,
-        MaxMstTrans: DmaNumAxInFlight,
-        MaxSlvTrans: DmaNumAxInFlight,
-        FallThrough: 0,
-        LatencyMode: axi_pkg::CUT_SLV_PORTS,
-        PipelineStages: 0,
-        AxiIdWidthSlvPorts: $bits(axi_wide_in_id_t),
-        AxiIdUsedSlvPorts: $bits(axi_wide_in_id_t),
-        UniqueIds: 0,
-        AxiAddrWidth: $bits(axi_wide_in_addr_t),
-        AxiDataWidth: $bits(axi_wide_in_data_t),
-        NoAddrRules: 2,
-        default: '0
-    };
-
-    typedef struct packed {
-      // Only two regions: MEM and DMA
-      logic [$clog2(AxiWideXbarCfg.NoMstPorts)-1:0] idx;
-      axi_wide_in_addr_t                            start_addr;
-      axi_wide_in_addr_t                            end_addr;
-    } dma_rule_t;
-
     axi_wide_in_req_t [1:0] axi_dma_req_demux;
     axi_wide_in_rsp_t [1:0] axi_dma_rsp_demux;
-
-    typedef enum logic {
-      Local    = 1'b0,
-      External = 1'b1
-    } wide_axi_sel_e;
 
     // DMA req/resp, supposed to access LPDDR tile, we also keep the option to access other tiles
     axi_wide_in_req_t axi_dma_req;
@@ -870,39 +904,6 @@ module mem_tile
     ////////////////////////////////
     // DMA wide axi2obi converter //
     ////////////////////////////////
-
-    // iDMA never issues atomics (aw.atop is hardcoded to '0 in the iDMA
-    // legalizer and the frontend has no software-visible register to set it),
-    // so the DMA local-memory path uses a single non-atop OBI cfg end-to-end
-    // and no atop resolver.
-    localparam obi_pkg::obi_optional_cfg_t DMASbrObiOptionalCfg = '{
-        UseAtop: 1'b0,
-        UseMemtype: 1'b0,
-        UseProt: 1'b0,
-        UseDbg: 1'b0,
-        AUserWidth: 0,
-        WUserWidth: 0,
-        RUserWidth: 0,
-        MidWidth: 0,
-        AChkWidth: 0,
-        RChkWidth: 0
-    };
-    localparam obi_pkg::obi_cfg_t DMASbrObiCfg = obi_pkg::obi_default_cfg(
-        AxiCfgW.AddrWidth, AxiCfgW.DataWidth, AxiCfgW.InIdWidth, DMASbrObiOptionalCfg
-    );
-    `OBI_TYPEDEF_MINIMAL_A_OPTIONAL(dma_sbr_obi_a_optional_t)
-    `OBI_TYPEDEF_A_CHAN_T(dma_sbr_obi_a_chan_t, DMASbrObiCfg.AddrWidth, DMASbrObiCfg.DataWidth,
-                          DMASbrObiCfg.IdWidth, dma_sbr_obi_a_optional_t)
-    `OBI_TYPEDEF_DEFAULT_REQ_T(dma_sbr_obi_req_t, dma_sbr_obi_a_chan_t)
-    `OBI_TYPEDEF_MINIMAL_R_OPTIONAL(dma_sbr_obi_r_optional_t)
-    `OBI_TYPEDEF_R_CHAN_T(dma_sbr_obi_r_chan_t, DMASbrObiCfg.DataWidth, DMASbrObiCfg.IdWidth,
-                          dma_sbr_obi_r_optional_t)
-    `OBI_TYPEDEF_RSP_T(dma_sbr_obi_rsp_t, dma_sbr_obi_r_chan_t)
-
-    // Number of outstanding transactions should be larger than round-trip
-    // latency from converter to SRAM
-    // TODO: Not sure if this is enough!!!
-    localparam int unsigned DMAObiLatency = 4;
 
     dma_sbr_obi_req_t dma_obi_req, dma_mem_obi_req_cut;
     dma_sbr_obi_rsp_t dma_obi_rsp, dma_mem_obi_rsp_cut;
