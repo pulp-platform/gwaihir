@@ -54,7 +54,7 @@ packages:
     - common_cells
     - obi
   axi_riscv_atomics:
-    revision: 399ce0aefe79792d11bef8cc706139281d82df08
+    revision: 6dc05e0b6ac17cddbcd5cae7eb30ac44242fffb0
     version: null
     source:
       Git: https://github.com/pulp-platform/axi_riscv_atomics.git
@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 2d011dd767b96785d3f5b487d0b7cad2c8632c68
+    revision: dd0b712acaca6cacaba7bbac49900e2b33226002
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -180,7 +180,7 @@ packages:
     dependencies:
     - common_cells
   cva6:
-    revision: 99b32d28a86309fab4fd6803169809fb0e225bf0
+    revision: cc2093e45dfb964d8ed11803df59c1e10e508e9a
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
