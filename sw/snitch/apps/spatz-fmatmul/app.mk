@@ -20,13 +20,13 @@ $(APP)_INCDIRS    := $(SPATZ_FMATMUL_SN)/data $(SPATZ_FMATMUL_SN)/src
 include $(SN_ROOT)/sw/kernels/datagen.mk
 include $(SN_ROOT)/sw/kernels/common.mk
 
-# FP32 variant
+# FP32 variant: same sources (SRC_DIR, SRCS), only the per-APP variables
+# differ. datagen.mk and common.mk are templates keyed on $(APP), so they are
+# included once per variant.
 APP               := spatz-fmatmul_fp32
 $(APP)_BUILD_DIR  ?= $(SPATZ_FMATMUL_DIR)/build/fp32
 $(APP)_DATA_CFG   := $(SPATZ_FMATMUL_DIR)/data/params_fp32.json
 $(APP)_SCRIPT_DIR := $(SPATZ_FMATMUL_SN)/scripts
-SRC_DIR           := $(SPATZ_FMATMUL_DIR)/src
-SRCS              := $(SRC_DIR)/main.c
 $(APP)_INCDIRS    := $(SPATZ_FMATMUL_SN)/data $(SPATZ_FMATMUL_SN)/src
 
 include $(SN_ROOT)/sw/kernels/datagen.mk
