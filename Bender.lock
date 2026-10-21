@@ -34,7 +34,7 @@ packages:
     - common_verification
     - tech_cells_generic
   axi_llc:
-    revision: a457a9c7d63266597c0814e0822684ff978ef838
+    revision: 57c0859713e7ceb9a5a6e0cb2cb858c553085ecd
     version: null
     source:
       Git: https://github.com/pulp-platform/axi_llc.git
@@ -54,7 +54,7 @@ packages:
     - common_cells
     - obi
   axi_riscv_atomics:
-    revision: 399ce0aefe79792d11bef8cc706139281d82df08
+    revision: 6dc05e0b6ac17cddbcd5cae7eb30ac44242fffb0
     version: null
     source:
       Git: https://github.com/pulp-platform/axi_riscv_atomics.git
@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 37959037da2beffd72439be9d7b26282baf16360
+    revision: dd0b712acaca6cacaba7bbac49900e2b33226002
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -180,7 +180,7 @@ packages:
     dependencies:
     - common_cells
   cva6:
-    revision: 99b32d28a86309fab4fd6803169809fb0e225bf0
+    revision: cc2093e45dfb964d8ed11803df59c1e10e508e9a
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
@@ -409,8 +409,8 @@ packages:
     - common_cells
     - tech_cells_generic
   riscv-iommu:
-    revision: 90e142dfe9b04e89dc9ae9fa9ab0996791bd52e6
-    version: 0.0.1
+    revision: da049d87375ca053fbb878d29c68efdb2e7e7321
+    version: 0.0.2
     source:
       Git: https://github.com/FondazioneChipsIt/riscv-iommu.git
     dependencies:
