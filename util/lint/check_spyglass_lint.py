@@ -31,72 +31,84 @@ WAIVERS = [
     'W528'
 ]
 
-TILE_WAIVERS = {
-    'cheshire_tile': [
-        # initial assignment at declaration is ignored by synthesis
-        'SYNTH_89',
-        # hanging user instance removed during optimization (unused in this config)
-        'SYNTH_5032',
-        # unreachable branch (dead case label)
-        'SYNTH_5037',
-        # assert statements are not synthesizable and are ignored
-        'SYNTH_5064',
-        # initial block is ignored for synthesis
-        'SYNTH_5143',
-        # non-synthesizable statement is ignored
-        'SYNTH_5166',
-        # unique if/case conditions are not all covered
-        'SYNTH_12605',
-        # property blocks are ignored for synthesis
-        'SYNTH_12611',
-        # asynchronous reset signal used as non-reset
-        'STARC05-1.3.1.3',
-        # clock signal used as a non-clock
-        'STARC05-1.4.3.4',
-        # bit-width mismatch between function call argument and function input
-        'STARC05-2.1.3.1',
-        # logical operator used where a bit-wise operator is intended
-        'STARC05-2.1.4.5',
-        # conditional expression does not evaluate to a scalar
-        'STARC05-2.1.5.3',
-        # logical negation used on a vector
-        'STARC05-2.10.2.3',
-        # operand bit-width mismatch for logical operator
-        'STARC05-2.10.3.2a',
-        # flipflop assigned over the same signal
-        'STARC05-2.2.3.3',
-        # multi-bit expression where a one-bit expression is expected
-        'W224',
-        # case label width does not match selector width
-        'W263',
-        # bit select on an integer variable
-        'W215',
-        # loop index is not of type integer
-        'W480',
-        # parameter width does not match the assigned value
-        'ParamWidthMismatch-ML',
-        # parentheses around a reduction operator
-        'WRN_61',
-        # not all bits of a function value are set in all branches
-        'W499',
-        # function sets a module-level variable (next-state convention)
-        'W424',
-        # design unit has an empty definition
-        'WarnAnalyzeBBox',
-        # possibly unsynthesizable loop in a function
-        'W481a',
-        # blocking assignment in a clock-generation flip-flop (intentional)
-        'W336',
-    ],
-}
-
+# Rule waivers scoped to a file or IP (bender checkout), rather than to the whole tile.
+# `pattern` is a regex matched against the full source path; an entry of the form
+# `/ip-[0-9a-f]+/` matches the `ip` checkout directory for any commit hash.
 TILE_FILE_WAIVERS = {
     'cheshire_tile': [
-        ('W123', r'cheshire_soc\.sv'),    # computed localparam array range not resolved
-        ('W123', r'floo_nw_router\.sv'),  # credit unused when VcImpl != VcCredit
-        ('W123', r'floo_router\.sv'),     # handshake history unused when multicast off
-        ('W287a', r'cheshire_soc\.sv'),   # same false positive as W123 (axi_in_req[6])
-        ('W123', r'fpnew\.pickle\.sv'),   # divsqrt handshake unset in scalar path (false positive)
+        # axi_in_req[6] is unconnected in this configuration: read but never set
+        ('W123', r'cheshire_soc\.sv'),
+        # axi_in_req[6] and reg_out_rsp[13] are unconnected in this configuration
+        ('W287a', r'cheshire_soc\.sv'),
+        # divsqrt handshake unset in scalar path (false positive)
+        ('W123', r'fpnew\.pickle\.sv'),
+
+        # initial assignment at declaration is ignored by synthesis
+        ('SYNTH_89', r'/cva6-[0-9a-f]+/'),
+        # hanging user instance removed during optimization (unused in this config)
+        ('SYNTH_5032', r'/cheshire-[0-9a-f]+/'),
+        # unreachable branch (dead case label)
+        ('SYNTH_5037', r'/riscv-iommu-[0-9a-f]+/'),
+        # assert statements are not synthesizable and are ignored
+        ('SYNTH_5064', r'/cva6-[0-9a-f]+/'),
+        ('SYNTH_5064', r'/tagger-[0-9a-f]+/'),
+        # initial block is ignored for synthesis
+        ('SYNTH_5143', r'/cva6-[0-9a-f]+/'),
+        # unique if/case conditions are not all covered
+        ('SYNTH_12605', r'/cva6-[0-9a-f]+/'),
+        # property blocks are ignored for synthesis
+        ('SYNTH_12611', r'/cva6-[0-9a-f]+/'),
+        # asynchronous reset signal used as non-reset
+        ('STARC05-1.3.1.3', r'/cva6-[0-9a-f]+/'),
+        # clock signal used as a non-clock
+        ('STARC05-1.4.3.4', r'/tech_cells_generic-[0-9a-f]+/'),
+        # bit-width mismatch between function call argument and function input
+        ('STARC05-2.1.3.1', r'/axi-[0-9a-f]+/'),
+        ('STARC05-2.1.3.1', r'/axi_llc-[0-9a-f]+/'),
+        ('STARC05-2.1.3.1', r'/cheshire-[0-9a-f]+/'),
+        ('STARC05-2.1.3.1', r'/cva6-[0-9a-f]+/'),
+        ('STARC05-2.1.3.1', r'cheshire_tile\.sv'),
+        # logical operator used where a bit-wise operator is intended
+        ('STARC05-2.1.4.5', r'/axi_llc-[0-9a-f]+/'),
+        ('STARC05-2.1.4.5', r'/axi_riscv_atomics-[0-9a-f]+/'),
+        ('STARC05-2.1.4.5', r'/cva6-[0-9a-f]+/'),
+        # conditional expression does not evaluate to a scalar
+        ('STARC05-2.1.5.3', r'/axi_llc-[0-9a-f]+/'),
+        ('STARC05-2.1.5.3', r'/axi_riscv_atomics-[0-9a-f]+/'),
+        ('STARC05-2.1.5.3', r'/cva6-[0-9a-f]+/'),
+        # logical negation used on a vector
+        ('STARC05-2.10.2.3', r'/axi_llc-[0-9a-f]+/'),
+        ('STARC05-2.10.2.3', r'/cva6-[0-9a-f]+/'),
+        # operand bit-width mismatch for logical operator
+        ('STARC05-2.10.3.2a', r'/axi_riscv_atomics-[0-9a-f]+/'),
+        ('STARC05-2.10.3.2a', r'/cva6-[0-9a-f]+/'),
+        # flipflop assigned over the same signal
+        ('STARC05-2.2.3.3', r'/cva6-[0-9a-f]+/'),
+        # multi-bit expression where a one-bit expression is expected
+        ('W224', r'/axi_llc-[0-9a-f]+/'),
+        ('W224', r'/axi_riscv_atomics-[0-9a-f]+/'),
+        ('W224', r'/cva6-[0-9a-f]+/'),
+        # case label width does not match selector width
+        ('W263', r'/clic-[0-9a-f]+/'),
+        ('W263', r'/riscv-iommu-[0-9a-f]+/'),
+        # bit select on an integer variable
+        ('W215', r'/cva6-[0-9a-f]+/'),
+        ('W215', r'/riscv-iommu-[0-9a-f]+/'),
+        # loop index is not of type integer
+        ('W480', r'/cva6-[0-9a-f]+/'),
+        # parameter width does not match the assigned value
+        ('ParamWidthMismatch-ML', r'/clic-[0-9a-f]+/'),
+        ('ParamWidthMismatch-ML', r'/cva6-[0-9a-f]+/'),
+        # parentheses around a reduction operator
+        ('WRN_61', r'/cva6-[0-9a-f]+/'),
+        # function sets a module-level variable (next-state convention)
+        ('W424', r'/axi_llc-[0-9a-f]+/'),
+        # design unit has an empty definition
+        ('WarnAnalyzeBBox', r'/common_cells-[0-9a-f]+/'),
+        # possibly unsynthesizable loop in a function
+        ('W481a', r'/opentitan_peripherals-[0-9a-f]+/'),
+        # blocking assignment in a clock-generation flip-flop (intentional)
+        ('W336', r'/serial_link-[0-9a-f]+/'),
     ],
 }
 TILES_DIR = Path(__file__).parent / 'build'
@@ -221,13 +233,6 @@ def main():
         files = tile_files(args.tile, args.tiles_dir)
         df = df[df.file.map(lambda f: str(Path(f).resolve()) in files)]
         print(f'Keep only violations in tile {args.tile}. {len(df)} messages remaining.')
-
-        # Apply waivers reviewed for this specific tile
-        tile_waivers = TILE_WAIVERS.get(args.tile, [])
-        if tile_waivers:
-            df = df[~df.rule.isin(tile_waivers)]
-            print(f'Waive {", ".join(tile_waivers)} for tile {args.tile}. '
-                  f'{len(df)} messages remaining.')
 
         # Apply file-scoped waivers reviewed for this tile
         for rule, pattern in TILE_FILE_WAIVERS.get(args.tile, []):
