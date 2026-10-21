@@ -50,7 +50,6 @@ SN_BUILD_APPS = OFF
 
 SN_APPS  = $(GW_SNITCH_SW_DIR)/apps/gemm_2d
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/gemm
-SN_APPS += $(GW_SNITCH_SW_DIR)/apps/axpy
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/axpy_iommu
 SN_APPS += $(SN_ROOT)/sw/kernels/dnn/flashattention_2
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/fused_concat_linear
@@ -59,6 +58,9 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/summa_gemm
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
 # Spatz kernels
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fgemv
+# Spatz PACE kernels
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz_pace_loop
 
 SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 

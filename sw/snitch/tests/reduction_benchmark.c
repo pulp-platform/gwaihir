@@ -6,7 +6,6 @@
 // Chen Wu <chenwu@iis.ee.ethz.ch>
 
 #include "snrt.h"
-#include "blas.h"
 
 // Transfer size in bytes
 #ifndef SIZE
@@ -29,7 +28,7 @@ typedef enum {
 #endif
 
 #define N_BATCHES (SIZE / BATCH)
-#define N_ELEMS (SIZE / sizeof(double))
+#define N_ELEMS (SIZE / sizeof(float))
 
 #ifndef LOG2_N_ROWS
 #define LOG2_N_ROWS 0
@@ -39,7 +38,17 @@ typedef enum {
 
 // Replace `1` literals with this thread-local variable to prevent it from
 // being allocated by the compiler in L2.
-__thread double one = 1;
+__thread float one = 1;
+
+// FP32 axpy (z = a * x + y), parallelized across the compute cores.
+// FP64 is not supported by the compute cores' FPU.
+static inline void axpy_fp32(uint32_t n, float a, float *x, float *y,
+    float *z) {
+    uint32_t n_cores = snrt_cluster_compute_core_num();
+    for (uint32_t i = snrt_cluster_core_idx(); i < n; i += n_cores)
+        z[i] = a * x[i] + y[i];
+    snrt_fpu_fence();
+}
 
 static inline void global_hw_barrier(volatile uint32_t *barrier_ptr,
     uint32_t user) {
@@ -78,7 +87,7 @@ static inline void dma_reduction_hw(uintptr_t src, uintptr_t dst,
         uint32_t remote_cluster;
         uintptr_t remote_dst;
         snrt_collective_opcode_t op = snrt_reduction_op(
-            SNRT_REDUCTION_SUM, SNRT_REDUCTION_FP64);
+            SNRT_REDUCTION_SUM, SNRT_REDUCTION_FP32);
 
         // Reduction across rows (destination: first cluster in row)
         snrt_mcycle();
@@ -179,8 +188,8 @@ static inline void dma_reduction_seq(uintptr_t a, uintptr_t b, uintptr_t c,
 
         if (compute_active && snrt_is_compute_core()) {
             snrt_mcycle();
-            axpy_opt(N_ELEMS / N_BATCHES, one, (double *)comp_src1,
-                (double *)comp_src2, (double *)comp_result);
+            axpy_fp32(N_ELEMS / N_BATCHES, one, (float *)comp_src1,
+                (float *)comp_src2, (float *)comp_result);
             comp_src1 += BATCH;
             swap_buffers(&dst[0], &dst[1]);
             comp_src2 = dst[0];
@@ -241,8 +250,8 @@ static inline void dma_reduction_seq(uintptr_t a, uintptr_t b, uintptr_t c,
 
             if (compute_active && snrt_is_compute_core()) {
                 snrt_mcycle();
-                axpy_opt(N_ELEMS / N_BATCHES, one, (double *)comp_src1,
-                    (double *)comp_src2, (double *)comp_result);
+                axpy_fp32(N_ELEMS / N_BATCHES, one, (float *)comp_src1,
+                    (float *)comp_src2, (float *)comp_result);
                 comp_src1 += BATCH;
                 swap_buffers(&dst[0], &dst[1]);
                 comp_src2 = dst[0];
@@ -325,8 +334,8 @@ static inline void dma_reduction_tree_compute_phase(char is_receiver,
     // Every receiving cluster reduces the data from the sender
     if (is_receiver && snrt_is_compute_core()) {
         snrt_mcycle();
-        axpy_opt(N_ELEMS / N_BATCHES, one, (double *)src, (double *)dst,
-            (double *)result);
+        axpy_fp32(N_ELEMS / N_BATCHES, one, (float *)src, (float *)dst,
+            (float *)result);
         snrt_mcycle();
     }
     snrt_cluster_hw_barrier();
@@ -450,7 +459,7 @@ static inline void dma_reduction(uintptr_t a, uintptr_t b, uintptr_t c,
 }
 
 // Global variables for verification script
-double output[N_ELEMS];
+float output[N_ELEMS];
 extern const uint32_t n_clusters = N_ROWS * gw_cluster_num_in_row();
 extern const uint32_t length = N_ELEMS;
 
@@ -477,7 +486,7 @@ int main (void){
             for (uint32_t i = 0; i < N_ELEMS; i++) {
                 uint32_t row_major_cluster_idx = gw_cluster_col_idx() +
                     gw_cluster_row_idx() * gw_cluster_num_in_row();
-                ((double *)a_buffer)[i] = row_major_cluster_idx + i;
+                ((float *)a_buffer)[i] = row_major_cluster_idx + i;
             }
         }
         snrt_global_barrier(comm);
