@@ -6,8 +6,8 @@
 //
 // L2-to-L2 DMA burst test through the mem-tile iDMA.
 //
-// Tile-1's DMA copies data from Tile-0's L2 SPM into Tile-1's L2 SPM in up to
-// five phases, each individually enabled via the ENABLE_PHASE_* switches below.
+// DRIVER_TILE's DMA copies data from SRC_TILE's L2 SPM into DST_TILE's L2 SPM in
+// up to five phases, each individually enabled via the ENABLE_PHASE_* switches below.
 // Each phase has its own size knobs so transfers can be scaled up to force
 // multi-burst / page-split DMA traffic ("super large" vectors/matrices):
 //   Phase 1 — 1D aligned vector
@@ -36,10 +36,11 @@
 // ---- Topology --------------------------------------------------------------
 // Tile indices (0..GW_L2_SPM_NUM-1). Change these three to retarget the
 // entire test: source buffer, destination buffer, and which tile's DMA drives
-// the copy.
-#define SRC_TILE     3
-#define DST_TILE     0
-#define DRIVER_TILE  2
+// the copy. Only the large tiles (0, 2) have an iDMA, so DRIVER_TILE and
+// SRC_TILE (Phase 5 driver) must be one of them.
+#define SRC_TILE     2
+#define DST_TILE     3
+#define DRIVER_TILE  0
 
 // The DMA helpers (memtile_dma_*) take the driver tile's SAM index as their
 // first argument, selecting which tile's iDMA register file is configured.
