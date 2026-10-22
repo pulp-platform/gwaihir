@@ -81,9 +81,6 @@ module ucie_tile_right
         MeshDim.x - 1
     );
   end
-  if (Ucie1DummyIdx < 0) begin : gen_check_dummy
-    $fatal(1, "[ucie_tile_right] No dummy tile above UCIe 1 at (%0d, %0d).", UcieX, UcieY + 1);
-  end
 
   ///////////////////
   // Router arrays //

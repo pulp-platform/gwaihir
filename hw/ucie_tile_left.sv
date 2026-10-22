@@ -80,9 +80,6 @@ module ucie_tile_left
         UcieY
     );
   end
-  if (Ucie0DummyIdx < 0) begin : gen_check_dummy
-    $fatal(1, "[ucie_tile_left] No dummy tile above UCIe 0 at (%0d, %0d).", UcieX, UcieY + 1);
-  end
 
   ///////////////////
   // Router arrays //

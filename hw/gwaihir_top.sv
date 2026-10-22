@@ -367,42 +367,22 @@ module gwaihir_top
   localparam int Ucie0DummyY = Ucie0Y + 1;
   localparam int Ucie1DummyY = Ucie1Y + 1;
 
-  ucie_tile_left i_ucie_tile0 (
-    .clk_i,
-    .rst_ni,
-    .clk_rst_bypass_i,
-    .test_enable_i          (test_mode_i),
-    .id_i                   (Sam[Ucie0SamIdx].idx),
-    .dummy_id_i             (DummyIdx[Ucie0DummyIdx]),
-    // ucie0 (chiplet0) ingress is pass-through.
-    .ucie_id_i              (1'b0),
-    .samidx_i               (Ucie0SamIdx),
-    .floo_req_dummy_north_o (floo_req_out[Ucie0X][Ucie0DummyY][North]),
-    .floo_rsp_dummy_north_i (floo_rsp_in[Ucie0X][Ucie0DummyY][North]),
-    .floo_wide_dummy_north_o(floo_wide_out[Ucie0X][Ucie0DummyY][North]),
-    .floo_req_dummy_north_i (floo_req_in[Ucie0X][Ucie0DummyY][North]),
-    .floo_rsp_dummy_north_o (floo_rsp_out[Ucie0X][Ucie0DummyY][North]),
-    .floo_wide_dummy_north_i(floo_wide_in[Ucie0X][Ucie0DummyY][North]),
-    .floo_req_dummy_east_o  (floo_req_out[Ucie0X][Ucie0DummyY][East]),
-    .floo_rsp_dummy_east_i  (floo_rsp_in[Ucie0X][Ucie0DummyY][East]),
-    .floo_wide_dummy_east_o (floo_wide_out[Ucie0X][Ucie0DummyY][East]),
-    .floo_req_dummy_east_i  (floo_req_in[Ucie0X][Ucie0DummyY][East]),
-    .floo_rsp_dummy_east_o  (floo_rsp_out[Ucie0X][Ucie0DummyY][East]),
-    .floo_wide_dummy_east_i (floo_wide_in[Ucie0X][Ucie0DummyY][East]),
-    .floo_req_ucie_east_o   (floo_req_out[Ucie0X][Ucie0Y][East]),
-    .floo_rsp_ucie_east_i   (floo_rsp_in[Ucie0X][Ucie0Y][East]),
-    .floo_wide_ucie_east_o  (floo_wide_out[Ucie0X][Ucie0Y][East]),
-    .floo_req_ucie_east_i   (floo_req_in[Ucie0X][Ucie0Y][East]),
-    .floo_rsp_ucie_east_o   (floo_rsp_out[Ucie0X][Ucie0Y][East]),
-    .floo_wide_ucie_east_i  (floo_wide_in[Ucie0X][Ucie0Y][East]),
-    // loopback
-    .phy_data_out_o         (phy_data_out[0]),
-    .phy_data_out_valid_o   (phy_data_out_valid[0]),
-    .phy_data_out_ready_i   (phy_data_out_ready[0]),
-    .phy_data_in_i          (phy_data_in[0]),
-    .phy_data_in_valid_i    (phy_data_in_valid[0]),
-    .phy_data_in_ready_o    (phy_data_in_ready[0])
-  );
+  // Each macro is instantiated in place of the dummy tile above its UCIe tile (gen_dummytiles).
+  if (!has_dummy_at(
+          int'(Sam[Ucie0SamIdx].idx.x), int'(Sam[Ucie0SamIdx].idx.y) + 1
+      ) || !has_dummy_at(
+          int'(Sam[Ucie1SamIdx].idx.x), int'(Sam[Ucie1SamIdx].idx.y) + 1
+      )) begin : gen_check_ucie_dummy
+    $fatal(
+        1,
+        "[gwaihir_top] Expected a dummy tile above each UCIe tile (%0d, %0d) and (%0d, %0d).",
+        Ucie0X,
+        Ucie0DummyY,
+        Ucie1X,
+        Ucie1DummyY
+    );
+  end
+
 
   // Ports of the left macro that the macro does not expose.
   for (genvar d = int'(North); d <= int'(West); d++) begin : gen_ucie0_unused_out
@@ -419,42 +399,6 @@ module gwaihir_top
     end
   end
 
-  ucie_tile_right i_ucie_tile1 (
-    .clk_i,
-    .rst_ni,
-    .clk_rst_bypass_i,
-    .test_enable_i          (test_mode_i),
-    .id_i                   (Sam[Ucie1SamIdx].idx),
-    .dummy_id_i             (DummyIdx[Ucie1DummyIdx]),
-    // ucie1 (chiplet1) ingress applies the half-shift.
-    .ucie_id_i              (1'b1),
-    .samidx_i               (Ucie1SamIdx),
-    .floo_req_dummy_north_o (floo_req_out[Ucie1X][Ucie1DummyY][North]),
-    .floo_rsp_dummy_north_i (floo_rsp_in[Ucie1X][Ucie1DummyY][North]),
-    .floo_wide_dummy_north_o(floo_wide_out[Ucie1X][Ucie1DummyY][North]),
-    .floo_req_dummy_north_i (floo_req_in[Ucie1X][Ucie1DummyY][North]),
-    .floo_rsp_dummy_north_o (floo_rsp_out[Ucie1X][Ucie1DummyY][North]),
-    .floo_wide_dummy_north_i(floo_wide_in[Ucie1X][Ucie1DummyY][North]),
-    .floo_req_dummy_west_o  (floo_req_out[Ucie1X][Ucie1DummyY][West]),
-    .floo_rsp_dummy_west_i  (floo_rsp_in[Ucie1X][Ucie1DummyY][West]),
-    .floo_wide_dummy_west_o (floo_wide_out[Ucie1X][Ucie1DummyY][West]),
-    .floo_req_dummy_west_i  (floo_req_in[Ucie1X][Ucie1DummyY][West]),
-    .floo_rsp_dummy_west_o  (floo_rsp_out[Ucie1X][Ucie1DummyY][West]),
-    .floo_wide_dummy_west_i (floo_wide_in[Ucie1X][Ucie1DummyY][West]),
-    .floo_req_ucie_west_o   (floo_req_out[Ucie1X][Ucie1Y][West]),
-    .floo_rsp_ucie_west_i   (floo_rsp_in[Ucie1X][Ucie1Y][West]),
-    .floo_wide_ucie_west_o  (floo_wide_out[Ucie1X][Ucie1Y][West]),
-    .floo_req_ucie_west_i   (floo_req_in[Ucie1X][Ucie1Y][West]),
-    .floo_rsp_ucie_west_o   (floo_rsp_out[Ucie1X][Ucie1Y][West]),
-    .floo_wide_ucie_west_i  (floo_wide_in[Ucie1X][Ucie1Y][West]),
-    // loopback
-    .phy_data_out_o         (phy_data_out[1]),
-    .phy_data_out_valid_o   (phy_data_out_valid[1]),
-    .phy_data_out_ready_i   (phy_data_out_ready[1]),
-    .phy_data_in_i          (phy_data_in[1]),
-    .phy_data_in_valid_i    (phy_data_in_valid[1]),
-    .phy_data_in_ready_o    (phy_data_in_ready[1])
-  );
 
   // Ports of the right macro that the macro does not expose.
   for (genvar d = int'(North); d <= int'(West); d++) begin : gen_ucie1_unused_out
@@ -591,7 +535,81 @@ module gwaihir_top
     localparam int DummyTileY = int'(DummyPhysicalIdx[d].y);
 
     // The dummy tiles above the UCIe tiles are part of the UCIe tile macros.
-    if (d != Ucie0DummyIdx && d != Ucie1DummyIdx) begin : gen_dummy
+    if (DummyTileX == Ucie0X && DummyTileY == Ucie0DummyY) begin : gen_ucie_left
+      ucie_tile_left i_ucie_tile0 (
+        .clk_i,
+        .rst_ni,
+        .clk_rst_bypass_i,
+        .test_enable_i          (test_mode_i),
+        .id_i                   (Sam[Ucie0SamIdx].idx),
+        .dummy_id_i             (DummyTileId),
+        // ucie0 (chiplet0) ingress is pass-through.
+        .ucie_id_i              (1'b0),
+        .samidx_i               (Ucie0SamIdx),
+        .floo_req_dummy_north_o (floo_req_out[Ucie0X][Ucie0DummyY][North]),
+        .floo_rsp_dummy_north_i (floo_rsp_in[Ucie0X][Ucie0DummyY][North]),
+        .floo_wide_dummy_north_o(floo_wide_out[Ucie0X][Ucie0DummyY][North]),
+        .floo_req_dummy_north_i (floo_req_in[Ucie0X][Ucie0DummyY][North]),
+        .floo_rsp_dummy_north_o (floo_rsp_out[Ucie0X][Ucie0DummyY][North]),
+        .floo_wide_dummy_north_i(floo_wide_in[Ucie0X][Ucie0DummyY][North]),
+        .floo_req_dummy_east_o  (floo_req_out[Ucie0X][Ucie0DummyY][East]),
+        .floo_rsp_dummy_east_i  (floo_rsp_in[Ucie0X][Ucie0DummyY][East]),
+        .floo_wide_dummy_east_o (floo_wide_out[Ucie0X][Ucie0DummyY][East]),
+        .floo_req_dummy_east_i  (floo_req_in[Ucie0X][Ucie0DummyY][East]),
+        .floo_rsp_dummy_east_o  (floo_rsp_out[Ucie0X][Ucie0DummyY][East]),
+        .floo_wide_dummy_east_i (floo_wide_in[Ucie0X][Ucie0DummyY][East]),
+        .floo_req_ucie_east_o   (floo_req_out[Ucie0X][Ucie0Y][East]),
+        .floo_rsp_ucie_east_i   (floo_rsp_in[Ucie0X][Ucie0Y][East]),
+        .floo_wide_ucie_east_o  (floo_wide_out[Ucie0X][Ucie0Y][East]),
+        .floo_req_ucie_east_i   (floo_req_in[Ucie0X][Ucie0Y][East]),
+        .floo_rsp_ucie_east_o   (floo_rsp_out[Ucie0X][Ucie0Y][East]),
+        .floo_wide_ucie_east_i  (floo_wide_in[Ucie0X][Ucie0Y][East]),
+        // loopback
+        .phy_data_out_o         (phy_data_out[0]),
+        .phy_data_out_valid_o   (phy_data_out_valid[0]),
+        .phy_data_out_ready_i   (phy_data_out_ready[0]),
+        .phy_data_in_i          (phy_data_in[0]),
+        .phy_data_in_valid_i    (phy_data_in_valid[0]),
+        .phy_data_in_ready_o    (phy_data_in_ready[0])
+      );
+    end else if (DummyTileX == Ucie1X && DummyTileY == Ucie1DummyY) begin : gen_ucie_right
+      ucie_tile_right i_ucie_tile1 (
+        .clk_i,
+        .rst_ni,
+        .clk_rst_bypass_i,
+        .test_enable_i          (test_mode_i),
+        .id_i                   (Sam[Ucie1SamIdx].idx),
+        .dummy_id_i             (DummyTileId),
+        // ucie1 (chiplet1) ingress applies the half-shift.
+        .ucie_id_i              (1'b1),
+        .samidx_i               (Ucie1SamIdx),
+        .floo_req_dummy_north_o (floo_req_out[Ucie1X][Ucie1DummyY][North]),
+        .floo_rsp_dummy_north_i (floo_rsp_in[Ucie1X][Ucie1DummyY][North]),
+        .floo_wide_dummy_north_o(floo_wide_out[Ucie1X][Ucie1DummyY][North]),
+        .floo_req_dummy_north_i (floo_req_in[Ucie1X][Ucie1DummyY][North]),
+        .floo_rsp_dummy_north_o (floo_rsp_out[Ucie1X][Ucie1DummyY][North]),
+        .floo_wide_dummy_north_i(floo_wide_in[Ucie1X][Ucie1DummyY][North]),
+        .floo_req_dummy_west_o  (floo_req_out[Ucie1X][Ucie1DummyY][West]),
+        .floo_rsp_dummy_west_i  (floo_rsp_in[Ucie1X][Ucie1DummyY][West]),
+        .floo_wide_dummy_west_o (floo_wide_out[Ucie1X][Ucie1DummyY][West]),
+        .floo_req_dummy_west_i  (floo_req_in[Ucie1X][Ucie1DummyY][West]),
+        .floo_rsp_dummy_west_o  (floo_rsp_out[Ucie1X][Ucie1DummyY][West]),
+        .floo_wide_dummy_west_i (floo_wide_in[Ucie1X][Ucie1DummyY][West]),
+        .floo_req_ucie_west_o   (floo_req_out[Ucie1X][Ucie1Y][West]),
+        .floo_rsp_ucie_west_i   (floo_rsp_in[Ucie1X][Ucie1Y][West]),
+        .floo_wide_ucie_west_o  (floo_wide_out[Ucie1X][Ucie1Y][West]),
+        .floo_req_ucie_west_i   (floo_req_in[Ucie1X][Ucie1Y][West]),
+        .floo_rsp_ucie_west_o   (floo_rsp_out[Ucie1X][Ucie1Y][West]),
+        .floo_wide_ucie_west_i  (floo_wide_in[Ucie1X][Ucie1Y][West]),
+        // loopback
+        .phy_data_out_o         (phy_data_out[1]),
+        .phy_data_out_valid_o   (phy_data_out_valid[1]),
+        .phy_data_out_ready_i   (phy_data_out_ready[1]),
+        .phy_data_in_i          (phy_data_in[1]),
+        .phy_data_in_valid_i    (phy_data_in_valid[1]),
+        .phy_data_in_ready_o    (phy_data_in_ready[1])
+      );
+    end else begin : gen_dummy
       dummy_tile i_dummy_tile (
         .clk_i,
         .rst_ni,
