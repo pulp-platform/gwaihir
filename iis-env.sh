@@ -20,6 +20,9 @@ export VCS="${VCS_SEPP} vcs"
 export VLOGAN="${VCS_SEPP} vlogan"
 export VCS_HOME=/usr/pack/${VCS_SEPP}/vcs
 
+export SG_SEPP="spyglass-2024.09"
+export SG_SHELL="${SG_SEPP} sg_shell"
+
 export DESIGNWARE_HOME=/usr/pack/tsmc-7-kgf/gwaihir/configurable_ips
 
 export CHS_SW_GCC_BINROOT=/usr/pack/riscv-1.0-kgf/riscv64-gcc-12.2.0/bin
