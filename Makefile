@@ -47,6 +47,9 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync -t mxcore_hwpe
 SIM_TARGS += -t simulation -t test -t idma_test
 
+COMMON_DEFINES += $(SN_COMMON_BENDER_FLAGS)
+COMMON_TARGS += $(COMMON_DEFINES)
+
 ############
 # Cheshire #
 ############
@@ -74,6 +77,8 @@ DOCS_SITE_DIR    ?= $(GW_GEN_DIR)/docs-site
 UCIE_SLINK_NUM_LANES ?= 512
 UCIE_SLINK_EN_DDR    ?= 0
 
+HTILE_CLUSTER_RDL = $(GW_GEN_HW_DIR)/htile.rdl
+HTILE_RDL_PATCH   = $(GW_ROOT)/util/htile_rdl_patch.py
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
 $(GW_GEN_DIR) $(GW_GEN_SW_DIR):
@@ -82,6 +87,7 @@ $(GW_GEN_DIR) $(GW_GEN_SW_DIR):
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/snitch_cluster.rdl
+GW_RDL_ALL += $(HTILE_CLUSTER_RDL)
 GW_RDL_ALL += $(UCIE_SLINK_RDL)
 GW_RDL_ALL += $(wildcard $(GW_ROOT)/cfg/rdl/*.rdl)
 
@@ -168,6 +174,9 @@ docs-clean:
 ##################
 
 SN_GEN_DIR = $(GW_GEN_HW_DIR)
+# Must match `double_bw` and `xpace` in cfg/snitch_cluster.json.mako
+SN_SPATZ_DOUBLE_BW ?= ON
+SN_SPATZ_PACE      ?= ON
 include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/toolchain.mk
 include $(SN_ROOT)/make/rtl.mk
@@ -180,10 +189,24 @@ $(SN_CFG): $(SN_CFG_TPL) $(FLOO_CFG) | $(GW_GEN_DIR)
 
 .PHONY: sn-hw-clean sn-hw-all
 
-sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG)
+sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG) $(SN_SPATZ_PKG)
 sn-hw-clean:
-	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
+	rm -rf $(SN_CLUSTER_WRAPPER_PKG) $(SN_SPATZ_PKG) $(SN_SPATZ_CFG)
 	rm -f $(SN_CFG)
+
+##########
+# H-tile #
+##########
+
+$(HTILE_CLUSTER_RDL): $(SN_CLUSTER_RDL) $(HTILE_RDL_PATCH) | $(GW_GEN_HW_DIR)
+	cp $< $@
+	$(HTILE_RDL_PATCH) $@
+
+.PHONY: htile-hw-clean htile-hw-all
+
+htile-hw-all: $(HTILE_CLUSTER_RDL)
+htile-hw-clean:
+	rm -rf $(HTILE_CLUSTER_RDL)
 
 ###########
 # FlooNoC #
@@ -211,11 +234,11 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 074cb4d4b16eea10bd9c24cdfe80e746f132f6be
+PD_COMMIT ?= 7ca0dd49ee30581a83792c6a4f4f5f88650832cf
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
-PCIE_COMMIT ?= 89fff9c2a6fc8ea8f3ccbc732a05501b87510de3
+PCIE_COMMIT ?= 456127dfcfd18f7a6227e10a81382f4160887179
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
@@ -226,9 +249,13 @@ LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
 LPDDR_COMMIT ?= 70de7b091a83af4f4f764b45b15a308a5498525a
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
+TUM_NPU_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/tum_npu.git
+TUM_NPU_COMMIT ?= 99918bee90c1a8a366ada4580e09f7a621aa69c1
+TUM_NPU_DIR = $(GW_ROOT)/.deps/tum_npu
+
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR) $(TUM_NPU_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -247,16 +274,21 @@ $(LPDDR_DIR):
 	git clone $(LPDDR_REMOTE) $(LPDDR_DIR)
 	cd $(LPDDR_DIR) && git checkout $(LPDDR_COMMIT)
 
+$(TUM_NPU_DIR):
+	git clone $(TUM_NPU_REMOTE) $(TUM_NPU_DIR)
+	cd $(TUM_NPU_DIR) && git checkout $(TUM_NPU_COMMIT)
+
+
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^LPDDR_COMMIT ?= .*/LPDDR_COMMIT ?= $(shell git -C $(LPDDR_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^UCIE_COMMIT ?= .*/UCIE_COMMIT ?= $(shell git -C $(UCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^TUM_NPU_COMMIT ?= .*/TUM_NPU_COMMIT ?= $(shell git -C $(TUM_NPU_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
-	rm -f $(GW_ROOT)/sw/cheshire/tests/pcie_*.c
-	rm -f $(GW_ROOT)/sw/cheshire/tests/ucie_closed_*.c
-	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR)
+	rm -f $(PCIE_SW_TESTS_VENDORED)
+	rm -rf $(PD_DIR) $(PCIE_DIR) $(UCIE_DIR) $(LPDDR_DIR) $(TUM_NPU_DIR)
 
 -include $(PD_DIR)/pd.mk
 -include $(LPDDR_DIR)/lpddr.mk
@@ -272,9 +304,9 @@ GW_HW_ALL += $(GW_RDL_HW_ALL)
 
 .PHONY: gwaihir-hw-all gwaihir-hw-clean clean
 
-gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all floo-hw-all
+gwaihir-hw-all all: $(GW_HW_ALL) sn-hw-all htile-hw-all floo-hw-all
 
-gwaihir-hw-clean: sn-hw-clean floo-clean
+gwaihir-hw-clean: sn-hw-clean htile-hw-clean floo-clean
 	rm -rf $(GW_HW_ALL)
 	rm -rf $(GW_GEN_HW_DIR)
 
@@ -361,6 +393,8 @@ help:
 	@echo -e "${Green}floo-clean           ${Black}Clean FlooNoC RTL."
 	@echo -e "${Green}sn-hw-all            ${Black}Generate Snitch Cluster wrapper RTL."
 	@echo -e "${Green}sn-hw-clean          ${Black}Clean Snitch Cluster wrapper RTL."
+	@echo -e "${Green}htile-hw-all         ${Black}Generate H-tile RDL."
+	@echo -e "${Green}htile-hw-clean       ${Black}Clean H-tile RDL."
 	@echo -e "${Green}chs-hw-all           ${Black}Generate Cheshire RTL."
 	@echo -e "${Green}rdl-markdown         ${Black}Generate RDL Markdown documentation."
 	@echo -e "${Green}docs                 ${Black}Generate documentation sources."

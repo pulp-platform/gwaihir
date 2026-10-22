@@ -43,12 +43,15 @@ SN_RVTESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/riscv-tests/build
 
 SN_TESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/tests/build
 SN_TESTS_INCDIRS  = $(SN_ROOT)/sw/kernels/blas
+# The Surya HAL and the generated workload of the H tile test.
+SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
+SN_TESTS_INCDIRS += $(GW_SNITCH_SW_DIR)/tests/data/surya_mx
 
 SN_BUILD_APPS = OFF
 
 SN_APPS  = $(GW_SNITCH_SW_DIR)/apps/gemm_2d
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/gemm
-SN_APPS += $(GW_SNITCH_SW_DIR)/apps/axpy
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/axpy_iommu
 SN_APPS += $(SN_ROOT)/sw/kernels/dnn/flashattention_2
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/fused_concat_linear
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/mha
@@ -56,6 +59,9 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/summa_gemm
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/power_benchmarks
 # Spatz kernels
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fmatmul
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fgemv
+# Spatz PACE kernels
+SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz_pace_loop
 
 SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 

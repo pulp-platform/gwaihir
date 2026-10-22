@@ -42,7 +42,9 @@ variables:
   artifacts:
     paths:
       - sw/snitch/tests/build/*.elf
-      - sw/snitch/apps/**/build/*.elf
+      - sw/snitch/apps/**/build/**/*.elf
+      # The PACE verifier reads the generated data.h next to the ELF
+      - sw/snitch/apps/**/build/**/data.h
     expire_in: 1 day
 
 # Compile the cheshire software tests

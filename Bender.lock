@@ -45,10 +45,10 @@ packages:
     - register_interface
     - tech_cells_generic
   axi_obi:
-    revision: 26fa0b8d4b00d8f401c8c1ae7b5293baa2099362
+    revision: 030136e2e199b17c61606b54f57823df2cdbfd14
     version: null
     source:
-      Git: https://github.com/pulp-platform/axi_obi.git
+      Git: https://github.com/DanielKellerM/axi_obi.git
     dependencies:
     - axi
     - common_cells
@@ -230,7 +230,7 @@ packages:
       Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: 1f8d6924ba83d1610c28fd5757a7b2d2c5e74b10
+    revision: e49def09dfe0e2751a3e349b22efd317afd82b83
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -238,8 +238,8 @@ packages:
     - common_cells
     - fpu_div_sqrt_mvp
   fpu_div_sqrt_mvp:
-    revision: 86e1f558b3c95e91577c41b2fc452c86b04e85ac
-    version: 1.0.4
+    revision: af8562ebfe4a18765ed7a4f059861e7985baa869
+    version: null
     source:
       Git: https://github.com/pulp-platform/fpu_div_sqrt_mvp.git
     dependencies:
@@ -262,8 +262,8 @@ packages:
     - register_interface
     - tech_cells_generic
   hci:
-    revision: a8d8132b7f7839fd55f92df65cdc3e361ea80a6b
-    version: 2.6.1
+    revision: 3957551f964aab36454b1da322e5749f7cbb74e0
+    version: null
     source:
       Git: https://github.com/pulp-platform/hci.git
     dependencies:
@@ -282,15 +282,22 @@ packages:
     - common_cells
     - tech_cells_generic
   hwpe-stream:
-    revision: f5b017893c590f4b9b4d45c38c5abe5a8fcb4b81
+    revision: 1d3ef2ae64acceb811fb84e1499eb61bc952056f
     version: null
     source:
       Git: https://github.com/pulp-platform/hwpe-stream.git
     dependencies:
     - tech_cells_generic
+  ibex:
+    revision: b18f7ef178ed07f5085051f96042c670a919fd5c
+    version: null
+    source:
+      Git: https://github.com/pulp-platform/ibex.git
+    dependencies:
+    - tech_cells_generic
   idma:
-    revision: b8a70829af7b93210bc1ad1eddc7718cca69a9f8
-    version: 0.7.3
+    revision: 835353f842355fbfb6a4b47ba2a438a5ffbdb995
+    version: 0.7.4
     source:
       Git: https://github.com/pulp-platform/iDMA.git
     dependencies:
@@ -316,7 +323,7 @@ packages:
       Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
     dependencies: []
   mxcore:
-    revision: 2f9cd437521fd0c39dfc8fceb2fcc8149a516b8b
+    revision: 2afd5ace56f3d61074159d4032e3102931840d00
     version: null
     source:
       Git: https://github.com/pulp-platform/MXCore.git
@@ -429,10 +436,10 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: f0fee4017037fe40317b5554d3c01fcd5854bf03
+    revision: 3db8c66bda198de044bb9287ee51f83f094b9229
     version: null
     source:
-      Git: https://github.com/pulp-platform/snitch_cluster.git
+      Git: https://github.com/DiyouS/snitch_cluster.git
     dependencies:
     - apb
     - axi
@@ -449,7 +456,7 @@ packages:
     - spatz_vpu
     - tech_cells_generic
   spatz_vpu:
-    revision: f396e76985f3a07d77c0e1e45159e46d5ae04dd0
+    revision: f0490271ac5227cdbe2c0a4b6459c169cd993d47
     version: null
     source:
       Git: https://github.com/pulp-platform/spatz_vpu.git
@@ -459,6 +466,19 @@ packages:
     - fpnew
     - reqrsp_interface
     - tech_cells_generic
+  surya-mx:
+    revision: ee2d46306f6d6a0052df1059fb8bf975027ab90f
+    version: null
+    source:
+      Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
+    dependencies:
+    - common_cells
+    - fpnew
+    - hci
+    - hwpe-ctrl
+    - hwpe-stream
+    - ibex
+    - scm
   tagger:
     revision: ac13da3c43c59b866841935e0d3b822c03e626e1
     version: null
@@ -494,3 +514,9 @@ packages:
     - axi
     - common_cells
     - register_interface
+  tum_npu:
+    revision: null
+    version: null
+    source:
+      Path: .deps/tum_npu
+    dependencies: []

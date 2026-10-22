@@ -17,15 +17,24 @@
             banks: 32,
         },
         cluster_periph_size: 60, // kB
+        pace_enable: true,
+        pace_mem_size: 4, // kB
+        pace_degree: 2,
+        pace_parts: 16,
+        pace_eps: 1,
+        pace_data_width: 32,
+        pace_pipe_dist: 0x04,
+        pace_fmt_config: 0x150,
         ext_mem_size: 4, //kB
         dma_data_width: 512,
         // TODO(fischeti): Check with Thomas
-        dma_axi_req_fifo_depth: 24,
+        // Increased from 24 to 64 for transposition, check with Daniel
+        dma_axi_req_fifo_depth: 64,
         dma_req_fifo_depth: 8,
         // Elaborates the iDMA compute path (DMOPC) in every cluster's inst64 frontend
         dma_enable_compute: true,
-        // Transpose stays off until it replaces the datamover; half duplex when enabled
-        dma_compute_transpose: false,
+        // Half duplex transpose: one tile bank, as big as the datamover's matrix
+        dma_compute_transpose: true,
         dma_compute_transpose_full_duplex: false,
         narrow_trans: 4,
         wide_trans: 32,
@@ -36,7 +45,7 @@
         dca_data_width: 512,
         cluster_base_expose: true,
         alias_region_enable: true,
-        alias_region_base: 0x20400000,
+        alias_region_base: 0x20440000,
         num_exposed_wide_tcdm_ports: 1,
         narrow_axi_port_expose: true,
         collective_width: ${collective_width},
@@ -104,6 +113,7 @@
         xfrep: false,
         xcopift: false,
         xdma: false,
+        xpace: true,
         zfh: true,
         xf16alt: true,
         xf8: true,
@@ -122,13 +132,15 @@
             n_ipu: 1,
             n_fpu: 8,
             vlen: 512,
-            spatz_nports: 8,
-            double_bw: false,
+            spatz_nports: 16,
+            double_bw: true,
             spatz_fpu: true,
             mempool: false,
             buf_fpu: 1,
             rvf: true,
-            rvd: true
+            rvd: true,
+            fp64: false,
+            xf16alt: true
         }
     },
     dma_core_template: {

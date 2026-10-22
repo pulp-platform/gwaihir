@@ -26,7 +26,7 @@
   (L2_BANK_ROWS(GW_L2_SPM_0_SIZE) + L2_BANK_ROWS(GW_L2_SPM_1_SIZE) +  \
    L2_BANK_ROWS(GW_L2_SPM_2_SIZE) + L2_BANK_ROWS(GW_L2_SPM_3_SIZE))
 
-// Tiles are heterogeneous (2 MiB / 1 MiB) but sit on a uniform 2 MiB grid, so a
+// Tiles are heterogeneous (2 MiB / 512 KiB) but sit on a uniform 2 MiB grid, so a
 // single max-row-sized view spans all tiles; each tile is walked up to its
 // own row count.
 typedef uint32_t l2_mem_t[GW_L2_SPM_NUM][L2_MAX_BANK_ROWS][L2_SRAM_NUM_WORDS][L2_BANKS_PER_WORD][L2_SRAM_DATA_WIDTH / NARROW_WORD_WIDTH];

@@ -19,7 +19,7 @@ class Verifier(vu.Verifier):
         super().__init__()
 
     def get_actual_results(self):
-        return self.get_output_from_symbol(self.OUTPUT_UIDS[0], 'double')
+        return self.get_output_from_symbol(self.OUTPUT_UIDS[0], 'float')
 
     def get_expected_results(self):
         length = int(self.get_input_from_symbol('length', 'uint32_t')[0])

@@ -41,6 +41,10 @@ task automatic jtag_enable_tiles();
     fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1, 1'b0);
     fix.vip.jtag_write_reg32(`L2_SPM_CONFIG_CLK_BASE_ADDR(i), 1'b1, 1'b0);
   end
+  fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1, 1'b0);
+  fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b0, 1'b0);
+  fix.vip.jtag_write_reg32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1, 1'b0);
+  fix.vip.jtag_write_reg32(`HTILE_CONFIG_CLK_BASE_ADDR, 1'b1, 1'b0);
 endtask
 
 task automatic slink_enable_tiles();
@@ -57,6 +61,10 @@ task automatic slink_enable_tiles();
     fix.vip.slink_write_32(`L2_SPM_CONFIG_RST_BASE_ADDR(i), 1'b1);
     fix.vip.slink_write_32(`L2_SPM_CONFIG_CLK_BASE_ADDR(i), 1'b1);
   end
+  fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1);
+  fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b0);
+  fix.vip.slink_write_32(`HTILE_CONFIG_RST_BASE_ADDR, 1'b1);
+  fix.vip.slink_write_32(`HTILE_CONFIG_CLK_BASE_ADDR, 1'b1);
 endtask
 
 // FAST_PRELOAD mode trick with virtual class to write directly to L2 sram module inside various for generate
@@ -160,7 +168,7 @@ task automatic fastmode_read();
   end
   // Sweep the whole L2 span so l2mem.bin stays a linear image: verify.py's
   // MemoryDumpReader maps file offset N -> base + N. Tiles 1 and 3 are only
-  // 1 MiB, so the upper 1 MiB of each is unmapped ("Free"). Zero-fill those gap
+  // 512 KiB, so the rest of each 2 MiB slot is unmapped ("Free"). Zero-fill those gap
   // words instead of reading them (a read would trip fastmode_read_word's
   // unmapped-address $fatal), keeping every mapped word at its correct offset.
   for (longint w = Sam[L2Spm0SamIdx].start_addr; w < Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr; w+=4) begin
