@@ -282,6 +282,8 @@ module ucie_tile
   } ucie_xbar_sel_e;
 
   localparam int unsigned NumUcieXbarMstPorts = 2;
+  // Tile cfg, serial link cfg and UCIe PCS cfg (LITE_CFG), plus the join path
+  localparam int unsigned NumUcieXbarRules = 4;
 
   localparam axi_pkg::xbar_cfg_t AxiNarrowXbarCfg = '{
       NoSlvPorts: 1,
@@ -297,7 +299,7 @@ module ucie_tile
       UniqueIds: 0,
       AxiAddrWidth: $bits(axi_narrow_out_addr_t),
       AxiDataWidth: $bits(axi_narrow_out_data_t),
-      NoAddrRules: 4,
+      NoAddrRules: NumUcieXbarRules,
       default: '0
   };
 
@@ -321,7 +323,7 @@ module ucie_tile
   localparam int UcieCfgIdxOffset = int'(Ucie0UcieCfgSamIdx) - int'(Ucie0SamIdx);
   localparam int TileCfgIdxOffset = int'(Ucie0TileCfgSamIdx) - int'(Ucie0SamIdx);
 
-  ucie_rule_t [AxiSerialCfgIdxOffset:0] tile_addrmap;
+  ucie_rule_t [NumUcieXbarRules-1:0] tile_addrmap;
   // 3 rules: the AXI-Lite config port serves both the Tile cfg regs (tile_cfg),
   // the Slink registers (axi_serial_cfg) and the UCIe PCS macro APB (ucie_cfg)
   // -> all routed to LITE_CFG and demuxed downstream by axi_lite_to_apb; plus the join path.
