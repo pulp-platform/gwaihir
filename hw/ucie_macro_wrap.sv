@@ -35,6 +35,10 @@ module ucie_macro_wrap (
   input          rxdata7,
   input          rxtrk,
   input          rxvld,
+  input          rxclksb,
+  input          rxdatasb,
+  output         txclksb,
+  output         txdatasb,
   input  [ 31:0] apb_s_paddr,
   input          apb_s_pclk,
   input          apb_s_penable,
@@ -111,6 +115,10 @@ module ucie_macro_wrap (
     .clk_i(rdi_clk),
     .clk_o(txckn)
   );
+
+  // Sideband: clock only, no sideband data
+  assign txclksb  = refclk;
+  assign txdatasb = 1'b0;
 
   ////////
   // TX //

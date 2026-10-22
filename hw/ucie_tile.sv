@@ -58,7 +58,12 @@ module ucie_tile
   input  logic       ucie_rxckn_i,
   input  logic [7:0] ucie_rxdata_i,
   input  logic       ucie_rxtrk_i,
-  input  logic       ucie_rxvld_i
+  input  logic       ucie_rxvld_i,
+  // UCIe sideband bumps
+  output logic       ucie_txclksb_o,
+  output logic       ucie_txdatasb_o,
+  input  logic       ucie_rxclksb_i,
+  input  logic       ucie_rxdatasb_i
 );
 
   // Half-bandwidth mode for debug output channels
@@ -872,6 +877,11 @@ module ucie_tile
     .rxdata7      (ucie_rxdata_i[7]),
     .rxtrk        (ucie_rxtrk_i),
     .rxvld        (ucie_rxvld_i),
+    // Sideband bumps
+    .rxclksb      (ucie_rxclksb_i),
+    .rxdatasb     (ucie_rxdatasb_i),
+    .txclksb      (ucie_txclksb_o),
+    .txdatasb     (ucie_txdatasb_o),
     // APB slave: PCS CSRs (ucie_cfg SAM range)
     .apb_s_paddr  (32'(cfg_apb_req[ApbUcie].paddr[UcieApbAddrWidth-1:0])),
     .apb_s_pclk   (tile_clk),

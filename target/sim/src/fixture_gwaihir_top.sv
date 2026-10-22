@@ -56,6 +56,7 @@ module fixture_gwaihir_top;
   logic [NumUcieTiles-1:0]      ucie_txckp, ucie_txckn, ucie_txtrk, ucie_txvld;
   logic [NumUcieTiles-1:0]      ucie_rxckp, ucie_rxckn, ucie_rxtrk, ucie_rxvld;
   logic [NumUcieTiles-1:0][7:0] ucie_txdata, ucie_rxdata;
+  logic [NumUcieTiles-1:0]      ucie_txclksb, ucie_txdatasb, ucie_rxclksb, ucie_rxdatasb;
 
   // UCIe PHY reference clock (100 MHz), needed by the closed-source PHY model
   logic ucie_refclk;
@@ -143,6 +144,10 @@ module fixture_gwaihir_top;
     .ucie_rxdata_i         (ucie_rxdata),
     .ucie_rxtrk_i          (ucie_rxtrk),
     .ucie_rxvld_i          (ucie_rxvld),
+    .ucie_txclksb_o        (ucie_txclksb),
+    .ucie_txdatasb_o       (ucie_txdatasb),
+    .ucie_rxclksb_i        (ucie_rxclksb),
+    .ucie_rxdatasb_i       (ucie_rxdatasb),
     .axi_llc_mst_req_o     (axi_llc_mst_req),
     .axi_llc_mst_rsp_i     (axi_llc_mst_rsp)
   );
@@ -155,11 +160,13 @@ module fixture_gwaihir_top;
   // of the other one.
   for (genvar i = 0; i < NumUcieTiles; i++) begin : gen_ucie_loopback
     localparam int unsigned Peer = NumUcieTiles - 1 - i;
-    assign ucie_rxckp[i]  = ucie_txckp[Peer];
-    assign ucie_rxckn[i]  = ucie_txckn[Peer];
-    assign ucie_rxdata[i] = ucie_txdata[Peer];
-    assign ucie_rxtrk[i]  = ucie_txtrk[Peer];
-    assign ucie_rxvld[i]  = ucie_txvld[Peer];
+    assign ucie_rxckp[i]    = ucie_txckp[Peer];
+    assign ucie_rxckn[i]    = ucie_txckn[Peer];
+    assign ucie_rxdata[i]   = ucie_txdata[Peer];
+    assign ucie_rxtrk[i]    = ucie_txtrk[Peer];
+    assign ucie_rxvld[i]    = ucie_txvld[Peer];
+    assign ucie_rxclksb[i]  = ucie_txclksb[Peer];
+    assign ucie_rxdatasb[i] = ucie_txdatasb[Peer];
   end
 
   ////////////////////////

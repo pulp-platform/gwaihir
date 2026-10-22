@@ -104,6 +104,10 @@ module gwaihir_top
   input  logic [NumUcieTiles-1:0][7:0] ucie_rxdata_i,
   input  logic [NumUcieTiles-1:0]      ucie_rxtrk_i,
   input  logic [NumUcieTiles-1:0]      ucie_rxvld_i,
+  output logic [NumUcieTiles-1:0]      ucie_txclksb_o,
+  output logic [NumUcieTiles-1:0]      ucie_txdatasb_o,
+  input  logic [NumUcieTiles-1:0]      ucie_rxclksb_i,
+  input  logic [NumUcieTiles-1:0]      ucie_rxdatasb_i,
 
   // AXI ports to DRAM
   output csh_axi_llc_req_t axi_llc_mst_req_o,
@@ -407,7 +411,11 @@ module gwaihir_top
     .ucie_rxckn_i     (ucie_rxckn_i[0]),
     .ucie_rxdata_i    (ucie_rxdata_i[0]),
     .ucie_rxtrk_i     (ucie_rxtrk_i[0]),
-    .ucie_rxvld_i     (ucie_rxvld_i[0])
+    .ucie_rxvld_i     (ucie_rxvld_i[0]),
+    .ucie_txclksb_o   (ucie_txclksb_o[0]),
+    .ucie_txdatasb_o  (ucie_txdatasb_o[0]),
+    .ucie_rxclksb_i   (ucie_rxclksb_i[0]),
+    .ucie_rxdatasb_i  (ucie_rxdatasb_i[0])
   );
   assign floo_req_out[Ucie0X][Ucie0Y][South]  = '0;
   assign floo_rsp_out[Ucie0X][Ucie0Y][South]  = '0;
@@ -451,7 +459,11 @@ module gwaihir_top
     .ucie_rxckn_i     (ucie_rxckn_i[1]),
     .ucie_rxdata_i    (ucie_rxdata_i[1]),
     .ucie_rxtrk_i     (ucie_rxtrk_i[1]),
-    .ucie_rxvld_i     (ucie_rxvld_i[1])
+    .ucie_rxvld_i     (ucie_rxvld_i[1]),
+    .ucie_txclksb_o   (ucie_txclksb_o[1]),
+    .ucie_txdatasb_o  (ucie_txdatasb_o[1]),
+    .ucie_rxclksb_i   (ucie_rxclksb_i[1]),
+    .ucie_rxdatasb_i  (ucie_rxdatasb_i[1])
   );
   assign floo_req_out[Ucie1X][Ucie1Y][South]  = '0;
   assign floo_rsp_out[Ucie1X][Ucie1Y][South]  = '0;
