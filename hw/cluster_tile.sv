@@ -274,7 +274,8 @@ module cluster_tile
       .IdWidth      (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
       .CtrlDataWidth(HWPECtrlDataWidth),
       .NrCores      (NrCores),
-      .Accelerator  (HwpeMxCore)
+      .Accelerator  (HwpeMxCore),
+      .UseDatamover (UseDatamover)
     ) i_snitch_hwpe_subsystem (
       .clk_i          (tile_clk),
       .rst_ni         (tile_rst_n),
