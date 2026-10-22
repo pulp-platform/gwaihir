@@ -1,0 +1,44 @@
+// Copyright 2023 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Author: Chen Wu <chenwu@iis.ee.ethz.ch>
+// Lorenzo Leone <lleone@iis.ee.ethz.ch>
+
+#include <stdint.h>
+#include "params.h"
+#include "util.h"
+#include "gw_addrmap_64b.h"
+#include "gw_raw_addrmap_64b.h"
+#include "gw_host.h"
+
+#define TRANSFER_DATA 0xdeadbeef
+
+
+int main() {
+
+  // Enable clk/rst for ucie tiles
+  volatile gw_ucie_tile_regs_t *ucie_cfg0 = (volatile gw_ucie_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie0_tile_cfg;
+  volatile gw_ucie_tile_regs_t *ucie_cfg1 = (volatile gw_ucie_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_64b.ucie1_tile_cfg;
+
+  if ( (ucie_tile_enable(ucie_cfg0) && (ucie_tile_enable(ucie_cfg1))) == 0) return 1;
+
+#ifdef GW_UCIE_CLOSED_PCS
+  if (ucie_link_bringup((uintptr_t)&gwaihir_addrmap_64b.ucie0_ucie_cfg,
+                        (uintptr_t)&gwaihir_addrmap_64b.ucie1_ucie_cfg) != 0u)
+    return 1;
+#endif
+
+  // Write to chiplet0's L2 through the ucie1 alias window (routed via UCIe 1 and out of UCIe 0,
+  // which applies no half-shift). Mirror of ucie_loopback: the access enters the NoC at UCIe 0.
+  volatile uint32_t *alias_wr = (volatile uint32_t *)&gwaihir_addrmap_64b.ucie1.l2_spm_0;
+  // Read back through the canonical address (routed via the local NoC).
+  volatile uint32_t *local_rd = (volatile uint32_t *)&gwaihir_addrmap_64b.l2_spm_0;
+
+  (*alias_wr) = TRANSFER_DATA;
+
+  fence();
+
+  return (*local_rd != TRANSFER_DATA);
+
+}
