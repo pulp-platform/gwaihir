@@ -168,6 +168,9 @@ module h_tile
   );
 
   if (UseHtileHWPE) begin : gen_surya
+    // A misaligned Surya port carries one bank word more than its data.
+    localparam int unsigned SuryaTcdmWidth = surya_hwpe_pkg::TotBw +
+        (surya_hwpe_pkg::MisalignedAccesses ? surya_hwpe_pkg::BankBitwidth : 0);
 
     // Convert narrow AXI's 64 bit DW down to 32
     axi_dw_converter #(
@@ -233,7 +236,7 @@ module h_tile
       .tcdm_rsp_t        (htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
       .periph_req_t      (hwpectrl_req_t),
       .periph_rsp_t      (hwpectrl_rsp_t),
-      .HwpeDataWidth     (htile_snitch_cluster_wrapper_pkg::WideDataWidth),
+      .HwpeDataWidth     (SuryaTcdmWidth),
       .SbWidth           (htile_snitch_cluster_wrapper_pkg::WideDataWidth),
       .MisalignedAccesses(1),
       .IdWidth           (htile_snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
