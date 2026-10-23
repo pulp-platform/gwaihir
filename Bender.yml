@@ -34,7 +34,7 @@ dependencies:
     rev: 5cc30f0da57c7a7168452c1e30f96d158ccfa016
   datamover:
     git: https://github.com/pulp-platform/datamover.git
-    rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
+    rev: 2fd578b3d042230bed202631a9adae2f4a7e54f9 # lkesting/upstream
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
     rev: gwaihir/reduction
