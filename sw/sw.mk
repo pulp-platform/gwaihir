@@ -75,6 +75,10 @@ SN_RUNTIME_BUILDDIR     := $(SN_RUNTIME_BUILDDIR)/htile
 SN_TESTS_BUILDDIR       := $(SN_TESTS_BUILDDIR)/htile
 SN_RUNTIME_RISCV_CFLAGS += -DGW_HTILE_RUNTIME
 SN_TESTS_RISCV_CFLAGS   += -DGW_HTILE_RUNTIME
+# TODO: Surya-MX hangs without this. Spatz has no FP64 math, so the real fix is probably
+# a -march without D in snitch_cluster sw/toolchain.mk.
+SN_RUNTIME_RISCV_CFLAGS += -mno-implicit-float
+SN_TESTS_RISCV_CFLAGS   += -mno-implicit-float
 # The Surya and datamover HALs and the generated Surya workload.
 SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
 SN_TESTS_INCDIRS += $(shell $(BENDER) path datamover)/sw
