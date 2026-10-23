@@ -128,6 +128,8 @@ sources:
   - hw/rdi2stream.sv
   # Level 3
   - hw/ucie_tile.sv
+  - hw/ucie_tile_left.sv
+  - hw/ucie_tile_right.sv
   - hw/cluster_tile.sv
   - hw/h_tile.sv
   - hw/gwaihir_top.sv
