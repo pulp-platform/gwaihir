@@ -60,7 +60,7 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz-fgemv
 # Spatz PACE kernels
 SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz_pace_loop
 
-SN_TESTS = $(filter-out %/surya_mx.c,$(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c))
+SN_TESTS = $(filter-out %/surya_mx.c %/datamover.c,$(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c))
 
 ############
 ## H tile ##
@@ -70,12 +70,14 @@ SN_TESTS = $(filter-out %/surya_mx.c,$(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c))
 ifdef GW_HTILE_RUNTIME
 SN_BUILD_TESTS           = OFF
 SN_TESTS                 = $(SN_ROOT)/sw/tests/src/simple.c $(GW_SNITCH_SW_DIR)/tests/surya_mx.c
+SN_TESTS                += $(GW_SNITCH_SW_DIR)/tests/datamover.c
 SN_RUNTIME_BUILDDIR     := $(SN_RUNTIME_BUILDDIR)/htile
 SN_TESTS_BUILDDIR       := $(SN_TESTS_BUILDDIR)/htile
 SN_RUNTIME_RISCV_CFLAGS += -DGW_HTILE_RUNTIME
 SN_TESTS_RISCV_CFLAGS   += -DGW_HTILE_RUNTIME
-# The Surya HAL and the generated workload of the H tile test.
+# The Surya and datamover HALs and the generated Surya workload.
 SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
+SN_TESTS_INCDIRS += $(shell $(BENDER) path datamover)/sw
 SN_TESTS_INCDIRS += $(GW_SNITCH_SW_DIR)/tests/data/surya_mx
 endif
 
