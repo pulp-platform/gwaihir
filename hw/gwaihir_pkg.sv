@@ -20,6 +20,12 @@ package gwaihir_pkg;
 
   typedef axi_narrow_in_addr_t addr_t;
 
+  // Superbank plugs of a TCDM port. A misaligned access takes one plug more.
+  function automatic int unsigned tcdm_plugs(int unsigned data_width, int unsigned sb_width,
+                                             bit misaligned);
+    return misaligned ? data_width / sb_width + 1 : (data_width + sb_width - 1) / sb_width;
+  endfunction
+
   ///////////////
   //  FlooNoC  //
   ///////////////

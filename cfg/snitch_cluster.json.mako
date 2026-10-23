@@ -48,7 +48,8 @@
         cluster_base_expose: true,
         alias_region_enable: true,
         alias_region_base: 0x20440000,
-        num_exposed_wide_tcdm_ports: 1,
+        // On the H tile, Surya and the datamover take 2 superbank plugs each for misaligned accesses.
+        num_exposed_wide_tcdm_ports: ${4 if name == "htile" else 1},
         narrow_axi_port_expose: true,
         collective_width: ${collective_width},
         enable_external_interrupts: true,
