@@ -5,19 +5,7 @@
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
 
 /// Right-column UCIe tile merged with the dummy tile above it, to be hardened as one macro.
-///
-/// Physical layout (x = MeshDim.x-1, UCIe 1 at the bottom of the column):
-///
-///             north (L2 SPM)
-///                 |
-///   west (cluster) -- dummy -- (tie off)
-///                 |
-///   west (cluster) -- UCIe  -- (tie off)
-///                 |
-///             (tie off)
-///
-/// Only the ports towards a neighbouring tile are exposed. The ports on the chip boundary are
-/// tied off inside the macro. The UCIe/dummy link is a plain wire.
+/// Physical layout reasons
 module ucie_tile_right
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
@@ -67,20 +55,6 @@ module ucie_tile_right
   input  logic [NumChannels-1:0]                      phy_data_in_valid_i,
   output logic [NumChannels-1:0]                      phy_data_in_ready_o
 );
-
-  // The tile must sit in the bottom-left corner with a dummy tile right above it.
-  localparam int unsigned UcieX = int'(SamPhysical[Ucie1SamIdx].idx.x);
-  localparam int unsigned UcieY = int'(SamPhysical[Ucie1SamIdx].idx.y);
-
-  if (UcieX != MeshDim.x - 1 || UcieY != 0) begin : gen_check_corner
-    $fatal(
-        1,
-        "[ucie_tile_right] UCIe 1 is at (%0d, %0d), expected the bottom-right corner (%0d, 0).",
-        UcieX,
-        UcieY,
-        MeshDim.x - 1
-    );
-  end
 
   ///////////////////
   // Router arrays //

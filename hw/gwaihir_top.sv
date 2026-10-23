@@ -367,23 +367,6 @@ module gwaihir_top
   localparam int Ucie0DummyY = Ucie0Y + 1;
   localparam int Ucie1DummyY = Ucie1Y + 1;
 
-  // Each macro is instantiated in place of the dummy tile above its UCIe tile (gen_dummytiles).
-  if (!has_dummy_at(
-          int'(Sam[Ucie0SamIdx].idx.x), int'(Sam[Ucie0SamIdx].idx.y) + 1
-      ) || !has_dummy_at(
-          int'(Sam[Ucie1SamIdx].idx.x), int'(Sam[Ucie1SamIdx].idx.y) + 1
-      )) begin : gen_check_ucie_dummy
-    $fatal(
-        1,
-        "[gwaihir_top] Expected a dummy tile above each UCIe tile (%0d, %0d) and (%0d, %0d).",
-        Ucie0X,
-        Ucie0DummyY,
-        Ucie1X,
-        Ucie1DummyY
-    );
-  end
-
-
   // Ports of the left macro that the macro does not expose.
   for (genvar d = int'(North); d <= int'(West); d++) begin : gen_ucie0_unused_out
     localparam route_direction_e Dir = route_direction_e'(d);

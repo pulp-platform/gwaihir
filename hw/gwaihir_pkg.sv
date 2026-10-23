@@ -294,12 +294,6 @@ package gwaihir_pkg;
   localparam dummy_idx_t DummyIdx = get_dummy_idx(MeshMap);
   localparam dummy_idx_t DummyPhysicalIdx = get_dummy_physical_idx(DummyIdx);
 
-  // Whether a dummy tile is placed at SAM-space position (x, y): the slot is free and the row
-  // is not empty (empty rows do not exist in the physical mesh).
-  function automatic bit has_dummy_at(int x, int y);
-    return (MeshMap[y][x] == 1'b0) && !EmptyRows[y];
-  endfunction
-
   // Whether the connection is a tie-off or a valid neighbor
   function automatic bit is_tie_off(int x, int y, route_direction_e dir);
     return (x == 0 && dir == West) || (x == MeshDim.x-1 && dir == East) ||

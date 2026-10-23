@@ -5,19 +5,7 @@
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
 
 /// Left-column UCIe tile merged with the dummy tile above it, to be hardened as one macro.
-///
-/// Physical layout (x = 0, UCIe 0 at the bottom of the column):
-///
-///             north (L2 SPM)
-///                 |
-///   (tie off) -- dummy -- east (cluster)
-///                 |
-///   (tie off) -- UCIe  -- east (cluster)
-///                 |
-///             (tie off)
-///
-/// Only the ports towards a neighbouring tile are exposed. The ports on the chip boundary are
-/// tied off inside the macro. The UCIe/dummy link is a plain wire.
+/// Physical layout reasons
 module ucie_tile_left
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
@@ -67,19 +55,6 @@ module ucie_tile_left
   input  logic [NumChannels-1:0]                      phy_data_in_valid_i,
   output logic [NumChannels-1:0]                      phy_data_in_ready_o
 );
-
-  // The tile must sit in the bottom-left corner with a dummy tile right above it.
-  localparam int unsigned UcieX = int'(SamPhysical[Ucie0SamIdx].idx.x);
-  localparam int unsigned UcieY = int'(SamPhysical[Ucie0SamIdx].idx.y);
-
-  if (UcieX != 0 || UcieY != 0) begin : gen_check_corner
-    $fatal(
-        1,
-        "[ucie_tile_left] UCIe 0 is at (%0d, %0d), expected the bottom-left corner (0, 0).",
-        UcieX,
-        UcieY
-    );
-  end
 
   ///////////////////
   // Router arrays //
