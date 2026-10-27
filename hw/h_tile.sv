@@ -172,32 +172,41 @@ module h_tile
     localparam int unsigned SuryaTcdmWidth = surya_hwpe_pkg::TotBw +
         (surya_hwpe_pkg::MisalignedAccesses ? surya_hwpe_pkg::BankBitwidth : 0);
 
-    // Convert narrow AXI's 64 bit DW down to 32
-    axi_dw_converter #(
-      .AxiMaxReads        (1),
-      .AxiSlvPortDataWidth(htile_snitch_cluster_wrapper_pkg::NarrowDataWidth),
-      .AxiMstPortDataWidth(HWPECtrlDataWidth),
-      .AxiAddrWidth       (htile_snitch_cluster_wrapper_pkg::AddrWidth),
-      .AxiIdWidth         (htile_snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .aw_chan_t          (htile_snitch_cluster_wrapper_pkg::narrow_out_aw_chan_t),
-      .mst_w_chan_t       (cluster_narrow_out_dw_conv_w_chan_t),
-      .slv_w_chan_t       (htile_snitch_cluster_wrapper_pkg::narrow_out_w_chan_t),
-      .b_chan_t           (htile_snitch_cluster_wrapper_pkg::narrow_out_b_chan_t),
-      .ar_chan_t          (htile_snitch_cluster_wrapper_pkg::narrow_out_ar_chan_t),
-      .mst_r_chan_t       (cluster_narrow_out_dw_conv_r_chan_t),
-      .slv_r_chan_t       (htile_snitch_cluster_wrapper_pkg::narrow_out_r_chan_t),
-      .axi_mst_req_t      (cluster_narrow_out_dw_conv_req_t),
-      .axi_mst_resp_t     (cluster_narrow_out_dw_conv_resp_t),
-      .axi_slv_req_t      (htile_snitch_cluster_wrapper_pkg::narrow_out_req_t),
-      .axi_slv_resp_t     (htile_snitch_cluster_wrapper_pkg::narrow_out_resp_t)
-    ) i_axi_dw_hwpe (
-      .clk_i     (tile_clk),
-      .rst_ni    (tile_rst_n),
-      .slv_req_i (cluster_narrow_ext_req),
-      .slv_resp_o(cluster_narrow_ext_rsp),
-      .mst_req_o (cluster_narrow_out_dw_conv_req),
-      .mst_resp_i(cluster_narrow_out_dw_conv_rsp)
-    );
+    // A lane select is one cycle faster than axi_dw_converter. The HWPE registers take 32-bit
+    // accesses only, so one 32-bit lane of the 64-bit narrow port is enough.
+    localparam int unsigned NarrowWidth = htile_snitch_cluster_wrapper_pkg::NarrowDataWidth;
+    localparam int unsigned NarrowStrbWidth = NarrowWidth / 8;
+    localparam int unsigned HWPECtrlStrbWidth = HWPECtrlDataWidth / 8;
+    logic sel_upper_w;
+    assign sel_upper_w = |cluster_narrow_ext_req.w.strb[NarrowStrbWidth-1:HWPECtrlStrbWidth];
+
+    assign cluster_narrow_out_dw_conv_req.aw = cluster_narrow_ext_req.aw;
+    assign cluster_narrow_out_dw_conv_req.aw_valid = cluster_narrow_ext_req.aw_valid;
+    assign cluster_narrow_out_dw_conv_req.w.data   = sel_upper_w ?
+        cluster_narrow_ext_req.w.data[NarrowWidth-1:HWPECtrlDataWidth] :
+        cluster_narrow_ext_req.w.data[HWPECtrlDataWidth-1:0];
+    assign cluster_narrow_out_dw_conv_req.w.strb   = sel_upper_w ?
+        cluster_narrow_ext_req.w.strb[NarrowStrbWidth-1:HWPECtrlStrbWidth] :
+        cluster_narrow_ext_req.w.strb[HWPECtrlStrbWidth-1:0];
+    assign cluster_narrow_out_dw_conv_req.w.last = cluster_narrow_ext_req.w.last;
+    assign cluster_narrow_out_dw_conv_req.w.user = cluster_narrow_ext_req.w.user;
+    assign cluster_narrow_out_dw_conv_req.w_valid = cluster_narrow_ext_req.w_valid;
+    assign cluster_narrow_out_dw_conv_req.b_ready = cluster_narrow_ext_req.b_ready;
+    assign cluster_narrow_out_dw_conv_req.ar = cluster_narrow_ext_req.ar;
+    assign cluster_narrow_out_dw_conv_req.ar_valid = cluster_narrow_ext_req.ar_valid;
+    assign cluster_narrow_out_dw_conv_req.r_ready = cluster_narrow_ext_req.r_ready;
+
+    assign cluster_narrow_ext_rsp.aw_ready = cluster_narrow_out_dw_conv_rsp.aw_ready;
+    assign cluster_narrow_ext_rsp.ar_ready = cluster_narrow_out_dw_conv_rsp.ar_ready;
+    assign cluster_narrow_ext_rsp.w_ready  = cluster_narrow_out_dw_conv_rsp.w_ready;
+    assign cluster_narrow_ext_rsp.b        = cluster_narrow_out_dw_conv_rsp.b;
+    assign cluster_narrow_ext_rsp.b_valid  = cluster_narrow_out_dw_conv_rsp.b_valid;
+    assign cluster_narrow_ext_rsp.r.id     = cluster_narrow_out_dw_conv_rsp.r.id;
+    assign cluster_narrow_ext_rsp.r.data   = {2{cluster_narrow_out_dw_conv_rsp.r.data}};
+    assign cluster_narrow_ext_rsp.r.resp   = cluster_narrow_out_dw_conv_rsp.r.resp;
+    assign cluster_narrow_ext_rsp.r.last   = cluster_narrow_out_dw_conv_rsp.r.last;
+    assign cluster_narrow_ext_rsp.r.user   = cluster_narrow_out_dw_conv_rsp.r.user;
+    assign cluster_narrow_ext_rsp.r_valid  = cluster_narrow_out_dw_conv_rsp.r_valid;
 
     axi_cut #(
       .Bypass    (0),
