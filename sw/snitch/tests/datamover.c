@@ -7,8 +7,10 @@
 //   2. Core 0 selects the datamover, enables its clock and starts four chained
 //      jobs on a 64 x 64 byte matrix: an 8-bit transpose, a 16-bit and a 32-bit
 //      transpose of the result, and a copy.
-//   3. Core 0 waits until the datamover is idle, clears the event and disables
-//      the clock. It returns the number of wrong 64-bit words.
+//   3. Core 0 starts a fifth job: a 1 KiB copy between a source and a destination
+//      that are not 8 B-aligned. Guard bytes around the destination must not change.
+//   4. Core 0 waits until the datamover is idle, clears the event and disables
+//      the clock. It returns the number of wrong 64-bit words and wrong bytes.
 //
 // Build and run the test on the H tile:
 //   make sn-tests
@@ -35,6 +37,13 @@ static_assert(sizeof(datamover_regif_t) <= GW_HWPE_ACC_WINDOW,
 
 #define IN_BYTES (SIZE * SIZE)
 
+// The source and the destination offsets are not multiples of the 8 B bank word.
+#define MIS_BYTES    1024
+#define MIS_SRC_OFFS 3
+#define MIS_DST_OFFS 5
+#define MIS_GUARD    16
+#define MIS_FILL     0xa5
+
 static uint8_t *local_in;
 static uint8_t *local_out;
 static uint8_t *local_out2;
@@ -43,6 +52,7 @@ static uint8_t *local_out3;
 static uint8_t *local_gold;
 static uint8_t *local_gold2;
 static uint8_t *local_gold3;
+static uint8_t *local_mis;
 
 // A 64-bit compare of two loads becomes vcpop.m on RV32, which Spatz does not implement.
 static int compare_words(const uint8_t *actual, const uint8_t *golden, uint32_t bytes) {
@@ -51,6 +61,19 @@ static int compare_words(const uint8_t *actual, const uint8_t *golden, uint32_t 
   int errors = 0;
   for (uint32_t i = 0; i < bytes / sizeof(uint64_t); i++) {
     errors += (a[2 * i] != g[2 * i]) | (a[2 * i + 1] != g[2 * i + 1]);
+  }
+  return errors;
+}
+
+// Volatile byte reads keep LLVM from a vector compare, which ends in vcpop.m.
+static int compare_misaligned(void) {
+  const volatile uint8_t *src = local_in + MIS_SRC_OFFS;
+  const volatile uint8_t *buf = local_mis;
+  int errors = 0;
+  for (uint32_t i = 0; i < MIS_DST_OFFS + MIS_BYTES + MIS_GUARD; i++) {
+    uint8_t expected = MIS_FILL;
+    if (i >= MIS_DST_OFFS && i < MIS_DST_OFFS + MIS_BYTES) expected = src[i - MIS_DST_OFFS];
+    errors += buf[i] != expected;
   }
   return errors;
 }
@@ -72,6 +95,7 @@ int main(void) {
     local_out3    = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES / 4, 64);
     local_out3bis = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES / 4, 64);
     local_gold3   = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES / 4, 64);
+    local_mis     = (uint8_t *)snrt_l1_alloc_cluster_local(MIS_DST_OFFS + MIS_BYTES + MIS_GUARD, 64);
     snrt_dma_start_1d(local_in, golden_in, IN_BYTES);
     snrt_dma_start_1d(local_gold, golden_out, IN_BYTES);
     snrt_dma_start_1d(local_gold2, golden_out2, IN_BYTES / 2);
@@ -88,11 +112,16 @@ int main(void) {
 
     datamover_soft_clear();
 
+    // Volatile stores keep LLVM from a vector fill.
+    volatile uint8_t *mis = local_mis;
+    for (uint32_t i = 0; i < MIS_DST_OFFS + MIS_BYTES + MIS_GUARD; i++) mis[i] = MIS_FILL;
+
     // Each job reads the output of the job before it. The datamover runs the jobs in order.
     datamover_transpose(local_in, local_out, SIZE, SIZE, DATAMOVER_TRANSP_1ELEM);
     datamover_transpose(local_out, local_out2, SIZE / 2, SIZE, DATAMOVER_TRANSP_2ELEM);
     datamover_transpose(local_out2, local_out3bis, SIZE / 4, SIZE, DATAMOVER_TRANSP_4ELEM);
     datamover_copy(local_out3bis, local_out3, SIZE / 4, SIZE);
+    datamover_copy(local_in + MIS_SRC_OFFS, local_mis + MIS_DST_OFFS, MIS_BYTES / SIZE, SIZE);
 
     datamover_wait();
 
@@ -106,5 +135,6 @@ int main(void) {
   int errors = compare_words(local_out, local_gold, IN_BYTES);
   errors += compare_words(local_out2, local_gold2, IN_BYTES / 2);
   errors += compare_words(local_out3, local_gold3, IN_BYTES / 4);
+  errors += compare_misaligned();
   return errors;
 }

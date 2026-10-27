@@ -79,6 +79,8 @@ SN_TESTS_RISCV_CFLAGS   += -DGW_HTILE_RUNTIME
 # a -march without D in snitch_cluster sw/toolchain.mk.
 SN_RUNTIME_RISCV_CFLAGS += -mno-implicit-float
 SN_TESTS_RISCV_CFLAGS   += -mno-implicit-float
+# The datamover HAL must match the H tile datamover port: 512 data bits plus one bank word.
+SN_TESTS_RISCV_CFLAGS   += -DDATAMOVER_BANDWIDTH=576 -DDATAMOVER_MISALIGNED_ACCESSES=1
 # The Surya and datamover HALs and the generated Surya workload.
 SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
 SN_TESTS_INCDIRS += $(shell $(BENDER) path datamover)/sw
