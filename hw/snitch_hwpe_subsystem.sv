@@ -26,12 +26,15 @@ module snitch_hwpe_subsystem
   parameter hwpe_acc_e Accelerator = gwaihir_pkg::HwpeMxCore,
   parameter bit UseDatamover = 1'b1,
   // Dependent parameters: do not modify!
-  // The datamover is one superbank wide. Each HWPE takes its own plugs if there is a datamover or
-  // if the accelerator is wider than a superbank.
+  // The datamover moves one superbank of data per beat. Each HWPE takes its own plugs if there is a
+  // datamover or if the accelerator is wider than a superbank.
   localparam bit SplitPlugs = UseDatamover || (HwpeDataWidth > SbWidth),
+  // A misaligned datamover port carries one bank word more than its data.
+  localparam int unsigned DmaDataWidth = SbWidth + (MisalignedAccesses ?
+      datamover_pkg::ElemsPerWord * datamover_pkg::ElemWidth : 0),
   localparam int unsigned AccPlugs = tcdm_plugs(HwpeDataWidth, SbWidth, MisalignedAccesses == 1),
   localparam int unsigned DmaPlugs = UseDatamover ? tcdm_plugs(
-      SbWidth, SbWidth, MisalignedAccesses == 1
+      DmaDataWidth, SbWidth, MisalignedAccesses == 1
   ) : 0,
   localparam int unsigned NumTcdmPlugs = SplitPlugs ? AccPlugs + DmaPlugs : 1,
   // The exposed wide TCDM port count of the cluster config. It must equal NumTcdmPlugs.
@@ -287,7 +290,7 @@ module snitch_hwpe_subsystem
   if (UseDatamover) begin : gen_datamover
     // verilog_format: off
     localparam hci_size_parameter_t HCISizeDma = '{
-      DW:  SbWidth,
+      DW:  DmaDataWidth,
       AW:  DEFAULT_AW,
       BW:  DEFAULT_BW,
       UW:  DEFAULT_UW,
@@ -301,7 +304,7 @@ module snitch_hwpe_subsystem
 `ifndef SYNTHESIS
       .WAIVE_RSP3_ASSERT(1'b1),
 `endif
-      .DW               (SbWidth),
+      .DW               (DmaDataWidth),
       .EW               (DEFAULT_EW),
       .EHW              (DEFAULT_EHW)
     ) tcdm_dma (
@@ -317,9 +320,9 @@ module snitch_hwpe_subsystem
 
     datamover_top #(
       .IdWidth           (IdWidth),
-      .Bandwidth         (SbWidth),
+      .Bandwidth         (DmaDataWidth),
       .NumCores          (NrCores),
-      .MisalignedAccesses(0),
+      .MisalignedAccesses(MisalignedAccesses),
       .HCI_SIZE_tcdm     (HCISizeDma)
     ) i_datamover_top (
       .clk_i      (hwpe_clk[DmaPort]),
@@ -334,7 +337,7 @@ module snitch_hwpe_subsystem
     konark_tcdm_aligner #(
       .tcdm_req_t         (tcdm_req_t),
       .tcdm_rsp_t         (tcdm_rsp_t),
-      .DATA_WIDTH         (SbWidth),
+      .DATA_WIDTH         (DmaDataWidth),
       .SB_WIDTH           (SbWidth),
       .ADDR_WIDTH         (DEFAULT_AW),
       .MISALIGNED_ACCESSES(MisalignedAccesses)
