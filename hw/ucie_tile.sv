@@ -802,6 +802,16 @@ module ucie_tile
   // Move data only while the link is ACTIVE
   assign link_active = (pl_state_sts == RdiActive);
 
+  // TX copy of the gate, registered. `lp_valid` and `lp_irdy` are macro inputs:
+  // gating them with the macro output `pl_state_sts` through logic only made a
+  // macro-to-macro path that cannot meet timing (the macro's output delay plus
+  // its input setup exceed the clock period). So TX follows ACTIVE one cycle
+  // late, both entering and leaving it; `inp_ready` uses the same copy, so no
+  // beat is taken without `lp_valid`. RX keeps the direct gate (macro output to
+  // a register in the tile).
+  logic link_active_tx_q;
+  `FF(link_active_tx_q, link_active, 1'b0, tile_clk, tile_rst_n)
+
   // TX: serializer stream -> RDI
   logic tx_rdi_ready;
 
@@ -817,7 +827,7 @@ module ucie_tile
     .lp_valid_o   (lp_valid),
     .lp_irdy_o    (lp_irdy),
     .pl_trdy_i    (pl_trdy),
-    .link_active_i(link_active)
+    .link_active_i(link_active_tx_q)
   );
 
   // RX: RDI -> serializer stream. RDI RX has no backpressure: `rdi2stream`
