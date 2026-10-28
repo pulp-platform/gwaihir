@@ -7,6 +7,7 @@
 
 `include "axi/assign.svh"
 `include "common_cells/assertions.svh"
+`include "common_cells/registers.svh"
 `include "axi/typedef.svh"
 
 module ucie_tile
@@ -856,6 +857,47 @@ module ucie_tile
 
   assign phy_in_valid = {NumChannels{rx_valid & link_en}};
 
+  // UCIe macro APB slave at slower clock
+  localparam int unsigned UcieApbClkDiv = 12;
+
+  logic ucie_apb_clk_div, ucie_apb_clk;
+  ucie_cfg_apb_req_t  ucie_apb_req;
+  ucie_cfg_apb_resp_t ucie_apb_rsp;
+
+  cc_clk_int_div_static #(
+    .DivValue(UcieApbClkDiv)
+  ) i_ucie_apb_clk_div (
+    .clk_i         (tile_clk),
+    .rst_ni        (tile_rst_apb_n),
+    .en_i          (1'b1),
+    .test_mode_en_i(test_enable_i),
+    .clk_o         (ucie_apb_clk_div)
+  );
+
+  // Fixed leaf cell for the generated clock definition
+  tc_clk_buffer i_ucie_apb_clk_buf (
+    .clk_i(ucie_apb_clk_div),
+    .clk_o(ucie_apb_clk)
+  );
+
+  apb_cdc #(
+    .LogDepth(1),
+    .req_t   (ucie_cfg_apb_req_t),
+    .resp_t  (ucie_cfg_apb_resp_t),
+    .addr_t  (addr_t),
+    .data_t  (ucie_cfg_reg_data_t),
+    .strb_t  (ucie_cfg_reg_strb_t)
+  ) i_ucie_apb_cdc (
+    .src_pclk_i   (clk_i),
+    .src_preset_ni(rst_ni),
+    .src_req_i    (cfg_apb_req[ApbUcie]),
+    .src_resp_o   (cfg_apb_rsp[ApbUcie]),
+    .dst_pclk_i   (ucie_apb_clk),
+    .dst_preset_ni(tile_rst_apb_n),
+    .dst_req_o    (ucie_apb_req),
+    .dst_resp_i   (ucie_apb_rsp)
+  );
+
   // UCIe PHY + PCS macro
   ucie_macro_wrap i_ucie_macro_wrap (
     .rdi_clk      (tile_clk),
@@ -892,18 +934,18 @@ module ucie_tile
     .rxdatasb     (ucie_rxdatasb_i),
     .txclksb      (ucie_txclksb_o),
     .txdatasb     (ucie_txdatasb_o),
-    // APB slave: PCS CSRs (ucie_cfg SAM range)
-    .apb_s_paddr  (32'(cfg_apb_req[ApbUcie].paddr[UcieApbAddrWidth-1:0])),
-    .apb_s_pclk   (tile_clk),
-    .apb_s_penable(cfg_apb_req[ApbUcie].penable),
-    .apb_s_prdata (cfg_apb_rsp[ApbUcie].prdata),
-    .apb_s_pready (cfg_apb_rsp[ApbUcie].pready),
+    // APB slave: PCS CSRs (ucie_cfg SAM range), slow side of the CDC
+    .apb_s_paddr  (32'(ucie_apb_req.paddr[UcieApbAddrWidth-1:0])),
+    .apb_s_pclk   (ucie_apb_clk),
+    .apb_s_penable(ucie_apb_req.penable),
+    .apb_s_prdata (ucie_apb_rsp.prdata),
+    .apb_s_pready (ucie_apb_rsp.pready),
     .apb_s_presetn(tile_rst_apb_n),
-    .apb_s_psel   (cfg_apb_req[ApbUcie].psel),
-    .apb_s_pslverr(cfg_apb_rsp[ApbUcie].pslverr),
-    .apb_s_pstrb  (cfg_apb_req[ApbUcie].pstrb),
-    .apb_s_pwdata (cfg_apb_req[ApbUcie].pwdata),
-    .apb_s_pwrite (cfg_apb_req[ApbUcie].pwrite),
+    .apb_s_psel   (ucie_apb_req.psel),
+    .apb_s_pslverr(ucie_apb_rsp.pslverr),
+    .apb_s_pstrb  (ucie_apb_req.pstrb),
+    .apb_s_pwdata (ucie_apb_req.pwdata),
+    .apb_s_pwrite (ucie_apb_req.pwrite),
     // RDI: adapter -> PHY. The unused RDI pins are tied off in the wrapper.
     .lp_data      (lp_data),
     .lp_irdy      (lp_irdy),
