@@ -332,7 +332,7 @@ LINT_LOG       = $(LINT_BUILD_DIR)/spyglass.log
 # Generated RTL is only required to exist (order-only), since some of it is regenerated on every
 # make invocation and would otherwise trigger a spurious re-run of Spyglass
 LINT_GEN_RTL   = $(GW_HW_ALL) $(SN_CLUSTER_WRAPPER_PKG) $(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv
-LINT_TILES    ?= gwaihir_top cheshire_tile cluster_tile mem_tile_small mem_tile_large ucie_tile pcie_tile dummy_tile
+LINT_TILES    ?= gwaihir_top cheshire_tile cluster_tile mem_tile_small mem_tile_large ucie_tile pcie_tile dummy_tile h_tile
 LINT_TARGS    ?= $(COMMON_TARGS) -t synthesis
 
 .PHONY: spyglass $(addprefix spyglass-,$(LINT_TILES)) spyglass-clean
