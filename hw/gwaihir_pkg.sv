@@ -443,6 +443,8 @@ package gwaihir_pkg;
   } hwpe_acc_e;
   localparam bit UseHWPE = 1'b1;
   localparam bit UseHtileHWPE = 1'b1;
+  // The HWPE datamover (L1 to L1 transpose). The cluster DMA transpose replaces it.
+  localparam bit UseDatamover = 1'b0;
   localparam int unsigned ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
 
   typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH-1:0] tile_cfg_reg_data_t;
@@ -522,7 +524,7 @@ package gwaihir_pkg;
   // DMA-related parameters
   localparam int unsigned DmaNumAxInFlight = 16;
   localparam int unsigned DmaMemSysDepth = 8;
-  localparam int unsigned DmaJobFifoDepth = 2;
+  localparam int unsigned DmaJobFifoDepth = 4;
   localparam int unsigned DmaRAWCouplingAvail = 1;
   localparam int unsigned DmaConfEnableTwoD = 1;
   localparam bit DmaEnableCompute = 1;
@@ -532,6 +534,18 @@ package gwaihir_pkg;
       mxdequant: 1'b1,
       mxfp16: 1'b1
   };
+  localparam idma_pkg::compute_tuning_t DmaComputeTuning = '1;
+  // iDMA timing cuts = 103; dfe_ready_ahead adds one dataflow entry per lane
+  localparam idma_pkg::timing_cuts_t DmaTimingCuts = '{
+      mx_beat_push: 1'b1,
+      dfe_ready_ahead: 1'b1,
+      mx_in_reg: 1'b0,
+      dfe_ready_cut: 1'b0,
+      dfe_reg_flags: 1'b1,
+      wdp_head_spill: 1'b1,
+      outst_cnt_reg: 1'b1
+  };
+  localparam int unsigned DmaBufferDepth = 3;
 
   localparam int unsigned L2SpmNumAddrRules = L2Spm1SamIdx - L2Spm0SamIdx;
 

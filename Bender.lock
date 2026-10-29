@@ -45,10 +45,10 @@ packages:
     - register_interface
     - tech_cells_generic
   axi_obi:
-    revision: 26fa0b8d4b00d8f401c8c1ae7b5293baa2099362
+    revision: 030136e2e199b17c61606b54f57823df2cdbfd14
     version: null
     source:
-      Git: https://github.com/pulp-platform/axi_obi.git
+      Git: https://github.com/DanielKellerM/axi_obi.git
     dependencies:
     - axi
     - common_cells
@@ -230,7 +230,7 @@ packages:
       Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: ebb114059e1b5b0e2520e031fd5aad5a57068371
+    revision: e49def09dfe0e2751a3e349b22efd317afd82b83
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -238,8 +238,8 @@ packages:
     - common_cells
     - fpu_div_sqrt_mvp
   fpu_div_sqrt_mvp:
-    revision: 86e1f558b3c95e91577c41b2fc452c86b04e85ac
-    version: 1.0.4
+    revision: af8562ebfe4a18765ed7a4f059861e7985baa869
+    version: null
     source:
       Git: https://github.com/pulp-platform/fpu_div_sqrt_mvp.git
     dependencies:
@@ -296,8 +296,8 @@ packages:
     dependencies:
     - tech_cells_generic
   idma:
-    revision: 6d814ab525a961cd47b9a9b1da1281e38473c617
-    version: 0.7.3
+    revision: 835353f842355fbfb6a4b47ba2a438a5ffbdb995
+    version: 0.7.4
     source:
       Git: https://github.com/pulp-platform/iDMA.git
     dependencies:
@@ -323,7 +323,7 @@ packages:
       Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
     dependencies: []
   mxcore:
-    revision: 1ca16ad793b8b4151e8eb395a77be397b266c868
+    revision: 2afd5ace56f3d61074159d4032e3102931840d00
     version: null
     source:
       Git: https://github.com/pulp-platform/MXCore.git
@@ -436,10 +436,10 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: 5ec2bf5e4f80fb75367fc560688f547d71419240
+    revision: b06aaebc7e991779adcce4ae06ce9a86c352f1e5
     version: null
     source:
-      Git: https://github.com/pulp-platform/snitch_cluster.git
+      Git: https://github.com/DiyouS/snitch_cluster.git
     dependencies:
     - apb
     - axi
@@ -456,7 +456,7 @@ packages:
     - spatz_vpu
     - tech_cells_generic
   spatz_vpu:
-    revision: f396e76985f3a07d77c0e1e45159e46d5ae04dd0
+    revision: f0490271ac5227cdbe2c0a4b6459c169cd993d47
     version: null
     source:
       Git: https://github.com/pulp-platform/spatz_vpu.git
@@ -514,3 +514,9 @@ packages:
     - axi
     - common_cells
     - register_interface
+  tum_npu:
+    revision: null
+    version: null
+    source:
+      Path: .deps/tum_npu
+    dependencies: []

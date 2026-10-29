@@ -93,6 +93,15 @@ static inline void memtile_dma_set_compute(uint32_t tile, uint32_t op) {
     memtile_dma_wr32(&memtile_dma(tile)->compute_cfg, c.w);
 }
 
+// Sticky MX options (mx_cfg), scale plane address and per-row scale stride (64 B multiples)
+static inline void memtile_dma_set_mx(uint32_t tile, uint32_t mx_cfg, uint64_t scale_addr,
+                                      uint64_t scale_stride) {
+    volatile idma_reg64_2d_t *dma = memtile_dma(tile);
+    memtile_dma_wr32(&dma->mx_cfg, mx_cfg);
+    memtile_dma_wr64(dma->scale_addr, scale_addr);
+    memtile_dma_wr64(dma->mx_dim[0].scale_stride, scale_stride);
+}
+
 static inline void memtile_dma_passthrough(uint32_t tile) {
     memtile_dma_set_compute(tile, COMPUTE_OP__NONE);
 }

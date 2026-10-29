@@ -114,9 +114,11 @@ sim-vcs:
   variables:
     LOG_FILE: transcript
     CHS_BINARY: sw/cheshire/tests/simple_offload.spm.elf
+    # Scalar FP kernels (gemm, mha) are not run: the compute core's scalar FP goes
+    # through Spatz's FPU, which has no FP64 support.
     # TODO: use MHA again once the new toolchain supports -mno-fdiv or shared FDIV/FSQRT unit is added to the cluster
-    SN_BINARY: sw/snitch/apps/gemm/build/gemm.elf
-    VERIFY_PY: .deps/snitch_cluster/sw/kernels/blas/gemm/scripts/verify.py
+    SN_BINARY: sw/snitch/apps/spatz-fmatmul/build/spatz-fmatmul.elf
+    VERIFY_PY: .deps/snitch_cluster/sw/kernels/blas/spatz-fmatmul/scripts/verify.py
     PRELMODE: 3
   needs:
     - chs-sw

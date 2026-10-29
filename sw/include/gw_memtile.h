@@ -6,7 +6,7 @@
 //
 // Tile-indexed L2 mem-tile accessors, shared by the 64b (Cheshire) and 32b
 // (Snitch) address maps. The four L2 SPM tiles are four individual address-map
-// endpoints with heterogeneous sizes (tiles 0,2 = 2 MiB, tiles 1,3 = 1 MiB), so
+// endpoints with heterogeneous sizes (tiles 0,2 = 2 MiB, tiles 1,3 = 512 KiB), so
 // the generated headers expose only per-tile macros (GW_L2_SPM_<i>_*); these
 // re-create the tile-indexed accessors on top of them.
 //
@@ -47,7 +47,7 @@
 #define GW_L2_SPM_STRIDE (GW_L2_SPM_1_BASE_ADDR - GW_L2_SPM_0_BASE_ADDR)
 
 // Total L2 address SPAN (first tile base .. end of last tile) = top of L2.
-// NOTE: this includes the 1 MiB "Free" gaps above the half-size tiles; it is NOT
+// NOTE: this includes the "Free" gaps above the small tiles; it is NOT
 // the sum of the mapped tile sizes.
 #define GW_L2_SPM_TOTAL_SIZE \
     (GW_L2_SPM_3_BASE_ADDR + GW_L2_SPM_3_SIZE - GW_L2_SPM_0_BASE_ADDR)
