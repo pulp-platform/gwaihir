@@ -48,6 +48,9 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync -t mxcore_hwpe
 SIM_TARGS += -t simulation -t test -t idma_test
 
+COMMON_DEFINES += $(SN_COMMON_BENDER_FLAGS)
+COMMON_TARGS += $(COMMON_DEFINES)
+
 ############
 # Cheshire #
 ############
@@ -172,6 +175,9 @@ docs-clean:
 ##################
 
 SN_GEN_DIR = $(GW_GEN_HW_DIR)
+# Must match `double_bw` and `xpace` in cfg/snitch_cluster.json.mako
+SN_SPATZ_DOUBLE_BW ?= ON
+SN_SPATZ_PACE      ?= ON
 include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/toolchain.mk
 include $(SN_ROOT)/make/rtl.mk
@@ -184,9 +190,9 @@ $(SN_CFG): $(SN_CFG_TPL) $(FLOO_CFG) | $(GW_GEN_DIR)
 
 .PHONY: sn-hw-clean sn-hw-all
 
-sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG)
+sn-hw-all: $(SN_CFG) $(SN_CLUSTER_WRAPPER_PKG) $(SN_SPATZ_PKG)
 sn-hw-clean:
-	rm -rf $(SN_CLUSTER_WRAPPER_PKG)
+	rm -rf $(SN_CLUSTER_WRAPPER_PKG) $(SN_SPATZ_PKG) $(SN_SPATZ_CFG)
 	rm -f $(SN_CFG)
 
 ##########
@@ -229,7 +235,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 88dff5531dfa0b7e1fc0e26fcba42b2a7922b998
+PD_COMMIT ?= 7ca0dd49ee30581a83792c6a4f4f5f88650832cf
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git

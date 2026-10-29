@@ -168,7 +168,7 @@ task automatic fastmode_read();
   end
   // Sweep the whole L2 span so l2mem.bin stays a linear image: verify.py's
   // MemoryDumpReader maps file offset N -> base + N. Tiles 1 and 3 are only
-  // 1 MiB, so the upper 1 MiB of each is unmapped ("Free"). Zero-fill those gap
+  // 512 KiB, so the rest of each 2 MiB slot is unmapped ("Free"). Zero-fill those gap
   // words instead of reading them (a read would trip fastmode_read_word's
   // unmapped-address $fatal), keeping every mapped word at its correct offset.
   for (longint w = Sam[L2Spm0SamIdx].start_addr; w < Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr; w+=4) begin

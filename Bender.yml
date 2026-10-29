@@ -63,8 +63,8 @@ dependencies:
     git: https://github.com/pulp-platform/serial_link.git
     rev: main
   snitch_cluster:
-    git: https://github.com/pulp-platform/snitch_cluster.git
-    rev: main
+    git: https://github.com/DiyouS/snitch_cluster.git
+    rev: doublebw-pace
   tum_npu:
     path: .deps/tum_npu
   ucie:
@@ -125,6 +125,8 @@ sources:
 
   # Level 3
   - hw/ucie_tile.sv
+  - hw/ucie_tile_left.sv
+  - hw/ucie_tile_right.sv
   - hw/cluster_tile.sv
   - hw/h_tile.sv
   - hw/gwaihir_top.sv

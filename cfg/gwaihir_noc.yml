@@ -13,11 +13,11 @@ params:
   cluster_size: 0x0004_0000
 
   # L2 SPM tiles, evenly spaced but heterogeneously sized: even tiles are large,
-  # odd tiles are small (the upper half of their slot stays unmapped).
+  # odd tiles are small (the rest of their slot stays unmapped).
   l2_base: 0x2120_0000
   l2_stride: 0x0020_0000
   l2_size_large: 0x0020_0000
-  l2_size_small: 0x0010_0000
+  l2_size_small: 0x0008_0000
 
   # Register regions, packed back to back: one block per cluster, then one iDMA
   # and one control block per L2 tile, indexed by the tile number.
@@ -134,7 +134,7 @@ endpoints:
       - "narrow_out"
       - "wide_out"
   # ---- Memory tiles: four individual endpoints (heterogeneous L2 sizes) ----
-  # Tiles 0,2 are large; tiles 1,3 are small and leave the upper half of their
+  # Tiles 0,2 are large; tiles 1,3 are small and leave the rest of their
   # `l2_stride` slot unmapped. Each tile owns one iDMA and one control register
   # block, indexed by the tile number.
   - name: "l2_spm_0"
@@ -384,10 +384,10 @@ connections:
     dst: "router_left"
     dst_idx: [0, 4]
     dst_dir: "Eject"
-  # TUM NPU tile -> free centre-row slot above the cluster array
+  # Tum npu tile
   - src: "TUM_NPU"
     dst: "router_center"
-    dst_idx: [2, 4]
+    dst_idx: [0, 4]
     dst_dir: "Eject"
   # router_left (x=0) ↔ router_center West boundary (x=4)
   - src: "router_left"

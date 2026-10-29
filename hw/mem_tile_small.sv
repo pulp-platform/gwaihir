@@ -37,6 +37,7 @@ module mem_tile_small
 );
 
   localparam int unsigned MemTileSize = MemTileSizeSmall;
+  localparam bit EnableDma = 1'b0;
 
   mem_tile #(
 `ifndef TARGET_SYNTHESIS
@@ -45,7 +46,8 @@ module mem_tile_small
     .AxiUserAtop   (AxiUserAtop),
     .AxiUserAtopMsb(AxiUserAtopMsb),
     .AxiUserAtopLsb(AxiUserAtopLsb),
-    .MemTileSize   (MemTileSize)
+    .MemTileSize   (MemTileSize),
+    .EnableDma     (EnableDma)
   ) i_mem_tile (
     .clk_i,
     .rst_ni,

@@ -26,7 +26,7 @@ export SG_SHELL="${SG_SEPP} sg_shell"
 export DESIGNWARE_HOME=/usr/pack/tsmc-7-kgf/gwaihir/configurable_ips
 
 export CHS_SW_GCC_BINROOT=/usr/pack/riscv-1.0-kgf/riscv64-gcc-12.2.0/bin
-export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-pulp-llvm-almalinux8-22.1.7-pulp-0.3.0/bin/
+export SN_LLVM_BINROOT=/usr/scratch2/vulcano/colluca/tools/riscv32-pulp-llvm-almalinux8-22.1.7-pulp-0.4.0/bin/
 
 export UV=/usr/local/uv/uv
 
