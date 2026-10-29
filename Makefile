@@ -346,17 +346,20 @@ $(LINT_BUILD_DIR)/analyze.tcl: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_BUILD_DIR) 
 # Per-tile file lists, trimmed with bender's slang extension to the files reachable from each tile.
 # `--broken keep` is needed since slang cannot resolve the includes of the generated Snitch wrapper
 # package when parsing it standalone.
+# The trimming ignores the `-D` defines (bender 0.32.1), so it drops the double-bandwidth VLSU
+# selected by `ifdef DOUBLE_BW` in spatz.sv. Add it back next to the VLSU.
 $(LINT_BUILD_DIR)/%.f: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_GEN_RTL)
 	@mkdir -p $(@D)
 	$(BENDER) script flist-plus $(LINT_TARGS) --suppress E31 --top $* --broken keep > $@
+	sed -i 's|^\(.*/\)spatz_vlsu\.sv$$|&\n\1spatz_doublebw_vlsu.sv|' $@
 
 # Run Spyglass on the full design
 $(LINT_REPORT): $(LINT_DIR)/spyglass.tcl $(LINT_BUILD_DIR)/analyze.tcl | $(LINT_BUILD_DIR)
 	cd $(LINT_BUILD_DIR) && LINT_TOP=$(LINT_TOP) $(SG_SHELL) -tcl $< > $(LINT_LOG) 2>&1
 
-# Check the report for the whole design
-spyglass: $(LINT_REPORT)
-	$(LINT_DIR)/check_spyglass_lint.py $<
+# Check the report for the whole design. The tile file lists scope the file waivers of each tile
+spyglass: $(LINT_REPORT) $(addprefix $(LINT_BUILD_DIR)/,$(addsuffix .f,$(LINT_TILES)))
+	$(LINT_DIR)/check_spyglass_lint.py $< --tiles-dir $(LINT_BUILD_DIR)
 
 # Check the report for the files reachable from a single tile, e.g. `make spyglass-cluster_tile`
 # The top level is checked against what no tile needs, so it requires all tile file lists

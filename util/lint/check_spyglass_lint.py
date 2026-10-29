@@ -118,6 +118,9 @@ TILE_FILE_WAIVERS = {
         # ASSERT statements are not synthesizable
         # PACE assertion in FPnew, not intended to be synthesis
         ('SYNTH_5064', r'/fpnew-[0-9a-f]+/'),
+        # vector `result_valid` used as a ternary condition in the reductions (implicit OR)
+        ('W224', r'spatz_vfu\.sv'),
+        ('STARC05-2.1.5.3', r'spatz_vfu\.sv'),
 
     ],
 }
@@ -265,9 +268,14 @@ def main():
         df = df[df.file.map(lambda f: str(Path(f).resolve()) in files)]
         print(f'Keep only violations in tile {args.tile}. {len(df)} messages remaining.')
 
-        # Apply file-scoped waivers reviewed for this tile
-        for rule, pattern in TILE_FILE_WAIVERS.get(args.tile, []):
-            df = df[~((df.rule == rule) & df.file.str.contains(pattern))]
+    # Apply the file-scoped waivers reviewed for each tile, only to the files of that tile.
+    # Without --tile, the waivers of all tiles apply.
+    for tile in [args.tile] if args.tile else TILE_FILE_WAIVERS:
+        files = tile_files(tile, args.tiles_dir)
+        in_tile = df.file.map(lambda f: str(Path(f).resolve()) in files)
+        for rule, pattern in TILE_FILE_WAIVERS.get(tile, []):
+            df = df[~(in_tile.reindex(df.index) & (df.rule == rule) & df.file.str.contains(pattern))]
+        print(f'Apply file waivers of tile {tile}. {len(df)} messages remaining.')
 
     # Fail on remaining messages
     if len(df) > 0:
