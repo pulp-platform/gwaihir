@@ -230,7 +230,7 @@ packages:
       Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: e49def09dfe0e2751a3e349b22efd317afd82b83
+    revision: 5765c05de9424e21186e71d745cc4ad9db07a030
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -467,7 +467,7 @@ packages:
     - reqrsp_interface
     - tech_cells_generic
   surya-mx:
-    revision: ee2d46306f6d6a0052df1059fb8bf975027ab90f
+    revision: 922ceb9ab8a84f3bc944d7599c6fe2af2e662a72
     version: null
     source:
       Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
