@@ -855,9 +855,9 @@ module ucie_tile
   assign phy_in_valid = {NumChannels{rx_valid & link_en}};
 
   // UCIe macro APB slave at slower clock
-  localparam int unsigned UcieApbClkDiv = 12;
+  localparam int unsigned UcieApbClkDiv = 20;
 
-  logic ucie_apb_clk_div, ucie_apb_clk;
+  logic               ucie_apb_clk;
   ucie_cfg_apb_req_t  ucie_apb_req;
   ucie_cfg_apb_resp_t ucie_apb_rsp;
 
@@ -868,31 +868,76 @@ module ucie_tile
     .rst_ni        (tile_rst_apb_n),
     .en_i          (1'b1),
     .test_mode_en_i(test_enable_i),
-    .clk_o         (ucie_apb_clk_div)
+    .clk_o         (ucie_apb_clk)
   );
 
-  // Fixed leaf cell for the generated clock definition
-  tc_clk_buffer i_ucie_apb_clk_buf (
-    .clk_i(ucie_apb_clk_div),
-    .clk_o(ucie_apb_clk)
+  // APB crossing to the macro clock. `ucie_apb_clk` is derived from `clk_i`
+  // with an integer ratio, so the two isochronous spill registers need no
+  // synchronizers: STA times all paths between the two clocks. Both sides are
+  // on the APB reset so the spill register pointers reset together. The
+  // request fields need no copy: the APB master holds them stable until
+  // `pready`, which comes back only after the macro has completed the transfer.
+  logic ucie_apb_busy_d, ucie_apb_busy_q;
+  logic ucie_apb_src_req_valid, ucie_apb_src_req_ready;
+  logic ucie_apb_src_rsp_valid;
+  logic ucie_apb_dst_req_valid, ucie_apb_dst_done;
+  logic               ucie_apb_access_q;
+  ucie_cfg_apb_resp_t ucie_apb_src_rsp;
+
+  // Source side: forward the access phase, then hold off `pready` until the
+  // response is back. One transfer in flight at a time.
+  assign ucie_apb_src_req_valid = cfg_apb_req[ApbUcie].psel & cfg_apb_req[ApbUcie].penable &
+                                  ~ucie_apb_busy_q;
+  // Busy from the request push until the response pop
+  assign ucie_apb_busy_d = ucie_apb_busy_q ? ~ucie_apb_src_rsp_valid :
+                                             (ucie_apb_src_req_valid & ucie_apb_src_req_ready);
+  `FF(ucie_apb_busy_q, ucie_apb_busy_d, 1'b0, clk_i, tile_rst_apb_n)
+
+  assign cfg_apb_rsp[ApbUcie].pready  = ucie_apb_busy_q & ucie_apb_src_rsp_valid;
+  assign cfg_apb_rsp[ApbUcie].prdata  = ucie_apb_src_rsp.prdata;
+  assign cfg_apb_rsp[ApbUcie].pslverr = ucie_apb_src_rsp.pslverr;
+
+  // Only the request handshake crosses here
+  cc_isochronous_spill_register #(
+    .data_t(logic)
+  ) i_ucie_apb_req_spill_register (
+    .src_clk_i  (clk_i),
+    .src_rst_ni (tile_rst_apb_n),
+    .src_valid_i(ucie_apb_src_req_valid),
+    .src_ready_o(ucie_apb_src_req_ready),
+    .src_data_i (1'b0),
+    .dst_clk_i  (ucie_apb_clk),
+    .dst_rst_ni (tile_rst_apb_n),
+    .dst_valid_o(ucie_apb_dst_req_valid),
+    .dst_ready_i(ucie_apb_dst_done),
+    .dst_data_o ()
   );
 
-  apb_cdc #(
-    .LogDepth(1),
-    .req_t   (ucie_cfg_apb_req_t),
-    .resp_t  (ucie_cfg_apb_resp_t),
-    .addr_t  (addr_t),
-    .data_t  (ucie_cfg_reg_data_t),
-    .strb_t  (ucie_cfg_reg_strb_t)
-  ) i_ucie_apb_cdc (
-    .src_pclk_i   (clk_i),
-    .src_preset_ni(rst_ni),
-    .src_req_i    (cfg_apb_req[ApbUcie]),
-    .src_resp_o   (cfg_apb_rsp[ApbUcie]),
-    .dst_pclk_i   (ucie_apb_clk),
-    .dst_preset_ni(tile_rst_apb_n),
-    .dst_req_o    (ucie_apb_req),
-    .dst_resp_i   (ucie_apb_rsp)
+  // Destination side: replay the transfer with its setup and access phases
+  // and push the response back on `pready`
+  assign ucie_apb_dst_done = ucie_apb_access_q & ucie_apb_rsp.pready;
+  `FF(ucie_apb_access_q, ucie_apb_dst_req_valid & ~ucie_apb_dst_done, 1'b0, ucie_apb_clk,
+      tile_rst_apb_n)
+
+  always_comb begin
+    ucie_apb_req         = cfg_apb_req[ApbUcie];
+    ucie_apb_req.psel    = ucie_apb_dst_req_valid;
+    ucie_apb_req.penable = ucie_apb_access_q;
+  end
+
+  cc_isochronous_spill_register #(
+    .data_t(ucie_cfg_apb_resp_t)
+  ) i_ucie_apb_rsp_spill_register (
+    .src_clk_i  (ucie_apb_clk),
+    .src_rst_ni (tile_rst_apb_n),
+    .src_valid_i(ucie_apb_dst_done),
+    .src_ready_o(),
+    .src_data_i (ucie_apb_rsp),
+    .dst_clk_i  (clk_i),
+    .dst_rst_ni (tile_rst_apb_n),
+    .dst_valid_o(ucie_apb_src_rsp_valid),
+    .dst_ready_i(ucie_apb_busy_q),
+    .dst_data_o (ucie_apb_src_rsp)
   );
 
   // UCIe PHY + PCS macro
