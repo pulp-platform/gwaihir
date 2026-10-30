@@ -20,6 +20,12 @@ package gwaihir_pkg;
 
   typedef axi_narrow_in_addr_t addr_t;
 
+  // Superbank plugs of a TCDM port. A misaligned access takes one plug more.
+  function automatic int unsigned tcdm_plugs(int unsigned data_width, int unsigned sb_width,
+                                             bit misaligned);
+    return misaligned ? data_width / sb_width + 1 : (data_width + sb_width - 1) / sb_width;
+  endfunction
+
   ///////////////
   //  FlooNoC  //
   ///////////////
@@ -430,8 +436,10 @@ package gwaihir_pkg;
   } hwpe_acc_e;
   localparam bit UseHWPE = 1'b1;
   localparam bit UseHtileHWPE = 1'b1;
-  // The HWPE datamover (L1 to L1 transpose). The cluster DMA transpose replaces it.
+  // The HWPE datamover (L1 to L1 layout transforms). The cluster DMA transpose replaces it in the
+  // cluster tiles. The H tile keeps it next to Surya.
   localparam bit UseDatamover = 1'b0;
+  localparam bit UseHtileDatamover = 1'b1;
   localparam int unsigned ClusterTileSize = ep_addr_size(ClusterX0Y0SamIdx);
 
   typedef logic [gw_tile_regs_pkg::GW_TILE_REGS_DATA_WIDTH-1:0] tile_cfg_reg_data_t;

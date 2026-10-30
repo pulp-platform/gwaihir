@@ -78,7 +78,6 @@ UCIE_SLINK_NUM_LANES ?= 512
 UCIE_SLINK_EN_DDR    ?= 0
 
 HTILE_CLUSTER_RDL = $(GW_GEN_HW_DIR)/htile.rdl
-HTILE_RDL_PATCH   = $(GW_ROOT)/util/htile_rdl_patch.py
 UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 
 $(GW_GEN_DIR) $(GW_GEN_SW_DIR):
@@ -181,11 +180,13 @@ include $(SN_ROOT)/make/common.mk
 include $(SN_ROOT)/make/toolchain.mk
 include $(SN_ROOT)/make/rtl.mk
 
-$(SN_CFG): SN_NUM_CLUSTERS = $(call floo_query,endpoints.cluster.num)
-$(SN_CFG): SN_COLLECTIVE_WIDTH = $(call floo_query,protocols.wide_in.user_width.collective_op)
+# Render the cluster configuration named $(1) to $@
+sn_cfg_render = $(MAKO_RENDER) --var name=$(1) --var nr_clusters=$(call floo_query,endpoints.cluster.num) \
+	--var collective_width=$(call floo_query,protocols.wide_in.user_width.collective_op) \
+	--output-file $@ $(SN_CFG_TPL)
+
 $(SN_CFG): $(SN_CFG_TPL) $(FLOO_CFG) | $(GW_GEN_DIR)
-	$(MAKO_RENDER) --var nr_clusters=$(SN_NUM_CLUSTERS) --var collective_width=$(SN_COLLECTIVE_WIDTH) \
-		--output-file $@ $(SN_CFG_TPL)
+	$(call sn_cfg_render,snitch_cluster)
 
 .PHONY: sn-hw-clean sn-hw-all
 
@@ -198,15 +199,32 @@ sn-hw-clean:
 # H-tile #
 ##########
 
-$(HTILE_CLUSTER_RDL): $(SN_CLUSTER_RDL) $(HTILE_RDL_PATCH) | $(GW_GEN_HW_DIR)
-	cp $< $@
-	$(HTILE_RDL_PATCH) $@
+HTILE_CFG                 ?= $(GW_GEN_DIR)/htile_cluster.json
+HTILE_CLUSTER_WRAPPER_PKG  = $(GW_GEN_HW_DIR)/htile_snitch_cluster_wrapper_pkg.sv
+HTILE_CLUSTER_WRAPPER      = $(GW_GEN_HW_DIR)/htile_snitch_cluster_wrapper.sv
+
+# Clustergen names neither the wrapper nor its package, so sed adds the htile_ prefix.
+htile_prefix = sed -e 's/\<snitch_cluster_wrapper\(_pkg\)\?\>/htile_&/g' $(1) > $(2)
+
+$(HTILE_CFG): $(SN_CFG_TPL) $(FLOO_CFG) | $(GW_GEN_DIR)
+	$(call sn_cfg_render,htile)
+
+$(HTILE_CLUSTER_RDL): $(HTILE_CFG) $(SN_CLUSTER_GEN) $(SN_CLUSTER_GEN_SRC) $(SN_CLUSTER_RDL_TPL) | $(GW_GEN_HW_DIR)
+	$(SN_CLUSTER_GEN) -c $< -o $@ --template $(SN_CLUSTER_RDL_TPL)
+
+$(HTILE_CLUSTER_WRAPPER_PKG): $(HTILE_CFG) $(SN_CLUSTER_GEN) $(SN_CLUSTER_GEN_SRC) $(SN_CLUSTER_WRAPPER_PKG_TPL) | $(GW_GEN_HW_DIR)
+	$(SN_CLUSTER_GEN) -c $< -o $@.tmp --template $(SN_CLUSTER_WRAPPER_PKG_TPL)
+	$(call htile_prefix,$@.tmp,$@)
+	rm -f $@.tmp
+
+$(HTILE_CLUSTER_WRAPPER): $(SN_HW_DIR)/snitch_cluster/src/snitch_cluster_wrapper.sv | $(GW_GEN_HW_DIR)
+	$(call htile_prefix,$<,$@)
 
 .PHONY: htile-hw-clean htile-hw-all
 
-htile-hw-all: $(HTILE_CLUSTER_RDL)
+htile-hw-all: $(HTILE_CLUSTER_RDL) $(HTILE_CLUSTER_WRAPPER_PKG) $(HTILE_CLUSTER_WRAPPER)
 htile-hw-clean:
-	rm -rf $(HTILE_CLUSTER_RDL)
+	rm -f $(HTILE_CFG) $(HTILE_CLUSTER_RDL) $(HTILE_CLUSTER_WRAPPER_PKG) $(HTILE_CLUSTER_WRAPPER)
 
 ###########
 # FlooNoC #
@@ -393,8 +411,8 @@ help:
 	@echo -e "${Green}floo-clean           ${Black}Clean FlooNoC RTL."
 	@echo -e "${Green}sn-hw-all            ${Black}Generate Snitch Cluster wrapper RTL."
 	@echo -e "${Green}sn-hw-clean          ${Black}Clean Snitch Cluster wrapper RTL."
-	@echo -e "${Green}htile-hw-all         ${Black}Generate H-tile RDL."
-	@echo -e "${Green}htile-hw-clean       ${Black}Clean H-tile RDL."
+	@echo -e "${Green}htile-hw-all         ${Black}Generate H-tile configuration, RDL, wrapper and package."
+	@echo -e "${Green}htile-hw-clean       ${Black}Clean H-tile configuration, RDL, wrapper and package."
 	@echo -e "${Green}chs-hw-all           ${Black}Generate Cheshire RTL."
 	@echo -e "${Green}rdl-markdown         ${Black}Generate RDL Markdown documentation."
 	@echo -e "${Green}docs                 ${Black}Generate documentation sources."

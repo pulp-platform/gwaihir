@@ -9,7 +9,7 @@
 module h_tile
   import floo_pkg::*;
   import floo_gwaihir_noc_pkg::*;
-  import snitch_cluster_wrapper_pkg::*;
+  import htile_snitch_cluster_wrapper_pkg::*;
   import gwaihir_pkg::*;
 (
   input logic clk_i,
@@ -18,13 +18,13 @@ module h_tile
   input logic clk_rst_bypass_i,
 
   // Cluster ports
-  input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] debug_req_i,
-  input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] meip_i,
-  input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] mtip_i,
-  input logic [snitch_cluster_wrapper_pkg::NrCores-1:0] msip_i,
+  input logic [htile_snitch_cluster_wrapper_pkg::NrCores-1:0] debug_req_i,
+  input logic [htile_snitch_cluster_wrapper_pkg::NrCores-1:0] meip_i,
+  input logic [htile_snitch_cluster_wrapper_pkg::NrCores-1:0] mtip_i,
+  input logic [htile_snitch_cluster_wrapper_pkg::NrCores-1:0] msip_i,
   input logic [9:0] hart_base_id_i,
-  input snitch_cluster_wrapper_pkg::addr_t cluster_base_addr_i,
-  input snitch_cluster_wrapper_pkg::addr_t cluster_base_offset_i,
+  input htile_snitch_cluster_wrapper_pkg::addr_t cluster_base_addr_i,
+  input htile_snitch_cluster_wrapper_pkg::addr_t cluster_base_offset_i,
 
   // Chimney ports
   input id_t id_i,
@@ -79,10 +79,10 @@ module h_tile
 
   logic aw_select, ar_select;
 
-  snitch_cluster_wrapper_pkg::narrow_in_req_t        chimney_narrow_out_req;
-  snitch_cluster_wrapper_pkg::narrow_in_resp_t       chimney_narrow_out_rsp;
-  snitch_cluster_wrapper_pkg::narrow_in_req_t  [1:0] axi_demux_out_req;
-  snitch_cluster_wrapper_pkg::narrow_in_resp_t [1:0] axi_demux_out_rsp;
+  htile_snitch_cluster_wrapper_pkg::narrow_in_req_t        chimney_narrow_out_req;
+  htile_snitch_cluster_wrapper_pkg::narrow_in_resp_t       chimney_narrow_out_rsp;
+  htile_snitch_cluster_wrapper_pkg::narrow_in_req_t  [1:0] axi_demux_out_req;
+  htile_snitch_cluster_wrapper_pkg::narrow_in_resp_t [1:0] axi_demux_out_rsp;
 
   gw_tile_regs_pkg::gw_tile_regs__out_t hwif_out;
 
@@ -99,21 +99,21 @@ module h_tile
   // Snitch Cluster //
   ////////////////////
 
-  snitch_cluster_wrapper_pkg::narrow_in_req_t   cluster_narrow_in_req;
-  snitch_cluster_wrapper_pkg::narrow_in_resp_t  cluster_narrow_in_rsp;
-  snitch_cluster_wrapper_pkg::narrow_out_req_t  cluster_narrow_out_req;
-  snitch_cluster_wrapper_pkg::narrow_out_resp_t cluster_narrow_out_rsp;
-  snitch_cluster_wrapper_pkg::wide_out_req_t    cluster_wide_out_req;
-  snitch_cluster_wrapper_pkg::wide_out_resp_t   cluster_wide_out_rsp;
-  snitch_cluster_wrapper_pkg::wide_in_req_t     cluster_wide_in_req;
-  snitch_cluster_wrapper_pkg::wide_in_resp_t    cluster_wide_in_rsp;
+  htile_snitch_cluster_wrapper_pkg::narrow_in_req_t   cluster_narrow_in_req;
+  htile_snitch_cluster_wrapper_pkg::narrow_in_resp_t  cluster_narrow_in_rsp;
+  htile_snitch_cluster_wrapper_pkg::narrow_out_req_t  cluster_narrow_out_req;
+  htile_snitch_cluster_wrapper_pkg::narrow_out_resp_t cluster_narrow_out_rsp;
+  htile_snitch_cluster_wrapper_pkg::wide_out_req_t    cluster_wide_out_req;
+  htile_snitch_cluster_wrapper_pkg::wide_out_resp_t   cluster_wide_out_rsp;
+  htile_snitch_cluster_wrapper_pkg::wide_in_req_t     cluster_wide_in_req;
+  htile_snitch_cluster_wrapper_pkg::wide_in_resp_t    cluster_wide_in_rsp;
 
-  snitch_cluster_wrapper_pkg::narrow_out_req_t  cluster_narrow_ext_req;
-  snitch_cluster_wrapper_pkg::narrow_out_resp_t cluster_narrow_ext_rsp;
-  snitch_cluster_wrapper_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_aligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_req_t    cluster_tcdm_ext_req_misaligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_aligned;
-  snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t    cluster_tcdm_ext_rsp_misaligned;
+  htile_snitch_cluster_wrapper_pkg::narrow_out_req_t cluster_narrow_ext_req;
+  htile_snitch_cluster_wrapper_pkg::narrow_out_resp_t cluster_narrow_ext_rsp;
+  htile_snitch_cluster_wrapper_pkg::tcdm_dma_req_t
+      [htile_snitch_cluster_wrapper_pkg::NumExpWideTcdmPorts-1:0] cluster_tcdm_ext_req;
+  htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t
+      [htile_snitch_cluster_wrapper_pkg::NumExpWideTcdmPorts-1:0] cluster_tcdm_ext_rsp;
 
   cluster_narrow_out_dw_conv_req_t cluster_narrow_out_dw_conv_req, cluster_narrow_out_cut_req;
   cluster_narrow_out_dw_conv_resp_t cluster_narrow_out_dw_conv_rsp, cluster_narrow_out_cut_rsp;
@@ -124,7 +124,7 @@ module h_tile
   logic [NrCores-1:0] mxip;
 
 
-  snitch_cluster_wrapper i_cluster (
+  htile_snitch_cluster_wrapper i_cluster (
     .clk_i                 (tile_clk),
     .rst_ni                (tile_rst_n),
     .debug_req_i,
@@ -149,8 +149,8 @@ module h_tile
     .wide_in_resp_o        (cluster_wide_in_rsp),
     .narrow_ext_req_o      (cluster_narrow_ext_req),
     .narrow_ext_resp_i     (cluster_narrow_ext_rsp),
-    .tcdm_ext_req_i        (cluster_tcdm_ext_req_aligned),
-    .tcdm_ext_resp_o       (cluster_tcdm_ext_rsp_aligned),
+    .tcdm_ext_req_i        (cluster_tcdm_ext_req),
+    .tcdm_ext_resp_o       (cluster_tcdm_ext_rsp),
     .dca_req_i             ('0),
     .dca_rsp_o             (),
     .x_issue_req_o         (),
@@ -168,40 +168,52 @@ module h_tile
   );
 
   if (UseHtileHWPE) begin : gen_surya
+    // A misaligned Surya port carries one bank word more than its data.
+    localparam int unsigned SuryaTcdmWidth = surya_hwpe_pkg::TotBw +
+        (surya_hwpe_pkg::MisalignedAccesses ? surya_hwpe_pkg::BankBitwidth : 0);
 
-    // Convert narrow AXI's 64 bit DW down to 32
-    axi_dw_converter #(
-      .AxiMaxReads        (1),
-      .AxiSlvPortDataWidth(snitch_cluster_wrapper_pkg::NarrowDataWidth),
-      .AxiMstPortDataWidth(HWPECtrlDataWidth),
-      .AxiAddrWidth       (snitch_cluster_wrapper_pkg::AddrWidth),
-      .AxiIdWidth         (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .aw_chan_t          (snitch_cluster_wrapper_pkg::narrow_out_aw_chan_t),
-      .mst_w_chan_t       (cluster_narrow_out_dw_conv_w_chan_t),
-      .slv_w_chan_t       (snitch_cluster_wrapper_pkg::narrow_out_w_chan_t),
-      .b_chan_t           (snitch_cluster_wrapper_pkg::narrow_out_b_chan_t),
-      .ar_chan_t          (snitch_cluster_wrapper_pkg::narrow_out_ar_chan_t),
-      .mst_r_chan_t       (cluster_narrow_out_dw_conv_r_chan_t),
-      .slv_r_chan_t       (snitch_cluster_wrapper_pkg::narrow_out_r_chan_t),
-      .axi_mst_req_t      (cluster_narrow_out_dw_conv_req_t),
-      .axi_mst_resp_t     (cluster_narrow_out_dw_conv_resp_t),
-      .axi_slv_req_t      (snitch_cluster_wrapper_pkg::narrow_out_req_t),
-      .axi_slv_resp_t     (snitch_cluster_wrapper_pkg::narrow_out_resp_t)
-    ) i_axi_dw_hwpe (
-      .clk_i     (tile_clk),
-      .rst_ni    (tile_rst_n),
-      .slv_req_i (cluster_narrow_ext_req),
-      .slv_resp_o(cluster_narrow_ext_rsp),
-      .mst_req_o (cluster_narrow_out_dw_conv_req),
-      .mst_resp_i(cluster_narrow_out_dw_conv_rsp)
-    );
+    // A lane select is one cycle faster than axi_dw_converter. The HWPE registers take 32-bit
+    // accesses only, so one 32-bit lane of the 64-bit narrow port is enough.
+    localparam int unsigned NarrowWidth = htile_snitch_cluster_wrapper_pkg::NarrowDataWidth;
+    localparam int unsigned NarrowStrbWidth = NarrowWidth / 8;
+    localparam int unsigned HWPECtrlStrbWidth = HWPECtrlDataWidth / 8;
+    logic sel_upper_w;
+    assign sel_upper_w = |cluster_narrow_ext_req.w.strb[NarrowStrbWidth-1:HWPECtrlStrbWidth];
+
+    assign cluster_narrow_out_dw_conv_req.aw = cluster_narrow_ext_req.aw;
+    assign cluster_narrow_out_dw_conv_req.aw_valid = cluster_narrow_ext_req.aw_valid;
+    assign cluster_narrow_out_dw_conv_req.w.data   = sel_upper_w ?
+        cluster_narrow_ext_req.w.data[NarrowWidth-1:HWPECtrlDataWidth] :
+        cluster_narrow_ext_req.w.data[HWPECtrlDataWidth-1:0];
+    assign cluster_narrow_out_dw_conv_req.w.strb   = sel_upper_w ?
+        cluster_narrow_ext_req.w.strb[NarrowStrbWidth-1:HWPECtrlStrbWidth] :
+        cluster_narrow_ext_req.w.strb[HWPECtrlStrbWidth-1:0];
+    assign cluster_narrow_out_dw_conv_req.w.last = cluster_narrow_ext_req.w.last;
+    assign cluster_narrow_out_dw_conv_req.w.user = cluster_narrow_ext_req.w.user;
+    assign cluster_narrow_out_dw_conv_req.w_valid = cluster_narrow_ext_req.w_valid;
+    assign cluster_narrow_out_dw_conv_req.b_ready = cluster_narrow_ext_req.b_ready;
+    assign cluster_narrow_out_dw_conv_req.ar = cluster_narrow_ext_req.ar;
+    assign cluster_narrow_out_dw_conv_req.ar_valid = cluster_narrow_ext_req.ar_valid;
+    assign cluster_narrow_out_dw_conv_req.r_ready = cluster_narrow_ext_req.r_ready;
+
+    assign cluster_narrow_ext_rsp.aw_ready = cluster_narrow_out_dw_conv_rsp.aw_ready;
+    assign cluster_narrow_ext_rsp.ar_ready = cluster_narrow_out_dw_conv_rsp.ar_ready;
+    assign cluster_narrow_ext_rsp.w_ready  = cluster_narrow_out_dw_conv_rsp.w_ready;
+    assign cluster_narrow_ext_rsp.b        = cluster_narrow_out_dw_conv_rsp.b;
+    assign cluster_narrow_ext_rsp.b_valid  = cluster_narrow_out_dw_conv_rsp.b_valid;
+    assign cluster_narrow_ext_rsp.r.id     = cluster_narrow_out_dw_conv_rsp.r.id;
+    assign cluster_narrow_ext_rsp.r.data   = {2{cluster_narrow_out_dw_conv_rsp.r.data}};
+    assign cluster_narrow_ext_rsp.r.resp   = cluster_narrow_out_dw_conv_rsp.r.resp;
+    assign cluster_narrow_ext_rsp.r.last   = cluster_narrow_out_dw_conv_rsp.r.last;
+    assign cluster_narrow_ext_rsp.r.user   = cluster_narrow_out_dw_conv_rsp.r.user;
+    assign cluster_narrow_ext_rsp.r_valid  = cluster_narrow_out_dw_conv_rsp.r_valid;
 
     axi_cut #(
       .Bypass    (0),
-      .aw_chan_t (snitch_cluster_wrapper_pkg::narrow_out_aw_chan_t),
+      .aw_chan_t (htile_snitch_cluster_wrapper_pkg::narrow_out_aw_chan_t),
       .w_chan_t  (cluster_narrow_out_dw_conv_w_chan_t),
-      .b_chan_t  (snitch_cluster_wrapper_pkg::narrow_out_b_chan_t),
-      .ar_chan_t (snitch_cluster_wrapper_pkg::narrow_out_ar_chan_t),
+      .b_chan_t  (htile_snitch_cluster_wrapper_pkg::narrow_out_b_chan_t),
+      .ar_chan_t (htile_snitch_cluster_wrapper_pkg::narrow_out_ar_chan_t),
       .r_chan_t  (cluster_narrow_out_dw_conv_r_chan_t),
       .axi_req_t (cluster_narrow_out_dw_conv_req_t),
       .axi_resp_t(cluster_narrow_out_dw_conv_resp_t)
@@ -217,8 +229,8 @@ module h_tile
     axi_to_tcdm #(
       .AddrWidth(HWPECtrlAddrWidth),
       .DataWidth(HWPECtrlDataWidth),
-      .IdWidth  (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .UserWidth(snitch_cluster_wrapper_pkg::NarrowUserWidth)
+      .IdWidth  (htile_snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
+      .UserWidth(htile_snitch_cluster_wrapper_pkg::NarrowUserWidth)
     ) i_axi_to_hwpe_ctrl (
       .clk_i     (tile_clk),
       .rst_ni    (tile_rst_n),
@@ -228,46 +240,34 @@ module h_tile
       .tcdm_rsp_i(hwpectrl_rsp)
     );
 
-    snitch_tcdm_aligner #(
-      .tcdm_req_t   (snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
-      .tcdm_rsp_t   (snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
-      .DataWidth    (snitch_cluster_wrapper_pkg::WideDataWidth),
-      .TCDMDataWidth(snitch_cluster_wrapper_pkg::NarrowDataWidth),
-      .AddrWidth    (snitch_cluster_wrapper_pkg::TcdmAddrWidth)
-    ) i_snitch_tcdm_aligner (
-      .clk_i                (tile_clk),
-      .rst_ni               (tile_rst_n),
-      .tcdm_req_misaligned_i(cluster_tcdm_ext_req_misaligned),
-      .tcdm_req_aligned_o   (cluster_tcdm_ext_req_aligned),
-      .tcdm_rsp_aligned_i   (cluster_tcdm_ext_rsp_aligned),
-      .tcdm_rsp_misaligned_o(cluster_tcdm_ext_rsp_misaligned)
-    );
-
     snitch_hwpe_subsystem #(
-      .tcdm_req_t   (snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
-      .tcdm_rsp_t   (snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
-      .periph_req_t (hwpectrl_req_t),
-      .periph_rsp_t (hwpectrl_rsp_t),
-      .HwpeDataWidth(snitch_cluster_wrapper_pkg::WideDataWidth),
-      .IdWidth      (snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
-      .CtrlDataWidth(HWPECtrlDataWidth),
-      .NrCores      (NrCores),
-      .Accelerator  (HwpeSurya),
-      .UseDatamover (UseDatamover)
+      .tcdm_req_t        (htile_snitch_cluster_wrapper_pkg::tcdm_dma_req_t),
+      .tcdm_rsp_t        (htile_snitch_cluster_wrapper_pkg::tcdm_dma_rsp_t),
+      .periph_req_t      (hwpectrl_req_t),
+      .periph_rsp_t      (hwpectrl_rsp_t),
+      .HwpeDataWidth     (SuryaTcdmWidth),
+      .SbWidth           (htile_snitch_cluster_wrapper_pkg::WideDataWidth),
+      .MisalignedAccesses(1),
+      .IdWidth           (htile_snitch_cluster_wrapper_pkg::NarrowIdWidthOut),
+      .CtrlDataWidth     (HWPECtrlDataWidth),
+      .NrCores           (NrCores),
+      .Accelerator       (HwpeSurya),
+      .UseDatamover      (UseHtileDatamover),
+      .NumTcdmPorts      (htile_snitch_cluster_wrapper_pkg::NumExpWideTcdmPorts)
     ) i_snitch_hwpe_subsystem (
       .clk_i          (tile_clk),
       .rst_ni         (tile_rst_n),
       .test_mode_i    (1'b0),
-      .tcdm_req_o     (cluster_tcdm_ext_req_misaligned),
-      .tcdm_rsp_i     (cluster_tcdm_ext_rsp_misaligned),
+      .tcdm_req_o     (cluster_tcdm_ext_req),
+      .tcdm_rsp_i     (cluster_tcdm_ext_rsp),
       .hwpe_ctrl_req_i(hwpectrl_req),
       .hwpe_ctrl_rsp_o(hwpectrl_rsp),
       .hwpe_evt_o     (mxip)
     );
   end else begin : gen_no_surya
-    assign mxip                         = '0;
-    assign cluster_tcdm_ext_req_aligned = '0;
-    assign cluster_narrow_ext_rsp       = '0;
+    assign mxip                   = '0;
+    assign cluster_tcdm_ext_req   = '0;
+    assign cluster_narrow_ext_rsp = '0;
   end
 
   ////////////
@@ -351,18 +351,18 @@ module h_tile
     .rob_idx_t           (floo_gwaihir_noc_pkg::rob_idx_t),
     .hdr_t               (floo_gwaihir_noc_pkg::hdr_t),
     .sam_rule_t          (floo_gwaihir_noc_pkg::sam_rule_t),
-    .axi_narrow_in_req_t (snitch_cluster_wrapper_pkg::narrow_out_req_t),
-    .axi_narrow_in_rsp_t (snitch_cluster_wrapper_pkg::narrow_out_resp_t),
-    .axi_narrow_out_req_t(snitch_cluster_wrapper_pkg::narrow_in_req_t),
-    .axi_narrow_out_rsp_t(snitch_cluster_wrapper_pkg::narrow_in_resp_t),
-    .axi_wide_in_req_t   (snitch_cluster_wrapper_pkg::wide_out_req_t),
-    .axi_wide_in_rsp_t   (snitch_cluster_wrapper_pkg::wide_out_resp_t),
-    .axi_wide_out_req_t  (snitch_cluster_wrapper_pkg::wide_in_req_t),
-    .axi_wide_out_rsp_t  (snitch_cluster_wrapper_pkg::wide_in_resp_t),
+    .axi_narrow_in_req_t (htile_snitch_cluster_wrapper_pkg::narrow_out_req_t),
+    .axi_narrow_in_rsp_t (htile_snitch_cluster_wrapper_pkg::narrow_out_resp_t),
+    .axi_narrow_out_req_t(htile_snitch_cluster_wrapper_pkg::narrow_in_req_t),
+    .axi_narrow_out_rsp_t(htile_snitch_cluster_wrapper_pkg::narrow_in_resp_t),
+    .axi_wide_in_req_t   (htile_snitch_cluster_wrapper_pkg::wide_out_req_t),
+    .axi_wide_in_rsp_t   (htile_snitch_cluster_wrapper_pkg::wide_out_resp_t),
+    .axi_wide_out_req_t  (htile_snitch_cluster_wrapper_pkg::wide_in_req_t),
+    .axi_wide_out_rsp_t  (htile_snitch_cluster_wrapper_pkg::wide_in_resp_t),
     .floo_req_t          (floo_gwaihir_noc_pkg::floo_req_t),
     .floo_rsp_t          (floo_gwaihir_noc_pkg::floo_rsp_t),
     .floo_wide_t         (floo_gwaihir_noc_pkg::floo_wide_t),
-    .sram_cfg_t          (snitch_cluster_wrapper_pkg::sram_cfg_t)
+    .sram_cfg_t          (htile_snitch_cluster_wrapper_pkg::sram_cfg_t)
   ) i_chimney (
     .clk_i               (clk_i),
     .rst_ni              (rst_ni),
@@ -419,13 +419,13 @@ module h_tile
   axi_demux #(
     .AxiIdWidth (AxiCfgN.OutIdWidth),
     .AtopSupport(1'b1),
-    .aw_chan_t  (snitch_cluster_wrapper_pkg::narrow_in_aw_chan_t),
-    .w_chan_t   (snitch_cluster_wrapper_pkg::narrow_in_w_chan_t),
-    .b_chan_t   (snitch_cluster_wrapper_pkg::narrow_in_b_chan_t),
-    .ar_chan_t  (snitch_cluster_wrapper_pkg::narrow_in_ar_chan_t),
-    .r_chan_t   (snitch_cluster_wrapper_pkg::narrow_in_r_chan_t),
-    .axi_req_t  (snitch_cluster_wrapper_pkg::narrow_in_req_t),
-    .axi_resp_t (snitch_cluster_wrapper_pkg::narrow_in_resp_t),
+    .aw_chan_t  (htile_snitch_cluster_wrapper_pkg::narrow_in_aw_chan_t),
+    .w_chan_t   (htile_snitch_cluster_wrapper_pkg::narrow_in_w_chan_t),
+    .b_chan_t   (htile_snitch_cluster_wrapper_pkg::narrow_in_b_chan_t),
+    .ar_chan_t  (htile_snitch_cluster_wrapper_pkg::narrow_in_ar_chan_t),
+    .r_chan_t   (htile_snitch_cluster_wrapper_pkg::narrow_in_r_chan_t),
+    .axi_req_t  (htile_snitch_cluster_wrapper_pkg::narrow_in_req_t),
+    .axi_resp_t (htile_snitch_cluster_wrapper_pkg::narrow_in_resp_t),
     .NoMstPorts (NumDemuxPorts),
     .MaxTrans   (floo_pkg::ChimneyDefaultCfg.MaxTxns),
     .AxiLookBits(AxiCfgN.OutIdWidth),
