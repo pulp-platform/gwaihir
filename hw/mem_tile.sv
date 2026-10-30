@@ -106,12 +106,14 @@ module mem_tile
 
   logic [cf_math_pkg::idx_width(NumDemuxPorts)-1:0] aw_select, ar_select;
 
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t                     chimney_narrow_out_req;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t                     chimney_narrow_out_rsp;
+  floo_gwaihir_noc_pkg::collective_axi_narrow_out_req_t chimney_narrow_out_collective_req;
+  floo_gwaihir_noc_pkg::collective_axi_narrow_out_rsp_t chimney_narrow_out_collective_rsp;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t chimney_narrow_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t chimney_narrow_out_rsp;
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumDemuxPorts-1:0] axi_demux_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t [NumDemuxPorts-1:0] axi_demux_out_rsp;
-  floo_gwaihir_noc_pkg::axi_narrow_out_req_t                     axi_demux_out_req_tile_cfg_cut;
-  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t                     axi_demux_out_rsp_tile_cfg_cut;
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_demux_out_req_tile_cfg_cut;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_demux_out_rsp_tile_cfg_cut;
 
   gw_tile_regs_pkg::gw_tile_regs__out_t hwif_out;
 
@@ -134,7 +136,7 @@ module mem_tile
   floo_nw_router #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .RouteAlgo     (RouteCfgNoMcast.RouteAlgo),
+    .RouteAlgo     (RouteCfgMcastOnly.RouteAlgo),
     .NumRoutes     (5),
     .InFifoDepth   (2),
     .OutFifoDepth  (2),
@@ -145,6 +147,9 @@ module mem_tile
     .floo_wide_t   (floo_wide_t),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
+    // This tile never initiates collectives: no loopback needed
+    .NoLoopback    (1'b1),
+    .CollectiveCfg (RouteCfgMcastOnly.CollectiveCfg),
     .collect_op_t  (floo_gwaihir_noc_pkg::collect_op_t)
   ) i_router (
     .clk_i,
@@ -183,8 +188,10 @@ module mem_tile
   // Chimney //
   /////////////
 
-  floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_req;
-  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t axi_wide_rsp;
+  floo_gwaihir_noc_pkg::collective_axi_wide_in_req_t  axi_dma_collective_req;
+  floo_gwaihir_noc_pkg::collective_axi_wide_in_rsp_t  axi_dma_collective_rsp;
+  floo_gwaihir_noc_pkg::collective_axi_wide_out_req_t axi_wide_collective_req;
+  floo_gwaihir_noc_pkg::collective_axi_wide_out_rsp_t axi_wide_collective_rsp;
 
   // Wide requests from the iDMA to other tiles, tied off without the iDMA
   axi_wide_in_req_t chimney_wide_in_req;
@@ -206,17 +213,19 @@ module mem_tile
     .rob_idx_t           (rob_idx_t),
     .hdr_t               (hdr_t),
     .sam_rule_t          (sam_rule_t),
-    .axi_narrow_in_req_t (axi_narrow_in_req_t),
-    .axi_narrow_in_rsp_t (axi_narrow_in_rsp_t),
-    .axi_narrow_out_req_t(axi_narrow_out_req_t),
-    .axi_narrow_out_rsp_t(axi_narrow_out_rsp_t),
-    .axi_wide_in_req_t   (axi_wide_in_req_t),
-    .axi_wide_in_rsp_t   (axi_wide_in_rsp_t),
-    .axi_wide_out_req_t  (axi_wide_out_req_t),
-    .axi_wide_out_rsp_t  (axi_wide_out_rsp_t),
+    .axi_narrow_in_req_t (collective_axi_narrow_in_req_t),
+    .axi_narrow_in_rsp_t (collective_axi_narrow_in_rsp_t),
+    .axi_narrow_out_req_t(collective_axi_narrow_out_req_t),
+    .axi_narrow_out_rsp_t(collective_axi_narrow_out_rsp_t),
+    .axi_wide_in_req_t   (collective_axi_wide_in_req_t),
+    .axi_wide_in_rsp_t   (collective_axi_wide_in_rsp_t),
+    .axi_wide_out_req_t  (collective_axi_wide_out_req_t),
+    .axi_wide_out_rsp_t  (collective_axi_wide_out_rsp_t),
     .floo_req_t          (floo_req_t),
     .floo_rsp_t          (floo_rsp_t),
-    .floo_wide_t         (floo_wide_t)
+    .floo_wide_t         (floo_wide_t),
+    .user_narrow_struct_t(floo_gwaihir_noc_pkg::collective_axi_narrow_in_user_t),
+    .user_wide_struct_t  (floo_gwaihir_noc_pkg::collective_axi_wide_in_user_t)
   ) i_chimney (
     .clk_i               (clk_i),
     .rst_ni              (rst_ni),
@@ -226,12 +235,13 @@ module mem_tile
     .sram_cfg_i          ('0),
     .axi_narrow_in_req_i ('0),
     .axi_narrow_in_rsp_o (),
-    .axi_narrow_out_req_o(chimney_narrow_out_req),
-    .axi_narrow_out_rsp_i(chimney_narrow_out_rsp),
-    .axi_wide_in_req_i   (chimney_wide_in_req),
-    .axi_wide_in_rsp_o   (chimney_wide_in_rsp),
-    .axi_wide_out_req_o  (axi_wide_req),
-    .axi_wide_out_rsp_i  (axi_wide_rsp),
+    .axi_narrow_out_req_o(chimney_narrow_out_collective_req),
+    .axi_narrow_out_rsp_i(chimney_narrow_out_collective_rsp),
+    // Receive transfer requests from DMA
+    .axi_wide_in_req_i   (axi_dma_collective_req),
+    .axi_wide_in_rsp_o   (axi_dma_collective_rsp),
+    .axi_wide_out_req_o  (axi_wide_collective_req),
+    .axi_wide_out_rsp_i  (axi_wide_collective_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
     .floo_rsp_o          (router_floo_rsp_in[Eject]),
     .floo_wide_o         (router_floo_wide_in[Eject]),
@@ -240,7 +250,54 @@ module mem_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
+  ////////////////////////
+  // Filter collectives //
+  ////////////////////////
 
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t axi_wide_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t axi_wide_rsp;
+
+  nw_axi_collectives_filter #(
+    .collective_axi_narrow_mst_req_t(collective_axi_narrow_out_req_t),
+    .collective_axi_narrow_mst_rsp_t(collective_axi_narrow_out_rsp_t),
+    .collective_axi_narrow_slv_req_t(collective_axi_narrow_in_req_t),
+    .collective_axi_narrow_slv_rsp_t(collective_axi_narrow_in_rsp_t),
+    .collective_axi_wide_mst_req_t  (collective_axi_wide_out_req_t),
+    .collective_axi_wide_mst_rsp_t  (collective_axi_wide_out_rsp_t),
+    .collective_axi_wide_slv_req_t  (collective_axi_wide_in_req_t),
+    .collective_axi_wide_slv_rsp_t  (collective_axi_wide_in_rsp_t),
+    .axi_narrow_mst_req_t           (axi_narrow_out_req_t),
+    .axi_narrow_mst_rsp_t           (axi_narrow_out_rsp_t),
+    .axi_narrow_slv_req_t           (axi_narrow_in_req_t),
+    .axi_narrow_slv_rsp_t           (axi_narrow_in_rsp_t),
+    .axi_wide_mst_req_t             (axi_wide_out_req_t),
+    .axi_wide_mst_rsp_t             (axi_wide_out_rsp_t),
+    .axi_wide_slv_req_t             (axi_wide_in_req_t),
+    .axi_wide_slv_rsp_t             (axi_wide_in_rsp_t)
+  ) i_nw_axi_collectives_filter (
+    .collective_axi_narrow_mst_req_i(chimney_narrow_out_collective_req),
+    .collective_axi_narrow_mst_rsp_o(chimney_narrow_out_collective_rsp),
+    .axi_narrow_mst_req_o           (chimney_narrow_out_req),
+    .axi_narrow_mst_rsp_i           (chimney_narrow_out_rsp),
+    .axi_narrow_slv_req_i           ('0),
+    .axi_narrow_slv_rsp_o           (),
+    .collective_axi_narrow_slv_req_o(),
+    .collective_axi_narrow_slv_rsp_i('0),
+    .collective_axi_wide_mst_req_i  (axi_wide_collective_req),
+    .collective_axi_wide_mst_rsp_o  (axi_wide_collective_rsp),
+    .axi_wide_mst_req_o             (axi_wide_req),
+    .axi_wide_mst_rsp_i             (axi_wide_rsp),
+    .axi_wide_slv_req_i             (chimney_wide_in_req),
+    .axi_wide_slv_rsp_o             (chimney_wide_in_rsp),
+    .collective_axi_wide_slv_req_o  (axi_dma_collective_req),
+    .collective_axi_wide_slv_rsp_i  (axi_dma_collective_rsp)
+  );
+
+  //////////////////////////////////////
+  // Chimney to {DMA, tile cfg} demux //
+  //////////////////////////////////////
+
+  // TODO: replace addr decoders followed by axi_demux with axi_demux_mapped
   addr_decode #(
     .NoIndices(NumDemuxPorts),
     .NoRules  (NumTileAddrMapRules),
@@ -296,6 +353,10 @@ module mem_tile
     .mst_reqs_o     (axi_demux_out_req),
     .mst_resps_i    (axi_demux_out_rsp)
   );
+
+  //////////////////////
+  // Tile config path //
+  //////////////////////
 
   // Cut demux master port for tile_cfg
   axi_cut #(
@@ -1163,48 +1224,5 @@ module mem_tile
     .clk_o    (tile_rst_n)
   );
 `endif
-  // Add Assertion that no multicast / reduction can enter this tile!
-  for (genvar r = 0; r < 4; r++) begin : gen_route_assertions
-    `ASSERT(NoCollectivOperation_NReq_In,
-            (!floo_req_i[r].valid |
-              (floo_req_i[r].req[0].generic.hdr.collective_op == floo_pkg::Unicast)
-            ),
-            clk_i, !rst_ni, $sformatf(
-            "Unsupported collective attempted with destination: %h",
-            floo_req_i[r].req[0].narrow_aw.payload.addr
-            ))
-    `ASSERT(NoCollectivOperation_NRsp_In,
-            (!floo_rsp_i[r].valid |
-              (floo_rsp_i[r].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast))
-            )
-    `ASSERT(NoCollectivOperation_NWide_In,
-            (!floo_wide_i[r].valid |
-              (floo_wide_i[r].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)
-            ),
-            clk_i, !rst_ni, $sformatf(
-            "Unsupported collective attempted with destination: %h",
-            floo_wide_i[r].wide[0].wide_aw.payload.addr
-            ))
-    `ASSERT(NoCollectivOperation_NReq_Out,
-            (!floo_req_o[r].valid |
-              (floo_req_o[r].req[0].generic.hdr.collective_op == floo_pkg::Unicast)
-            ),
-            clk_i, !rst_ni, $sformatf(
-            "Unsupported collective attempted with destination: %h",
-            floo_req_o[r].req[0].narrow_aw.payload.addr
-            ))
-    `ASSERT(NoCollectivOperation_NRsp_Out,
-            (!floo_rsp_o[r].valid |
-             (floo_rsp_o[r].rsp[0].generic.hdr.collective_op == floo_pkg::Unicast))
-            )
-    `ASSERT(NoCollectivOperation_NWide_Out,
-            (!floo_wide_o[r].valid |
-             (floo_wide_o[r].wide[0].generic.hdr.collective_op == floo_pkg::Unicast)
-            ),
-            clk_i, !rst_ni, $sformatf(
-            "Unsupported collective attempted with destination: %h",
-            floo_wide_i[r].wide[0].wide_aw.payload.addr
-            ))
-  end
 
 endmodule
