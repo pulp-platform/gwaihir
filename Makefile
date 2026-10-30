@@ -331,7 +331,7 @@ LINT_REPORT    = $(LINT_BUILD_DIR)/$(LINT_TOP)/consolidated_reports/$(LINT_TOP)_
 LINT_LOG       = $(LINT_BUILD_DIR)/spyglass.log
 # Generated RTL is only required to exist (order-only), since some of it is regenerated on every
 # make invocation and would otherwise trigger a spurious re-run of Spyglass
-LINT_GEN_RTL   = $(GW_HW_ALL) $(SN_CLUSTER_WRAPPER_PKG) $(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv
+LINT_GEN_RTL   = $(GW_HW_ALL) $(SN_CLUSTER_WRAPPER_PKG) $(SN_SPATZ_PKG) $(GW_GEN_HW_DIR)/floo_gwaihir_noc_pkg.sv
 LINT_TILES    ?= gwaihir_top cheshire_tile cluster_tile mem_tile_small mem_tile_large ucie_tile pcie_tile dummy_tile
 LINT_TARGS    ?= $(COMMON_TARGS) -t synthesis
 
@@ -346,17 +346,20 @@ $(LINT_BUILD_DIR)/analyze.tcl: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_BUILD_DIR) 
 # Per-tile file lists, trimmed with bender's slang extension to the files reachable from each tile.
 # `--broken keep` is needed since slang cannot resolve the includes of the generated Snitch wrapper
 # package when parsing it standalone.
+# The trimming ignores the `-D` defines (bender 0.32.1), so it drops the double-bandwidth VLSU
+# selected by `ifdef DOUBLE_BW` in spatz.sv. Add it back next to the VLSU.
 $(LINT_BUILD_DIR)/%.f: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_GEN_RTL)
 	@mkdir -p $(@D)
 	$(BENDER) script flist-plus $(LINT_TARGS) --suppress E31 --top $* --broken keep > $@
+	sed -i 's|^\(.*/\)spatz_vlsu\.sv$$|&\n\1spatz_doublebw_vlsu.sv|' $@
 
 # Run Spyglass on the full design
 $(LINT_REPORT): $(LINT_DIR)/spyglass.tcl $(LINT_BUILD_DIR)/analyze.tcl | $(LINT_BUILD_DIR)
 	cd $(LINT_BUILD_DIR) && LINT_TOP=$(LINT_TOP) $(SG_SHELL) -tcl $< > $(LINT_LOG) 2>&1
 
-# Check the report for the whole design
-spyglass: $(LINT_REPORT)
-	$(LINT_DIR)/check_spyglass_lint.py $<
+# Check the report for the whole design. The tile file lists scope the file waivers of each tile
+spyglass: $(LINT_REPORT) $(addprefix $(LINT_BUILD_DIR)/,$(addsuffix .f,$(LINT_TILES)))
+	$(LINT_DIR)/check_spyglass_lint.py $< --tiles-dir $(LINT_BUILD_DIR)
 
 # Check the report for the files reachable from a single tile, e.g. `make spyglass-cluster_tile`
 # The top level is checked against what no tile needs, so it requires all tile file lists

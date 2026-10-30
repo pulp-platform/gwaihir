@@ -110,7 +110,25 @@ TILE_FILE_WAIVERS = {
         # blocking assignment in a clock-generation flip-flop (intentional)
         ('W336', r'/serial_link-[0-9a-f]+/'),
     ],
+    'cluster_tile': [
+        # initial assignment at declaration is ignored by synthesis
+        ('SYNTH_89', r'/spatz_vpu-[0-9a-f]+/'),
+        # unique if/case conditions are not all covered
+        ('SYNTH_12605', r'/spatz_vpu-[0-9a-f]+/'),
+        # ASSERT statements are not synthesizable
+        # PACE assertion in FPnew, not intended to be synthesis
+        ('SYNTH_5064', r'/fpnew-[0-9a-f]+/'),
+        # vector `result_valid` used as a ternary condition in the reductions (implicit OR)
+        ('W224', r'spatz_vfu\.sv'),
+        ('STARC05-2.1.5.3', r'spatz_vfu\.sv'),
+
+    ],
 }
+
+
+
+
+
 TILES_DIR = Path(__file__).parent / 'build'
 TOP = 'gwaihir_top'
 
@@ -178,12 +196,28 @@ def main():
     print(f'Ignore W123 on decoder_req_i in spatz_decoder. {len(df)} messages remaining.')
 
     # Ignore "read but never set" on the reorder buffer IDs in the VLSU
-    # (ignore W123 on rob_id and rob_rid in spatz_vlsu.sv)
+    # (ignore W123 on sb_id_i in spatz_controller.sv)
     # This is a fake error, the field is not in use without out-of-order read.
     df = df[~((df.rule == 'W123') &
-              (df.file.str.contains(r'spatz_vlsu\.sv')) &
-              (df.message.str.contains(r"Variable 'rob_r?id'")))]
-    print(f'Ignore W123 on rob_id and rob_rid in spatz_vlsu. {len(df)} messages remaining.')
+              (df.file.str.contains(r'spatz_controller\.sv')) &
+              (df.message.str.contains(r"Variable 'sb_id_i'")))]
+    print(f'Ignore W123 on sb_id_i in spatz_controller. {len(df)} messages remaining.')
+
+    # Ignore "read but never set" on the fields of the fpu_sequencer
+    # (ignore W123 on issue_req_i in spatz_fpu_sequencer.sv)
+    # This is a fake error, which we have verified multiple times
+    df = df[~((df.rule == 'W123') &
+              (df.file.str.contains(r'spatz_fpu_sequencer\.sv')) &
+              (df.message.str.contains(r"Variable 'issue_req_i\.")))]
+    print(f'Ignore W123 on issue_req_i in spatz_fpu_sequencer. {len(df)} messages remaining.')
+
+    # Ignore "read but never set" on the fields of the fpu_sequencer
+    # (ignore W123 on issue_req_i in spatz_fpu_sequencer.sv)
+    # This is a fake error, which we have verified multiple times
+    df = df[~((df.rule == 'W123') &
+              (df.file.str.contains(r'spatz_fpu_sequencer\.sv')) &
+              (df.message.str.contains(r"Variable 'issue_req_i\.")))]
+    print(f'Ignore W123 on issue_req_i in spatz_fpu_sequencer. {len(df)} messages remaining.')
 
     # Ignore the width mismatch between the case labels and the selector in the FlooNoC reduction
     # arbiter. The labels are the (narrower) reserved opcodes: SystemVerilog zero-extends them to
@@ -234,9 +268,14 @@ def main():
         df = df[df.file.map(lambda f: str(Path(f).resolve()) in files)]
         print(f'Keep only violations in tile {args.tile}. {len(df)} messages remaining.')
 
-        # Apply file-scoped waivers reviewed for this tile
-        for rule, pattern in TILE_FILE_WAIVERS.get(args.tile, []):
-            df = df[~((df.rule == rule) & df.file.str.contains(pattern))]
+    # Apply the file-scoped waivers reviewed for each tile, only to the files of that tile.
+    # Without --tile, the waivers of all tiles apply.
+    for tile in [args.tile] if args.tile else TILE_FILE_WAIVERS:
+        files = tile_files(tile, args.tiles_dir)
+        in_tile = df.file.map(lambda f: str(Path(f).resolve()) in files)
+        for rule, pattern in TILE_FILE_WAIVERS.get(tile, []):
+            df = df[~(in_tile.reindex(df.index) & (df.rule == rule) & df.file.str.contains(pattern))]
+        print(f'Apply file waivers of tile {tile}. {len(df)} messages remaining.')
 
     # Fail on remaining messages
     if len(df) > 0:
