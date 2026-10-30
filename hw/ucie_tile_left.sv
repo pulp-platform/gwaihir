@@ -75,10 +75,9 @@ module ucie_tile_left
   floo_rsp_t [West:North] dummy_rsp_out, dummy_rsp_in;
   floo_wide_t [West:North] dummy_wide_out, dummy_wide_in;
 
-  // UCIe north <-> dummy south
-  floo_req_t ucie_req_north_out, ucie_req_north_in;
-  floo_rsp_t ucie_rsp_north_out, ucie_rsp_north_in;
-  floo_wide_t ucie_wide_north_out, ucie_wide_north_in;
+  floo_req_t [West:North] ucie_req_out, ucie_req_in;
+  floo_rsp_t [West:North] ucie_rsp_out, ucie_rsp_in;
+  floo_wide_t [West:North] ucie_wide_out, ucie_wide_in;
 
   ///////////
   // Tiles //
@@ -89,28 +88,15 @@ module ucie_tile_left
     .rst_ni,
     .clk_rst_bypass_i,
     .test_enable_i,
-    .id_i             (id_i),
+    .id_i       (id_i),
     .ucie_id_i,
     .samidx_i,
-    .floo_req_north_o (ucie_req_north_out),
-    .floo_rsp_north_i (ucie_rsp_north_in),
-    .floo_wide_north_o(ucie_wide_north_out),
-    .floo_req_north_i (ucie_req_north_in),
-    .floo_rsp_north_o (ucie_rsp_north_out),
-    .floo_wide_north_i(ucie_wide_north_in),
-    .floo_req_east_o  (floo_req_ucie_east_o),
-    .floo_rsp_east_i  (floo_rsp_ucie_east_i),
-    .floo_wide_east_o (floo_wide_ucie_east_o),
-    .floo_req_east_i  (floo_req_ucie_east_i),
-    .floo_rsp_east_o  (floo_rsp_ucie_east_o),
-    .floo_wide_east_i (floo_wide_ucie_east_i),
-    // Chip boundary: tied off
-    .floo_req_west_o  (),
-    .floo_rsp_west_i  ('0),
-    .floo_wide_west_o (),
-    .floo_req_west_i  ('0),
-    .floo_rsp_west_o  (),
-    .floo_wide_west_i ('0),
+    .floo_req_o (ucie_req_out),
+    .floo_rsp_i (ucie_rsp_in),
+    .floo_wide_o(ucie_wide_out),
+    .floo_req_i (ucie_req_in),
+    .floo_rsp_o (ucie_rsp_out),
+    .floo_wide_i(ucie_wide_in),
     .ucie_refclk_i,
     .ucie_txckp_o,
     .ucie_txckn_o,
@@ -145,12 +131,12 @@ module ucie_tile_left
   // UCIe north <-> dummy south //
   ////////////////////////////////
 
-  assign ucie_req_north_in    = dummy_req_out[South];
-  assign ucie_rsp_north_in    = dummy_rsp_out[South];
-  assign ucie_wide_north_in   = dummy_wide_out[South];
-  assign dummy_req_in[South]  = ucie_req_north_out;
-  assign dummy_rsp_in[South]  = ucie_rsp_north_out;
-  assign dummy_wide_in[South] = ucie_wide_north_out;
+  assign ucie_req_in[North]   = dummy_req_out[South];
+  assign ucie_rsp_in[North]   = dummy_rsp_out[South];
+  assign ucie_wide_in[North]  = dummy_wide_out[South];
+  assign dummy_req_in[South]  = ucie_req_out[North];
+  assign dummy_rsp_in[South]  = ucie_rsp_out[North];
+  assign dummy_wide_in[South] = ucie_wide_out[North];
 
   ///////////////////
   // Exposed ports //
@@ -170,12 +156,30 @@ module ucie_tile_left
   assign floo_rsp_dummy_east_o  = dummy_rsp_out[East];
   assign dummy_wide_in[East]    = floo_wide_dummy_east_i;
 
+  assign floo_req_ucie_east_o  = ucie_req_out[East];
+  assign ucie_rsp_in[East]     = floo_rsp_ucie_east_i;
+  assign floo_wide_ucie_east_o = ucie_wide_out[East];
+  assign ucie_req_in[East]     = floo_req_ucie_east_i;
+  assign floo_rsp_ucie_east_o  = ucie_rsp_out[East];
+  assign ucie_wide_in[East]    = floo_wide_ucie_east_i;
+
   /////////////////////////////
-  // Chip boundary: tie offs //
+  // Mesh boundary: tie offs //
   /////////////////////////////
 
+  // Outputs left open, inputs tied off, so synthesis removes these router
+  // ports. West is the chip edge; South is below the bottom row of the
+  // mesh, where nothing is routed.
   assign dummy_req_in[West]  = '0;
   assign dummy_rsp_in[West]  = '0;
   assign dummy_wide_in[West] = '0;
+
+  assign ucie_req_in[West]  = '0;
+  assign ucie_rsp_in[West]  = '0;
+  assign ucie_wide_in[West] = '0;
+
+  assign ucie_req_in[South]  = '0;
+  assign ucie_rsp_in[South]  = '0;
+  assign ucie_wide_in[South] = '0;
 
 endmodule : ucie_tile_left

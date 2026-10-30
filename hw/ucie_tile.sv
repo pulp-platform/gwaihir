@@ -26,26 +26,13 @@ module ucie_tile
   input  logic                              ucie_id_i,
   // Sam idx
   input  logic       [$bits(sam_idx_e)-1:0] samidx_i,
-  // Router mesh ports. There is no South port: both UCIe tiles sit on the
-  // bottom row of the mesh, where South is tied off anyway.
-  output floo_req_t                         floo_req_north_o,
-  input  floo_rsp_t                         floo_rsp_north_i,
-  output floo_wide_t                        floo_wide_north_o,
-  input  floo_req_t                         floo_req_north_i,
-  output floo_rsp_t                         floo_rsp_north_o,
-  input  floo_wide_t                        floo_wide_north_i,
-  output floo_req_t                         floo_req_east_o,
-  input  floo_rsp_t                         floo_rsp_east_i,
-  output floo_wide_t                        floo_wide_east_o,
-  input  floo_req_t                         floo_req_east_i,
-  output floo_rsp_t                         floo_rsp_east_o,
-  input  floo_wide_t                        floo_wide_east_i,
-  output floo_req_t                         floo_req_west_o,
-  input  floo_rsp_t                         floo_rsp_west_i,
-  output floo_wide_t                        floo_wide_west_o,
-  input  floo_req_t                         floo_req_west_i,
-  output floo_rsp_t                         floo_rsp_west_o,
-  input  floo_wide_t                        floo_wide_west_i,
+  // Router mesh ports
+  output floo_req_t  [          West:North] floo_req_o,
+  input  floo_rsp_t  [          West:North] floo_rsp_i,
+  output floo_wide_t [          West:North] floo_wide_o,
+  input  floo_req_t  [          West:North] floo_req_i,
+  output floo_rsp_t  [          West:North] floo_rsp_o,
+  input  floo_wide_t [          West:North] floo_wide_i,
 
   // UCIe PHY reference clock (100 MHz)
   input  logic       ucie_refclk_i,
@@ -141,35 +128,14 @@ module ucie_tile
     .offload_narrow_rsp_i('0)
   );
 
-  // Connect the North, East and West mesh directions; the top-level mesh
-  // handles the remaining boundary tie-offs
-  assign floo_req_north_o           = router_floo_req_out[North];
-  assign floo_rsp_north_o           = router_floo_rsp_out[North];
-  assign floo_wide_north_o          = router_floo_wide_out[North];
-  assign router_floo_req_in[North]  = floo_req_north_i;
-  assign router_floo_rsp_in[North]  = floo_rsp_north_i;
-  assign router_floo_wide_in[North] = floo_wide_north_i;
-
-  assign floo_req_east_o           = router_floo_req_out[East];
-  assign floo_rsp_east_o           = router_floo_rsp_out[East];
-  assign floo_wide_east_o          = router_floo_wide_out[East];
-  assign router_floo_req_in[East]  = floo_req_east_i;
-  assign router_floo_rsp_in[East]  = floo_rsp_east_i;
-  assign router_floo_wide_in[East] = floo_wide_east_i;
-
-  assign floo_req_west_o           = router_floo_req_out[West];
-  assign floo_rsp_west_o           = router_floo_rsp_out[West];
-  assign floo_wide_west_o          = router_floo_wide_out[West];
-  assign router_floo_req_in[West]  = floo_req_west_i;
-  assign router_floo_rsp_in[West]  = floo_rsp_west_i;
-  assign router_floo_wide_in[West] = floo_wide_west_i;
-
-  // South is never used: XY routing sends nothing south of the bottom row.
-  // Tie the inputs off and leave the outputs open, so synthesis removes the
-  // router's South input and output stages.
-  assign router_floo_req_in[South]  = '0;
-  assign router_floo_rsp_in[South]  = '0;
-  assign router_floo_wide_in[South] = '0;
+  // Connect all 4 mesh directions; the ucie_tile_left/right wrappers handle the
+  // boundary tie-offs
+  assign floo_req_o                      = router_floo_req_out[West:North];
+  assign router_floo_req_in[West:North]  = floo_req_i;
+  assign floo_rsp_o                      = router_floo_rsp_out[West:North];
+  assign router_floo_rsp_in[West:North]  = floo_rsp_i;
+  assign floo_wide_o                     = router_floo_wide_out[West:North];
+  assign router_floo_wide_in[West:North] = floo_wide_i;
 
   /////////////
   // Chimney //
