@@ -785,13 +785,10 @@ module ucie_tile
   // The macro's APB space spans 0x0_0000-0x2_7FFF (18 bit); the SAM base is masked off
   localparam int unsigned UcieApbAddrWidth = 18;
 
-  // RDI ACTIVE state (pl_state_sts). The link itself is brought up and
-  // managed by the PCS through its registers (APB).
-  localparam logic [3:0] RdiActive = 4'h1;
-  localparam logic [3:0] RdiReset = 4'h0;
-
   logic [RdiDataWidth-1:0] lp_data, pl_data;
   logic lp_valid, lp_irdy, pl_trdy, pl_valid;
+  // RDI state reported by the macro. The link itself is brought up and managed
+  // by the PCS through its registers (APB).
   logic [3:0] pl_state_sts;
   logic       link_active;
   logic       link_en;
