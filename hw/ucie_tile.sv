@@ -6,6 +6,8 @@
 // Chen Wu <chenwu@iis.ee.ethz.ch>
 
 `include "axi/assign.svh"
+`include "common_cells/assertions.svh"
+`include "common_cells/registers.svh"
 `include "axi/typedef.svh"
 
 module ucie_tile
@@ -32,13 +34,24 @@ module ucie_tile
   output floo_rsp_t  [          West:North] floo_rsp_o,
   input  floo_wide_t [          West:North] floo_wide_i,
 
-  // UCIe PHY interface (to the peer tile)
-  output logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out_o,
-  output logic [NumChannels-1:0]                      phy_data_out_valid_o,
-  input  logic [NumChannels-1:0]                      phy_data_out_ready_i,
-  input  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in_i,
-  input  logic [NumChannels-1:0]                      phy_data_in_valid_i,
-  output logic [NumChannels-1:0]                      phy_data_in_ready_o
+  // UCIe PHY reference clock (100 MHz)
+  input  logic       ucie_refclk_i,
+  // UCIe mainband bumps
+  output logic       ucie_txckp_o,
+  output logic       ucie_txckn_o,
+  output logic [7:0] ucie_txdata_o,
+  output logic       ucie_txtrk_o,
+  output logic       ucie_txvld_o,
+  input  logic       ucie_rxckp_i,
+  input  logic       ucie_rxckn_i,
+  input  logic [7:0] ucie_rxdata_i,
+  input  logic       ucie_rxtrk_i,
+  input  logic       ucie_rxvld_i,
+  // UCIe sideband bumps
+  output logic       ucie_txclksb_o,
+  output logic       ucie_txdatasb_o,
+  input  logic       ucie_rxclksb_i,
+  input  logic       ucie_rxdatasb_i
 );
 
   // Half-bandwidth mode for debug output channels
@@ -115,7 +128,8 @@ module ucie_tile
     .offload_narrow_rsp_i('0)
   );
 
-  // Connect all 4 mesh directions; top-level mesh handles boundary tie-offs
+  // Connect all 4 mesh directions; the ucie_tile_left/right wrappers handle the
+  // boundary tie-offs
   assign floo_req_o                      = router_floo_req_out[West:North];
   assign router_floo_req_in[West:North]  = floo_req_i;
   assign floo_rsp_o                      = router_floo_rsp_out[West:North];
@@ -240,6 +254,8 @@ module ucie_tile
   } ucie_xbar_sel_e;
 
   localparam int unsigned NumUcieXbarMstPorts = 2;
+  // Tile cfg, serial link cfg and UCIe PCS cfg (LITE_CFG), plus the join path
+  localparam int unsigned NumUcieXbarRules = 4;
 
   localparam axi_pkg::xbar_cfg_t AxiNarrowXbarCfg = '{
       NoSlvPorts: 1,
@@ -255,7 +271,7 @@ module ucie_tile
       UniqueIds: 0,
       AxiAddrWidth: $bits(axi_narrow_out_addr_t),
       AxiDataWidth: $bits(axi_narrow_out_data_t),
-      NoAddrRules: 4,
+      NoAddrRules: NumUcieXbarRules,
       default: '0
   };
 
@@ -279,7 +295,7 @@ module ucie_tile
   localparam int UcieCfgIdxOffset = int'(Ucie0UcieCfgSamIdx) - int'(Ucie0SamIdx);
   localparam int TileCfgIdxOffset = int'(Ucie0TileCfgSamIdx) - int'(Ucie0SamIdx);
 
-  ucie_rule_t [AxiSerialCfgIdxOffset:0] tile_addrmap;
+  ucie_rule_t [NumUcieXbarRules-1:0] tile_addrmap;
   // 3 rules: the AXI-Lite config port serves both the Tile cfg regs (tile_cfg),
   // the Slink registers (axi_serial_cfg) and the UCIe PCS macro APB (ucie_cfg)
   // -> all routed to LITE_CFG and demuxed downstream by axi_lite_to_apb; plus the join path.
@@ -613,7 +629,7 @@ module ucie_tile
   /////////////////
 
   // Serializer PHY backend: the stream between the bandwidth-mode adapter and
-  // the PCS wrapper (`ucie_pcs_wrap`), which owns everything PHY/PCS-specific.
+  // the UCIe adapter below, in front of the macro (`ucie_macro_wrap`).
   logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_out_data;
   logic [NumChannels-1:0]                      phy_out_valid;
   logic [NumChannels-1:0]                      phy_out_ready;
@@ -721,34 +737,239 @@ module ucie_tile
         hwif_out.phy_mode.half_bw_en.value ? rx_full_data : phy_in_data[ch];
   end
 
-  /////////////////
-  // PCS wrapper //
-  /////////////////
+  //////////////////
+  // UCIe adapter //
+  //////////////////
 
-  ucie_pcs_wrap #(
-    .NumChannels    (NumChannels),
-    .NumBitsPerCycle(NumBitsPerCycle),
-    .apb_req_t      (ucie_cfg_apb_req_t),
-    .apb_resp_t     (ucie_cfg_apb_resp_t)
-  ) i_ucie_pcs_wrap (
-    .clk_i     (tile_clk),
-    .rst_ni    (tile_rst_n),
-    .rst_apb_ni(tile_rst_apb_n),
-    .clk_ena_i (hwif_out.clk.en.value),
-    .tx_data_i (phy_out_data),
-    .tx_valid_i(phy_out_valid),
-    .tx_ready_o(phy_out_ready),
-    .rx_data_o (phy_in_data),
-    .rx_valid_o(phy_in_valid),
-    .rx_ready_i(phy_in_ready),
-    .phy_data_out_o,
-    .phy_data_out_valid_o,
-    .phy_data_out_ready_i,
-    .phy_data_in_i,
-    .phy_data_in_valid_i,
-    .phy_data_in_ready_o,
-    .apb_req_i (cfg_apb_req[ApbUcie]),
-    .apb_rsp_o (cfg_apb_rsp[ApbUcie])
+  // RDI adapter between the serializer stream and the UCIe macro
+  // (`ucie_macro_wrap`): stream <-> RDI. The stream is as wide as the RDI.
+  logic        link_rx_drop_err;
+  logic [15:0] link_rx_drop_count;
+
+  localparam int unsigned RdiDataWidth = 256;  // RDI mainband width of the macro
+  localparam int unsigned StreamWidth = NumChannels * NumBitsPerCycle;
+  // The macro's APB space spans 0x0_0000-0x2_7FFF (18 bit); the SAM base is masked off
+  localparam int unsigned UcieApbAddrWidth = 18;
+
+  logic [RdiDataWidth-1:0] lp_data, pl_data;
+  logic lp_valid, lp_irdy, pl_trdy, pl_valid;
+  // RDI state reported by the macro. The link itself is brought up and managed
+  // by the PCS through its registers (APB).
+  logic [3:0] pl_state_sts;
+  logic       link_active;
+  logic       link_en;
+
+  // Link gate: the serial link's `ctrl.clk_ena` (0 at reset). Software opens it
+  // once the PCS is configured; while closed the serial link sees no traffic.
+  assign link_en = slink_reg2hw.ctrl.clk_ena.value;
+
+  // Move data only while the link is ACTIVE
+  assign link_active = (pl_state_sts == RdiActive);
+
+  // TX copy of the gate, registered. `lp_valid` and `lp_irdy` are macro inputs:
+  // gating them with the macro output `pl_state_sts` through logic only made a
+  // macro-to-macro path that cannot meet timing (the macro's output delay plus
+  // its input setup exceed the clock period). So TX follows ACTIVE one cycle
+  // late, both entering and leaving it; `inp_ready` uses the same copy, so no
+  // beat is taken without `lp_valid`. RX keeps the direct gate (macro output to
+  // a register in the tile).
+  logic link_active_tx_q;
+  `FF(link_active_tx_q, link_active, 1'b0, tile_clk, tile_rst_n)
+
+  // TX: serializer stream -> RDI
+  logic tx_rdi_ready;
+
+  assign phy_out_ready = {NumChannels{tx_rdi_ready & link_en}};
+
+  stream2rdi #(
+    .DataWidth(RdiDataWidth)
+  ) i_stream2rdi (
+    .inp_data_i   (phy_out_data),
+    .inp_valid_i  (phy_out_valid[0] & link_en),
+    .inp_ready_o  (tx_rdi_ready),
+    .lp_data_o    (lp_data),
+    .lp_valid_o   (lp_valid),
+    .lp_irdy_o    (lp_irdy),
+    .pl_trdy_i    (pl_trdy),
+    .link_active_i(link_active_tx_q)
   );
+
+  // RX: RDI -> serializer stream. RDI RX has no backpressure: `rdi2stream`
+  // holds one word, the serial link's credit-based flow control keeps its
+  // input ready in normal mode.
+  logic rx_valid;
+
+  // Drain (and drop) received data while the link gate is closed
+  logic rx_oup_ready;
+  assign rx_oup_ready = link_en ? phy_in_ready[0] : 1'b1;
+
+  rdi2stream #(
+    .DataWidth(RdiDataWidth)
+  ) i_rdi2stream (
+    .clk_i          (tile_clk),
+    .rst_ni         (tile_rst_n),
+    .pl_data_i      (pl_data),
+    .pl_valid_i     (pl_valid),
+    .oup_data_o     (phy_in_data),
+    .oup_valid_o    (rx_valid),
+    .oup_ready_i    (rx_oup_ready),
+    .link_active_i  (link_active),
+    .rx_drop_err_o  (link_rx_drop_err),
+    .rx_drop_count_o(link_rx_drop_count)
+  );
+
+  assign phy_in_valid = {NumChannels{rx_valid & link_en}};
+
+  // UCIe macro APB slave at slower clock
+  localparam int unsigned UcieApbClkDiv = 20;
+
+  logic               ucie_apb_clk;
+  ucie_cfg_apb_req_t  ucie_apb_req;
+  ucie_cfg_apb_resp_t ucie_apb_rsp;
+
+  cc_clk_int_div_static #(
+    .DivValue(UcieApbClkDiv)
+  ) i_ucie_apb_clk_div (
+    .clk_i         (tile_clk),
+    .rst_ni        (tile_rst_apb_n),
+    .en_i          (1'b1),
+    .test_mode_en_i(test_enable_i),
+    .clk_o         (ucie_apb_clk)
+  );
+
+  // APB crossing to the macro clock. `ucie_apb_clk` is derived from `clk_i`
+  // with an integer ratio, so the two isochronous spill registers need no
+  // synchronizers: STA times all paths between the two clocks. Both sides are
+  // on the APB reset so the spill register pointers reset together. The
+  // request fields need no copy: the APB master holds them stable until
+  // `pready`, which comes back only after the macro has completed the transfer.
+  logic ucie_apb_busy_d, ucie_apb_busy_q;
+  logic ucie_apb_src_req_valid, ucie_apb_src_req_ready;
+  logic ucie_apb_src_rsp_valid;
+  logic ucie_apb_dst_req_valid, ucie_apb_dst_done;
+  logic               ucie_apb_access_q;
+  ucie_cfg_apb_resp_t ucie_apb_src_rsp;
+
+  // Source side: forward the access phase, then hold off `pready` until the
+  // response is back. One transfer in flight at a time.
+  assign ucie_apb_src_req_valid = cfg_apb_req[ApbUcie].psel & cfg_apb_req[ApbUcie].penable &
+                                  ~ucie_apb_busy_q;
+  // Busy from the request push until the response pop
+  assign ucie_apb_busy_d = ucie_apb_busy_q ? ~ucie_apb_src_rsp_valid :
+                                             (ucie_apb_src_req_valid & ucie_apb_src_req_ready);
+  `FF(ucie_apb_busy_q, ucie_apb_busy_d, 1'b0, clk_i, tile_rst_apb_n)
+
+  assign cfg_apb_rsp[ApbUcie].pready  = ucie_apb_busy_q & ucie_apb_src_rsp_valid;
+  assign cfg_apb_rsp[ApbUcie].prdata  = ucie_apb_src_rsp.prdata;
+  assign cfg_apb_rsp[ApbUcie].pslverr = ucie_apb_src_rsp.pslverr;
+
+  // Only the request handshake crosses here
+  cc_isochronous_spill_register #(
+    .data_t(logic)
+  ) i_ucie_apb_req_spill_register (
+    .src_clk_i  (clk_i),
+    .src_rst_ni (tile_rst_apb_n),
+    .src_valid_i(ucie_apb_src_req_valid),
+    .src_ready_o(ucie_apb_src_req_ready),
+    .src_data_i (1'b0),
+    .dst_clk_i  (ucie_apb_clk),
+    .dst_rst_ni (tile_rst_apb_n),
+    .dst_valid_o(ucie_apb_dst_req_valid),
+    .dst_ready_i(ucie_apb_dst_done),
+    .dst_data_o ()
+  );
+
+  // Destination side: replay the transfer with its setup and access phases
+  // and push the response back on `pready`
+  assign ucie_apb_dst_done = ucie_apb_access_q & ucie_apb_rsp.pready;
+  `FF(ucie_apb_access_q, ucie_apb_dst_req_valid & ~ucie_apb_dst_done, 1'b0, ucie_apb_clk,
+      tile_rst_apb_n)
+
+  always_comb begin
+    ucie_apb_req         = cfg_apb_req[ApbUcie];
+    ucie_apb_req.psel    = ucie_apb_dst_req_valid;
+    ucie_apb_req.penable = ucie_apb_access_q;
+  end
+
+  cc_isochronous_spill_register #(
+    .data_t(ucie_cfg_apb_resp_t)
+  ) i_ucie_apb_rsp_spill_register (
+    .src_clk_i  (ucie_apb_clk),
+    .src_rst_ni (tile_rst_apb_n),
+    .src_valid_i(ucie_apb_dst_done),
+    .src_ready_o(),
+    .src_data_i (ucie_apb_rsp),
+    .dst_clk_i  (clk_i),
+    .dst_rst_ni (tile_rst_apb_n),
+    .dst_valid_o(ucie_apb_src_rsp_valid),
+    .dst_ready_i(ucie_apb_busy_q),
+    .dst_data_o (ucie_apb_src_rsp)
+  );
+
+  // UCIe PHY + PCS macro
+  ucie_macro_wrap i_ucie_macro_wrap (
+    .rdi_clk      (tile_clk),
+    .refclk       (ucie_refclk_i),
+    // The whole macro is on the APB reset: software configures the PCS
+    // before releasing the serial link (AXI reset)
+    .rst_async_n  (tile_rst_apb_n),
+    .txckn        (ucie_txckn_o),
+    .txckp        (ucie_txckp_o),
+    .txdata0      (ucie_txdata_o[0]),
+    .txdata1      (ucie_txdata_o[1]),
+    .txdata2      (ucie_txdata_o[2]),
+    .txdata3      (ucie_txdata_o[3]),
+    .txdata4      (ucie_txdata_o[4]),
+    .txdata5      (ucie_txdata_o[5]),
+    .txdata6      (ucie_txdata_o[6]),
+    .txdata7      (ucie_txdata_o[7]),
+    .txtrk        (ucie_txtrk_o),
+    .txvld        (ucie_txvld_o),
+    .rxckn        (ucie_rxckn_i),
+    .rxckp        (ucie_rxckp_i),
+    .rxdata0      (ucie_rxdata_i[0]),
+    .rxdata1      (ucie_rxdata_i[1]),
+    .rxdata2      (ucie_rxdata_i[2]),
+    .rxdata3      (ucie_rxdata_i[3]),
+    .rxdata4      (ucie_rxdata_i[4]),
+    .rxdata5      (ucie_rxdata_i[5]),
+    .rxdata6      (ucie_rxdata_i[6]),
+    .rxdata7      (ucie_rxdata_i[7]),
+    .rxtrk        (ucie_rxtrk_i),
+    .rxvld        (ucie_rxvld_i),
+    // Sideband bumps
+    .rxclksb      (ucie_rxclksb_i),
+    .rxdatasb     (ucie_rxdatasb_i),
+    .txclksb      (ucie_txclksb_o),
+    .txdatasb     (ucie_txdatasb_o),
+    // APB slave: PCS CSRs (ucie_cfg SAM range), slow side of the CDC
+    .apb_s_paddr  (32'(ucie_apb_req.paddr[UcieApbAddrWidth-1:0])),
+    .apb_s_pclk   (ucie_apb_clk),
+    .apb_s_penable(ucie_apb_req.penable),
+    .apb_s_prdata (ucie_apb_rsp.prdata),
+    .apb_s_pready (ucie_apb_rsp.pready),
+    .apb_s_presetn(tile_rst_apb_n),
+    .apb_s_psel   (ucie_apb_req.psel),
+    .apb_s_pslverr(ucie_apb_rsp.pslverr),
+    .apb_s_pstrb  (ucie_apb_req.pstrb),
+    .apb_s_pwdata (ucie_apb_req.pwdata),
+    .apb_s_pwrite (ucie_apb_req.pwrite),
+    // RDI: adapter -> PHY. The unused RDI pins are tied off in the wrapper.
+    .lp_data      (lp_data),
+    .lp_irdy      (lp_irdy),
+    // ACTIVE while the link gate is open: with the PCS in state follow mode,
+    // pl_state_sts mirrors it and the PCS holds TX while the gate is closed
+    .lp_state_req (link_en ? RdiActive : RdiReset),
+    .lp_valid     (lp_valid),
+    // RDI: PHY -> adapter
+    .pl_data      (pl_data),
+    .pl_state_sts (pl_state_sts),
+    .pl_trdy      (pl_trdy),
+    .pl_valid     (pl_valid)
+  );
+
+  `ASSERT_INIT(SingleChannel, NumChannels == 1, "only valid/ready of channel 0 is used")
+  `ASSERT_INIT(RdiWidth, StreamWidth == RdiDataWidth,
+               "NumChannels * NumBitsPerCycle must match the RDI width")
 
 endmodule : ucie_tile

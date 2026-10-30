@@ -618,4 +618,17 @@ package gwaihir_pkg;
   `AXI_LITE_TYPEDEF_ALL(ucie_cfg_axi_lite_32, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
   `APB_TYPEDEF_ALL(ucie_cfg_apb, addr_t, ucie_cfg_reg_data_t, ucie_cfg_reg_strb_t)
 
+  // RDI state encoding of `lp_state_req` and `pl_state_sts` (UCIe spec)
+  typedef enum logic [3:0] {
+    RdiReset       = 4'b0000,
+    RdiActive      = 4'b0001,
+    RdiActivePmNak = 4'b0011,
+    RdiL1          = 4'b0100,
+    RdiL2          = 4'b1000,
+    RdiLinkReset   = 4'b1001,
+    RdiLinkError   = 4'b1010,
+    RdiRetrain     = 4'b1011,
+    RdiDisabled    = 4'b1100
+  } rdi_state_e;
+
 endpackage

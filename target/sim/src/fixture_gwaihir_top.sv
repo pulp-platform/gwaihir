@@ -53,6 +53,32 @@ module fixture_gwaihir_top;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o;
 
+  logic [NumUcieTiles-1:0]      ucie_txckp;
+  logic [NumUcieTiles-1:0]      ucie_txckn;
+  logic [NumUcieTiles-1:0][7:0] ucie_txdata;
+  logic [NumUcieTiles-1:0]      ucie_txtrk;
+  logic [NumUcieTiles-1:0]      ucie_txvld;
+  logic [NumUcieTiles-1:0]      ucie_rxckp;
+  logic [NumUcieTiles-1:0]      ucie_rxckn;
+  logic [NumUcieTiles-1:0][7:0] ucie_rxdata;
+  logic [NumUcieTiles-1:0]      ucie_rxtrk;
+  logic [NumUcieTiles-1:0]      ucie_rxvld;
+  logic [NumUcieTiles-1:0]      ucie_txclksb;
+  logic [NumUcieTiles-1:0]      ucie_txdatasb;
+  logic [NumUcieTiles-1:0]      ucie_rxclksb;
+  logic [NumUcieTiles-1:0]      ucie_rxdatasb;
+
+  // UCIe PHY reference clock (100 MHz), separate from the system clock as on the
+  // chip: the closed-source PHY model times its sideband on it
+  logic ucie_refclk;
+  clk_rst_gen #(
+    .ClkPeriod   (10ns),
+    .RstClkCycles(1)
+  ) i_ucie_refclk_gen (
+    .clk_o (ucie_refclk),
+    .rst_no()
+  );
+
   axi_llc_req_t axi_llc_mst_req;
   axi_llc_rsp_t axi_llc_mst_rsp;
 
@@ -121,9 +147,41 @@ module fixture_gwaihir_top;
     .pcie_jtag_phys_tms_i  (1'b0),
     .pcie_jtag_phys_trst_ni(1'b1),
     .pcie_jtag_phys_tdo_o  (),
+    .ucie_refclk_i         ({NumUcieTiles{ucie_refclk}}),
+    .ucie_txckp_o          (ucie_txckp),
+    .ucie_txckn_o          (ucie_txckn),
+    .ucie_txdata_o         (ucie_txdata),
+    .ucie_txtrk_o          (ucie_txtrk),
+    .ucie_txvld_o          (ucie_txvld),
+    .ucie_rxckp_i          (ucie_rxckp),
+    .ucie_rxckn_i          (ucie_rxckn),
+    .ucie_rxdata_i         (ucie_rxdata),
+    .ucie_rxtrk_i          (ucie_rxtrk),
+    .ucie_rxvld_i          (ucie_rxvld),
+    .ucie_txclksb_o        (ucie_txclksb),
+    .ucie_txdatasb_o       (ucie_txdatasb),
+    .ucie_rxclksb_i        (ucie_rxclksb),
+    .ucie_rxdatasb_i       (ucie_rxdatasb),
     .axi_llc_mst_req_o     (axi_llc_mst_req),
     .axi_llc_mst_rsp_i     (axi_llc_mst_rsp)
   );
+
+  ////////////////////////
+  //  UCIe bump wiring  //
+  ////////////////////////
+
+  // Package-level loopback: the TX bumps of each UCIe tile drive the RX bumps
+  // of the other one.
+  for (genvar i = 0; i < NumUcieTiles; i++) begin : gen_ucie_loopback
+    localparam int unsigned Peer = NumUcieTiles - 1 - i;
+    assign ucie_rxckp[i]    = ucie_txckp[Peer];
+    assign ucie_rxckn[i]    = ucie_txckn[Peer];
+    assign ucie_rxdata[i]   = ucie_txdata[Peer];
+    assign ucie_rxtrk[i]    = ucie_txtrk[Peer];
+    assign ucie_rxvld[i]    = ucie_txvld[Peer];
+    assign ucie_rxclksb[i]  = ucie_txclksb[Peer];
+    assign ucie_rxdatasb[i] = ucie_txdatasb[Peer];
+  end
 
   ////////////////////////
   //  Tristate Adapter  //
