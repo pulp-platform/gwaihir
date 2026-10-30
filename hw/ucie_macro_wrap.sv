@@ -7,7 +7,9 @@
 // Open-source behavioral model of the UCIe macro (PHY + PCS).
 //
 
-module ucie_macro_wrap (
+module ucie_macro_wrap
+  import gwaihir_pkg::*;
+(
   input          rdi_clk,
   input          refclk,
   input          rst_async_n,
@@ -68,9 +70,6 @@ module ucie_macro_wrap (
   localparam int unsigned NumLanes = 8;
   localparam int unsigned LaneBits = RdiWidth / NumLanes;
   localparam int unsigned CntWidth = $clog2(LaneBits);  // bit counter per word
-
-  localparam logic [3:0] RdiReset = 4'h0;
-  localparam logic [3:0] RdiActive = 4'h1;
 
   typedef logic [RdiWidth-1:0] word_t;
   typedef logic [NumLanes-1:0][LaneBits-1:0] lanes_t;
