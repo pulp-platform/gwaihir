@@ -21,8 +21,8 @@ dependencies:
     git: https://github.com/hopang-0221/axi.git
     rev: hp/spyglass-fixes
   axi_obi:
-    git: https://github.com/hopang-0221/axi_obi.git
-    rev: hp/spyglass-fixes
+    git: https://github.com/DanielKellerM/axi_obi.git
+    rev: f5d6cdf020e0c404638e0ff6d248ebad56b2b01c
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
     rev: gwaihir
@@ -51,7 +51,7 @@ dependencies:
     rev: gwaihir
   obi:
     git: https://github.com/pulp-platform/obi.git
-    rev: hp/spyglass-fixes
+    rev: common-cells-v2
   pcie:
     path: .deps/pcie
   register_interface: 0.4.5
