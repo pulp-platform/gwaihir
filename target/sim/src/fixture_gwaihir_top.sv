@@ -53,17 +53,31 @@ module fixture_gwaihir_top;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o;
 
-  logic [NumUcieTiles-1:0]      ucie_txckp, ucie_txckn, ucie_txtrk, ucie_txvld;
-  logic [NumUcieTiles-1:0]      ucie_rxckp, ucie_rxckn, ucie_rxtrk, ucie_rxvld;
-  logic [NumUcieTiles-1:0][7:0] ucie_txdata, ucie_rxdata;
-  logic [NumUcieTiles-1:0]      ucie_txclksb, ucie_txdatasb, ucie_rxclksb, ucie_rxdatasb;
+  logic [NumUcieTiles-1:0]      ucie_txckp;
+  logic [NumUcieTiles-1:0]      ucie_txckn;
+  logic [NumUcieTiles-1:0][7:0] ucie_txdata;
+  logic [NumUcieTiles-1:0]      ucie_txtrk;
+  logic [NumUcieTiles-1:0]      ucie_txvld;
+  logic [NumUcieTiles-1:0]      ucie_rxckp;
+  logic [NumUcieTiles-1:0]      ucie_rxckn;
+  logic [NumUcieTiles-1:0][7:0] ucie_rxdata;
+  logic [NumUcieTiles-1:0]      ucie_rxtrk;
+  logic [NumUcieTiles-1:0]      ucie_rxvld;
+  logic [NumUcieTiles-1:0]      ucie_txclksb;
+  logic [NumUcieTiles-1:0]      ucie_txdatasb;
+  logic [NumUcieTiles-1:0]      ucie_rxclksb;
+  logic [NumUcieTiles-1:0]      ucie_rxdatasb;
 
-  // UCIe PHY reference clock (100 MHz), needed by the closed-source PHY model
+  // UCIe PHY reference clock (100 MHz), separate from the system clock as on the
+  // chip: the closed-source PHY model times its sideband on it
   logic ucie_refclk;
-  initial begin
-    ucie_refclk = 1'b0;
-    forever #(5ns) ucie_refclk = ~ucie_refclk;
-  end
+  clk_rst_gen #(
+    .ClkPeriod   (10ns),
+    .RstClkCycles(1)
+  ) i_ucie_refclk_gen (
+    .clk_o (ucie_refclk),
+    .rst_no()
+  );
 
   axi_llc_req_t axi_llc_mst_req;
   axi_llc_rsp_t axi_llc_mst_rsp;
