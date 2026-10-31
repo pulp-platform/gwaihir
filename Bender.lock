@@ -25,10 +25,10 @@ packages:
     - obi_peripherals
     - register_interface
   axi:
-    revision: 35f17006b341590d66cf6f8cb9e999c50ed5c4bd
+    revision: 0d287864c11cf2f344452a63f8d1e5e9ce668f2b
     version: null
     source:
-      Git: https://github.com/colluca/axi.git
+      Git: https://github.com/hopang-0221/axi.git
     dependencies:
     - common_cells
     - common_verification
@@ -45,7 +45,7 @@ packages:
     - register_interface
     - tech_cells_generic
   axi_obi:
-    revision: 030136e2e199b17c61606b54f57823df2cdbfd14
+    revision: f5d6cdf020e0c404638e0ff6d248ebad56b2b01c
     version: null
     source:
       Git: https://github.com/DanielKellerM/axi_obi.git
@@ -336,7 +336,7 @@ packages:
     - scm
     - tech_cells_generic
   obi:
-    revision: 7e0bcc1381bb7e3d76e50c25db240a1f02f0203a
+    revision: 11d3e7058469ed787d5763e9b247f7e833d6a512
     version: null
     source:
       Git: https://github.com/pulp-platform/obi.git

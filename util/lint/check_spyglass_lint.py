@@ -123,6 +123,36 @@ TILE_FILE_WAIVERS = {
         ('STARC05-2.1.5.3', r'spatz_vfu\.sv'),
 
     ],
+
+    'mem_tile_large': [
+        # bit-width mismatch between function call argument and function input
+        ('STARC05-2.1.3.1',   r'/cva6-[0-9a-f]+/'),
+        # logical operator used where a bit-wise operator is intended
+        ('STARC05-2.1.4.5',   r'/axi_riscv_atomics-[0-9a-f]+/'),
+        # conditional expression does not evaluate to a scalar
+        ('STARC05-2.1.5.3',   r'/axi_riscv_atomics-[0-9a-f]+/'),
+        # operand bit-width mismatch for logical operator
+        ('STARC05-2.10.3.2a', r'/axi_riscv_atomics-[0-9a-f]+/'),
+        # multi-bit expression where a one-bit expression is expected
+        ('W224',              r'/axi_riscv_atomics-[0-9a-f]+/'),
+        # clock signal used as a non-clock
+        ('STARC05-1.4.3.4',   r'/tech_cells_generic-[0-9a-f]+/'),
+    ],
+
+    'mem_tile_small': [
+        # bit-width mismatch between function call argument and function input
+        ('STARC05-2.1.3.1',   r'/cva6-[0-9a-f]+/'),
+        # logical operator used where a bit-wise operator is intended
+        ('STARC05-2.1.4.5',   r'/axi_riscv_atomics-[0-9a-f]+/'),
+        # conditional expression does not evaluate to a scalar
+        ('STARC05-2.1.5.3',   r'/axi_riscv_atomics-[0-9a-f]+/'),
+        # operand bit-width mismatch for logical operator
+        ('STARC05-2.10.3.2a', r'/axi_riscv_atomics-[0-9a-f]+/'),
+        # multi-bit expression where a one-bit expression is expected
+        ('W224',              r'/axi_riscv_atomics-[0-9a-f]+/'),
+        # clock signal used as a non-clock
+        ('STARC05-1.4.3.4',   r'/tech_cells_generic-[0-9a-f]+/'),
+    ],
 }
 
 
