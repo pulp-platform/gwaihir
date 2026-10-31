@@ -266,12 +266,13 @@ module snitch_hwpe_subsystem
       .NumCores     (NrCores),
       .IdWidth      (IdWidth)
     ) i_surya_top (
-      .clk_i (hwpe_clk[AccPort]),
-      .rst_ni(rst_ni),
-      .busy_o(busy),
-      .evt_o (evt[AccPort]),
-      .tcdm  (tcdm_acc),
-      .periph(periph[AccPort])
+      .clk_i      (hwpe_clk[AccPort]),
+      .rst_ni     (rst_ni),
+      .test_mode_i(test_mode_i),
+      .busy_o     (busy),
+      .evt_o      (evt[AccPort]),
+      .tcdm       (tcdm_acc),
+      .periph     (periph[AccPort])
     );
   end else begin : gen_mxcore
     mxcore_hwpe_top #(
