@@ -169,7 +169,16 @@ IMPLICIT_MACROS = [
     'TARGET_CV64A6_RT_HPDCACHE',
     'TARGET_GW_GEN_RTL',
     'TARGET_MXCORE_HWPE',
-    'TARGET_TECH_CELLS_GENERIC_INCLUDE_TC_SYNC'
+    'TARGET_TECH_CELLS_GENERIC_INCLUDE_TC_SYNC',
+    'TARGET_SPATZ_PACE',
+    # passed to the dependencies by the `pass_targets` of snitch_cluster
+    'TARGET_SNITCH_CLUSTER',
+    # FPnew format defines exported by the MXCore Bender.yml (`defines`), passed to the whole design
+    'EN_FP8',
+    'EN_FP8ALT',
+    'EN_FP6',
+    'EN_FP6ALT',
+    'EN_FP4',
 ]
 
 
@@ -282,6 +291,14 @@ def main():
               (df.file.str.contains(r'hwpe_ctrl_slave\.sv')) &
               (df.message.str.contains('is_working')))]
     print(f'Ignore W287a for regfile_flags.is_working in hwpe_ctrl_slave. {len(df)} messages remaining.')
+
+    # In redundancy_cells/rtl/hsiao_ecc/hsiao_ecc_pkg.sv:64, `!needed` is used on an int unsigned
+    # loop counter of an elaboration-time function (ideal_fanin), i.e. `needed == 0`. Harmless.
+    # Waived here and not per tile: the package is analyzed but is in no tile file list.
+    df = df[~((df.rule == 'STARC05-2.10.2.3') &
+              (df.file.str.contains(r'hsiao_ecc_pkg\.sv')) &
+              (df.message.str.contains(r'\(!needed\)')))]
+    print(f'Ignore STARC05-2.10.2.3 for !needed in hsiao_ecc_pkg. {len(df)} messages remaining.')
 
     # Waive unused macro warnings for macros created implicitly by bender
     df = df[~((df.rule == 'CMD_define02') &
