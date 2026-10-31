@@ -121,6 +121,8 @@ TILE_FILE_WAIVERS = {
         # vector `result_valid` used as a ternary condition in the reductions (implicit OR)
         ('W224', r'spatz_vfu\.sv'),
         ('STARC05-2.1.5.3', r'spatz_vfu\.sv'),
+        # don't-care default `rdata_o = 'x` of the VRF read mux, only read when `rvalid_o` is set
+        ('NoAssignX-ML', r'spatz_vrf\.sv'),
 
     ],
 
