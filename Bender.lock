@@ -25,16 +25,16 @@ packages:
     - obi_peripherals
     - register_interface
   axi:
-    revision: 35f17006b341590d66cf6f8cb9e999c50ed5c4bd
+    revision: 0d287864c11cf2f344452a63f8d1e5e9ce668f2b
     version: null
     source:
-      Git: https://github.com/colluca/axi.git
+      Git: https://github.com/hopang-0221/axi.git
     dependencies:
     - common_cells
     - common_verification
     - tech_cells_generic
   axi_llc:
-    revision: a457a9c7d63266597c0814e0822684ff978ef838
+    revision: 57c0859713e7ceb9a5a6e0cb2cb858c553085ecd
     version: null
     source:
       Git: https://github.com/pulp-platform/axi_llc.git
@@ -45,7 +45,7 @@ packages:
     - register_interface
     - tech_cells_generic
   axi_obi:
-    revision: 030136e2e199b17c61606b54f57823df2cdbfd14
+    revision: f5d6cdf020e0c404638e0ff6d248ebad56b2b01c
     version: null
     source:
       Git: https://github.com/DanielKellerM/axi_obi.git
@@ -54,7 +54,7 @@ packages:
     - common_cells
     - obi
   axi_riscv_atomics:
-    revision: 399ce0aefe79792d11bef8cc706139281d82df08
+    revision: 6dc05e0b6ac17cddbcd5cae7eb30ac44242fffb0
     version: null
     source:
       Git: https://github.com/pulp-platform/axi_riscv_atomics.git
@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: 37959037da2beffd72439be9d7b26282baf16360
+    revision: af032e5f29d389b6884fdfafadfe57d5c803f71e
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -180,7 +180,7 @@ packages:
     dependencies:
     - common_cells
   cva6:
-    revision: 99b32d28a86309fab4fd6803169809fb0e225bf0
+    revision: cc2093e45dfb964d8ed11803df59c1e10e508e9a
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
@@ -211,7 +211,7 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: ba38e5ef19dd0305feae8ca5336b8359a17d4688
+    revision: 3f1b8cd7b8247a22fa7adca092c0d4b10defc02a
     version: null
     source:
       Git: https://github.com/pulp-platform/FlooNoC.git
@@ -230,7 +230,7 @@ packages:
       Path: .bender/git/checkouts/floo_noc-3456ed0092b6e3fd/pd
     dependencies: []
   fpnew:
-    revision: e49def09dfe0e2751a3e349b22efd317afd82b83
+    revision: 5765c05de9424e21186e71d745cc4ad9db07a030
     version: null
     source:
       Git: https://github.com/pulp-platform/cvfpu.git
@@ -336,7 +336,7 @@ packages:
     - scm
     - tech_cells_generic
   obi:
-    revision: 7e0bcc1381bb7e3d76e50c25db240a1f02f0203a
+    revision: 11d3e7058469ed787d5763e9b247f7e833d6a512
     version: null
     source:
       Git: https://github.com/pulp-platform/obi.git
@@ -409,8 +409,8 @@ packages:
     - common_cells
     - tech_cells_generic
   riscv-iommu:
-    revision: 90e142dfe9b04e89dc9ae9fa9ab0996791bd52e6
-    version: 0.0.1
+    revision: da049d87375ca053fbb878d29c68efdb2e7e7321
+    version: 0.0.2
     source:
       Git: https://github.com/FondazioneChipsIt/riscv-iommu.git
     dependencies:
@@ -436,7 +436,7 @@ packages:
     - common_cells
     - common_verification
   snitch_cluster:
-    revision: b06aaebc7e991779adcce4ae06ce9a86c352f1e5
+    revision: 806593f3554f544c594df76d54a8710a743f362c
     version: null
     source:
       Git: https://github.com/DiyouS/snitch_cluster.git
@@ -456,7 +456,7 @@ packages:
     - spatz_vpu
     - tech_cells_generic
   spatz_vpu:
-    revision: f0490271ac5227cdbe2c0a4b6459c169cd993d47
+    revision: 57da2baa7f81998d933237cb3cae9befe8af55e5
     version: null
     source:
       Git: https://github.com/pulp-platform/spatz_vpu.git
@@ -467,7 +467,7 @@ packages:
     - reqrsp_interface
     - tech_cells_generic
   surya-mx:
-    revision: ee2d46306f6d6a0052df1059fb8bf975027ab90f
+    revision: 922ceb9ab8a84f3bc944d7599c6fe2af2e662a72
     version: null
     source:
       Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git

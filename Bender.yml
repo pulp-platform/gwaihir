@@ -18,11 +18,11 @@ dependencies:
     rev: gwaihir
   apb_fll_if: 0.3.0
   axi:
-    git: https://github.com/colluca/axi.git
-    rev: multicast
+    git: https://github.com/hopang-0221/axi.git
+    rev: hp/spyglass-fixes
   axi_obi:
     git: https://github.com/DanielKellerM/axi_obi.git
-    rev: bf84f43c1467ea9d2abc5db871c6f13e79082b89
+    rev: f5d6cdf020e0c404638e0ff6d248ebad56b2b01c
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
     rev: gwaihir
@@ -34,7 +34,7 @@ dependencies:
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
-    rev: gwaihir/reduction
+    rev: gwaihir-spyglass
     upstream_name: FlooNoC
   gwaihir-pd:
     path: ./pd

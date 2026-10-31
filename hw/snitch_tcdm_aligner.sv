@@ -21,7 +21,7 @@ module snitch_tcdm_aligner
   output tcdm_rsp_t tcdm_rsp_misaligned_o
 );
 
-  localparam logic [AddrWidth-1:0] AddrMask = ~(DataWidth / 8 - 1);
+  localparam logic [AddrWidth-1:0] AddrMask = ~AddrWidth'(DataWidth / 8 - 1);
 
   logic [$clog2(DataWidth/TCDMDataWidth)-1:0] addr_significant_d, addr_significant_q;
 
