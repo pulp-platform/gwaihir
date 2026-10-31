@@ -294,6 +294,14 @@ def main():
               (df.message.str.contains('is_working')))]
     print(f'Ignore W287a for regfile_flags.is_working in hwpe_ctrl_slave. {len(df)} messages remaining.')
 
+    # In hwpe-ctrl/rtl/deprecated/hwpe_ctrl_slave.sv, the running_state and context_state FSMs
+    # describe the next-state logic and the state flip-flop in the same always block. This is a
+    # coding-style rule, not a functional problem, in a deprecated file used by MXCore.
+    df = df[~((df.rule == 'STARC05-2.11.3.1') &
+              (df.file.str.contains(r'hwpe_ctrl_slave\.sv')) &
+              (df.message.str.contains(r'hwpe_ctrl_slave\.(?:running|context)_state')))]
+    print(f'Ignore STARC05-2.11.3.1 for the FSMs of hwpe_ctrl_slave. {len(df)} messages remaining.')
+
     # In redundancy_cells/rtl/hsiao_ecc/hsiao_ecc_pkg.sv:64, `!needed` is used on an int unsigned
     # loop counter of an elaboration-time function (ideal_fanin), i.e. `needed == 0`. Harmless.
     # Waived here and not per tile: the package is analyzed but is in no tile file list.
