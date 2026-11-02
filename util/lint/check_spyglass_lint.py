@@ -322,14 +322,16 @@ def main():
     # Restrict to the files owned by the requested tile
     if args.tile:
         files = tile_files(args.tile, args.tiles_dir)
-        df = df[df.file.map(lambda f: str(Path(f).resolve()) in files)]
+        # astype(bool): on an empty frame the mask is an object Series, which pandas would take as
+        # a column selection (dropping all columns) instead of a row filter
+        df = df[df.file.map(lambda f: str(Path(f).resolve()) in files).astype(bool)]
         print(f'Keep only violations in tile {args.tile}. {len(df)} messages remaining.')
 
     # Apply the file-scoped waivers reviewed for each tile, only to the files of that tile.
     # Without --tile, the waivers of all tiles apply.
     for tile in [args.tile] if args.tile else TILE_FILE_WAIVERS:
         files = tile_files(tile, args.tiles_dir)
-        in_tile = df.file.map(lambda f: str(Path(f).resolve()) in files)
+        in_tile = df.file.map(lambda f: str(Path(f).resolve()) in files).astype(bool)
         for rule, pattern in TILE_FILE_WAIVERS.get(tile, []):
             df = df[~(in_tile.reindex(df.index) & (df.rule == rule) & df.file.str.contains(pattern))]
         print(f'Apply file waivers of tile {tile}. {len(df)} messages remaining.')
