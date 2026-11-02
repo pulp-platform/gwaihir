@@ -260,6 +260,12 @@ def main():
               (df.message.str.contains(r"Variable 'issue_req_i\.")))]
     print(f'Ignore W123 on issue_req_i in spatz_fpu_sequencer. {len(df)} messages remaining.')
 
+    # Ignore the W123 summary row pointing to SignalUsageReport.rpt. It is not a finding: Spyglass
+    # adds it whenever any W123 exists, waived or not and it then results as an error.
+    df = df[~((df.rule == 'W123') &
+              (df.file.str.contains(r'SignalUsageReport\.rpt')))]
+    print(f'Ignore the W123 pointer to SignalUsageReport.rpt. {len(df)} messages remaining.')
+
     # Ignore the width mismatch between the case labels and the selector in the FlooNoC reduction
     # arbiter. The labels are the (narrower) reserved opcodes: SystemVerilog zero-extends them to
     # the selector width, so the comparison is correct.
