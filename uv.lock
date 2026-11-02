@@ -543,7 +543,7 @@ wheels = [
 [[package]]
 name = "floogen"
 version = "0.9.0"
-source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=main#6ea0648407e7d989b7ec3a1ce6eaa2045b7cd114" }
+source = { git = "https://github.com/pulp-platform/FlooNoC.git?rev=main#0332d3995c95f4af7f197e29203962195ec360dd" }
 dependencies = [
     { name = "mako" },
     { name = "networkx" },

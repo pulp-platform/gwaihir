@@ -203,9 +203,9 @@ module gwaihir_top
   ///////////////////
 
   // TODO(fischeti): Connect the interrupt signals
-  logic [iomsb(NumIrqCtxts*CheshireCfg.NumExtIrqHarts):0] xeip_ext;
-  logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] mtip_ext;
-  logic [            iomsb(CheshireCfg.NumExtIrqHarts):0] msip_ext;
+  logic [iomsb(int'(NumIrqCtxts*CheshireCfg.NumExtIrqHarts)):0] xeip_ext;
+  logic [            iomsb(int'(CheshireCfg.NumExtIrqHarts)):0] mtip_ext;
+  logic [            iomsb(int'(CheshireCfg.NumExtIrqHarts)):0] msip_ext;
 
   localparam id_t CheshireId = CollectiveSam[CheshireInternalSamIdx].idx.id;
   localparam id_t CheshirePhysicalId = SamPhysical[CheshireInternalSamIdx].idx;

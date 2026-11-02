@@ -317,7 +317,7 @@ package gwaihir_pkg;
 
   // Returns the address size of a FlooNoC endpoint
   function automatic int unsigned ep_addr_size(sam_idx_e ep);
-    return Sam[ep].end_addr - Sam[ep].start_addr;
+    return int'(Sam[ep].end_addr - Sam[ep].start_addr);
   endfunction
 
   /////////////////
