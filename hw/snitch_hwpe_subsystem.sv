@@ -324,6 +324,8 @@ module snitch_hwpe_subsystem
       .Bandwidth         (DmaDataWidth),
       .NumCores          (NrCores),
       .MisalignedAccesses(MisalignedAccesses),
+      // No H tile workload uses the im2col unit.
+      .EnableIm2col      (1'b0),
       .HCI_SIZE_tcdm     (HCISizeDma)
     ) i_datamover_top (
       .clk_i      (hwpe_clk[DmaPort]),
