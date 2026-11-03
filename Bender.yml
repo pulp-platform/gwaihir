@@ -136,6 +136,7 @@ sources:
       - .generated/hw
       - target/sim/include
     files:
+      - target/sim/src/gwaihir_memctrl.sv
       - target/sim/src/fixture_gwaihir_top.sv
       - target/sim/src/tb_gwaihir_top.sv
 
