@@ -476,11 +476,24 @@ module ucie_tile
     .hwif_out(hwif_out)
   );
 
+  // An access to a domain that is off is answered with an error.
+  logic slink_apb_avail, ucie_apb_avail;
+  assign slink_apb_avail = clk_rst_bypass_i | (hwif_out.clk.en.value & hwif_out.rst_axi.n.value);
+  assign ucie_apb_avail  = clk_rst_bypass_i | (hwif_out.clk.en.value & hwif_out.rst_apb.n.value);
+
+  logic slink_apb_pready, slink_apb_pslverr;
+  ucie_cfg_reg_data_t slink_apb_prdata;
+
+  assign cfg_apb_rsp[ApbSlink].pready  = slink_apb_avail ? slink_apb_pready :
+                                                           cfg_apb_req[ApbSlink].penable;
+  assign cfg_apb_rsp[ApbSlink].prdata = slink_apb_avail ? slink_apb_prdata : '0;
+  assign cfg_apb_rsp[ApbSlink].pslverr = slink_apb_avail ? slink_apb_pslverr : 1'b1;
+
   // SLink configuration registers.
   ucie_slink_reg i_serial_link_reg (
     .clk          (tile_clk),
     .arst_n       (tile_rst_n),
-    .s_apb_psel   (cfg_apb_req[ApbSlink].psel),
+    .s_apb_psel   (cfg_apb_req[ApbSlink].psel & slink_apb_avail),
     .s_apb_penable(cfg_apb_req[ApbSlink].penable),
     .s_apb_pwrite (cfg_apb_req[ApbSlink].pwrite),
     .s_apb_pprot  (cfg_apb_req[ApbSlink].pprot),
@@ -488,9 +501,9 @@ module ucie_tile
     .s_apb_paddr  (cfg_apb_req[ApbSlink].paddr[UCIE_SLINK_REG_MIN_ADDR_WIDTH-1:0]),
     .s_apb_pwdata (cfg_apb_req[ApbSlink].pwdata),
     .s_apb_pstrb  (cfg_apb_req[ApbSlink].pstrb),
-    .s_apb_pready (cfg_apb_rsp[ApbSlink].pready),
-    .s_apb_prdata (cfg_apb_rsp[ApbSlink].prdata),
-    .s_apb_pslverr(cfg_apb_rsp[ApbSlink].pslverr),
+    .s_apb_pready (slink_apb_pready),
+    .s_apb_prdata (slink_apb_prdata),
+    .s_apb_pslverr(slink_apb_pslverr),
     .hwif_in      (slink_hw2reg),
     .hwif_out     (slink_reg2hw)
   );
@@ -843,24 +856,28 @@ module ucie_tile
 
   // APB crossing to the macro clock
   logic ucie_apb_busy_d, ucie_apb_busy_q;
-  logic ucie_apb_src_req_valid, ucie_apb_src_req_ready;
+  logic ucie_apb_src_req_valid, ucie_apb_src_req_ready, ucie_apb_src_err;
   logic ucie_apb_src_rsp_valid;
   logic ucie_apb_dst_req_valid, ucie_apb_dst_done;
   logic               ucie_apb_access_q;
   ucie_cfg_apb_resp_t ucie_apb_src_rsp;
 
   // Source side: forward the access phase, then hold off `pready` until the
-  // response is back. One transfer in flight at a time.
+  // response is back. One transfer in flight at a time. While the macro domain
+  // is off, the access is answered with an error and not forwarded.
   assign ucie_apb_src_req_valid = cfg_apb_req[ApbUcie].psel & cfg_apb_req[ApbUcie].penable &
-                                  ~ucie_apb_busy_q;
+                                  ~ucie_apb_busy_q & ucie_apb_avail;
+  assign ucie_apb_src_err = cfg_apb_req[ApbUcie].psel & cfg_apb_req[ApbUcie].penable &
+                            ~ucie_apb_busy_q & ~ucie_apb_avail;
   // Busy from the request push until the response pop
   assign ucie_apb_busy_d = ucie_apb_busy_q ? ~ucie_apb_src_rsp_valid :
                                              (ucie_apb_src_req_valid & ucie_apb_src_req_ready);
   `FF(ucie_apb_busy_q, ucie_apb_busy_d, 1'b0, clk_i, tile_rst_apb_n)
 
-  assign cfg_apb_rsp[ApbUcie].pready  = ucie_apb_busy_q & ucie_apb_src_rsp_valid;
-  assign cfg_apb_rsp[ApbUcie].prdata  = ucie_apb_src_rsp.prdata;
-  assign cfg_apb_rsp[ApbUcie].pslverr = ucie_apb_src_rsp.pslverr;
+  assign cfg_apb_rsp[ApbUcie].pready = (ucie_apb_busy_q & ucie_apb_src_rsp_valid) |
+                                      ucie_apb_src_err;
+  assign cfg_apb_rsp[ApbUcie].prdata = ucie_apb_src_err ? '0 : ucie_apb_src_rsp.prdata;
+  assign cfg_apb_rsp[ApbUcie].pslverr = ucie_apb_src_err | ucie_apb_src_rsp.pslverr;
 
   // Only the request handshake crosses here
   cc_isochronous_spill_register #(
