@@ -144,6 +144,8 @@ module ucie_tile
   // Chimney //
   /////////////
 
+  floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_chim_out_req;
+  floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_chim_out_rsp;
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t axi_narrow_out_req;
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_out_rsp;
   floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req;
@@ -167,7 +169,8 @@ module ucie_tile
     .collect_op_t        (floo_gwaihir_noc_pkg::collect_op_t),
     .WideRwDecouple      (floo_gwaihir_noc_pkg::WideRwDecouple),
     .VcImpl              (VcImpl),
-    .MaxAtomicTxns       (3),                                           // TODO: CHECK
+    // ATOPs are rejected by the filter below, they are never executed here
+    .MaxAtomicTxns       (1),
     .Sam                 (floo_gwaihir_noc_pkg::Sam),
     .id_t                (floo_gwaihir_noc_pkg::id_t),
     .rob_idx_t           (floo_gwaihir_noc_pkg::rob_idx_t),
@@ -196,8 +199,8 @@ module ucie_tile
     // AXI Narrow channels: no narrow ingress for this tile
     .axi_narrow_in_req_i ('0),
     .axi_narrow_in_rsp_o (),
-    .axi_narrow_out_req_o(axi_narrow_out_req),
-    .axi_narrow_out_rsp_i(axi_narrow_out_rsp),
+    .axi_narrow_out_req_o(axi_narrow_chim_out_req),
+    .axi_narrow_out_rsp_i(axi_narrow_chim_out_rsp),
     // AXI wide channels:
     // - Ingress: from the other chiplet (serializer)
     // - Egress: towards the other chiplet (nw join -> serializer)
@@ -213,10 +216,26 @@ module ucie_tile
     .floo_wide_i         (router_floo_wide_out[Eject])
   );
 
+  // Neither the cfg registers nor the UCIe link support ATOPs: reject them with
+  // an error right at the chimney, so nothing downstream ever sees one
+  axi_atop_filter #(
+    .AxiIdWidth     ($bits(axi_narrow_out_id_t)),
+    .AxiMaxWriteTxns(4),                           // MaxSlvTrans of the narrow xbar
+    .axi_req_t      (axi_narrow_out_req_t),
+    .axi_resp_t     (axi_narrow_out_rsp_t)
+  ) i_chim_narrow_atop_filter (
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
+    .slv_req_i (axi_narrow_chim_out_req),
+    .slv_resp_o(axi_narrow_chim_out_rsp),
+    .mst_req_o (axi_narrow_out_req),
+    .mst_resp_i(axi_narrow_out_rsp)
+  );
+
   // Translate ingress addresses to their canonical form
   // The serial link carries the join type (AxiCfgUcieJoin), not the chimney types:
-  // - user: 1 bit. On egress the narrow user (6 bits) is cut to bit 0 at the ATOP
-  //   filter; the wide user is 1 bit. The chimney ignores it, as collectives are
+  // - user: 1 bit. On egress the narrow user (6 bits) is cut to bit 0 before the
+  //   join; the wide user is 1 bit. The chimney ignores it, as collectives are
   //   off (RouteCfgNoMcast); enabling them over UCIe needs a real transport.
   // - id: narrow 2 -> 1 bit (iw converter), plus 1 bit added by the join to
   //   select narrow or wide; converted back to the chimney wide-in width below.
@@ -336,7 +355,7 @@ module ucie_tile
 
   axi_xbar #(
     .Cfg          (AxiNarrowXbarCfg),
-    .ATOPs        ('0),
+    .ATOPs        ('0),                        // filtered at the chimney
     .Connectivity ('1),
     .slv_aw_chan_t(axi_narrow_out_aw_chan_t),
     .mst_aw_chan_t(axi_narrow_out_aw_chan_t),
@@ -371,7 +390,7 @@ module ucie_tile
     .axi_resp_t(axi_narrow_out_rsp_t),
     .Resp      (axi_pkg::RESP_SLVERR),
     .RespData  ('0),
-    .ATOPs     (1'b1),
+    .ATOPs     (1'b0),
     .MaxTrans  (1)
   ) i_narrow_err_slv (
     .clk_i     (clk_i),
@@ -589,14 +608,11 @@ module ucie_tile
 
   axi_narrow_iw_out_req_t axi_narrow_iw_out_req;
   axi_narrow_iw_out_rsp_t axi_narrow_iw_out_rsp;
-  axi_narrow_iw_out_req_t axi_narrow_atop_filtered_req;
-  axi_narrow_iw_out_rsp_t axi_narrow_atop_filtered_rsp;
 
   axi_narrow_noatop_out_req_t axi_narrow_noatop_out_req;
   axi_narrow_noatop_out_rsp_t axi_narrow_noatop_out_rsp;
 
   // Convert incoming narrow ID to 1 bit to avoid serialization deadlock in SLink
-  // and get rid of user bit as well, i.e. no ATOp support through UCIe
   axi_iw_converter #(
     .AxiSlvPortIdWidth     (AxiCfgN.OutIdWidth),               // Chimney Output ID
     .AxiMstPortIdWidth     ($bits(no_outstanding_id_t)),       // ID of the chimney's input port
@@ -621,27 +637,11 @@ module ucie_tile
     .mst_resp_i(axi_narrow_iw_out_rsp)
   );
 
-  // UCIe/serial-link transport supports ordinary AXI traffic only. Reject any
-  // narrow ATOPs in a protocol-compliant way before stripping the user field.
-  axi_atop_filter #(
-    .AxiIdWidth     ($bits(no_outstanding_id_t)),
-    .AxiMaxWriteTxns(32),
-    .axi_req_t      (axi_narrow_iw_out_req_t),
-    .axi_resp_t     (axi_narrow_iw_out_rsp_t)
-  ) i_chim2nw_narrow_atop_filter (
-    .clk_i     (tile_clk),
-    .rst_ni    (tile_rst_n),
-    .slv_req_i (axi_narrow_iw_out_req),
-    .slv_resp_o(axi_narrow_iw_out_rsp),
-    .mst_req_o (axi_narrow_atop_filtered_req),
-    .mst_resp_i(axi_narrow_atop_filtered_rsp)
-  );
-
-  // Strip the user field from the narrow AXI
+  // Strip the user field from the narrow AXI (ATOPs were filtered at the chimney)
   // Reuse the AXI STRUCT ASSIGN macro. Since the dst user is a logic,
   // the struct assign will truncate the field.
-  `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_atop_filtered_req)
-  `AXI_ASSIGN_RESP_STRUCT(axi_narrow_atop_filtered_rsp, axi_narrow_noatop_out_rsp)
+  `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_iw_out_req)
+  `AXI_ASSIGN_RESP_STRUCT(axi_narrow_iw_out_rsp, axi_narrow_noatop_out_rsp)
 
   // Wide egress: to the join, or to an error slave while the tile AXI domain is
   // off. The demux keeps the transactions of one ID on the same port.
