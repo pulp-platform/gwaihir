@@ -150,7 +150,6 @@ module ucie_tile
   floo_gwaihir_noc_pkg::axi_wide_in_req_t axi_wide_req_iw_conv;
   floo_gwaihir_noc_pkg::axi_wide_in_rsp_t axi_wide_rsp_iw_conv;
 
-
   floo_nw_chimney #(
     .AxiCfgN             (floo_gwaihir_noc_pkg::AxiCfgN),
     .AxiCfgW             (floo_gwaihir_noc_pkg::AxiCfgW),
@@ -193,7 +192,7 @@ module ucie_tile
     .axi_narrow_out_req_o(axi_narrow_out_req),
     .axi_narrow_out_rsp_i(axi_narrow_out_rsp),
     // AXI wide channels:
-    // - Ingress: from the other chiplet (serailizer)
+    // - Ingress: from the other chiplet (serializer)
     // - Egress: towards the other chiplet (nw join -> serializer)
     .axi_wide_in_req_i   (axi_wide_in_req),
     .axi_wide_in_rsp_o   (axi_wide_rsp_iw_conv),
@@ -208,9 +207,12 @@ module ucie_tile
   );
 
   // Translate ingress addresses to their canonical form
-  // TODO (lleone): The output of serializer has different types from chimney:
-  // - user field: narrow = 5, wide = 1
-  // - id field: narrow = look into noc fg, weird values.
+  // The serial link carries the join type (AxiCfgUcieJoin), not the chimney types:
+  // - user: 1 bit. On egress the narrow user (6 bits) is cut to bit 0 at the ATOP
+  //   filter; the wide user is 1 bit. The chimney ignores it, as collectives are
+  //   off (RouteCfgNoMcast); enabling them over UCIe needs a real transport.
+  // - id: narrow 2 -> 1 bit (iw converter), plus 1 bit added by the join to
+  //   select narrow or wide; converted back to the chimney wide-in width below.
   always_comb begin
     axi_wide_in_req         = axi_wide_req_iw_conv;
     axi_wide_in_req.aw.addr = unalias_ucie_address(axi_wide_req_iw_conv.aw.addr, ucie_id_i);
@@ -497,7 +499,8 @@ module ucie_tile
     .s_apb_penable(cfg_apb_req[ApbSlink].penable),
     .s_apb_pwrite (cfg_apb_req[ApbSlink].pwrite),
     .s_apb_pprot  (cfg_apb_req[ApbSlink].pprot),
-    // TODO (lleone): Check if the address bits are correct since in the type definition was 48b
+    // paddr is the full 48-bit address: the low bits are the offset, as the
+    // window is aligned to 4 KiB (it aliases every 256 B within it)
     .s_apb_paddr  (cfg_apb_req[ApbSlink].paddr[UCIE_SLINK_REG_MIN_ADDR_WIDTH-1:0]),
     .s_apb_pwdata (cfg_apb_req[ApbSlink].pwdata),
     .s_apb_pstrb  (cfg_apb_req[ApbSlink].pstrb),
