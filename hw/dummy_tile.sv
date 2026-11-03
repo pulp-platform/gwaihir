@@ -82,8 +82,9 @@ module dummy_tile
   assign floo_wide_o[West:North]         = router_floo_wide_out[West:North];
 
   // Tie the router’s Eject input ports to 0
-  assign router_floo_req_in[Eject] = '0;
-  assign router_floo_rsp_in[Eject] = '0;
+  assign router_floo_req_in[Eject]  = '0;
+  assign router_floo_rsp_in[Eject]  = '0;
+  assign router_floo_wide_in[Eject] = '0;
 
 
 endmodule : dummy_tile

@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
-    "floogen>=0.8.1",
+    "floogen>=0.9.0",
     "peakrdl>=1.5.0",
     "peakrdl-rawheader>=0.2.5",
     "snitch[kernels]",
