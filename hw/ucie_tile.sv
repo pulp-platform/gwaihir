@@ -128,8 +128,6 @@ module ucie_tile
     .offload_narrow_rsp_i('0)
   );
 
-  // Connect all 4 mesh directions; the ucie_tile_left/right wrappers handle the
-  // boundary tie-offs
   assign floo_req_o                      = router_floo_req_out[West:North];
   assign router_floo_req_in[West:North]  = floo_req_i;
   assign floo_rsp_o                      = router_floo_rsp_out[West:North];
@@ -837,12 +835,7 @@ module ucie_tile
     .clk_o         (ucie_apb_clk)
   );
 
-  // APB crossing to the macro clock. `ucie_apb_clk` is derived from `clk_i`
-  // with an integer ratio, so the two isochronous spill registers need no
-  // synchronizers: STA times all paths between the two clocks. Both sides are
-  // on the APB reset so the spill register pointers reset together. The
-  // request fields need no copy: the APB master holds them stable until
-  // `pready`, which comes back only after the macro has completed the transfer.
+  // APB crossing to the macro clock
   logic ucie_apb_busy_d, ucie_apb_busy_q;
   logic ucie_apb_src_req_valid, ucie_apb_src_req_ready;
   logic ucie_apb_src_rsp_valid;
