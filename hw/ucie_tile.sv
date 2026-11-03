@@ -85,6 +85,11 @@ module ucie_tile
   // Clock/rst configuration registers.
   gw_ucie_tile_regs_pkg::gw_ucie_tile_regs__out_t hwif_out;
 
+  // The tile AXI domain (tile_clk, tile_rst_n) is clocked and out of reset.
+  // While it is off, accesses to it are answered with an error.
+  logic tile_axi_avail;
+  assign tile_axi_avail = clk_rst_bypass_i | (hwif_out.clk.en.value & hwif_out.rst_axi.n.value);
+
   // Slink interface
   logic [NumChannels-1:0][NumBitsPerCycle-1:0] slink_phy_data_out;
   logic [NumChannels-1:0]                      slink_phy_data_out_valid;
@@ -143,6 +148,8 @@ module ucie_tile
   floo_gwaihir_noc_pkg::axi_narrow_out_rsp_t axi_narrow_out_rsp;
   floo_gwaihir_noc_pkg::axi_wide_in_req_t    axi_wide_in_req;
   floo_gwaihir_noc_pkg::axi_wide_in_rsp_t    axi_wide_in_rsp;
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_chim_out_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_chim_out_rsp;
   floo_gwaihir_noc_pkg::axi_wide_out_req_t   axi_wide_out_req;
   floo_gwaihir_noc_pkg::axi_wide_out_rsp_t   axi_wide_out_rsp;
 
@@ -196,8 +203,8 @@ module ucie_tile
     // - Egress: towards the other chiplet (nw join -> serializer)
     .axi_wide_in_req_i   (axi_wide_in_req),
     .axi_wide_in_rsp_o   (axi_wide_rsp_iw_conv),
-    .axi_wide_out_req_o  (axi_wide_out_req),
-    .axi_wide_out_rsp_i  (axi_wide_out_rsp),
+    .axi_wide_out_req_o  (axi_wide_chim_out_req),
+    .axi_wide_out_rsp_i  (axi_wide_chim_out_rsp),
     .floo_req_o          (router_floo_req_in[Eject]),
     .floo_rsp_o          (router_floo_rsp_in[Eject]),
     .floo_wide_o         (router_floo_wide_in[Eject]),
@@ -248,12 +255,13 @@ module ucie_tile
   // Narrow XBAR //
   /////////////////
 
-  typedef enum logic {
-    JOIN     = 1'b0,
-    LITE_CFG = 1'b1
+  typedef enum logic [1:0] {
+    JOIN     = 2'd0,
+    LITE_CFG = 2'd1,
+    ERR      = 2'd2
   } ucie_xbar_sel_e;
 
-  localparam int unsigned NumUcieXbarMstPorts = 2;
+  localparam int unsigned NumUcieXbarMstPorts = 3;
   // Tile cfg, serial link cfg and UCIe PCS cfg (LITE_CFG), plus the join path
   localparam int unsigned NumUcieXbarRules = 4;
 
@@ -315,7 +323,12 @@ module ucie_tile
               start_addr: Sam[int'(samidx_i)+UcieCfgIdxOffset].start_addr,
               end_addr  : Sam[int'(samidx_i)+UcieCfgIdxOffset].end_addr
           },
-          '{idx: JOIN, start_addr: Sam[samidx_i].start_addr, end_addr  : Sam[samidx_i].end_addr}
+          // The join path is in the tile AXI domain: error while it is off
+          '{
+              idx: tile_axi_avail ? JOIN : ERR,
+              start_addr: Sam[samidx_i].start_addr,
+              end_addr  : Sam[samidx_i].end_addr
+          }
       };
 
   floo_gwaihir_noc_pkg::axi_narrow_out_req_t [NumUcieXbarMstPorts-1:0] axi_narrow_xbar_out_req;
@@ -349,6 +362,22 @@ module ucie_tile
     .addr_map_i           (tile_addrmap),
     .en_default_mst_port_i(1'b0),
     .default_mst_port_i   ('0)
+  );
+
+  // Narrow accesses to the join path while the tile AXI domain is off
+  axi_err_slv #(
+    .AxiIdWidth($bits(axi_narrow_out_id_t)),
+    .axi_req_t (axi_narrow_out_req_t),
+    .axi_resp_t(axi_narrow_out_rsp_t),
+    .Resp      (axi_pkg::RESP_SLVERR),
+    .RespData  ('0),
+    .ATOPs     (1'b1),
+    .MaxTrans  (1)
+  ) i_narrow_err_slv (
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
+    .slv_req_i (axi_narrow_xbar_out_req[ERR]),
+    .slv_resp_o(axi_narrow_xbar_out_rsp[ERR])
   );
 
   ///////////////////////
@@ -480,7 +509,7 @@ module ucie_tile
 
   // An access to a domain that is off is answered with an error.
   logic slink_apb_avail, ucie_apb_avail;
-  assign slink_apb_avail = clk_rst_bypass_i | (hwif_out.clk.en.value & hwif_out.rst_axi.n.value);
+  assign slink_apb_avail = tile_axi_avail;
   assign ucie_apb_avail  = clk_rst_bypass_i | (hwif_out.clk.en.value & hwif_out.rst_apb.n.value);
 
   logic slink_apb_pready, slink_apb_pslverr;
@@ -613,6 +642,49 @@ module ucie_tile
   // the struct assign will truncate the field.
   `AXI_ASSIGN_REQ_STRUCT(axi_narrow_noatop_out_req, axi_narrow_atop_filtered_req)
   `AXI_ASSIGN_RESP_STRUCT(axi_narrow_atop_filtered_rsp, axi_narrow_noatop_out_rsp)
+
+  // Wide egress: to the join, or to an error slave while the tile AXI domain is
+  // off. The demux keeps the transactions of one ID on the same port.
+  floo_gwaihir_noc_pkg::axi_wide_out_req_t [1:0] axi_wide_out_demux_req;
+  floo_gwaihir_noc_pkg::axi_wide_out_rsp_t [1:0] axi_wide_out_demux_rsp;
+
+  axi_demux_simple #(
+    .AxiIdWidth (AxiCfgW.OutIdWidth),
+    .AtopSupport(1'b0),
+    .axi_req_t  (axi_wide_out_req_t),
+    .axi_resp_t (axi_wide_out_rsp_t),
+    .NoMstPorts (2),
+    .MaxTrans   (floo_pkg::ChimneyDefaultCfg.MaxTxns),
+    .AxiLookBits(AxiCfgW.OutIdWidth),
+    .UniqueIds  (1'b0)
+  ) i_wide_out_demux (
+    .clk_i          (clk_i),
+    .rst_ni         (rst_ni),
+    .slv_req_i      (axi_wide_chim_out_req),
+    .slv_aw_select_i(~tile_axi_avail),
+    .slv_ar_select_i(~tile_axi_avail),
+    .slv_resp_o     (axi_wide_chim_out_rsp),
+    .mst_reqs_o     (axi_wide_out_demux_req),
+    .mst_resps_i    (axi_wide_out_demux_rsp)
+  );
+
+  assign axi_wide_out_req          = axi_wide_out_demux_req[0];
+  assign axi_wide_out_demux_rsp[0] = axi_wide_out_rsp;
+
+  axi_err_slv #(
+    .AxiIdWidth(AxiCfgW.OutIdWidth),
+    .axi_req_t (axi_wide_out_req_t),
+    .axi_resp_t(axi_wide_out_rsp_t),
+    .Resp      (axi_pkg::RESP_SLVERR),
+    .RespData  ('0),
+    .ATOPs     (1'b0),
+    .MaxTrans  (1)
+  ) i_wide_err_slv (
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
+    .slv_req_i (axi_wide_out_demux_req[1]),
+    .slv_resp_o(axi_wide_out_demux_rsp[1])
+  );
 
   floo_nw_join #(
     .AxiCfgN         (axi_cfg_swap_iw(AxiCfgNoAtop)),
