@@ -753,7 +753,7 @@ module ucie_tile
   logic lp_valid, lp_irdy, pl_trdy, pl_valid;
   // RDI state reported by the macro. The link itself is brought up and managed
   // by the PCS through its registers (APB).
-  logic [3:0] pl_state_sts;
+  rdi_state_e pl_state_sts;
   logic       link_active;
   logic       link_en;
 
