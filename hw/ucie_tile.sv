@@ -748,6 +748,8 @@ module ucie_tile
   localparam int unsigned StreamWidth = NumChannels * NumBitsPerCycle;
   // The macro's APB space spans 0x0_0000-0x2_7FFF (18 bit); the SAM base is masked off
   localparam int unsigned UcieApbAddrWidth = 18;
+  // Register every RDI pin of the macro in the adapters
+  localparam bit CutRdi = 1'b1;
 
   logic [RdiDataWidth-1:0] lp_data, pl_data;
   logic lp_valid, lp_irdy, pl_trdy, pl_valid;
@@ -761,18 +763,18 @@ module ucie_tile
   // once the PCS is configured; while closed the serial link sees no traffic.
   assign link_en = slink_reg2hw.ctrl.clk_ena.value;
 
-  // Move data only while the link is ACTIVE
-  assign link_active = (pl_state_sts == RdiActive);
+  // Move data only while the link is ACTIVE. With `CutRdi` the state is
+  // registered like the RDI data, so it stays aligned with the registered RX
+  // words and gates TX from a flop.
+  rdi_state_e pl_state;
 
-  // TX copy of the gate, registered. `lp_valid` and `lp_irdy` are macro inputs:
-  // gating them with the macro output `pl_state_sts` through logic only made a
-  // macro-to-macro path that cannot meet timing (the macro's output delay plus
-  // its input setup exceed the clock period). So TX follows ACTIVE one cycle
-  // late, both entering and leaving it; `inp_ready` uses the same copy, so no
-  // beat is taken without `lp_valid`. RX keeps the direct gate (macro output to
-  // a register in the tile).
-  logic link_active_tx_q;
-  `FF(link_active_tx_q, link_active, 1'b0, tile_clk, tile_rst_n)
+  if (CutRdi) begin : gen_cut_rdi_state
+    `FF(pl_state, pl_state_sts, RdiReset, tile_clk, tile_rst_n)
+  end else begin : gen_no_cut_rdi_state
+    assign pl_state = pl_state_sts;
+  end
+
+  assign link_active = (pl_state == RdiActive);
 
   // TX: serializer stream -> RDI
   logic tx_rdi_ready;
@@ -780,8 +782,11 @@ module ucie_tile
   assign phy_out_ready = {NumChannels{tx_rdi_ready & link_en}};
 
   stream2rdi #(
-    .DataWidth(RdiDataWidth)
+    .DataWidth(RdiDataWidth),
+    .CutRdi   (CutRdi)
   ) i_stream2rdi (
+    .clk_i        (tile_clk),
+    .rst_ni       (tile_rst_n),
     .inp_data_i   (phy_out_data),
     .inp_valid_i  (phy_out_valid[0] & link_en),
     .inp_ready_o  (tx_rdi_ready),
@@ -789,7 +794,7 @@ module ucie_tile
     .lp_valid_o   (lp_valid),
     .lp_irdy_o    (lp_irdy),
     .pl_trdy_i    (pl_trdy),
-    .link_active_i(link_active_tx_q)
+    .link_active_i(link_active)
   );
 
   // RX: RDI -> serializer stream. RDI RX has no backpressure: `rdi2stream`
@@ -802,7 +807,8 @@ module ucie_tile
   assign rx_oup_ready = link_en ? phy_in_ready[0] : 1'b1;
 
   rdi2stream #(
-    .DataWidth(RdiDataWidth)
+    .DataWidth(RdiDataWidth),
+    .CutRdi   (CutRdi)
   ) i_rdi2stream (
     .clk_i          (tile_clk),
     .rst_ni         (tile_rst_n),

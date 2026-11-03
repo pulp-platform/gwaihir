@@ -5,7 +5,9 @@
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
 
 module rdi2stream #(
-  parameter int unsigned DataWidth = 256
+  parameter int unsigned DataWidth = 256,
+  /// Register the RDI inputs
+  parameter bit          CutRdi    = 1'b1
 ) (
   input  logic                 clk_i,
   input  logic                 rst_ni,
@@ -19,11 +21,35 @@ module rdi2stream #(
   output logic [         15:0] rx_drop_count_o
 );
 
+  logic [DataWidth-1:0] rdi_data;
+  logic                 rdi_valid;
+
+  if (CutRdi) begin : gen_cut
+    logic [DataWidth-1:0] rdi_data_q;
+    logic                 rdi_valid_q;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        rdi_data_q  <= '0;
+        rdi_valid_q <= 1'b0;
+      end else begin
+        rdi_valid_q <= pl_valid_i;
+        if (pl_valid_i) rdi_data_q <= pl_data_i;
+      end
+    end
+
+    assign rdi_data  = rdi_data_q;
+    assign rdi_valid = rdi_valid_q;
+  end else begin : gen_no_cut
+    assign rdi_data  = pl_data_i;
+    assign rdi_valid = pl_valid_i;
+  end
+
   logic [DataWidth-1:0] data_q;
   logic                 pend_q;
 
   wire drained = pend_q & oup_ready_i;
-  wire rx_in = pl_valid_i & link_active_i;
+  wire rx_in = rdi_valid & link_active_i;
   wire capture = rx_in & (~pend_q | drained);
   wire drop = rx_in & pend_q & ~drained;
 
@@ -32,7 +58,7 @@ module rdi2stream #(
       data_q <= '0;
       pend_q <= 1'b0;
     end else if (capture) begin
-      data_q <= pl_data_i;
+      data_q <= rdi_data;
       pend_q <= 1'b1;
     end else if (drained) begin
       pend_q <= 1'b0;
