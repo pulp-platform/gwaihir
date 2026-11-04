@@ -25,8 +25,16 @@ inline volatile snitch_cluster_t* snrt_cluster_alias() {
 
 // Must return a pointer to the snitch_cluster_t struct
 // of the cluster selected by cluster_idx.
+// snitch_cluster_t has the layout of the own tile type only.
+// Use gw_cluster() or gw_htile() for a tile of the other type.
 inline volatile snitch_cluster_t* snrt_cluster(int cluster_idx) {
-    return (volatile snitch_cluster_t*)&(gwaihir_addrmap_32b.cluster[cluster_idx]);
+#ifdef GW_HTILE_RUNTIME
+    if (cluster_idx != GW_HTILE_CLUSTER_IDX) __builtin_trap();
+    return gw_htile();
+#else
+    if ((unsigned)cluster_idx >= GW_HTILE_CLUSTER_IDX) __builtin_trap();
+    return gw_cluster(cluster_idx);
+#endif
 }
 
 // Must return a pointer to the snitch_cluster_t struct
