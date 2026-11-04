@@ -931,28 +931,41 @@ module ucie_tile
 
   // APB crossing to the macro clock
   logic ucie_apb_busy_d, ucie_apb_busy_q;
-  logic ucie_apb_src_req_valid, ucie_apb_src_req_ready, ucie_apb_src_err;
+  logic ucie_apb_src_req_valid, ucie_apb_src_req_ready;
   logic ucie_apb_src_rsp_valid;
   logic ucie_apb_dst_req_valid, ucie_apb_dst_done;
-  logic               ucie_apb_access_q;
-  ucie_cfg_apb_resp_t ucie_apb_src_rsp;
+  logic ucie_apb_access_d, ucie_apb_access_q;
+  ucie_cfg_apb_resp_t ucie_apb_src_rsp, ucie_apb_cfg_rsp;
 
   // Source side: forward the access phase, then hold off `pready` until the
   // response is back. One transfer in flight at a time. While the macro domain
   // is off, the access is answered with an error and not forwarded.
-  assign ucie_apb_src_req_valid = cfg_apb_req[ApbUcie].psel & cfg_apb_req[ApbUcie].penable &
-                                  ~ucie_apb_busy_q & ucie_apb_avail;
-  assign ucie_apb_src_err = cfg_apb_req[ApbUcie].psel & cfg_apb_req[ApbUcie].penable &
-                            ~ucie_apb_busy_q & ~ucie_apb_avail;
-  // Busy from the request push until the response pop
-  assign ucie_apb_busy_d = ucie_apb_busy_q ? ~ucie_apb_src_rsp_valid :
-                                             (ucie_apb_src_req_valid & ucie_apb_src_req_ready);
-  `FF(ucie_apb_busy_q, ucie_apb_busy_d, 1'b0, clk_i, tile_rst_apb_n)
+  always_comb begin
+    ucie_apb_src_req_valid  = 1'b0;
+    ucie_apb_busy_d         = ucie_apb_busy_q;
+    ucie_apb_cfg_rsp        = ucie_apb_src_rsp;
+    ucie_apb_cfg_rsp.pready = 1'b0;
+    if (ucie_apb_busy_q) begin
+      // Complete the transfer when the response is back
+      ucie_apb_cfg_rsp.pready = ucie_apb_src_rsp_valid;
+      ucie_apb_busy_d         = ~ucie_apb_src_rsp_valid;
+    end else if (cfg_apb_req[ApbUcie].psel && cfg_apb_req[ApbUcie].penable) begin
+      if (ucie_apb_avail) begin
+        // Forward the access, busy once the request is pushed
+        ucie_apb_src_req_valid = 1'b1;
+        ucie_apb_busy_d        = ucie_apb_src_req_ready;
+      end else begin
+        ucie_apb_cfg_rsp = '{pready: 1'b1, prdata: '0, pslverr: 1'b1};
+      end
+    end
+  end
 
-  assign cfg_apb_rsp[ApbUcie].pready = (ucie_apb_busy_q & ucie_apb_src_rsp_valid) |
-                                      ucie_apb_src_err;
-  assign cfg_apb_rsp[ApbUcie].prdata = ucie_apb_src_err ? '0 : ucie_apb_src_rsp.prdata;
-  assign cfg_apb_rsp[ApbUcie].pslverr = ucie_apb_src_err | ucie_apb_src_rsp.pslverr;
+  always_ff @(posedge clk_i or negedge tile_rst_apb_n) begin
+    if (!tile_rst_apb_n) ucie_apb_busy_q <= 1'b0;
+    else ucie_apb_busy_q <= ucie_apb_busy_d;
+  end
+
+  assign cfg_apb_rsp[ApbUcie] = ucie_apb_cfg_rsp;
 
   // Only the request handshake crosses here
   cc_isochronous_spill_register #(
@@ -972,14 +985,18 @@ module ucie_tile
 
   // Destination side: replay the transfer with its setup and access phases
   // and push the response back on `pready`
-  assign ucie_apb_dst_done = ucie_apb_access_q & ucie_apb_rsp.pready;
-  `FF(ucie_apb_access_q, ucie_apb_dst_req_valid & ~ucie_apb_dst_done, 1'b0, ucie_apb_clk,
-      tile_rst_apb_n)
-
   always_comb begin
     ucie_apb_req         = cfg_apb_req[ApbUcie];
     ucie_apb_req.psel    = ucie_apb_dst_req_valid;
     ucie_apb_req.penable = ucie_apb_access_q;
+    // Setup phase for one cycle, then access phase until `pready`
+    ucie_apb_dst_done    = ucie_apb_access_q & ucie_apb_rsp.pready;
+    ucie_apb_access_d    = ucie_apb_dst_req_valid & ~ucie_apb_dst_done;
+  end
+
+  always_ff @(posedge ucie_apb_clk or negedge tile_rst_apb_n) begin
+    if (!tile_rst_apb_n) ucie_apb_access_q <= 1'b0;
+    else ucie_apb_access_q <= ucie_apb_access_d;
   end
 
   cc_isochronous_spill_register #(
