@@ -36,8 +36,8 @@
         dma_req_fifo_depth: 8,
         // Elaborates the iDMA compute path (DMOPC) in the inst64 frontend of every cluster but the H tile
         dma_enable_compute: ${"false" if name == "htile" else "true"},
-        // Half duplex transpose: one tile bank, as big as the datamover's matrix
-        dma_compute_transpose: true,
+        // Half duplex transpose: one tile bank, as big as the datamover's matrix. Off on the H tile.
+        dma_compute_transpose: ${"false" if name == "htile" else "true"},
         dma_compute_transpose_full_duplex: false,
         narrow_trans: 4,
         wide_trans: 32,
