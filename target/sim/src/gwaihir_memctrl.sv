@@ -66,13 +66,33 @@ module gwaihir_memctrl
   floo_rsp_t [Eject:North] router_x3y4_floo_rsp_out, router_x3y4_floo_rsp_in;
   floo_wide_t [Eject:North] router_x3y4_floo_wide_in, router_x3y4_floo_wide_out;
 
-  // Cheshire feed-through
-  assign memctrl_external_floo_req_south_o   = cheshire_external_floo_req_south_i;
-  assign cheshire_external_floo_rsp_south_o  = memctrl_external_floo_rsp_south_i;
-  assign memctrl_external_floo_wide_south_o  = cheshire_external_floo_wide_south_i;
-  assign cheshire_external_floo_req_south_o  = memctrl_external_floo_req_south_i;
-  assign memctrl_external_floo_rsp_south_o   = cheshire_external_floo_rsp_south_i;
-  assign cheshire_external_floo_wide_south_o = memctrl_external_floo_wide_south_i;
+  // Cheshire feed-through, cut with one spill register stage per direction
+  floo_nw_cut #(
+    .AxiCfgN       (AxiCfgN),
+    .AxiCfgW       (AxiCfgW),
+    .NumCuts       (FeedthroughCut),
+    .WideRwDecouple(WideRwDecouple),
+    .VcImpl        (VcImpl),
+    .hdr_t         (hdr_t),
+    .floo_req_t    (floo_req_t),
+    .floo_rsp_t    (floo_rsp_t),
+    .floo_wide_t   (floo_wide_t)
+  ) i_cheshire_feedthrough_cut (
+    .clk_i,
+    .rst_ni,
+    .floo_req_a_i (cheshire_external_floo_req_south_i),
+    .floo_req_a_o (cheshire_external_floo_req_south_o),
+    .floo_rsp_a_i (cheshire_external_floo_rsp_south_i),
+    .floo_rsp_a_o (cheshire_external_floo_rsp_south_o),
+    .floo_wide_a_i(cheshire_external_floo_wide_south_i),
+    .floo_wide_a_o(cheshire_external_floo_wide_south_o),
+    .floo_req_b_i (memctrl_external_floo_req_south_i),
+    .floo_req_b_o (memctrl_external_floo_req_south_o),
+    .floo_rsp_b_i (memctrl_external_floo_rsp_south_i),
+    .floo_rsp_b_o (memctrl_external_floo_rsp_south_o),
+    .floo_wide_b_i(memctrl_external_floo_wide_south_i),
+    .floo_wide_b_o(memctrl_external_floo_wide_south_o)
+  );
 
   // Dummy X3Y4 <--> Cheshire
   assign router_x3y4_floo_req_in[East]      = cheshire_external_floo_req_west_i;
