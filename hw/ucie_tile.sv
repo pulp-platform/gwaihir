@@ -434,23 +434,35 @@ module ucie_tile
     .mst_res_i(ucie_cfg_reg_lite_rsp)
   );
 
-  // Three APB slaves on the tile config port:
+  // Three address ranges on the tile config port:
   // 1. the clk/rst enable registers (tile_cfg SAM range)
   // 2. the Slink registers (axi_serial_cfg SAM range)
   // 3. the UCIe PCS macro APB (ucie_cfg SAM range).
-  // These ranges reach the LITE_CFG xbar port; split here by address.
-  localparam int unsigned NumCfgApbSlaves = 3;
+  // These ranges reach the LITE_CFG xbar port; split here by address. A fourth
+  // APB slave, the error slave, has no range: it is only reached when the
+  // domain of a range is off.
+  localparam int unsigned NumCfgApbRules = 3;
+  localparam int unsigned NumCfgApbSlaves = 4;
 
   typedef enum logic [1:0] {
     ApbSlink = 0,
     ApbTile  = 1,
-    ApbUcie  = 2
+    ApbUcie  = 2,
+    ApbErr   = 3
   } ucie_apb_sel_e;
 
-  addr_rule_t [NumCfgApbSlaves-1:0] CfgApbAddrMap;
+  // The Slink registers are in the tile AXI domain, the UCIe macro in the APB
+  // domain. Accesses to a domain that is off go to the error slave, so they
+  // complete with an error and the clk/rst registers stay reachable. The
+  // decode runs when a transfer starts and the APB master has one transfer at
+  // a time: the domain cannot change in between.
+  logic ucie_apb_avail;
+  assign ucie_apb_avail = clk_rst_bypass_i | (hwif_out.clk.en.value & hwif_out.rst_apb.n.value);
+
+  addr_rule_t [NumCfgApbRules-1:0] CfgApbAddrMap;
   always_comb begin
     CfgApbAddrMap[ApbSlink] = '{
-        idx       : ApbSlink,
+        idx       : tile_axi_avail ? ApbSlink : ApbErr,
         start_addr: Sam[int'(samidx_i)+AxiSerialCfgIdxOffset].start_addr,
         end_addr  : Sam[int'(samidx_i)+AxiSerialCfgIdxOffset].end_addr
     };
@@ -460,7 +472,7 @@ module ucie_tile
         end_addr  : Sam[int'(samidx_i)+TileCfgIdxOffset].end_addr
     };
     CfgApbAddrMap[ApbUcie] = '{
-        idx       : ApbUcie,
+        idx       : ucie_apb_avail ? ApbUcie : ApbErr,
         start_addr: Sam[int'(samidx_i)+UcieCfgIdxOffset].start_addr,
         end_addr  : Sam[int'(samidx_i)+UcieCfgIdxOffset].end_addr
     };
@@ -471,7 +483,7 @@ module ucie_tile
 
   axi_lite_to_apb #(
     .NoApbSlaves    (NumCfgApbSlaves),
-    .NoRules        (NumCfgApbSlaves),
+    .NoRules        (NumCfgApbRules),
     .AddrWidth      (AxiCfgN.AddrWidth),
     .DataWidth      (UcieCfgRegDataWidth),
     .axi_lite_req_t (ucie_cfg_axi_lite_32_req_t),
@@ -507,24 +519,20 @@ module ucie_tile
     .hwif_out(hwif_out)
   );
 
-  // An access to a domain that is off is answered with an error.
-  logic slink_apb_avail, ucie_apb_avail;
-  assign slink_apb_avail = tile_axi_avail;
-  assign ucie_apb_avail  = clk_rst_bypass_i | (hwif_out.clk.en.value & hwif_out.rst_apb.n.value);
-
-  logic slink_apb_pready, slink_apb_pslverr;
-  ucie_cfg_reg_data_t slink_apb_prdata;
-
-  assign cfg_apb_rsp[ApbSlink].pready  = slink_apb_avail ? slink_apb_pready :
-                                                           cfg_apb_req[ApbSlink].penable;
-  assign cfg_apb_rsp[ApbSlink].prdata = slink_apb_avail ? slink_apb_prdata : '0;
-  assign cfg_apb_rsp[ApbSlink].pslverr = slink_apb_avail ? slink_apb_pslverr : 1'b1;
+  // Accesses to a domain that is off
+  apb_err_slv #(
+    .req_t (ucie_cfg_apb_req_t),
+    .resp_t(ucie_cfg_apb_resp_t)
+  ) i_cfg_apb_err_slv (
+    .slv_req_i (cfg_apb_req[ApbErr]),
+    .slv_resp_o(cfg_apb_rsp[ApbErr])
+  );
 
   // SLink configuration registers.
   ucie_slink_reg i_serial_link_reg (
     .clk          (tile_clk),
     .arst_n       (tile_rst_n),
-    .s_apb_psel   (cfg_apb_req[ApbSlink].psel & slink_apb_avail),
+    .s_apb_psel   (cfg_apb_req[ApbSlink].psel),
     .s_apb_penable(cfg_apb_req[ApbSlink].penable),
     .s_apb_pwrite (cfg_apb_req[ApbSlink].pwrite),
     .s_apb_pprot  (cfg_apb_req[ApbSlink].pprot),
@@ -533,9 +541,9 @@ module ucie_tile
     .s_apb_paddr  (cfg_apb_req[ApbSlink].paddr[UCIE_SLINK_REG_MIN_ADDR_WIDTH-1:0]),
     .s_apb_pwdata (cfg_apb_req[ApbSlink].pwdata),
     .s_apb_pstrb  (cfg_apb_req[ApbSlink].pstrb),
-    .s_apb_pready (slink_apb_pready),
-    .s_apb_prdata (slink_apb_prdata),
-    .s_apb_pslverr(slink_apb_pslverr),
+    .s_apb_pready (cfg_apb_rsp[ApbSlink].pready),
+    .s_apb_prdata (cfg_apb_rsp[ApbSlink].prdata),
+    .s_apb_pslverr(cfg_apb_rsp[ApbSlink].pslverr),
     .hwif_in      (slink_hw2reg),
     .hwif_out     (slink_reg2hw)
   );
@@ -919,8 +927,7 @@ module ucie_tile
   ucie_cfg_apb_resp_t ucie_apb_src_rsp, ucie_apb_cfg_rsp;
 
   // Source side: forward the access phase, then hold off `pready` until the
-  // response is back. One transfer in flight at a time. While the macro domain
-  // is off, the access is answered with an error and not forwarded.
+  // response is back. One transfer in flight at a time.
   always_comb begin
     ucie_apb_src_req_valid  = 1'b0;
     ucie_apb_busy_d         = ucie_apb_busy_q;
@@ -931,13 +938,9 @@ module ucie_tile
       ucie_apb_cfg_rsp.pready = ucie_apb_src_rsp_valid;
       ucie_apb_busy_d         = ~ucie_apb_src_rsp_valid;
     end else if (cfg_apb_req[ApbUcie].psel && cfg_apb_req[ApbUcie].penable) begin
-      if (ucie_apb_avail) begin
-        // Forward the access, busy once the request is pushed
-        ucie_apb_src_req_valid = 1'b1;
-        ucie_apb_busy_d        = ucie_apb_src_req_ready;
-      end else begin
-        ucie_apb_cfg_rsp = '{pready: 1'b1, prdata: '0, pslverr: 1'b1};
-      end
+      // Forward the access, busy once the request is pushed
+      ucie_apb_src_req_valid = 1'b1;
+      ucie_apb_busy_d        = ucie_apb_src_req_ready;
     end
   end
 
