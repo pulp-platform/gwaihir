@@ -247,7 +247,7 @@ UCIE_COMMIT ?= 40ba5cfb8211d2949a1a7ce434ed8ba5f290b762
 UCIE_DIR = $(GW_ROOT)/.deps/ucie
 
 LPDDR_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/lpddr.git
-LPDDR_COMMIT ?= 29a2e49c2dac387c23c11da2e32d9774462e0485
+LPDDR_COMMIT ?= eab0c50fd805c6f75069126a721afe83c4fac6c9
 LPDDR_DIR = $(GW_ROOT)/.deps/lpddr
 
 TUM_NPU_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/tum_npu.git
