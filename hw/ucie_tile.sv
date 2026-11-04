@@ -274,15 +274,15 @@ module ucie_tile
   // Narrow XBAR //
   /////////////////
 
-  typedef enum logic [1:0] {
-    JOIN     = 2'd0,
-    LITE_CFG = 2'd1,
-    ERR      = 2'd2
+  typedef enum logic {
+    JOIN     = 1'b0,
+    LITE_CFG = 1'b1
   } ucie_xbar_sel_e;
 
-  localparam int unsigned NumUcieXbarMstPorts = 3;
-  // Tile cfg, serial link cfg and UCIe PCS cfg (LITE_CFG), plus the join path
-  localparam int unsigned NumUcieXbarRules = 4;
+  localparam int unsigned NumUcieXbarMstPorts = 2;
+  // Tile cfg, serial link cfg and UCIe PCS cfg (LITE_CFG). The join path is the
+  // default port.
+  localparam int unsigned NumUcieXbarRules = 3;
 
   localparam axi_pkg::xbar_cfg_t AxiNarrowXbarCfg = '{
       NoSlvPorts: 1,
@@ -325,7 +325,7 @@ module ucie_tile
   ucie_rule_t [NumUcieXbarRules-1:0] tile_addrmap;
   // 3 rules: the AXI-Lite config port serves both the Tile cfg regs (tile_cfg),
   // the Slink registers (axi_serial_cfg) and the UCIe PCS macro APB (ucie_cfg)
-  // -> all routed to LITE_CFG and demuxed downstream by axi_lite_to_apb; plus the join path.
+  // -> all routed to LITE_CFG and demuxed downstream by axi_lite_to_apb.
   assign tile_addrmap = '{
           '{
               idx: LITE_CFG,
@@ -341,12 +341,6 @@ module ucie_tile
               idx: LITE_CFG,
               start_addr: Sam[int'(samidx_i)+UcieCfgIdxOffset].start_addr,
               end_addr  : Sam[int'(samidx_i)+UcieCfgIdxOffset].end_addr
-          },
-          // The join path is in the tile AXI domain: error while it is off
-          '{
-              idx: tile_axi_avail ? JOIN : ERR,
-              start_addr: Sam[samidx_i].start_addr,
-              end_addr  : Sam[samidx_i].end_addr
           }
       };
 
@@ -379,24 +373,11 @@ module ucie_tile
     .mst_ports_req_o      (axi_narrow_xbar_out_req),
     .mst_ports_resp_i     (axi_narrow_xbar_out_rsp),
     .addr_map_i           (tile_addrmap),
-    .en_default_mst_port_i(1'b0),
-    .default_mst_port_i   ('0)
-  );
-
-  // Narrow accesses to the join path while the tile AXI domain is off
-  axi_err_slv #(
-    .AxiIdWidth($bits(axi_narrow_out_id_t)),
-    .axi_req_t (axi_narrow_out_req_t),
-    .axi_resp_t(axi_narrow_out_rsp_t),
-    .Resp      (axi_pkg::RESP_SLVERR),
-    .RespData  ('0),
-    .ATOPs     (1'b0),
-    .MaxTrans  (1)
-  ) i_narrow_err_slv (
-    .clk_i     (clk_i),
-    .rst_ni    (rst_ni),
-    .slv_req_i (axi_narrow_xbar_out_req[ERR]),
-    .slv_resp_o(axi_narrow_xbar_out_rsp[ERR])
+    // Everything outside the cfg ranges goes to the join path. The join is in
+    // the tile AXI domain: while it is off the default port is disabled and
+    // the xbar's decode-error slave answers.
+    .en_default_mst_port_i(tile_axi_avail),
+    .default_mst_port_i   (JOIN)
   );
 
   ///////////////////////
