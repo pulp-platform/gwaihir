@@ -70,7 +70,7 @@ module gwaihir_memctrl
   floo_nw_cut #(
     .AxiCfgN       (AxiCfgN),
     .AxiCfgW       (AxiCfgW),
-    .NumCuts       (1),
+    .NumCuts       (FeedthroughCut),
     .WideRwDecouple(WideRwDecouple),
     .VcImpl        (VcImpl),
     .hdr_t         (hdr_t),
