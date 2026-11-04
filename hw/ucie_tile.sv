@@ -220,7 +220,8 @@ module ucie_tile
   // an error right at the chimney, so nothing downstream ever sees one
   axi_atop_filter #(
     .AxiIdWidth     ($bits(axi_narrow_out_id_t)),
-    .AxiMaxWriteTxns(4),                           // MaxSlvTrans of the narrow xbar
+    // MaxSlvTrans of the narrow xbar
+    .AxiMaxWriteTxns(4),
     .axi_req_t      (axi_narrow_out_req_t),
     .axi_resp_t     (axi_narrow_out_rsp_t)
   ) i_chim_narrow_atop_filter (
@@ -349,7 +350,8 @@ module ucie_tile
 
   axi_xbar #(
     .Cfg          (AxiNarrowXbarCfg),
-    .ATOPs        ('0),                        // filtered at the chimney
+    // ATOPs are filtered at the chimney
+    .ATOPs        ('0),
     .Connectivity ('1),
     .slv_aw_chan_t(axi_narrow_out_aw_chan_t),
     .mst_aw_chan_t(axi_narrow_out_aw_chan_t),
@@ -821,7 +823,8 @@ module ucie_tile
   logic        link_rx_drop_err;
   logic [15:0] link_rx_drop_count;
 
-  localparam int unsigned RdiDataWidth = 256;  // RDI mainband width of the macro
+  // RDI mainband width of the macro
+  localparam int unsigned RdiDataWidth = 256;
   localparam int unsigned StreamWidth = NumChannels * NumBitsPerCycle;
   // The macro's APB space spans 0x0_0000-0x2_7FFF (18 bit); the SAM base is masked off
   localparam int unsigned UcieApbAddrWidth = 18;
@@ -944,10 +947,7 @@ module ucie_tile
     end
   end
 
-  always_ff @(posedge clk_i or negedge tile_rst_apb_n) begin
-    if (!tile_rst_apb_n) ucie_apb_busy_q <= 1'b0;
-    else ucie_apb_busy_q <= ucie_apb_busy_d;
-  end
+  `FF(ucie_apb_busy_q, ucie_apb_busy_d, 1'b0, clk_i, tile_rst_apb_n)
 
   assign cfg_apb_rsp[ApbUcie] = ucie_apb_cfg_rsp;
 
@@ -978,10 +978,7 @@ module ucie_tile
     ucie_apb_access_d    = ucie_apb_dst_req_valid & ~ucie_apb_dst_done;
   end
 
-  always_ff @(posedge ucie_apb_clk or negedge tile_rst_apb_n) begin
-    if (!tile_rst_apb_n) ucie_apb_access_q <= 1'b0;
-    else ucie_apb_access_q <= ucie_apb_access_d;
-  end
+  `FF(ucie_apb_access_q, ucie_apb_access_d, 1'b0, ucie_apb_clk, tile_rst_apb_n)
 
   cc_isochronous_spill_register #(
     .data_t(ucie_cfg_apb_resp_t)

@@ -6,7 +6,9 @@
 
 module stream2rdi #(
   parameter int unsigned DataWidth = 256,
-  /// Cut all paths between the stream and the RDI
+  /// Cut the paths between the stream and the RDI data and handshake with a
+  /// spill register. `link_active_i` is not registered here: it must come from
+  /// a flip-flop when `CutRdi` is set.
   parameter bit          CutRdi    = 1'b1
 ) (
   input  logic                 clk_i,

@@ -4,6 +4,8 @@
 //
 // Lorenzo Leone <lleone@iis.ee.ethz.ch>
 
+`include "common_cells/registers.svh"
+
 module rdi2stream #(
   parameter int unsigned DataWidth = 256,
   /// Register the RDI inputs
@@ -28,15 +30,8 @@ module rdi2stream #(
     logic [DataWidth-1:0] rdi_data_q;
     logic                 rdi_valid_q;
 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) begin
-        rdi_data_q  <= '0;
-        rdi_valid_q <= 1'b0;
-      end else begin
-        rdi_valid_q <= pl_valid_i;
-        if (pl_valid_i) rdi_data_q <= pl_data_i;
-      end
-    end
+    `FF(rdi_valid_q, pl_valid_i, 1'b0, clk_i, rst_ni)
+    `FFL(rdi_data_q, pl_data_i, pl_valid_i, '0, clk_i, rst_ni)
 
     assign rdi_data  = rdi_data_q;
     assign rdi_valid = rdi_valid_q;
@@ -46,40 +41,41 @@ module rdi2stream #(
   end
 
   logic [DataWidth-1:0] data_q;
-  logic                 pend_q;
+  logic pend_d, pend_q;
+  logic drained, rx_in, capture, drop;
 
-  wire drained = pend_q & oup_ready_i;
-  wire rx_in = rdi_valid & link_active_i;
-  wire capture = rx_in & (~pend_q | drained);
-  wire drop = rx_in & pend_q & ~drained;
+  assign drained = pend_q & oup_ready_i;
+  assign rx_in   = rdi_valid & link_active_i;
+  assign capture = rx_in & (~pend_q | drained);
+  assign drop    = rx_in & pend_q & ~drained;
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      data_q <= '0;
-      pend_q <= 1'b0;
-    end else if (capture) begin
-      data_q <= rdi_data;
-      pend_q <= 1'b1;
-    end else if (drained) begin
-      pend_q <= 1'b0;
-    end
+  always_comb begin
+    pend_d = pend_q;
+    if (capture) pend_d = 1'b1;
+    else if (drained) pend_d = 1'b0;
   end
+
+  `FF(pend_q, pend_d, 1'b0, clk_i, rst_ni)
+  `FFL(data_q, rdi_data, capture, '0, clk_i, rst_ni)
 
   assign oup_data_o  = data_q;
   assign oup_valid_o = pend_q;
 
-  logic        drop_err_q;
-  logic [15:0] drop_cnt_q;
+  logic drop_err_d, drop_err_q;
+  logic [15:0] drop_cnt_d, drop_cnt_q;
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      drop_err_q <= 1'b0;
-      drop_cnt_q <= 16'd0;
-    end else if (drop) begin
-      drop_err_q <= 1'b1;
-      if (drop_cnt_q != 16'hFFFF) drop_cnt_q <= drop_cnt_q + 16'd1;
+  // The error flag is sticky and the count saturates
+  always_comb begin
+    drop_err_d = drop_err_q;
+    drop_cnt_d = drop_cnt_q;
+    if (drop) begin
+      drop_err_d = 1'b1;
+      if (drop_cnt_q != '1) drop_cnt_d = drop_cnt_q + 16'd1;
     end
   end
+
+  `FF(drop_err_q, drop_err_d, 1'b0, clk_i, rst_ni)
+  `FF(drop_cnt_q, drop_cnt_d, '0, clk_i, rst_ni)
 
   assign rx_drop_err_o   = drop_err_q;
   assign rx_drop_count_o = drop_cnt_q;
