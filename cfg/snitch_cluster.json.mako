@@ -31,8 +31,8 @@
         ext_mem_size: 4, //kB
         dma_data_width: 512,
         // TODO(fischeti): Check with Thomas
-        // Increased from 24 to 64 for transposition, check with Daniel
-        dma_axi_req_fifo_depth: 64,
+        // Increased from 24 to 64 for transposition, check with Daniel. The H tile has no transpose.
+        dma_axi_req_fifo_depth: ${24 if name == "htile" else 64},
         dma_req_fifo_depth: 8,
         // Elaborates the iDMA compute path (DMOPC) in the inst64 frontend of every cluster but the H tile
         dma_enable_compute: ${"false" if name == "htile" else "true"},
