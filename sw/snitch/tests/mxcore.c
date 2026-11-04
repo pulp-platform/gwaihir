@@ -6,16 +6,38 @@
 
 #include "snrt.h"
 
-#define PRELOAD   0 // PRELOAD Enable/Disable
-#define MULTI_JOB 0 // MULTI_JOB Enable/Disable
-#define TIMING    0 // TIMING Enable/Disable
+#define OUT_MXFP8    0
+#define OUT_MXFP8ALT 1
+#define OUT_MXFP4    2
+#define OUT_BF16     3
+
+#define PRELOAD       0         // PRELOAD Enable/Disable
+#define MULTI_JOB     0         // MULTI_JOB Enable/Disable
+#define TIMING        0         // TIMING Enable/Disable
+#define OUTPUT_FORMAT OUT_MXFP8 // OUTPUT_FORMAT OUT_MXFP8/OUT_MXFP8ALT/OUT_MXFP4/OUT_BF16
+
+#if PRELOAD && (OUTPUT_FORMAT != OUT_MXFP8)
+#error "PRELOAD data is only available for OUTPUT_FORMAT OUT_MXFP8"
+#endif
 
 #if MULTI_JOB && PRELOAD
 #include "data/mxcore_multi_preload_data.h"
-#elif MULTI_JOB
-#include "data/mxcore_multi_data.h"
 #elif PRELOAD
 #include "data/mxcore_preload_data.h"
+#elif MULTI_JOB && (OUTPUT_FORMAT == OUT_MXFP8ALT)
+#include "data/mxcore_multi_mxfp8alt_data.h"
+#elif MULTI_JOB && (OUTPUT_FORMAT == OUT_MXFP4)
+#include "data/mxcore_multi_mxfp4_data.h"
+#elif MULTI_JOB && (OUTPUT_FORMAT == OUT_BF16)
+#include "data/mxcore_multi_bf16_data.h"
+#elif MULTI_JOB
+#include "data/mxcore_multi_data.h"
+#elif OUTPUT_FORMAT == OUT_MXFP8ALT
+#include "data/mxcore_mxfp8alt_data.h"
+#elif OUTPUT_FORMAT == OUT_MXFP4
+#include "data/mxcore_mxfp4_data.h"
+#elif OUTPUT_FORMAT == OUT_BF16
+#include "data/mxcore_bf16_data.h"
 #else
 #include "data/mxcore_data.h"
 #endif
@@ -47,10 +69,23 @@
 
 // MX Parameters
 #define BLOCK_SIZE      32
-#define QUANTIZE_OUTPUT 1
 #define SRC_WIDTH       8
 #define DST_WIDTH       32
 #define SCALE_WIDTH     8
+
+#if OUTPUT_FORMAT == OUT_MXFP8ALT
+#define QUANTIZE_BIT    22
+#define RESULT_WIDTH    8
+#elif OUTPUT_FORMAT == OUT_MXFP4
+#define QUANTIZE_BIT    21
+#define RESULT_WIDTH    4
+#elif OUTPUT_FORMAT == OUT_BF16
+#define QUANTIZE_BIT    24
+#define RESULT_WIDTH    16
+#else
+#define QUANTIZE_BIT    23
+#define RESULT_WIDTH    8
+#endif
 
 #if TIMING
 #define TIMING_ROWS       16
@@ -181,21 +216,20 @@ int main() {
     // Size Parameters
     uint32_t NBYTES_VEC = sizeof(int8_t);
     uint32_t NBYTES_SCALE = sizeof(uint8_t);
-    uint32_t NBYTES_RESULT = (QUANTIZE_OUTPUT == 1) ? sizeof(uint8_t) : sizeof(float);
 
     // Input/Output Sizes
     uint32_t a_size = M*K*NBYTES_VEC;
     uint32_t b_size = K*N*NBYTES_VEC;
     uint32_t scale_a_size = (M*K/BLOCK_SIZE)*NBYTES_SCALE;
     uint32_t scale_b_size = (K*N/BLOCK_SIZE)*NBYTES_SCALE;
-    uint32_t result_size = M*N*NBYTES_RESULT;
+    uint32_t result_size = (M*N*RESULT_WIDTH)/8;
     uint32_t result_scale_size = (M*N/BLOCK_SIZE)*NBYTES_SCALE;
     uint32_t c_size = (PRELOAD == 1) ? (M*N*sizeof(float)) : result_size;
 
     mxcore_job_cfg_t cfg;
 
     // Control Engine Register Value
-    cfg.engine_ctrl = 0x00400678 | ((uint32_t)PRELOAD << 24);
+    cfg.engine_ctrl = 0x00000678 | (1u << QUANTIZE_BIT) | ((uint32_t)PRELOAD << 26);
 
     // REG_GEMM_SIZE: [9:0] M, [21:10] K, [31:22] N
     cfg.gemm_size = ((uint32_t)M & 0x3FF) | (((uint32_t)K & 0xFFF) << 10) | (((uint32_t)N & 0x3FF) << 22);
@@ -213,7 +247,7 @@ int main() {
     cfg.a_tile_size            = OBuff * VS * SRC_WIDTH;
     cfg.b_tile_size            = VS * MXU * SRC_WIDTH;
     cfg.preload_tile_size      = MXU * OBuff * DST_WIDTH;
-    cfg.result_tile_size       = (QUANTIZE_OUTPUT == 1) ? (MXU * OBuff * SRC_WIDTH) : (MXU * OBuff * DST_WIDTH);
+    cfg.result_tile_size       = MXU * OBuff * RESULT_WIDTH;
     cfg.result_scale_tile_size = (MXU / BLOCK_SIZE) * OBuff * SCALE_WIDTH;
     cfg.iter_count             = ((uint32_t)K * OBuff) / VS;
 
@@ -280,7 +314,9 @@ int main() {
         if (snrt_is_dm_core()) {
             MXCORE_TIMESTAMP(job, TS_DMA_OUT_START);
             snrt_dma_start_1d((volatile void *)result_mx[job], (volatile void *)local_result[h], result_size);
+#if OUTPUT_FORMAT != OUT_BF16
             snrt_dma_start_1d((volatile void *)scale_result_mx[job], (volatile void *)local_result_scale[h], result_scale_size);
+#endif
             snrt_dma_wait_all();
             MXCORE_TIMESTAMP(job, TS_DMA_OUT_END);
             if (next < num_jobs) {
@@ -369,11 +405,11 @@ int main() {
 
     // Copy data out of TCDM
     if (snrt_is_dm_core()) {
-        size_t res_bytes = (QUANTIZE_OUTPUT == 1) ? sizeof(golden_result_mx) : sizeof(golden_result);
-        size_t res_scale_bytes = sizeof(golden_scale_result_mx);
         MXCORE_TIMESTAMP(cluster_idx, TS_DMA_OUT_START);
-        snrt_dma_start_1d((volatile void *)result_mx, (volatile void *)local_result, res_bytes);
-        snrt_dma_start_1d((volatile void *)scale_result_mx, (volatile void *)local_result_scale, res_scale_bytes);
+        snrt_dma_start_1d((volatile void *)result_mx, (volatile void *)local_result, result_size);
+#if OUTPUT_FORMAT != OUT_BF16
+        snrt_dma_start_1d((volatile void *)scale_result_mx, (volatile void *)local_result_scale, result_scale_size);
+#endif
         snrt_dma_wait_all();
         MXCORE_TIMESTAMP(cluster_idx, TS_DMA_OUT_END);
     }

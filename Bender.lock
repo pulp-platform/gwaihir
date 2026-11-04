@@ -323,7 +323,7 @@ packages:
       Git: https://github.com/pulp-platform/L2_tcdm_hybrid_interco.git
     dependencies: []
   mxcore:
-    revision: 2afd5ace56f3d61074159d4032e3102931840d00
+    revision: fb568b67294c480655f82145eff7a9e43fe125eb
     version: null
     source:
       Git: https://github.com/pulp-platform/MXCore.git
