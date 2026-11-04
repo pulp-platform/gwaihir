@@ -159,6 +159,7 @@ sim-exps:
 
 spyglass:
   stage: build
+  timeout: 2 hours
   extends:
     - .cache-deps
     - .init-env
