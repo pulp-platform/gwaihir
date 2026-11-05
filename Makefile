@@ -235,7 +235,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 41e12d3cc0bc65f52343278965336bc6b49de9f9
+PD_COMMIT ?= cf4e77fed6b105d932776f52b55b74090994ca02
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
