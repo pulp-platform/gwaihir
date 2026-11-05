@@ -32,11 +32,18 @@
         // Increased from 24 to 64 for transposition, check with Daniel
         dma_axi_req_fifo_depth: 64,
         dma_req_fifo_depth: 8,
-        // Elaborates the iDMA compute path (DMOPC) in every cluster's inst64 frontend
+        // Master switch for the iDMA compute path (DMOPC)
         dma_enable_compute: true,
-        // Half duplex transpose: one tile bank, as big as the datamover's matrix
+        // Elaborates the on-the-fly matrix transpose engine
         dma_compute_transpose: true,
+        // Transpose tile banks: true = two (full rate), false = one (half area, half rate)
         dma_compute_transpose_full_duplex: false,
+        // Elaborates the MX quantization engine
+        dma_compute_mxquant: false,
+        // Elaborates the MX dequantization engine
+        dma_compute_mxdequant: false,
+        // Elaborates the FP16 source/destination paths of the MX engines
+        dma_compute_mxfp16: false,
         narrow_trans: 4,
         wide_trans: 32,
         enable_narrow_collectives: true,
