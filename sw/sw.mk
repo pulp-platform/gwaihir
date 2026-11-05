@@ -71,6 +71,7 @@ ifdef GW_HTILE_RUNTIME
 SN_BUILD_TESTS           = OFF
 SN_TESTS                 = $(SN_ROOT)/sw/tests/src/simple.c $(GW_SNITCH_SW_DIR)/tests/surya_mx.c
 SN_TESTS                += $(GW_SNITCH_SW_DIR)/tests/datamover.c
+SN_RUNTIME_MEMORY_LD     = $(GW_SNITCH_SW_DIR)/runtime/impl/htile/memory.ld
 SN_RUNTIME_BUILDDIR     := $(SN_RUNTIME_BUILDDIR)/htile
 SN_TESTS_BUILDDIR       := $(SN_TESTS_BUILDDIR)/htile
 SN_RUNTIME_RISCV_CFLAGS += -DGW_HTILE_RUNTIME

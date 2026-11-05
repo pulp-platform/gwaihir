@@ -23,6 +23,7 @@
 // The job runs on the clusters. With GW_OFFLOAD_HTILE it runs on the H tile alone.
 #ifdef GW_OFFLOAD_HTILE
 #define NUM_TARGETS 1
+#define TARGET_ENTRY ((uintptr_t)&gwaihir_addrmap_64b.l2_spm_2)
 typedef htile_t gw_target_t;
 static volatile gw_target_t *gw_target(int idx) {
   (void)idx;
@@ -30,6 +31,7 @@ static volatile gw_target_t *gw_target(int idx) {
 }
 #else
 #define NUM_TARGETS SNRT_CLUSTER_NUM
+#define TARGET_ENTRY ((uintptr_t)&gwaihir_addrmap_64b.l2_spm_0)
 typedef snitch_cluster__stride40000_t gw_target_t;
 static volatile gw_target_t *gw_target(int idx) {
   return (volatile gw_target_t *)&gwaihir_addrmap_64b.cluster[idx];
@@ -55,7 +57,7 @@ int main() {
   // and return code address to scratch register 0
   // Initalize return address loaction before offloading.
   for (int i = 0; i < NUM_TARGETS; i++) {
-    *(volatile uint64_t *)&(gw_target(i)->peripheral_reg.scratch[1].w) = (uintptr_t)&gwaihir_addrmap_64b.l2_spm_0;
+    *(volatile uint64_t *)&(gw_target(i)->peripheral_reg.scratch[1].w) = TARGET_ENTRY;
     *(volatile uint64_t *)&(gw_target(i)->peripheral_reg.scratch[0].w) = (uintptr_t)&return_code_array[i];
     for (int j = 0; j < CFG_CLUSTER_NR_CORES; j++) {
       return_code_array[i][j] = 0;

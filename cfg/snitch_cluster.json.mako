@@ -94,7 +94,8 @@
     external_addr_regions: [
         {
             name: "l2spm",
-            address: 0x21200000,
+            // The H tile runs from l2_spm_2, on its own router column, so it does not share l2_spm_0 with the clusters.
+            address: ${"0x21600000" if name == "htile" else "0x21200000"},
             length: 0x00200000,
             cacheable: true
         },
