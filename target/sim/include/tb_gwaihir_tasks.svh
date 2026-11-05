@@ -205,53 +205,69 @@ task automatic fastmode_elf_preload(input string binary, output cheshire_pkg::do
 endtask
 
 // Headless offload (tb-driven simple_offload): preload firmware + optional job, set scratch, wake, poll return codes -- no host.
-// With htile set, the job runs on the H tile alone.
-task automatic headless_offload(const ref logic clk, input bit htile, output logic [31:0] exit_code);
+// The clusters run cl_entry and the H tile runs ht_entry. With both set, the H tile wakes when the cluster job sets ClStarted.
+task automatic headless_offload(const ref logic clk, input bit clusters, input longint cl_entry, input bit htile, input longint ht_entry, output logic [31:0] exit_code);
   import floo_gwaihir_noc_pkg::*;
   // HW counts + L2 aperture come from the SoC cfg/addrmap, never hardcoded.
-  localparam longint L2Base     = Sam[L2Spm0SamIdx].start_addr;
   localparam longint RcBase     = Sam[L2Spm0SamIdx+L2SpmIdxStride*(NumMemTiles-1)].end_addr - 'h1000; // return_code page = top 4K
+  localparam longint ClStarted  = RcBase + 'h800;                 // a cluster job sets this word when its work starts
+  localparam int     ClCores    = snitch_cluster_wrapper_pkg::NrCores;
+  localparam int     HtCores    = htile_snitch_cluster_wrapper_pkg::NrCores;
   localparam int     PollCycles = 1000;                           // poll every PollCycles clock cycles
   localparam int     PollIters  = 20000;                          // -> 20 M cycles before giving up
   int    i, cl, core, iter, ndone, nfail, expect_done;
   int unsigned rc_sum;
   logic [31:0] rc;
   realtime t_wake;
-  int     nr_clusters, nr_cores;
-  longint scratch0, scratch1, clint_set;
+  int     cl_first, cl_last, nr_cores;
+  longint scratch0, scratch1, entry, clint_set;
+  bit     ht_woken;
 
-  nr_clusters = htile ? 1 : NumClusters;
-  nr_cores    = htile ? htile_snitch_cluster_wrapper_pkg::NrCores : snitch_cluster_wrapper_pkg::NrCores;
+  // The H tile is target NumClusters. Its return-code slots follow the cluster slots.
+  cl_first = clusters ? 0 : NumClusters;
+  cl_last  = htile ? NumClusters : NumClusters - 1;
 
   // 1) zero the return-code page
-  for (i = 0; i < nr_clusters*nr_cores; i++)
+  for (i = 0; i < NumClusters*ClCores + HtCores; i++)
     fastmode_write_word(RcBase + i*4, 32'h0);
+  fastmode_write_word(ClStarted, 32'h0);
 
-  // 2) per-target scratch: [1]=firmware entry (L2 base), [0]=&return_code_array[cl][0]
-  for (cl = 0; cl < nr_clusters; cl++) begin
-    scratch0 = htile ? `HTILE_PERIPHERAL_REG_SCRATCH_BASE_ADDR(0) : `CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0);
-    scratch1 = htile ? `HTILE_PERIPHERAL_REG_SCRATCH_BASE_ADDR(1) : `CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1);
-    fix.vip.jtag_write_reg32(scratch1,     L2Base[31:0],             1'b0);
-    fix.vip.jtag_write_reg32(scratch1 + 4, 32'h0,                    1'b0);
-    fix.vip.jtag_write_reg32(scratch0,     (RcBase + cl*nr_cores*4), 1'b0);
-    fix.vip.jtag_write_reg32(scratch0 + 4, 32'h0,                    1'b0);
+  // 2) per-target scratch: [1]=firmware entry, [0]=&return_code_array[cl][0]
+  for (cl = cl_first; cl <= cl_last; cl++) begin
+    scratch0 = cl == NumClusters ? `HTILE_PERIPHERAL_REG_SCRATCH_BASE_ADDR(0) : `CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,0);
+    scratch1 = cl == NumClusters ? `HTILE_PERIPHERAL_REG_SCRATCH_BASE_ADDR(1) : `CLUSTER_PERIPHERAL_REG_SCRATCH_BASE_ADDR(cl,1);
+    entry    = cl == NumClusters ? ht_entry : cl_entry;
+    fix.vip.jtag_write_reg32(scratch1,     entry[31:0],             1'b0);
+    fix.vip.jtag_write_reg32(scratch1 + 4, 32'h0,                   1'b0);
+    fix.vip.jtag_write_reg32(scratch0,     (RcBase + cl*ClCores*4), 1'b0);
+    fix.vip.jtag_write_reg32(scratch0 + 4, 32'h0,                   1'b0);
   end
 
   // 3) wake the first target (snRuntime fans out to the other clusters through the world barrier)
-  expect_done = nr_clusters*nr_cores;
+  expect_done = (clusters ? NumClusters*ClCores : 0) + (htile ? HtCores : 0);
   t_wake = $realtime;
-  clint_set = htile ? `HTILE_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR : `CLUSTER_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR(0);
+  ht_woken  = !(clusters && htile);
+  nr_cores  = clusters ? ClCores : HtCores;
+  clint_set = clusters ? `CLUSTER_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR(0) : `HTILE_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR;
   fix.vip.jtag_write_reg32(clint_set, ((32'h1 << nr_cores) - 1), 1'b0);
-  if (htile) $display("[OFFLOAD] woke the H tile, polling %0d return-code slots ...", expect_done);
-  else       $display("[OFFLOAD] woke cluster 0, polling %0d return-code slots ...", expect_done);
+  if (clusters) $display("[OFFLOAD] woke cluster 0, polling %0d return-code slots ...", expect_done);
+  else          $display("[OFFLOAD] woke the H tile, polling %0d return-code slots ...", expect_done);
 
   // 4) poll return codes (bit0=done, bits[31:1]=rc) until all done or timeout
   for (iter = 0; iter < PollIters; iter++) begin
     repeat (PollCycles) @(posedge clk);
+    if (!ht_woken) begin
+      fastmode_read_word(ClStarted, rc);
+      if (rc[0]) begin
+        fix.vip.jtag_write_reg32(`HTILE_PERIPHERAL_REG_CL_CLINT_SET_BASE_ADDR, ((32'h1 << HtCores) - 1), 1'b0);
+        ht_woken = 1;
+        $display("[OFFLOAD] woke the H tile after %.0f ns", $realtime - t_wake);
+      end
+    end
     ndone = 0; nfail = 0; rc_sum = 0;
-    for (cl = 0; cl < nr_clusters; cl++)
-      for (core = 0; core < nr_cores; core++) begin
-        fastmode_read_word(RcBase + (cl*nr_cores + core)*4, rc);
+    for (cl = cl_first; cl <= cl_last; cl++)
+      for (core = 0; core < (cl == NumClusters ? HtCores : ClCores); core++) begin
+        fastmode_read_word(RcBase + (cl*ClCores + core)*4, rc);
         if (rc[0]) begin ndone++; rc_sum += rc[31:1]; if (rc[31:1] != 0) nfail++; end
       end
     if (ndone == expect_done) begin

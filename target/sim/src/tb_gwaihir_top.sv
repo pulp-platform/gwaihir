@@ -30,8 +30,11 @@ module tb_gwaihir_top;
   bit          [31:0] exit_code;
   bit                 snitch_preload;
   bit                 offload_htile;
+  bit                 htile_preload;
   string              snitch_elf;
+  string              htile_elf;
   logic        [63:0] snitch_entry;
+  logic        [63:0] htile_entry;
   logic        [63:0] chs_entry;
   int                 snitch_fn;
   int                 chs_fn;
@@ -57,6 +60,9 @@ module tb_gwaihir_top;
     end else begin
       snitch_preload = 0;
     end
+
+    // HTILE_BINARY runs on the H tile at the same time as SN_BINARY on the clusters.
+    htile_preload = $value$plusargs("HTILE_BINARY=%s", htile_elf);
 
     // Set boot mode and preload boot image if there is one
     fix.vip.set_boot_mode(boot_mode);
@@ -100,9 +106,13 @@ module tb_gwaihir_top;
         5: begin  // headless offload: run a cluster job with no host (tb-driven simple_offload)
           if (!snitch_preload)
             $fatal(1, "Preload mode %d (headless offload) requires SN_BINARY!", preload_mode);
+          if (offload_htile && htile_preload)
+            $fatal(1, "OFFLOAD_HTILE and HTILE_BINARY both select the H tile binary!");
           jtag_enable_tiles();
           fastmode_elf_preload(snitch_elf, snitch_entry);
-          headless_offload(fix.clk, offload_htile, exit_code);
+          if (htile_preload) fastmode_elf_preload(htile_elf, htile_entry);
+          if (offload_htile) headless_offload(fix.clk, 0, '0, 1, snitch_entry, exit_code);
+          else headless_offload(fix.clk, 1, snitch_entry, htile_preload, htile_entry, exit_code);
         end
         default: begin
           $fatal(1, "Unsupported preload mode %d (reserved)!", preload_mode);

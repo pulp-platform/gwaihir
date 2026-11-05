@@ -42,6 +42,7 @@ $(eval $(call add_vsim_flag,SN_BINARY))
 $(eval $(call add_vsim_flag,BOOTMODE))
 $(eval $(call add_vsim_flag,PRELMODE))
 $(eval $(call add_vsim_flag,OFFLOAD_HTILE))
+$(eval $(call add_vsim_flag,HTILE_BINARY))
 
 .PHONY: vsim-compile vsim-clean vsim-run vsim-vcd vsim-fst
 
