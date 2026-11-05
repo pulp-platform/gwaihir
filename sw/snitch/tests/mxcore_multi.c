@@ -8,6 +8,9 @@
 
 #define PRELOAD 0 // PRELOAD Enable/Disable
 #define TIMING  0 // TIMING Enable/Disable
+#ifndef MXCORE_MULTI_REPEAT
+#define MXCORE_MULTI_REPEAT 1 // GEMMs per cluster
+#endif
 
 #if PRELOAD
 #include "data/mxcore_multi_preload_data.h"
@@ -15,6 +18,7 @@
 #include "data/mxcore_multi_data.h"
 #endif
 #include "gw_hwpe_subsystem_addrmap.h"
+#include "gw_memtile.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -73,6 +77,10 @@ uint32_t mxcore_timing_info[TIMING_INFO_LEN];
 #define HWPE_MXIP_ADDR (HWPE_ADDR_BASE + MXCORE_EVT_OFFS)
 #define HWPE_WRITE(value, offset) *(volatile int *)(HWPE_ADDR_BASE + offset) = value
 #define HWPE_READ(offset) *(volatile int *)(HWPE_ADDR_BASE + offset)
+
+// The testbench wakes the H tile program, if there is one, when cluster 0 sets this word
+// in the upper half of the return-code page.
+#define CLUSTERS_STARTED ((volatile uint32_t *)(GW_L2_SPM_BASE_ADDR(0) + GW_L2_SPM_TOTAL_SIZE - 0x1000 + 0x800))
 
 void mxcore_cfg (unsigned int vector_a_ptr, unsigned int vectors_b_ptr, unsigned int scale_a_ptr, unsigned int scale_b_ptr, unsigned int preload_bias_ptr, unsigned int result_ptr, unsigned int result_scale_ptr, uint32_t gemm_size, uint32_t engine_ctrl_reg, uint32_t tile_counts, uint32_t a_tile_size, uint32_t b_tile_size, uint32_t preload_tile_size, uint32_t result_tile_size, uint32_t result_scale_tile_size, uint32_t iter_count) {
   HWPE_WRITE(vector_a_ptr,            0x20);
@@ -189,61 +197,65 @@ int main() {
     if (core_idx == 0) mxcore_timing_init(ts);
 #endif
 
-    if (snrt_is_dm_core()) {
-        MXCORE_TIMESTAMP(cluster_idx, TS_DMA_IN_START);
-        snrt_dma_start_1d(local_a, vector_a[cluster_idx], a_size);
-        snrt_dma_start_1d(local_b, vectors_b[cluster_idx], b_size);
-        snrt_dma_start_1d(local_scale_a, scale_a[cluster_idx], scale_a_size);
-        snrt_dma_start_1d(local_scale_b, scale_b[cluster_idx], scale_b_size);
+    if (cluster_idx == 0 && core_idx == 0) *CLUSTERS_STARTED = 1;
+
+    for (int r = 0; r < MXCORE_MULTI_REPEAT; r++) {
+        if (snrt_is_dm_core()) {
+            MXCORE_TIMESTAMP(cluster_idx, TS_DMA_IN_START);
+            snrt_dma_start_1d(local_a, vector_a[cluster_idx], a_size);
+            snrt_dma_start_1d(local_b, vectors_b[cluster_idx], b_size);
+            snrt_dma_start_1d(local_scale_a, scale_a[cluster_idx], scale_a_size);
+            snrt_dma_start_1d(local_scale_b, scale_b[cluster_idx], scale_b_size);
 #if PRELOAD
-        snrt_dma_start_1d(local_result, preload_acc[cluster_idx], c_size);
+            snrt_dma_start_1d(local_result, preload_acc[cluster_idx], c_size);
 #endif
-        snrt_dma_wait_all();
-        MXCORE_TIMESTAMP(cluster_idx, TS_DMA_IN_END);
+            snrt_dma_wait_all();
+            MXCORE_TIMESTAMP(cluster_idx, TS_DMA_IN_END);
+        }
+        snrt_cluster_hw_barrier();
+
+        // Compute
+        if (snrt_cluster_core_idx() == 0) {
+            mxcore_cg_enable();
+
+            hwpe_soft_clear();
+
+            MXCORE_TIMESTAMP(cluster_idx, TS_SUBMIT);
+
+            volatile int mxstatus;
+            do {
+                mxstatus = hwpe_acquire_job();
+            } while (mxstatus < 0);
+
+            mxcore_cfg((unsigned int) local_a, (unsigned int) local_b, (unsigned int) local_scale_a, (unsigned int) local_scale_b, (unsigned int) local_result, (unsigned int) local_result, (unsigned int) local_result_scale, gemm_size, engine_ctrl, tile_counts, a_tile_size, b_tile_size, preload_tile_size, result_tile_size, result_scale_tile_size, iter_count);
+
+            hwpe_trigger_job();
+
+            MXCORE_TIMESTAMP(cluster_idx, TS_TRIGGER);
+
+            snrt_interrupt_enable(IRQ_M_ACC);
+            while (!(read_csr(mip) & MIP_MXIP)) snrt_wfi();
+
+            MXCORE_TIMESTAMP(cluster_idx, TS_DONE);
+
+            snrt_hwpe_clr_mxip(core_idx);
+
+            snrt_interrupt_disable(IRQ_M_ACC);
+
+            mxcore_cg_disable();
+        }
+        snrt_cluster_hw_barrier();
+
+        // Copy data out of TCDM
+        if (snrt_is_dm_core()) {
+            MXCORE_TIMESTAMP(cluster_idx, TS_DMA_OUT_START);
+            snrt_dma_start_1d((volatile void *)result_mx[cluster_idx], (volatile void *)local_result, sizeof(golden_result_mx[0]));
+            snrt_dma_start_1d((volatile void *)scale_result_mx[cluster_idx], (volatile void *)local_result_scale, sizeof(golden_scale_result_mx[0]));
+            snrt_dma_wait_all();
+            MXCORE_TIMESTAMP(cluster_idx, TS_DMA_OUT_END);
+        }
+        snrt_cluster_hw_barrier();
     }
-    snrt_cluster_hw_barrier();
-
-    // Compute
-    if (snrt_cluster_core_idx() == 0) {
-        mxcore_cg_enable();
-
-        hwpe_soft_clear();
-
-        MXCORE_TIMESTAMP(cluster_idx, TS_SUBMIT);
-
-        volatile int mxstatus;
-        do {
-            mxstatus = hwpe_acquire_job();
-        } while (mxstatus < 0);
-
-        mxcore_cfg((unsigned int) local_a, (unsigned int) local_b, (unsigned int) local_scale_a, (unsigned int) local_scale_b, (unsigned int) local_result, (unsigned int) local_result, (unsigned int) local_result_scale, gemm_size, engine_ctrl, tile_counts, a_tile_size, b_tile_size, preload_tile_size, result_tile_size, result_scale_tile_size, iter_count);
-
-        hwpe_trigger_job();
-
-        MXCORE_TIMESTAMP(cluster_idx, TS_TRIGGER);
-
-        snrt_interrupt_enable(IRQ_M_ACC);
-        while (!(read_csr(mip) & MIP_MXIP)) snrt_wfi();
-
-        MXCORE_TIMESTAMP(cluster_idx, TS_DONE);
-
-        snrt_hwpe_clr_mxip(core_idx);
-
-        snrt_interrupt_disable(IRQ_M_ACC);
-
-        mxcore_cg_disable();
-    }
-    snrt_cluster_hw_barrier();
-
-    // Copy data out of TCDM
-    if (snrt_is_dm_core()) {
-        MXCORE_TIMESTAMP(cluster_idx, TS_DMA_OUT_START);
-        snrt_dma_start_1d((volatile void *)result_mx[cluster_idx], (volatile void *)local_result, sizeof(golden_result_mx[0]));
-        snrt_dma_start_1d((volatile void *)scale_result_mx[cluster_idx], (volatile void *)local_result_scale, sizeof(golden_scale_result_mx[0]));
-        snrt_dma_wait_all();
-        MXCORE_TIMESTAMP(cluster_idx, TS_DMA_OUT_END);
-    }
-    snrt_cluster_hw_barrier();
 
 #if TIMING
     if (snrt_is_dm_core()) mxcore_timing_store(ts, cluster_idx, 1);

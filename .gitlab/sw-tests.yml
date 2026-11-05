@@ -39,6 +39,7 @@
       - { SN_BINARY: $SN_BUILD_DIR/htile/simple.elf, PRELMODE: 5, OFFLOAD_HTILE: 1 }
       - { SN_BINARY: $SN_BUILD_DIR/htile/surya_mx.elf, PRELMODE: 5, OFFLOAD_HTILE: 1 }
       - { SN_BINARY: $SN_BUILD_DIR/htile/datamover.elf, PRELMODE: 5, OFFLOAD_HTILE: 1 }
+      - { SN_BINARY: $SN_BUILD_DIR/mxcore_multi_simult.elf, HTILE_BINARY: $SN_BUILD_DIR/htile/surya_mx.elf, VERIFY_PY: experiments/mxcore_multi/verify.py, PRELMODE: 5 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/non_null_exitcode.elf, NZ_EXIT_CODE: 448 }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/multicluster_atomics.elf }
       - { CHS_BINARY: $CHS_BUILD_DIR/simple_offload.spm.elf, SN_BINARY: $SN_BUILD_DIR/mcast_barrier.elf }
