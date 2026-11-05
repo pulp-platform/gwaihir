@@ -211,7 +211,7 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: 0332d3995c95f4af7f197e29203962195ec360dd
+    revision: e42c6bf681d251b60e75dd07927158a1431cd3e2
     version: null
     source:
       Git: https://github.com/pulp-platform/FlooNoC.git
@@ -259,6 +259,7 @@ packages:
     - apb
     - axi
     - common_cells
+    - floo_noc
     - register_interface
     - tech_cells_generic
   hci:
@@ -497,6 +498,12 @@ packages:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:
     - common_verification
+  tum_npu:
+    revision: null
+    version: null
+    source:
+      Path: .deps/tum_npu
+    dependencies: []
   ucie:
     revision: null
     version: null
@@ -513,9 +520,3 @@ packages:
     - axi
     - common_cells
     - register_interface
-  tum_npu:
-    revision: null
-    version: null
-    source:
-      Path: .deps/tum_npu
-    dependencies: []

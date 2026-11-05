@@ -34,7 +34,7 @@ dependencies:
     rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
-    rev: main
+    rev: lleone/floo-nw-cut
     upstream_name: FlooNoC
   gwaihir-pd:
     path: ./pd
@@ -138,6 +138,7 @@ sources:
       - .generated/hw
       - target/sim/include
     files:
+      - target/sim/src/gwaihir_memctrl.sv
       - target/sim/src/fixture_gwaihir_top.sv
       - target/sim/src/tb_gwaihir_top.sv
 
