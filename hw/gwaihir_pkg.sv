@@ -609,6 +609,10 @@ package gwaihir_pkg;
                       axi_wide_in_strb_t, utile_nw_join_user_t)
 
 
+  // Number of register stages on the Cheshire NoC feed-through that crosses the LPDDR macro.
+  // 0 is a plain connection.
+  localparam int unsigned FeedthroughCut = 1;
+
   localparam int unsigned UcieCfgRegDataWidth = UCIE_SLINK_REG_DATA_WIDTH;
 
   typedef logic [UcieCfgRegDataWidth-1:0] ucie_cfg_reg_data_t;
