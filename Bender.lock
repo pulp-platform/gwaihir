@@ -88,7 +88,7 @@ packages:
     - common_cells
     - register_interface
   cheshire:
-    revision: af032e5f29d389b6884fdfafadfe57d5c803f71e
+    revision: 9853eb74c026db700ac4912f5206bf46fa3ef890
     version: null
     source:
       Git: https://github.com/pulp-platform/cheshire.git
@@ -116,12 +116,13 @@ packages:
     - tagger
     - unbent
   clic:
-    revision: a05703c66873d55b3c879c661da7fc1014c416db
+    revision: 109182208e1a021bcad1f6f2e13313360a8a020b
     version: null
     source:
       Git: https://github.com/pulp-platform/clic.git
     dependencies:
     - common_cells
+    - common_verification
     - register_interface
   clint:
     revision: d5390a805c20f9226758a152ba1645f61da73349
@@ -180,11 +181,12 @@ packages:
     dependencies:
     - common_cells
   cva6:
-    revision: cc2093e45dfb964d8ed11803df59c1e10e508e9a
+    revision: 702f4528f7e2090a8f207fe62b5263000bf596a0
     version: null
     source:
       Git: https://github.com/pulp-platform/cva6.git
     dependencies:
+    - apb
     - axi
     - axi_riscv_atomics
     - clic
@@ -497,6 +499,12 @@ packages:
       Git: https://github.com/pulp-platform/tech_cells_generic.git
     dependencies:
     - common_verification
+  tum_npu:
+    revision: null
+    version: null
+    source:
+      Path: .deps/tum_npu
+    dependencies: []
   ucie:
     revision: null
     version: null
@@ -514,9 +522,3 @@ packages:
     - axi
     - common_cells
     - register_interface
-  tum_npu:
-    revision: null
-    version: null
-    source:
-      Path: .deps/tum_npu
-    dependencies: []
