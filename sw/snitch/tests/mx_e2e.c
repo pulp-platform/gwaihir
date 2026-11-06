@@ -36,7 +36,7 @@ typedef float mx_src_t;
 
 // MXCore REG_CTRL_ENGINE: MXDOTP, FP8 (E5M2) sources, FP32 result, RNE
 #define MXCORE_CTRL_FP32 0x00000678u
-#define MXCORE_CTRL_MXFP8 (MXCORE_CTRL_FP32 | (1u << 22))
+#define MXCORE_CTRL_MXFP8 (MXCORE_CTRL_FP32 | (1u << 23))
 
 #define HWPE_BASE GW_HWPE_BASE_ADDR(snrt_cluster_alias())
 #define HWPE_REG(off) (*(volatile uint32_t *)(HWPE_BASE + (off)))
@@ -100,7 +100,7 @@ static uint32_t mx_tile_quant(uint8_t *data, uint8_t *scale, mx_src_t *src,
 
 static void mxcore_run(void *a, void *b, void *sa, void *sb, void *res,
                        void *res_scale, uint32_t ctrl) {
-    uint32_t mxfp8 = (ctrl >> 22) & 1u;
+    uint32_t mxfp8 = (ctrl >> 23) & 1u;
     HWPE_REG(GW_HWPE_CLK_EN_OFFS) = GW_HWPE_CLK_EN_ACC;
     HWPE_REG(0x14) = 0;
     while ((int32_t)HWPE_REG(0x04) < 0);
