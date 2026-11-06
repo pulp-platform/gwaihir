@@ -47,26 +47,37 @@ module ucie_tile_left
   output floo_rsp_t  floo_rsp_ucie_east_o,
   input  floo_wide_t floo_wide_ucie_east_i,
 
-  // UCIe PHY interface (to the peer tile)
-  output logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out_o,
-  output logic [NumChannels-1:0]                      phy_data_out_valid_o,
-  input  logic [NumChannels-1:0]                      phy_data_out_ready_i,
-  input  logic [NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in_i,
-  input  logic [NumChannels-1:0]                      phy_data_in_valid_i,
-  output logic [NumChannels-1:0]                      phy_data_in_ready_o
+  // UCIe PHY reference clock (100 MHz)
+  input  logic       ucie_refclk_i,
+  // UCIe mainband bumps
+  output logic       ucie_txckp_o,
+  output logic       ucie_txckn_o,
+  output logic [7:0] ucie_txdata_o,
+  output logic       ucie_txtrk_o,
+  output logic       ucie_txvld_o,
+  input  logic       ucie_rxckp_i,
+  input  logic       ucie_rxckn_i,
+  input  logic [7:0] ucie_rxdata_i,
+  input  logic       ucie_rxtrk_i,
+  input  logic       ucie_rxvld_i,
+  // UCIe sideband bumps
+  output logic       ucie_txclksb_o,
+  output logic       ucie_txdatasb_o,
+  input  logic       ucie_rxclksb_i,
+  input  logic       ucie_rxdatasb_i
 );
 
   ///////////////////
   // Router arrays //
   ///////////////////
 
-  floo_req_t [West:North] ucie_req_out, ucie_req_in;
-  floo_rsp_t [West:North] ucie_rsp_out, ucie_rsp_in;
-  floo_wide_t [West:North] ucie_wide_out, ucie_wide_in;
-
   floo_req_t [West:North] dummy_req_out, dummy_req_in;
   floo_rsp_t [West:North] dummy_rsp_out, dummy_rsp_in;
   floo_wide_t [West:North] dummy_wide_out, dummy_wide_in;
+
+  floo_req_t [West:North] ucie_req_out, ucie_req_in;
+  floo_rsp_t [West:North] ucie_rsp_out, ucie_rsp_in;
+  floo_wide_t [West:North] ucie_wide_out, ucie_wide_in;
 
   ///////////
   // Tiles //
@@ -86,12 +97,21 @@ module ucie_tile_left
     .floo_req_i (ucie_req_in),
     .floo_rsp_o (ucie_rsp_out),
     .floo_wide_i(ucie_wide_in),
-    .phy_data_out_o,
-    .phy_data_out_valid_o,
-    .phy_data_out_ready_i,
-    .phy_data_in_i,
-    .phy_data_in_valid_i,
-    .phy_data_in_ready_o
+    .ucie_refclk_i,
+    .ucie_txckp_o,
+    .ucie_txckn_o,
+    .ucie_txdata_o,
+    .ucie_txtrk_o,
+    .ucie_txvld_o,
+    .ucie_rxckp_i,
+    .ucie_rxckn_i,
+    .ucie_rxdata_i,
+    .ucie_rxtrk_i,
+    .ucie_rxvld_i,
+    .ucie_txclksb_o,
+    .ucie_txdatasb_o,
+    .ucie_rxclksb_i,
+    .ucie_rxdatasb_i
   );
 
   dummy_tile i_dummy_tile (
@@ -107,9 +127,9 @@ module ucie_tile_left
     .floo_wide_i(dummy_wide_in)
   );
 
-  //////////////////////////////
+  ////////////////////////////////
   // UCIe north <-> dummy south //
-  //////////////////////////////
+  ////////////////////////////////
 
   assign ucie_req_in[North]   = dummy_req_out[South];
   assign ucie_rsp_in[North]   = dummy_rsp_out[South];
@@ -118,9 +138,9 @@ module ucie_tile_left
   assign dummy_rsp_in[South]  = ucie_rsp_out[North];
   assign dummy_wide_in[South] = ucie_wide_out[North];
 
-  ////////////////////
+  ///////////////////
   // Exposed ports //
-  ////////////////////
+  ///////////////////
 
   assign floo_req_dummy_north_o  = dummy_req_out[North];
   assign dummy_rsp_in[North]     = floo_rsp_dummy_north_i;
@@ -144,18 +164,22 @@ module ucie_tile_left
   assign ucie_wide_in[East]    = floo_wide_ucie_east_i;
 
   /////////////////////////////
-  // Chip boundary: tie offs //
+  // Mesh boundary: tie offs //
   /////////////////////////////
+
+  // Outputs left open, inputs tied off, so synthesis removes these router
+  // ports. West is the chip edge; South is below the bottom row of the
+  // mesh, where nothing is routed.
+  assign dummy_req_in[West]  = '0;
+  assign dummy_rsp_in[West]  = '0;
+  assign dummy_wide_in[West] = '0;
+
+  assign ucie_req_in[West]  = '0;
+  assign ucie_rsp_in[West]  = '0;
+  assign ucie_wide_in[West] = '0;
 
   assign ucie_req_in[South]  = '0;
   assign ucie_rsp_in[South]  = '0;
   assign ucie_wide_in[South] = '0;
-  assign ucie_req_in[West]   = '0;
-  assign ucie_rsp_in[West]   = '0;
-  assign ucie_wide_in[West]  = '0;
-
-  assign dummy_req_in[West]  = '0;
-  assign dummy_rsp_in[West]  = '0;
-  assign dummy_wide_in[West] = '0;
 
 endmodule : ucie_tile_left
