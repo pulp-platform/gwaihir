@@ -30,8 +30,18 @@ module rdi2stream #(
     logic [DataWidth-1:0] rdi_data_q;
     logic                 rdi_valid_q;
 
-    `FF(rdi_valid_q, pl_valid_i, 1'b0, clk_i, rst_ni)
-    `FFL(rdi_data_q, pl_data_i, pl_valid_i, '0, clk_i, rst_ni)
+    // The data is taken every cycle, with no enable: `rdi_valid_q` says which
+    // words count, so `pl_valid` drives one flop instead of a word's load
+    // enable
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        rdi_valid_q <= 1'b0;
+        rdi_data_q  <= '0;
+      end else begin
+        rdi_valid_q <= pl_valid_i;
+        rdi_data_q  <= pl_data_i;
+      end
+    end
 
     assign rdi_data  = rdi_data_q;
     assign rdi_valid = rdi_valid_q;

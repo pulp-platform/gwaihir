@@ -856,6 +856,36 @@ module ucie_tile
 
   assign link_active = (pl_state == RdiActive);
 
+  // State request: ACTIVE while the link gate is open. With `CutRdi` it comes
+  // from a flop next to the pin, as the macro's setup on it leaves no time for
+  // the path from the serial link registers; it follows `link_en` one cycle
+  // late.
+  rdi_state_e lp_state_req;
+
+  if (CutRdi) begin : gen_cut_rdi_state_req
+    always_ff @(posedge tile_clk or negedge tile_rst_n) begin
+      if (!tile_rst_n) lp_state_req <= RdiReset;
+      else lp_state_req <= link_en ? RdiActive : RdiReset;
+    end
+  end else begin : gen_no_cut_rdi_state_req
+    assign lp_state_req = link_en ? RdiActive : RdiReset;
+  end
+
+  // TX copy of the gate. The macro's TX pins (lp_*) and RX pins (pl_*) are
+  // ~430 um apart on its edge, and `pl_state` sits next to the RX ones; this
+  // copy sits next to lp_valid/lp_irdy, whose setup leaves no time for the
+  // trip across. TX follows ACTIVE one cycle later than RX.
+  logic link_active_tx;
+
+  if (CutRdi) begin : gen_cut_link_active_tx
+    always_ff @(posedge tile_clk or negedge tile_rst_n) begin
+      if (!tile_rst_n) link_active_tx <= 1'b0;
+      else link_active_tx <= link_active;
+    end
+  end else begin : gen_no_cut_link_active_tx
+    assign link_active_tx = link_active;
+  end
+
   // TX: serializer stream -> RDI
   logic tx_rdi_ready;
 
@@ -874,7 +904,7 @@ module ucie_tile
     .lp_valid_o   (lp_valid),
     .lp_irdy_o    (lp_irdy),
     .pl_trdy_i    (pl_trdy),
-    .link_active_i(link_active)
+    .link_active_i(link_active_tx)
   );
 
   // RX: RDI -> serializer stream. RDI RX has no backpressure: `rdi2stream`
@@ -926,20 +956,41 @@ module ucie_tile
   logic ucie_apb_src_req_valid, ucie_apb_src_req_ready;
   logic ucie_apb_src_rsp_valid;
   logic ucie_apb_dst_req_valid, ucie_apb_dst_done;
+  logic ucie_apb_psel_d, ucie_apb_psel_q;
   logic ucie_apb_access_d, ucie_apb_access_q;
-  ucie_cfg_apb_resp_t ucie_apb_src_rsp, ucie_apb_cfg_rsp;
+  logic ucie_apb_src_rsp_ready, ucie_apb_rsp_valid_q;
+  ucie_cfg_apb_resp_t ucie_apb_src_rsp, ucie_apb_rsp_q, ucie_apb_cfg_rsp;
 
   // Source side: forward the access phase, then hold off `pready` until the
-  // response is back. One transfer in flight at a time.
+  // response is back. One transfer in flight at a time. The response is
+  // registered on clk before it reaches `pready`/`prdata`: straight out of
+  // the response spill register, it started on the APB clock (~0.2 ns late,
+  // divider clock gate) and ran through the AXI-Lite and NoC logic in the same
+  // clk cycle (rdibnd4 right: -0.096 ns into router clock gates).
+  assign ucie_apb_src_rsp_ready = ucie_apb_busy_q & ~ucie_apb_rsp_valid_q;
+
+  always_ff @(posedge clk_i or negedge tile_rst_apb_n) begin
+    if (!tile_rst_apb_n) begin
+      ucie_apb_rsp_valid_q <= 1'b0;
+      ucie_apb_rsp_q       <= '0;
+    end else if (ucie_apb_src_rsp_valid && ucie_apb_src_rsp_ready) begin
+      ucie_apb_rsp_valid_q <= 1'b1;
+      ucie_apb_rsp_q       <= ucie_apb_src_rsp;
+    end else begin
+      // `pready` for one cycle
+      ucie_apb_rsp_valid_q <= 1'b0;
+    end
+  end
+
   always_comb begin
     ucie_apb_src_req_valid  = 1'b0;
     ucie_apb_busy_d         = ucie_apb_busy_q;
-    ucie_apb_cfg_rsp        = ucie_apb_src_rsp;
+    ucie_apb_cfg_rsp        = ucie_apb_rsp_q;
     ucie_apb_cfg_rsp.pready = 1'b0;
     if (ucie_apb_busy_q) begin
-      // Complete the transfer when the response is back
-      ucie_apb_cfg_rsp.pready = ucie_apb_src_rsp_valid;
-      ucie_apb_busy_d         = ~ucie_apb_src_rsp_valid;
+      // Complete the transfer when the registered response is there
+      ucie_apb_cfg_rsp.pready = ucie_apb_rsp_valid_q;
+      ucie_apb_busy_d         = ~ucie_apb_rsp_valid_q;
     end else if (cfg_apb_req[ApbUcie].psel && cfg_apb_req[ApbUcie].penable) begin
       // Forward the access, busy once the request is pushed
       ucie_apb_src_req_valid = 1'b1;
@@ -968,17 +1019,30 @@ module ucie_tile
   );
 
   // Destination side: replay the transfer with its setup and access phases
-  // and push the response back on `pready`
+  // and push the response back on `pready`. `psel` comes from a flop on the
+  // APB clock, one APB cycle after the request crosses: decoded straight from
+  // the spill register's clk-side pointer, it reached the macro pin with the
+  // APB clock ~0.2 ns late (divider clock gate) and failed hold there with no
+  // setup margin left to fix it. Now the crossing ends at `ucie_apb_psel_q`.
   always_comb begin
     ucie_apb_req         = cfg_apb_req[ApbUcie];
-    ucie_apb_req.psel    = ucie_apb_dst_req_valid;
+    ucie_apb_req.psel    = ucie_apb_psel_q;
     ucie_apb_req.penable = ucie_apb_access_q;
     // Setup phase for one cycle, then access phase until `pready`
     ucie_apb_dst_done    = ucie_apb_access_q & ucie_apb_rsp.pready;
-    ucie_apb_access_d    = ucie_apb_dst_req_valid & ~ucie_apb_dst_done;
+    ucie_apb_psel_d      = ucie_apb_dst_req_valid & ~ucie_apb_dst_done;
+    ucie_apb_access_d    = ucie_apb_psel_q & ~ucie_apb_dst_done;
   end
 
-  `FF(ucie_apb_access_q, ucie_apb_access_d, 1'b0, ucie_apb_clk, tile_rst_apb_n)
+  always_ff @(posedge ucie_apb_clk or negedge tile_rst_apb_n) begin
+    if (!tile_rst_apb_n) begin
+      ucie_apb_psel_q   <= 1'b0;
+      ucie_apb_access_q <= 1'b0;
+    end else begin
+      ucie_apb_psel_q   <= ucie_apb_psel_d;
+      ucie_apb_access_q <= ucie_apb_access_d;
+    end
+  end
 
   cc_isochronous_spill_register #(
     .data_t(ucie_cfg_apb_resp_t)
@@ -991,7 +1055,7 @@ module ucie_tile
     .dst_clk_i  (clk_i),
     .dst_rst_ni (tile_rst_apb_n),
     .dst_valid_o(ucie_apb_src_rsp_valid),
-    .dst_ready_i(ucie_apb_busy_q),
+    .dst_ready_i(ucie_apb_src_rsp_ready),
     .dst_data_o (ucie_apb_src_rsp)
   );
 
@@ -1048,7 +1112,7 @@ module ucie_tile
     .lp_irdy      (lp_irdy),
     // ACTIVE while the link gate is open: with the PCS in state follow mode,
     // pl_state_sts mirrors it and the PCS holds TX while the gate is closed
-    .lp_state_req (link_en ? RdiActive : RdiReset),
+    .lp_state_req (lp_state_req),
     .lp_valid     (lp_valid),
     // RDI: PHY -> adapter
     .pl_data      (pl_data),
