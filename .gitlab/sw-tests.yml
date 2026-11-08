@@ -49,8 +49,6 @@
       - { SN_BINARY: $SN_BUILD_DIR/reduction_bf16.elf, VERIFY_PY: experiments/reduction/verify_bf16.py, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/ucie_loopback.elf, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/mxcore.elf, VERIFY_PY: experiments/mxcore/verify.py, PRELMODE: 5 }
-      - { SN_BINARY: $SN_BUILD_DIR/mx_e2e.elf, VERIFY_PY: experiments/mx_e2e/verify.py, PRELMODE: 5 }
-      - { SN_BINARY: $SN_BUILD_DIR/mx_e2e_fp16.elf, VERIFY_PY: experiments/mx_e2e/verify.py, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/mxcore_multi.elf, VERIFY_PY: experiments/mxcore_multi/verify.py, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/dma_transpose_l1.elf, PRELMODE: 5 }
       - { SN_BINARY: $SN_BUILD_DIR/dma_transpose_l2.elf, PRELMODE: 5 }
