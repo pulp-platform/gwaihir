@@ -45,7 +45,7 @@ SN_TESTS_INCDIRS  = $(SN_ROOT)/sw/kernels/blas
 # The Surya and datamover HALs and the generated Surya workload of the H tile tests.
 SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
 SN_TESTS_INCDIRS += $(shell $(BENDER) path datamover)/sw
-SN_TESTS_INCDIRS += $(GW_SNITCH_SW_DIR)/tests/data/surya_mx
+SN_TESTS_INCDIRS += $(SN_TESTS_BUILDDIR)/data/surya_mx
 
 SN_BUILD_APPS = OFF
 
@@ -70,6 +70,14 @@ SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 # fcvt.d.w and fsd, and Spatz has no FP64. The real fix is probably a -march without D in
 # snitch_cluster sw/toolchain.mk.
 $(SN_TESTS_BUILDDIR)/surya_mx.elf: SN_TESTS_RISCV_CFLAGS += -mno-implicit-float
+
+# The Surya-MX model generates the test data from the `tests/gwaihir.json` suite of its
+# repository. The suite also sets the HW config, which is the Surya-MX package default.
+$(SN_TESTS_BUILDDIR)/data/surya_mx/surya_workload.h: $(GW_ROOT)/Bender.lock $(GW_SW_DIR)/sw.mk
+	cd $(shell $(BENDER) path surya-mx) && PYTHONDONTWRITEBYTECODE=1 python -m surya_model.workloads.cli \
+		--json tests/gwaihir.json --test_name MX_M128_N256_P128_MXO --no-debug --output_dir $(abspath $(@D))
+
+$(SN_TESTS_BUILDDIR)/surya_mx.d: $(SN_TESTS_BUILDDIR)/data/surya_mx/surya_workload.h
 
 $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_SW_DIR) --no-format $<
