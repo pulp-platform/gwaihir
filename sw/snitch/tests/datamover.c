@@ -2,18 +2,24 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
-// Datamover HWPE on the H tile. The test does these steps:
-//   1. The DM core copies the input and the golden outputs from L2 to the TCDM.
-//   2. Core 0 selects the datamover, enables its clock and starts four chained
-//      jobs on a 64 x 64 byte matrix: an 8-bit transpose, a 16-bit and a 32-bit
-//      transpose of the result, and a copy.
+// Datamover HWPE on the H tile. The datamover model generates the tasks in
+// `datamover_workload.h` from `tests/gwaihir.json` in the datamover repository.
+// The tasks are an 8-bit, a 16-bit and a 32-bit transpose and a copy. Each task
+// reads the output of the task before it.
+//
+// The test does these steps:
+//   1. The DM core copies the input from L2 to the TCDM.
+//   2. Core 0 selects the datamover, enables its clock and starts the tasks.
 //   3. Core 0 waits until the datamover is idle, clears the event and disables
-//      the clock. It returns the number of wrong 64-bit words.
+//      the clock.
+//   4. The DM core copies the outputs to L2. `experiments/datamover/verify.py`
+//      compares them with the golden data in the ELF.
 //
 // Build and run the test on the H tile:
 //   make sn-tests chs-sw-tests
-//   make vsim-run-batch CHS_BINARY=sw/cheshire/tests/simple_htile_offload.spm.elf \
-//     SN_BINARY=sw/snitch/tests/build/datamover.elf PRELMODE=3
+//   make vsim-run-batch-verify CHS_BINARY=sw/cheshire/tests/simple_htile_offload.spm.elf \
+//     SN_BINARY=sw/snitch/tests/build/datamover.elf VERIFY_PY=experiments/datamover/verify.py \
+//     PRELMODE=3
 
 #include <stdint.h>
 
@@ -24,8 +30,7 @@
 #define DATAMOVER_BASE_ADDR (GW_HWPE_BASE + GW_HWPE_DATAMOVER_OFFS)
 
 #include "datamover_hal.h"
-
-#include "data/datamover_data.h"
+#include "datamover_workload.h"
 
 static_assert(sizeof(datamover_regif_t) <= GW_HWPE_ACC_WINDOW,
               "the datamover register file outgrew the subsystem window");
@@ -33,27 +38,38 @@ static_assert(sizeof(datamover_regif_t) <= GW_HWPE_ACC_WINDOW,
 #define GW_HWPE_WRITE(offs, value) \
   (*(volatile uint32_t *)(GW_HWPE_BASE + (offs)) = (uint32_t)(value))
 
-#define IN_BYTES (SIZE * SIZE)
+// The runtime clears .bss at boot with slow core stores to L2. It does not clear .dram.
+#define L2_OUT __attribute__((section(".dram"), aligned(64)))
+#define TASK_L2_OUT(i) L2_OUT uint8_t task##i##_result[TASK##i##_OUT_SIZE];
+DATAMOVER_TASKS(TASK_L2_OUT)
 
-static uint8_t *local_in;
-static uint8_t *local_out;
-static uint8_t *local_out2;
-static uint8_t *local_out3bis;
-static uint8_t *local_out3;
-static uint8_t *local_gold;
-static uint8_t *local_gold2;
-static uint8_t *local_gold3;
+// local_buf[0] is the input. local_buf[i + 1] is the output of task i.
+static uint8_t *local_buf[NUM_TASKS + 1];
 
-// A 64-bit compare of two loads becomes vcpop.m on RV32, which Spatz does not implement.
-static int compare_words(const uint8_t *actual, const uint8_t *golden, uint32_t bytes) {
-  const uint32_t *a = (const uint32_t *)actual;
-  const uint32_t *g = (const uint32_t *)golden;
-  int errors = 0;
-  for (uint32_t i = 0; i < bytes / sizeof(uint64_t); i++) {
-    errors += (a[2 * i] != g[2 * i]) | (a[2 * i + 1] != g[2 * i + 1]);
-  }
-  return errors;
-}
+#define TASK_ALLOC(i) \
+  local_buf[i + 1] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK##i##_OUT_SIZE, 64);
+
+#define TASK_CONFIG(i)                                               \
+  {                                                                  \
+      .in_ptr      = local_buf[i],                                   \
+      .out_ptr     = local_buf[i + 1],                               \
+      .out_size    = TASK##i##_OUT_SIZE,                             \
+      .mode        = (datamover_mode_t)TASK##i##_DATAMOVER_MODE,     \
+      .transp_mode = (datamover_transp_mode_t)TASK##i##_TRANSP_MODE, \
+      .block_mode  = TASK##i##_BLOCK_MODE,                           \
+      .size_c      = TASK##i##_SIZE_C,                               \
+      .size_m      = TASK##i##_SIZE_M,                               \
+      .size_n      = TASK##i##_SIZE_N,                               \
+      .kernel_h    = TASK##i##_KERNEL_SIZE_H,                        \
+      .kernel_w    = TASK##i##_KERNEL_SIZE_W,                        \
+      .conv_stride = TASK##i##_CONV_STRIDE,                          \
+      .conv_pad    = TASK##i##_CONV_PAD,                             \
+      .layout      = TASK##i##_LAYOUT,                               \
+      .im2col_in   = TASK##i##_IM2COL_IN,                            \
+      .im2col_out  = TASK##i##_IM2COL_OUT,                           \
+  },
+
+#define TASK_DMA_OUT(i) snrt_dma_start_1d(task##i##_result, local_buf[i + 1], TASK##i##_OUT_SIZE);
 
 int main(void) {
   const uint32_t core_idx = snrt_cluster_core_idx();
@@ -64,18 +80,9 @@ int main(void) {
   if (snrt_cluster_idx() != GW_HTILE_CLUSTER_IDX) return 0;
 
   if (snrt_is_dm_core()) {
-    local_in      = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES, 64);
-    local_out     = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES, 64);
-    local_gold    = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES, 64);
-    local_out2    = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES / 2, 64);
-    local_gold2   = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES / 2, 64);
-    local_out3    = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES / 4, 64);
-    local_out3bis = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES / 4, 64);
-    local_gold3   = (uint8_t *)snrt_l1_alloc_cluster_local(IN_BYTES / 4, 64);
-    snrt_dma_start_1d(local_in, golden_in, IN_BYTES);
-    snrt_dma_start_1d(local_gold, golden_out, IN_BYTES);
-    snrt_dma_start_1d(local_gold2, golden_out2, IN_BYTES / 2);
-    snrt_dma_start_1d(local_gold3, golden_out3, IN_BYTES / 4);
+    local_buf[0] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK0_IN_SIZE, 64);
+    DATAMOVER_TASKS(TASK_ALLOC)
+    snrt_dma_start_1d(local_buf[0], task0_golden_in, TASK0_IN_SIZE);
     snrt_dma_wait_all();
   }
   snrt_cluster_hw_barrier();
@@ -88,11 +95,9 @@ int main(void) {
 
     datamover_soft_clear();
 
-    // Each job reads the output of the job before it. The datamover runs the jobs in order.
-    datamover_transpose(local_in, local_out, SIZE, SIZE, DATAMOVER_TRANSP_1ELEM);
-    datamover_transpose(local_out, local_out2, SIZE / 2, SIZE, DATAMOVER_TRANSP_2ELEM);
-    datamover_transpose(local_out2, local_out3bis, SIZE / 4, SIZE, DATAMOVER_TRANSP_4ELEM);
-    datamover_copy(local_out3bis, local_out3, SIZE / 4, SIZE);
+    const datamover_task_config_t tasks[NUM_TASKS] = {DATAMOVER_TASKS(TASK_CONFIG)};
+    // The datamover runs the jobs in order.
+    for (uint32_t i = 0; i < NUM_TASKS; i++) datamover_run(&tasks[i]);
 
     datamover_wait();
 
@@ -101,10 +106,10 @@ int main(void) {
   }
   snrt_cluster_hw_barrier();
 
-  if (core_idx != 0) return 0;
-
-  int errors = compare_words(local_out, local_gold, IN_BYTES);
-  errors += compare_words(local_out2, local_gold2, IN_BYTES / 2);
-  errors += compare_words(local_out3, local_gold3, IN_BYTES / 4);
-  return errors;
+  // The L2 dump starts when all cores return, so the DM core waits for its DMA.
+  if (snrt_is_dm_core()) {
+    DATAMOVER_TASKS(TASK_DMA_OUT)
+    snrt_dma_wait_all();
+  }
+  return 0;
 }

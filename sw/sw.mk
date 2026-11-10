@@ -42,10 +42,11 @@ SN_RVTESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/riscv-tests/build
 
 SN_TESTS_BUILDDIR = $(GW_SNITCH_SW_DIR)/tests/build
 SN_TESTS_INCDIRS  = $(SN_ROOT)/sw/kernels/blas
-# The Surya and datamover HALs and the generated Surya workload of the H tile tests.
+# The Surya and datamover HALs and the generated workloads of the H tile tests.
 SN_TESTS_INCDIRS += $(shell $(BENDER) path surya-mx)/sw
 SN_TESTS_INCDIRS += $(shell $(BENDER) path datamover)/sw
 SN_TESTS_INCDIRS += $(SN_TESTS_BUILDDIR)/data/surya_mx
+SN_TESTS_INCDIRS += $(SN_TESTS_BUILDDIR)/data/datamover
 
 SN_BUILD_APPS = OFF
 
@@ -71,13 +72,18 @@ SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 # snitch_cluster sw/toolchain.mk.
 $(SN_TESTS_BUILDDIR)/surya_mx.elf: SN_TESTS_RISCV_CFLAGS += -mno-implicit-float
 
-# The Surya-MX model generates the test data from the `tests/gwaihir.json` suite of its
-# repository. The suite also sets the HW config, which is the Surya-MX package default.
+# The Surya-MX and datamover models generate the test data from the `tests/gwaihir.json` suite
+# of their repository. The suite also sets the HW config, which is the package default.
 $(SN_TESTS_BUILDDIR)/data/surya_mx/surya_workload.h: $(GW_ROOT)/Bender.lock $(GW_SW_DIR)/sw.mk
 	cd $(shell $(BENDER) path surya-mx) && PYTHONDONTWRITEBYTECODE=1 python -m surya_model.workloads.cli \
 		--json tests/gwaihir.json --test_name MX_M128_N256_P128_MXO --no-debug --output_dir $(abspath $(@D))
 
+$(SN_TESTS_BUILDDIR)/data/datamover/datamover_workload.h: $(GW_ROOT)/Bender.lock $(GW_SW_DIR)/sw.mk
+	cd $(shell $(BENDER) path datamover) && PYTHONDONTWRITEBYTECODE=1 python -m datamover_model.workloads.cli \
+		--json tests/gwaihir.json --test_name CHAIN_T8_T16_T32_copy --no-debug --output_dir $(abspath $(@D))
+
 $(SN_TESTS_BUILDDIR)/surya_mx.d: $(SN_TESTS_BUILDDIR)/data/surya_mx/surya_workload.h
+$(SN_TESTS_BUILDDIR)/datamover.d: $(SN_TESTS_BUILDDIR)/data/datamover/datamover_workload.h
 
 $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_SW_DIR) --no-format $<
