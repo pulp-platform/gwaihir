@@ -31,7 +31,7 @@ dependencies:
     rev: master
   datamover:
     git: https://github.com/pulp-platform/datamover.git
-    rev: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
+    rev: eba4548c0356449fe4cbb42893a4f1ef8d868154 # lkesting/gwaihir-aligned
   floo_noc:
     git: https://github.com/pulp-platform/FlooNoC.git
     rev: lleone/floo-nw-cut

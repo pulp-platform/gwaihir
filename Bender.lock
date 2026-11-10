@@ -195,14 +195,16 @@ packages:
     - register_interface
     - tech_cells_generic
   datamover:
-    revision: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
+    revision: eba4548c0356449fe4cbb42893a4f1ef8d868154
     version: null
     source:
       Git: https://github.com/pulp-platform/datamover.git
     dependencies:
+    - common_cells
     - hci
     - hwpe-ctrl
     - hwpe-stream
+    - ibex
   dram_rtl_sim:
     revision: 5566a81f2f745b5374d092208086aaf9ba6c9d75
     version: null

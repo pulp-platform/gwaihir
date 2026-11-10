@@ -253,7 +253,7 @@ module h_tile
       .CtrlDataWidth(HWPECtrlDataWidth),
       .NrCores      (NrCores),
       .Accelerator  (HwpeSurya),
-      .UseDatamover (UseDatamover)
+      .UseDatamover (UseHtileDatamover)
     ) i_snitch_hwpe_subsystem (
       .clk_i          (tile_clk),
       .rst_ni         (tile_rst_n),
