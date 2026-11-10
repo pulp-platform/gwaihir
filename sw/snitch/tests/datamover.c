@@ -5,11 +5,14 @@
 // Datamover HWPE on the H tile. The datamover model generates the tasks in
 // `datamover_workload.h` from `tests/gwaihir.json` in the datamover repository.
 // The tasks are an 8-bit, a 16-bit and a 32-bit transpose and a copy. Each task
-// reads the output of the task before it.
+// reads the output of the task before it. Three more 8-bit transposes read the
+// input in the shapes of the packed MXINT4 V blocks of Surya-MX.
 //
 // The test does these steps:
 //   1. The DM core copies the input from L2 to the TCDM.
-//   2. Core 0 selects the datamover, enables its clock and starts the tasks.
+//   2. Core 0 selects the datamover, enables its clock and starts the tasks
+//      and the V block transposes. Guard bytes around each V block must not
+//      change.
 //   3. Core 0 waits until the datamover is idle, clears the event and disables
 //      the clock.
 //   4. The DM core copies the outputs to L2. `experiments/datamover/verify.py`
@@ -43,8 +46,20 @@ static_assert(sizeof(datamover_regif_t) <= GW_HWPE_ACC_WINDOW,
 #define TASK_L2_OUT(i) L2_OUT uint8_t task##i##_result[TASK##i##_OUT_SIZE];
 DATAMOVER_TASKS(TASK_L2_OUT)
 
+// Rows x columns of the packed MXINT4 V block of the 1k, 2k and 4k MAC Surya-MX. The 64 B guard
+// aligns each block to a superbank: the H tile TCDM port does not realign across superbanks.
+// `experiments/datamover/verify.py` uses the same values.
+#define V_BLOCKS(X) X(32, 16) X(32, 32) X(64, 32)
+#define V_GUARD     64
+#define V_FILL      0xa5
+#define V_BUF_BYTES(m, n) ((m) * (n) + 2 * V_GUARD)
+#define V_L2_OUT(m, n)    L2_OUT uint8_t v_result_##m##x##n[V_BUF_BYTES(m, n)];
+V_BLOCKS(V_L2_OUT)
+
 // local_buf[0] is the input. local_buf[i + 1] is the output of task i.
 static uint8_t *local_buf[NUM_TASKS + 1];
+#define V_LOCAL(m, n) static uint8_t *local_v_##m##x##n;
+V_BLOCKS(V_LOCAL)
 
 #define TASK_ALLOC(i) \
   local_buf[i + 1] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK##i##_OUT_SIZE, 64);
@@ -71,6 +86,24 @@ static uint8_t *local_buf[NUM_TASKS + 1];
 
 #define TASK_DMA_OUT(i) snrt_dma_start_1d(task##i##_result, local_buf[i + 1], TASK##i##_OUT_SIZE);
 
+#define V_ALLOC(m, n) \
+  local_v_##m##x##n = (uint8_t *)snrt_l1_alloc_cluster_local(V_BUF_BYTES(m, n), 64);
+
+// Volatile stores keep LLVM from a vector fill.
+#define V_TRANSPOSE(m, n)                                                \
+  {                                                                      \
+    volatile uint8_t *guard = local_v_##m##x##n;                         \
+    for (uint32_t k = 0; k < V_GUARD; k++) {                             \
+      guard[k]                       = V_FILL;                           \
+      guard[V_GUARD + (m) * (n) + k] = V_FILL;                           \
+    }                                                                    \
+    datamover_transpose(local_buf[0], local_v_##m##x##n + V_GUARD, m, n, \
+                        DATAMOVER_TRANSP_1ELEM);                         \
+  }
+
+#define V_DMA_OUT(m, n) \
+  snrt_dma_start_1d(v_result_##m##x##n, local_v_##m##x##n, V_BUF_BYTES(m, n));
+
 int main(void) {
   const uint32_t core_idx = snrt_cluster_core_idx();
 
@@ -82,6 +115,7 @@ int main(void) {
   if (snrt_is_dm_core()) {
     local_buf[0] = (uint8_t *)snrt_l1_alloc_cluster_local(TASK0_IN_SIZE, 64);
     DATAMOVER_TASKS(TASK_ALLOC)
+    V_BLOCKS(V_ALLOC)
     snrt_dma_start_1d(local_buf[0], task0_golden_in, TASK0_IN_SIZE);
     snrt_dma_wait_all();
   }
@@ -98,6 +132,7 @@ int main(void) {
     const datamover_task_config_t tasks[NUM_TASKS] = {DATAMOVER_TASKS(TASK_CONFIG)};
     // The datamover runs the jobs in order.
     for (uint32_t i = 0; i < NUM_TASKS; i++) datamover_run(&tasks[i]);
+    V_BLOCKS(V_TRANSPOSE)
 
     datamover_wait();
 
@@ -109,6 +144,7 @@ int main(void) {
   // The L2 dump starts when all cores return, so the DM core waits for its DMA.
   if (snrt_is_dm_core()) {
     DATAMOVER_TASKS(TASK_DMA_OUT)
+    V_BLOCKS(V_DMA_OUT)
     snrt_dma_wait_all();
   }
   return 0;
