@@ -60,3 +60,6 @@
       - { SN_BINARY: sw/snitch/apps/spatz-fgemv/build/spatz-fgemv.elf, VERIFY_PY: $SN_ROOT/sw/kernels/blas/spatz-fgemv/scripts/verify.py, PRELMODE: 5 }
       - { SN_BINARY: sw/snitch/apps/spatz_pace_loop/build/spatz_pace_loop.elf, VERIFY_PY: $SN_ROOT/sw/kernels/pace/spatz_pace_loop/scripts/verify.py, PRELMODE: 5 }
       - { SN_BINARY: sw/snitch/apps/spatz_pace_loop/build/pwpa_bfp16/spatz_pace_loop_pwpa_bfp16.elf, VERIFY_PY: $SN_ROOT/sw/kernels/pace/spatz_pace_loop/scripts/verify.py, PRELMODE: 5 }
+      - { SN_BINARY: sw/snitch/apps/spatz_softmax/build/spatz_softmax.elf, VERIFY_PY: sw/snitch/apps/spatz_softmax/scripts/verify.py, PRELMODE: 5 }
+      - { CHS_BINARY: $CHS_BUILD_DIR/simple_htile_offload.spm.elf, SN_BINARY: sw/snitch/apps/spatz_softmax/build/spatz_softmax.elf, VERIFY_PY: sw/snitch/apps/spatz_softmax/scripts/verify.py, PRELMODE: 3 }
+      - { SN_BINARY: sw/snitch/apps/spatz_softmax/build/rows/spatz_softmax_rows.elf, VERIFY_PY: sw/snitch/apps/spatz_softmax/scripts/verify.py, PRELMODE: 5 }
