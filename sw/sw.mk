@@ -66,6 +66,11 @@ SN_APPS += $(GW_SNITCH_SW_DIR)/apps/spatz_softmax
 
 SN_TESTS = $(wildcard $(GW_SNITCH_SW_DIR)/tests/*.c)
 
+# TODO: The H tile core hangs in surya_mx without this: the Surya HAL zeroes its job config with
+# fcvt.d.w and fsd, and Spatz has no FP64. The real fix is probably a -march without D in
+# snitch_cluster sw/toolchain.mk.
+$(SN_TESTS_BUILDDIR)/surya_mx.elf: SN_TESTS_RISCV_CFLAGS += -mno-implicit-float
+
 $(GW_GEN_SW_DIR)/gw_noc_cfg.h: $(SN_RUNTIME_SRCDIR)/gw_noc_cfg.h.tpl $(FLOO_CFG)
 	$(FLOO_GEN) template -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_SW_DIR) --no-format $<
 
