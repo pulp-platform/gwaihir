@@ -112,6 +112,9 @@ static surya_task_config_t surya_tasks[NUM_TASKS];
     t->mx_out_scale_golden  = local_out_scale_gold[i];                        \
     t->mx_out_scale_size    = TASK##i##_MX_OUT_SCALE_SIZE;                    \
     t->mx_out_int8          = TASK##i##_MX_OUT_INT8;                          \
+    t->a_mxint4             = TASK##i##_A_MXINT4;                             \
+    t->b_mxint4             = TASK##i##_B_MXINT4;                             \
+    t->c_mxint4             = TASK##i##_C_MXINT4;                             \
     t->out_dim              = TASK##i##_OUT_DIM;                              \
     t->m                    = TASK##i##_M;                                    \
     t->n                    = TASK##i##_N;                                    \
@@ -119,8 +122,7 @@ static surya_task_config_t surya_tasks[NUM_TASKS];
     t->op_mode              = (surya_op_mode_t)TASK##i##_OP_MODE;             \
     t->pace                 = TASK##i##_PACE;                                 \
     t->accum_init_mode      = (surya_accum_init_mode_t)TASK##i##_ACCUM_INIT_MODE; \
-    t->a_signed             = TASK##i##_A_SIGNED;                             \
-    t->b_signed             = TASK##i##_B_SIGNED;                             \
+    t->compute              = TASK##i##_COMPUTE;                              \
     t->out_unsigned         = TASK##i##_OUT_UNSIGNED;                         \
     t->force_rr_priority    = TASK##i##_FORCE_RR_PRIORITY;                    \
     t->weight_ctx           = TASK##i##_WEIGHT_CTX;                           \

@@ -72,7 +72,7 @@ dependencies:
   # surya-mx is private; use SSH because CI has SSH access but no HTTPS token.
   surya-mx:
     git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
-    rev: main
+    rev: lkesting/gwaihir-aligned
 
 workspace:
   package_links:
