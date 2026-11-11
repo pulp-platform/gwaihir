@@ -85,7 +85,7 @@ UCIE_SLINK_RDL = $(SLINK_ROOT)/src/regs/slink_reg.rdl
 $(GW_GEN_DIR) $(GW_GEN_SW_DIR):
 	@mkdir -p $@
 
-GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
+GW_RDL_ALL += $(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/pll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/lpddr.rdl
 GW_RDL_ALL += $(GW_GEN_HW_DIR)/snitch_cluster.rdl
 GW_RDL_ALL += $(HTILE_CLUSTER_RDL)
@@ -120,7 +120,7 @@ $(GW_GEN_HW_DIR)/ucie_slink_reg_pkg.sv: $(UCIE_SLINK_RDL)
 $(GW_RDL_CHS_ADDR) $(GW_RDL_SN_ADDR): $(FLOO_CFG)
 	$(FLOO_GEN) rdl -c $(FLOO_CFG) $(FLOO_PARAMS) -o $(GW_GEN_DIR) --as-mem --memwidth=32
 
-$(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl $(GW_GEN_HW_DIR)/lpddr.rdl: | $(GW_GEN_HW_DIR)
+$(GW_GEN_HW_DIR)/fll.rdl $(GW_GEN_HW_DIR)/pll.rdl $(GW_GEN_HW_DIR)/gw_chip_regs.rdl $(GW_GEN_HW_DIR)/lpddr.rdl: | $(GW_GEN_HW_DIR)
 	@touch $@
 
 $(GW_GEN_HW_DIR)/gw_addrmap_pkg.sv: $(GW_RDL_CHS_ADDR) $(GW_RDL_ALL) | $(GW_GEN_HW_DIR)
@@ -235,7 +235,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= f7e304570544e431bf0318327349510aa2c6636f
+PD_COMMIT ?= 2fecd90a6df98788d172cb956a1e4940669d91b5
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -254,9 +254,13 @@ TUM_NPU_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/tum_npu.git
 TUM_NPU_COMMIT ?= 0b3e5df7e21bcf7bfee162cd88c38ab09e30477d
 TUM_NPU_DIR = $(GW_ROOT)/.deps/tum_npu
 
+PLL_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pll.git
+PLL_COMMIT ?= 3a909b007f1b3577e52818f7a2133223b12ca2bb
+PLL_DIR = $(GW_ROOT)/.deps/pll
+
 .PHONY: init-pd clean-pd update-pd-commit
 
-init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR) $(TUM_NPU_DIR)
+init-pd: $(PD_DIR) $(PCIE_DIR) $(LPDDR_DIR) $(UCIE_DIR) $(TUM_NPU_DIR) $(PLL_DIR)
 $(PD_DIR):
 	git clone $(PD_REMOTE) $(PD_DIR)
 	cd $(PD_DIR) && git checkout $(PD_COMMIT)
@@ -279,6 +283,10 @@ $(TUM_NPU_DIR):
 	git clone $(TUM_NPU_REMOTE) $(TUM_NPU_DIR)
 	cd $(TUM_NPU_DIR) && git checkout $(TUM_NPU_COMMIT)
 
+$(PLL_DIR):
+	git clone $(PLL_REMOTE) $(PLL_DIR)
+	cd $(PLL_DIR) && git checkout $(PLL_COMMIT)
+
 
 update-pd-commit:
 	sed -i 's/^PD_COMMIT ?= .*/PD_COMMIT ?= $(shell git -C $(PD_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
@@ -286,6 +294,7 @@ update-pd-commit:
 	sed -i 's/^PCIE_COMMIT ?= .*/PCIE_COMMIT ?= $(shell git -C $(PCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^UCIE_COMMIT ?= .*/UCIE_COMMIT ?= $(shell git -C $(UCIE_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 	sed -i 's/^TUM_NPU_COMMIT ?= .*/TUM_NPU_COMMIT ?= $(shell git -C $(TUM_NPU_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
+	sed -i 's/^PLL_COMMIT ?= .*/PLL_COMMIT ?= $(shell git -C $(PLL_DIR) rev-parse HEAD)/' $(firstword $(MAKEFILE_LIST))
 
 clean-pd:
 	rm -f $(PCIE_SW_TESTS_VENDORED)
