@@ -264,7 +264,7 @@ packages:
     - register_interface
     - tech_cells_generic
   hci:
-    revision: f0cf413366fec3b0ad267a9a8f15361f0c859dba
+    revision: a4de9a0a3e2fc999f8290cdd3b21ffaad262acbe
     version: null
     source:
       Git: https://github.com/pulp-platform/hci.git
@@ -469,7 +469,7 @@ packages:
     - reqrsp_interface
     - tech_cells_generic
   surya-mx:
-    revision: 92f612253b725e23a1395665e168eaa36e4b2fe4
+    revision: cf89b345269ba72255684b3b38fd97acf56e8a01
     version: null
     source:
       Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git

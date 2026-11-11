@@ -48,7 +48,7 @@ dependencies:
     version: 0.7.4
   hci:
     git: https://github.com/pulp-platform/hci.git
-    rev: lkesting/surya
+    rev: lkesting/gwaihir
   mxcore:
     git: https://github.com/pulp-platform/MXCore.git
     rev: gwaihir
@@ -75,7 +75,7 @@ dependencies:
   # surya-mx is private; use SSH because CI has SSH access but no HTTPS token.
   surya-mx:
     git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git
-    rev: lkesting/gwaihir-2k-mac
+    rev: lkesting/tcdm-fifo-2k-mac
 
 workspace:
   package_links:
