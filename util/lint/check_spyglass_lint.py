@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 import argparse
+import json
 import sys
 from pathlib import Path
 from pysynthutils import LintViolations
@@ -230,6 +231,8 @@ def main():
     parser.add_argument('--top', default=TOP,
                         help='Top module whose file list is checked excluding all tile files '
                              f'(default: {TOP})')
+    parser.add_argument('--waivers', type=Path,
+                        help='JSON waivers (default: waivers.json beside --tiles-dir, if present)')
     args = parser.parse_args()
 
     # Parse report for violations
@@ -360,6 +363,23 @@ def main():
         for rule, pattern in TILE_FILE_WAIVERS.get(tile, []):
             df = df[~(in_tile.reindex(df.index) & (df.rule == rule) & df.file.str.contains(pattern))]
         print(f'Apply file waivers of tile {tile}. {len(df)} messages remaining.')
+
+    # Additional waivers are grouped by tile, then rule, with file and optional message regexes.
+    waivers_path = args.waivers or args.tiles_dir.parent / 'waivers.json'
+    if args.waivers is not None or waivers_path.is_file():
+        with waivers_path.open() as f:
+            tile_waivers = json.load(f)['waivers']
+        for rules in tile_waivers.values():
+            for rule, waiver in rules.items():
+                patterns = waiver['file']
+                if isinstance(patterns, str):
+                    patterns = [patterns]
+                file_pattern = '|'.join(f'(?:{pattern})' for pattern in patterns)
+                match = (df.rule == rule) & df.file.str.contains(file_pattern)
+                if 'message' in waiver:
+                    match &= df.message.str.contains(waiver['message'])
+                df = df[~match]
+        print(f'Apply JSON waivers. {len(df)} messages remaining.')
 
     # Fail on remaining messages
     if len(df) > 0:
