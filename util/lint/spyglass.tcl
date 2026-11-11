@@ -24,6 +24,10 @@ set_option stop bus_err_unit_bare
 set_option stop tc_sram
 set_option stop tc_sram_impl
 
+if {[info exists env(LINT_SETUP)] && $env(LINT_SETUP) ne ""} {
+    source $env(LINT_SETUP)
+}
+
 compile_design
 run_goal -goal lint/lint_rtl
 

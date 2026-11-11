@@ -235,11 +235,11 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= f7e304570544e431bf0318327349510aa2c6636f
+PD_COMMIT ?= d50817fd7ced9ab6776e3aa82bff850eba79a6a2
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
-PCIE_COMMIT ?= 456127dfcfd18f7a6227e10a81382f4160887179
+PCIE_COMMIT ?= a0b0838eef8fedbd1f93b91f53a2c2c930a28e84
 PCIE_DIR = $(GW_ROOT)/.deps/pcie
 
 UCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/ucie.git
@@ -327,8 +327,12 @@ include $(GW_ROOT)/sw/sw.mk
 LINT_DIR       = $(GW_ROOT)/util/lint
 LINT_BUILD_DIR = $(LINT_DIR)/build
 LINT_TOP      ?= gwaihir_top
+LINT_TOP_LEVEL ?= gwaihir_top
 LINT_REPORT    = $(LINT_BUILD_DIR)/$(LINT_TOP)/consolidated_reports/$(LINT_TOP)_lint_lint_rtl/moresimple.rpt
 LINT_LOG       = $(LINT_BUILD_DIR)/spyglass.log
+LINT_MANIFESTS ?= $(BENDER_LOCK) $(BENDER_YML)
+# Optional technology-specific setup, sourced before compile_design.
+LINT_SETUP    ?=
 # Generated RTL is only required to exist (order-only), since some of it is regenerated on every
 # make invocation and would otherwise trigger a spurious re-run of Spyglass
 LINT_TILES    ?= gwaihir_top cheshire_tile cluster_tile mem_tile_small mem_tile_large ucie_tile pcie_tile dummy_tile h_tile
@@ -340,32 +344,34 @@ LINT_TARGS    ?= $(COMMON_TARGS) -t synthesis
 $(LINT_BUILD_DIR):
 	mkdir -p $@
 
-$(LINT_BUILD_DIR)/analyze.tcl: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_BUILD_DIR) $(LINT_GEN_RTL)
-	$(BENDER) script flist-plus $(LINT_TARGS) --suppress E31 > $@
+$(LINT_BUILD_DIR)/analyze.tcl: $(LINT_MANIFESTS) | $(LINT_BUILD_DIR) $(LINT_GEN_RTL)
+	$(BENDER) script flist-plus $(LINT_TARGS) --suppress E31 > $@.tmp
+	mv $@.tmp $@
 
 # Per-tile file lists, trimmed with bender's slang extension to the files reachable from each tile.
 # `--broken keep` is needed since slang cannot resolve the includes of the generated Snitch wrapper
 # package when parsing it standalone.
 # The trimming ignores the `-D` defines (bender 0.32.1), so it drops the double-bandwidth VLSU
 # selected by `ifdef DOUBLE_BW` in spatz.sv. Add it back next to the VLSU.
-$(LINT_BUILD_DIR)/%.f: $(BENDER_LOCK) $(BENDER_YML) | $(LINT_GEN_RTL)
+$(LINT_BUILD_DIR)/%.f: $(LINT_MANIFESTS) | $(LINT_GEN_RTL)
 	@mkdir -p $(@D)
-	$(BENDER) script flist-plus $(LINT_TARGS) --suppress E31 --top $* --broken keep > $@
-	sed -i 's|^\(.*/\)spatz_vlsu\.sv$$|&\n\1spatz_doublebw_vlsu.sv|' $@
+	$(BENDER) script flist-plus $(LINT_TARGS) --suppress E31 --top $* --broken keep > $@.tmp
+	sed -i 's|^\(.*/\)spatz_vlsu\.sv$$|&\n\1spatz_doublebw_vlsu.sv|' $@.tmp
+	mv $@.tmp $@
 
 # Run Spyglass on the full design
-$(LINT_REPORT): $(LINT_DIR)/spyglass.tcl $(LINT_BUILD_DIR)/analyze.tcl | $(LINT_BUILD_DIR)
-	cd $(LINT_BUILD_DIR) && LINT_TOP=$(LINT_TOP) $(SG_SHELL) -tcl $< > $(LINT_LOG) 2>&1
+$(LINT_REPORT): $(LINT_DIR)/spyglass.tcl $(LINT_SETUP) $(LINT_BUILD_DIR)/analyze.tcl | $(LINT_BUILD_DIR)
+	cd $(LINT_BUILD_DIR) && LINT_TOP=$(LINT_TOP) LINT_SETUP="$(LINT_SETUP)" $(SG_SHELL) -tcl $< > $(LINT_LOG) 2>&1
 
 # Check the report for the whole design. The tile file lists scope the file waivers of each tile
 spyglass: $(LINT_REPORT) $(addprefix $(LINT_BUILD_DIR)/,$(addsuffix .f,$(LINT_TILES)))
-	$(LINT_DIR)/check_spyglass_lint.py $< --tiles-dir $(LINT_BUILD_DIR)
+	$(LINT_DIR)/check_spyglass_lint.py $< --tiles-dir $(LINT_BUILD_DIR) --top $(LINT_TOP_LEVEL)
 
 # Check the report for the files reachable from a single tile, e.g. `make spyglass-cluster_tile`
 # The top level is checked against what no tile needs, so it requires all tile file lists
-spyglass-gwaihir_top: $(addprefix $(LINT_BUILD_DIR)/,$(addsuffix .f,$(LINT_TILES)))
+spyglass-$(LINT_TOP_LEVEL): $(addprefix $(LINT_BUILD_DIR)/,$(addsuffix .f,$(LINT_TILES)))
 $(addprefix spyglass-,$(LINT_TILES)): spyglass-%: $(LINT_REPORT) $(LINT_BUILD_DIR)/%.f
-	$(LINT_DIR)/check_spyglass_lint.py $< --tile $* --tiles-dir $(LINT_BUILD_DIR)
+	$(LINT_DIR)/check_spyglass_lint.py $< --tile $* --tiles-dir $(LINT_BUILD_DIR) --top $(LINT_TOP_LEVEL)
 
 spyglass-clean:
 	rm -rf $(LINT_BUILD_DIR)
@@ -390,7 +396,8 @@ include $(GW_ROOT)/target/sim/traces.mk
 # %-all / %-clean cover all hw-all/hw-clean variants; vsim-% / gw-% cover sim/rdl targets.
 # Clean targets never need dep tracking regardless of subsystem.
 _GW_NO_DEPS_GOALS := help all clean traces annotate dvt-flist slang-flist \
-                     init-pd clean-pd update-pd-commit python-venv% %-all %-clean vsim-% gw-% rdl-% docs%
+                     init-pd clean-pd update-pd-commit python-venv% %-all %-clean vsim-% gw-% rdl-% docs% \
+                     spyglass spyglass-%
 ifeq ($(filter-out $(_GW_NO_DEPS_GOALS),$(MAKECMDGOALS)),)
 # All requested goals are hw-only/informational — skip dep tracking.
 else
@@ -479,6 +486,7 @@ help:
 	@echo -e "${Green}annotate             ${Black}Annotate the better readable traces in .logs/trace_hart_<hart_id>.s with the source code related with the retired instructions."
 	@echo -e "${Green}spyglass             ${Black}Lint the RTL with Spyglass (top: LINT_TOP)."
 	@echo -e "${Green}spyglass-<tile>      ${Black}Show the Spyglass violations in the files reachable from <tile>, e.g. spyglass-cluster_tile."
+	@echo -e "${Green}spyglass-pd          ${Black}Lint the ASIC chip including PCIe and LPDDR (requires init-pd and cockpit)."
 	@echo -e "${Green}spyglass-clean       ${Black}Remove Spyglass build files."
 	@echo -e "${Green}dvt-flist            ${Black}Generate a file list for the VSCode DVT plugin."
 	@echo -e "${Green}slang-flist          ${Black}Generate a file list for the slang LSP."
