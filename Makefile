@@ -235,7 +235,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= 2fecd90a6df98788d172cb956a1e4940669d91b5
+PD_COMMIT ?= deb0a559776d010fa41b3204b3277f0895639e85
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
@@ -255,7 +255,7 @@ TUM_NPU_COMMIT ?= 0b3e5df7e21bcf7bfee162cd88c38ab09e30477d
 TUM_NPU_DIR = $(GW_ROOT)/.deps/tum_npu
 
 PLL_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pll.git
-PLL_COMMIT ?= 3a909b007f1b3577e52818f7a2133223b12ca2bb
+PLL_COMMIT ?= beb37a40569f0051f4e498d707ed483f5495997a
 PLL_DIR = $(GW_ROOT)/.deps/pll
 
 .PHONY: init-pd clean-pd update-pd-commit
