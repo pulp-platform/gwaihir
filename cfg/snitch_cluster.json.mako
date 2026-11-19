@@ -37,6 +37,10 @@
         // Half duplex transpose: one tile bank, as big as the datamover's matrix
         dma_compute_transpose: true,
         dma_compute_transpose_full_duplex: false,
+        // No MX quantization/dequantization engines (and their FP16 paths): only the transpose
+        dma_compute_mxquant: false,
+        dma_compute_mxdequant: false,
+        dma_compute_mxfp16: false,
         narrow_trans: 4,
         wide_trans: 32,
         enable_narrow_collectives: true,

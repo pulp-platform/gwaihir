@@ -18,7 +18,7 @@ addrmap gw_ucie_tile_regs {
     reg rst_axi {
         desc = "Reset control for tile";
         field {
-            desc = "active low reset signal for ucie axi domain";
+            desc = "active low reset signal for ucie axi domain (serial link and RDI adapter)";
             hw = r;
             sw = rw;
             reset = 0; // Tile is held in reset by default
@@ -28,7 +28,7 @@ addrmap gw_ucie_tile_regs {
     reg rst_apb {
         desc = "Reset control for tile";
         field {
-            desc = "active low reset signal for ucie apb domain";
+            desc = "active low reset signal for ucie apb domain (UCIe PHY + PCS macro)";
             hw = r;
             sw = rw;
             reset = 0; // Tile is held in reset by default

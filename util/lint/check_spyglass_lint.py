@@ -155,6 +155,11 @@ TILE_FILE_WAIVERS = {
         # clock signal used as a non-clock
         ('STARC05-1.4.3.4',   r'/tech_cells_generic-[0-9a-f]+/'),
     ],
+
+    'ucie_tile': [
+        # blocking assignment in the T-flip-flops of the APB clock divider (intentional)
+        ('W336', r'/common_cells-[0-9a-f]+/src/cc_clk_int_div\.sv'),
+    ],
 }
 
 

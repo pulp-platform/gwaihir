@@ -92,9 +92,71 @@ module gwaihir_top
   input  logic       pcie_jtag_phys_trst_ni,
   output logic       pcie_jtag_phys_tdo_o,
 
+  // UCIe interface (one module per UCIe tile)
+  input  logic [NumUcieTiles-1:0]      ucie_refclk_i,
+  output logic [NumUcieTiles-1:0]      ucie_txckp_o,
+  output logic [NumUcieTiles-1:0]      ucie_txckn_o,
+  output logic [NumUcieTiles-1:0][7:0] ucie_txdata_o,
+  output logic [NumUcieTiles-1:0]      ucie_txtrk_o,
+  output logic [NumUcieTiles-1:0]      ucie_txvld_o,
+  input  logic [NumUcieTiles-1:0]      ucie_rxckp_i,
+  input  logic [NumUcieTiles-1:0]      ucie_rxckn_i,
+  input  logic [NumUcieTiles-1:0][7:0] ucie_rxdata_i,
+  input  logic [NumUcieTiles-1:0]      ucie_rxtrk_i,
+  input  logic [NumUcieTiles-1:0]      ucie_rxvld_i,
+  output logic [NumUcieTiles-1:0]      ucie_txclksb_o,
+  output logic [NumUcieTiles-1:0]      ucie_txdatasb_o,
+  input  logic [NumUcieTiles-1:0]      ucie_rxclksb_i,
+  input  logic [NumUcieTiles-1:0]      ucie_rxdatasb_i,
+
   // AXI ports to DRAM
   output csh_axi_llc_req_t axi_llc_mst_req_o,
-  input  csh_axi_llc_rsp_t axi_llc_mst_rsp_i
+  input  csh_axi_llc_rsp_t axi_llc_mst_rsp_i,
+
+  // FlooNoC ports for feed-through to the memory controller
+  output floo_req_t  cheshire_external_floo_req_south_o,
+  input  floo_rsp_t  cheshire_external_floo_rsp_south_i,
+  output floo_wide_t cheshire_external_floo_wide_south_o,
+  input  floo_req_t  cheshire_external_floo_req_south_i,
+  output floo_rsp_t  cheshire_external_floo_rsp_south_o,
+  input  floo_wide_t cheshire_external_floo_wide_south_i,
+
+  input  floo_req_t  memctrl_external_floo_req_south_i,
+  output floo_rsp_t  memctrl_external_floo_rsp_south_o,
+  input  floo_wide_t memctrl_external_floo_wide_south_i,
+  output floo_req_t  memctrl_external_floo_req_south_o,
+  input  floo_rsp_t  memctrl_external_floo_rsp_south_i,
+  output floo_wide_t memctrl_external_floo_wide_south_o,
+  // FlooNoC ports for dummy tiles in memory controller
+  output floo_req_t  cheshire_external_floo_req_west_o,
+  input  floo_rsp_t  cheshire_external_floo_rsp_west_i,
+  output floo_wide_t cheshire_external_floo_wide_west_o,
+  input  floo_req_t  cheshire_external_floo_req_west_i,
+  output floo_rsp_t  cheshire_external_floo_rsp_west_o,
+  input  floo_wide_t cheshire_external_floo_wide_west_i,
+
+  output floo_req_t  tum_external_floo_req_east_o,
+  input  floo_rsp_t  tum_external_floo_rsp_east_i,
+  output floo_wide_t tum_external_floo_wide_east_o,
+  input  floo_req_t  tum_external_floo_req_east_i,
+  output floo_rsp_t  tum_external_floo_rsp_east_o,
+  input  floo_wide_t tum_external_floo_wide_east_i,
+
+  output id_t        ext_dummy_x2y4_id_o,
+  output floo_req_t  ext_dummy_x2y4_floo_req_o,
+  input  floo_rsp_t  ext_dummy_x2y4_floo_rsp_i,
+  output floo_wide_t ext_dummy_x2y4_floo_wide_o,
+  input  floo_req_t  ext_dummy_x2y4_floo_req_i,
+  output floo_rsp_t  ext_dummy_x2y4_floo_rsp_o,
+  input  floo_wide_t ext_dummy_x2y4_floo_wide_i,
+
+  output id_t        ext_dummy_x3y4_id_o,
+  output floo_req_t  ext_dummy_x3y4_floo_req_o,
+  input  floo_rsp_t  ext_dummy_x3y4_floo_rsp_i,
+  output floo_wide_t ext_dummy_x3y4_floo_wide_o,
+  input  floo_req_t  ext_dummy_x3y4_floo_req_i,
+  output floo_rsp_t  ext_dummy_x3y4_floo_rsp_o,
+  input  floo_wide_t ext_dummy_x3y4_floo_wide_i
 );
 
   floo_req_t [MeshDim.x-1:0][MeshDim.y-1:0][West:North] floo_req_in, floo_req_out;
@@ -258,28 +320,46 @@ module gwaihir_top
     .axi_llc_mst_req_o,
     .axi_llc_mst_rsp_i,
     .id_i             (CheshireId),
-    .floo_req_west_o  (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
-    .floo_rsp_west_i  (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
-    .floo_wide_west_o (floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
-    .floo_req_west_i  (floo_req_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
-    .floo_rsp_west_o  (floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
-    .floo_wide_west_i (floo_wide_in[CheshirePhysicalId.x][CheshirePhysicalId.y][West]),
+    .floo_req_west_o  (cheshire_external_floo_req_west_o),
+    .floo_rsp_west_i  (cheshire_external_floo_rsp_west_i),
+    .floo_wide_west_o (cheshire_external_floo_wide_west_o),
+    .floo_req_west_i  (cheshire_external_floo_req_west_i),
+    .floo_rsp_west_o  (cheshire_external_floo_rsp_west_o),
+    .floo_wide_west_i (cheshire_external_floo_wide_west_i),
     .floo_req_east_o  (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
     .floo_rsp_east_i  (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
     .floo_wide_east_o (floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
     .floo_req_east_i  (floo_req_in[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
     .floo_rsp_east_o  (floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
     .floo_wide_east_i (floo_wide_in[CheshirePhysicalId.x][CheshirePhysicalId.y][East]),
-    .floo_req_south_o (floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][South]),
-    .floo_rsp_south_i (floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][South]),
-    .floo_wide_south_o(floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][South]),
-    .floo_req_south_i (floo_req_in[CheshirePhysicalId.x][CheshirePhysicalId.y][South]),
-    .floo_rsp_south_o (floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][South]),
-    .floo_wide_south_i(floo_wide_in[CheshirePhysicalId.x][CheshirePhysicalId.y][South])
+    .floo_req_south_o (cheshire_external_floo_req_south_o),
+    .floo_rsp_south_i (cheshire_external_floo_rsp_south_i),
+    .floo_wide_south_o(cheshire_external_floo_wide_south_o),
+    .floo_req_south_i (cheshire_external_floo_req_south_i),
+    .floo_rsp_south_o (cheshire_external_floo_rsp_south_o),
+    .floo_wide_south_i(cheshire_external_floo_wide_south_i)
   );
   assign floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][North]  = '0;
   assign floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][North]  = '0;
   assign floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][North] = '0;
+  // The Cheshire West link goes to the dummy tile inside the memory controller through
+  // the `cheshire_external_floo_*_west_*` ports, so its mesh slot is unused.
+  assign floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]   = '0;
+  assign floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]   = '0;
+  assign floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][West]  = '0;
+
+  assign floo_req_out[CheshirePhysicalId.x][CheshirePhysicalId.y][South]
+  = memctrl_external_floo_req_south_i;
+  assign memctrl_external_floo_rsp_south_o
+  = floo_rsp_in[CheshirePhysicalId.x][CheshirePhysicalId.y][South];
+  assign floo_wide_out[CheshirePhysicalId.x][CheshirePhysicalId.y][South]
+  = memctrl_external_floo_wide_south_i;
+  assign memctrl_external_floo_req_south_o
+  = floo_req_in[CheshirePhysicalId.x][CheshirePhysicalId.y][South];
+  assign floo_rsp_out[CheshirePhysicalId.x][CheshirePhysicalId.y][South]
+  = memctrl_external_floo_rsp_south_i;
+  assign memctrl_external_floo_wide_south_o
+  = floo_wide_in[CheshirePhysicalId.x][CheshirePhysicalId.y][South];
 
   //////////////
   // Mem tile //
@@ -351,13 +431,6 @@ module gwaihir_top
   // UCIe tiles //
   ////////////////
 
-  logic [NumUcieTiles-1:0][NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_out;
-  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_out_valid;
-  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_out_ready;
-  logic [NumUcieTiles-1:0][NumChannels-1:0][NumBitsPerCycle-1:0] phy_data_in;
-  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_in_valid;
-  logic [NumUcieTiles-1:0][NumChannels-1:0]                      phy_data_in_ready;
-
   localparam int Ucie0X = int'(SamPhysical[Ucie0SamIdx].idx.x);
   localparam int Ucie0Y = int'(SamPhysical[Ucie0SamIdx].idx.y);
   localparam int Ucie1X = int'(SamPhysical[Ucie1SamIdx].idx.x);
@@ -382,7 +455,6 @@ module gwaihir_top
     end
   end
 
-
   // Ports of the right macro that the macro does not expose.
   for (genvar d = int'(North); d <= int'(West); d++) begin : gen_ucie1_unused_out
     localparam route_direction_e Dir = route_direction_e'(d);
@@ -397,16 +469,6 @@ module gwaihir_top
       assign floo_wide_out[Ucie1X][Ucie1DummyY][Dir] = '0;
     end
   end
-
-  // loopback UCIe[0] -> UCIe[1]: connect TX0 -> RX1
-  assign phy_data_in[1]        = phy_data_out[0];
-  assign phy_data_in_valid[1]  = phy_data_out_valid[0];
-  assign phy_data_out_ready[0] = phy_data_in_ready[1];
-
-  // loopback UCIe[1] -> UCIe[0]: connect TX1 -> RX0
-  assign phy_data_in[0]        = phy_data_out[1];
-  assign phy_data_in_valid[0]  = phy_data_out_valid[1];
-  assign phy_data_out_ready[1] = phy_data_in_ready[0];
 
   ////////////////
   // PCIe tile  //
@@ -481,12 +543,12 @@ module gwaihir_top
     .fault_o      (),
     .wfi_o        (),
 
-    .floo_req_east_o (floo_req_out[TumNpuTileX][TumNpuTileY][East]),
-    .floo_rsp_east_i (floo_rsp_in[TumNpuTileX][TumNpuTileY][East]),
-    .floo_wide_east_o(floo_wide_out[TumNpuTileX][TumNpuTileY][East]),
-    .floo_req_east_i (floo_req_in[TumNpuTileX][TumNpuTileY][East]),
-    .floo_rsp_east_o (floo_rsp_out[TumNpuTileX][TumNpuTileY][East]),
-    .floo_wide_east_i(floo_wide_in[TumNpuTileX][TumNpuTileY][East]),
+    .floo_req_east_o (tum_external_floo_req_east_o),
+    .floo_rsp_east_i (tum_external_floo_rsp_east_i),
+    .floo_wide_east_o(tum_external_floo_wide_east_o),
+    .floo_req_east_i (tum_external_floo_req_east_i),
+    .floo_rsp_east_o (tum_external_floo_rsp_east_o),
+    .floo_wide_east_i(tum_external_floo_wide_east_i),
 
     .floo_req_south_o (floo_req_out[TumNpuTileX][TumNpuTileY][South]),
     .floo_rsp_south_i (floo_rsp_in[TumNpuTileX][TumNpuTileY][South]),
@@ -507,9 +569,25 @@ module gwaihir_top
   assign floo_req_out[TumNpuTileX][TumNpuTileY][North]  = '0;
   assign floo_rsp_out[TumNpuTileX][TumNpuTileY][North]  = '0;
   assign floo_wide_out[TumNpuTileX][TumNpuTileY][North] = '0;
+  assign floo_req_out[TumNpuTileX][TumNpuTileY][East]   = '0;
+  assign floo_wide_out[TumNpuTileX][TumNpuTileY][East]  = '0;
+  assign floo_rsp_out[TumNpuTileX][TumNpuTileY][East]   = '0;
+
   ////////////////
   // Dummy tile //
   ////////////////
+
+  // Get coordinates of the cluster tiles that need to connect to
+  // the external (i.e. internal to memory controller) dummy tiles
+  localparam int C11X = int'(SamPhysical[ClusterX2Y3SamIdx].idx.x);
+  localparam int C11Y = int'(SamPhysical[ClusterX2Y3SamIdx].idx.y);
+  localparam int C07X = int'(SamPhysical[ClusterX1Y3SamIdx].idx.x);
+  localparam int C07Y = int'(SamPhysical[ClusterX1Y3SamIdx].idx.y);
+
+  // Spot the offset of the dummy tiles above the clusters that
+  // connect through the LPDDR
+  localparam int C11DummyY = C11Y + 1;
+  localparam int C07DummyY = C07Y + 1;
 
   for (genvar d = 0; d < NumDummyTiles; d++) begin : gen_dummytiles
 
@@ -547,13 +625,22 @@ module gwaihir_top
         .floo_req_ucie_east_i   (floo_req_in[Ucie0X][Ucie0Y][East]),
         .floo_rsp_ucie_east_o   (floo_rsp_out[Ucie0X][Ucie0Y][East]),
         .floo_wide_ucie_east_i  (floo_wide_in[Ucie0X][Ucie0Y][East]),
-        // loopback
-        .phy_data_out_o         (phy_data_out[0]),
-        .phy_data_out_valid_o   (phy_data_out_valid[0]),
-        .phy_data_out_ready_i   (phy_data_out_ready[0]),
-        .phy_data_in_i          (phy_data_in[0]),
-        .phy_data_in_valid_i    (phy_data_in_valid[0]),
-        .phy_data_in_ready_o    (phy_data_in_ready[0])
+        // UCIe bumps
+        .ucie_refclk_i          (ucie_refclk_i[0]),
+        .ucie_txckp_o           (ucie_txckp_o[0]),
+        .ucie_txckn_o           (ucie_txckn_o[0]),
+        .ucie_txdata_o          (ucie_txdata_o[0]),
+        .ucie_txtrk_o           (ucie_txtrk_o[0]),
+        .ucie_txvld_o           (ucie_txvld_o[0]),
+        .ucie_rxckp_i           (ucie_rxckp_i[0]),
+        .ucie_rxckn_i           (ucie_rxckn_i[0]),
+        .ucie_rxdata_i          (ucie_rxdata_i[0]),
+        .ucie_rxtrk_i           (ucie_rxtrk_i[0]),
+        .ucie_rxvld_i           (ucie_rxvld_i[0]),
+        .ucie_txclksb_o         (ucie_txclksb_o[0]),
+        .ucie_txdatasb_o        (ucie_txdatasb_o[0]),
+        .ucie_rxclksb_i         (ucie_rxclksb_i[0]),
+        .ucie_rxdatasb_i        (ucie_rxdatasb_i[0])
       );
     end else if (DummyTileX == Ucie1X && DummyTileY == Ucie1DummyY) begin : gen_ucie_right
       ucie_tile_right i_ucie_tile1 (
@@ -584,14 +671,61 @@ module gwaihir_top
         .floo_req_ucie_west_i   (floo_req_in[Ucie1X][Ucie1Y][West]),
         .floo_rsp_ucie_west_o   (floo_rsp_out[Ucie1X][Ucie1Y][West]),
         .floo_wide_ucie_west_i  (floo_wide_in[Ucie1X][Ucie1Y][West]),
-        // loopback
-        .phy_data_out_o         (phy_data_out[1]),
-        .phy_data_out_valid_o   (phy_data_out_valid[1]),
-        .phy_data_out_ready_i   (phy_data_out_ready[1]),
-        .phy_data_in_i          (phy_data_in[1]),
-        .phy_data_in_valid_i    (phy_data_in_valid[1]),
-        .phy_data_in_ready_o    (phy_data_in_ready[1])
+        // UCIe bumps
+        .ucie_refclk_i          (ucie_refclk_i[1]),
+        .ucie_txckp_o           (ucie_txckp_o[1]),
+        .ucie_txckn_o           (ucie_txckn_o[1]),
+        .ucie_txdata_o          (ucie_txdata_o[1]),
+        .ucie_txtrk_o           (ucie_txtrk_o[1]),
+        .ucie_txvld_o           (ucie_txvld_o[1]),
+        .ucie_rxckp_i           (ucie_rxckp_i[1]),
+        .ucie_rxckn_i           (ucie_rxckn_i[1]),
+        .ucie_rxdata_i          (ucie_rxdata_i[1]),
+        .ucie_rxtrk_i           (ucie_rxtrk_i[1]),
+        .ucie_rxvld_i           (ucie_rxvld_i[1]),
+        .ucie_txclksb_o         (ucie_txclksb_o[1]),
+        .ucie_txdatasb_o        (ucie_txdatasb_o[1]),
+        .ucie_rxclksb_i         (ucie_rxclksb_i[1]),
+        .ucie_rxdatasb_i        (ucie_rxdatasb_i[1])
       );
+    end else if (DummyTileX == C07X && DummyTileY == C07DummyY) begin : gen_ext_dummy_x2y4_link
+      // The router of this dummy tile lives in the external memory controller. Only the
+      // South link (towards cluster C07) is routed through the top-level ports: the West
+      // link (TUM NPU tile) and the East link (dummy X3Y4) are wired directly inside the
+      // memory controller, and North is the mesh border. The tile sees the mesh through
+      // `floo_*_in` and drives it through `floo_*_out`, exactly like `dummy_tile` would.
+      assign ext_dummy_x2y4_id_o = DummyTileId;
+      assign ext_dummy_x2y4_floo_req_o = floo_req_in[DummyTileX][DummyTileY][South];
+      assign ext_dummy_x2y4_floo_rsp_o = floo_rsp_in[DummyTileX][DummyTileY][South];
+      assign ext_dummy_x2y4_floo_wide_o = floo_wide_in[DummyTileX][DummyTileY][South];
+      assign floo_req_out[DummyTileX][DummyTileY][South] = ext_dummy_x2y4_floo_req_i;
+      assign floo_rsp_out[DummyTileX][DummyTileY][South] = ext_dummy_x2y4_floo_rsp_i;
+      assign floo_wide_out[DummyTileX][DummyTileY][South] = ext_dummy_x2y4_floo_wide_i;
+      // Nothing in the top level drives the remaining links of this slot.
+      for (genvar dir = int'(North); dir <= int'(West); dir++) begin : gen_ext_dummy_tie_off
+        if (route_direction_e'(dir) != South) begin : gen_tie_off
+          assign floo_req_out[DummyTileX][DummyTileY][dir]  = '0;
+          assign floo_rsp_out[DummyTileX][DummyTileY][dir]  = '0;
+          assign floo_wide_out[DummyTileX][DummyTileY][dir] = '0;
+        end
+      end
+    end else if (DummyTileX == C11X && DummyTileY == C11DummyY) begin : gen_ext_dummy_x3y4_link
+      // Same as above: only the South link (towards cluster C11) goes through the top-level
+      // ports; West (dummy X2Y4) and East (Cheshire) are wired inside the memory controller.
+      assign ext_dummy_x3y4_id_o = DummyTileId;
+      assign ext_dummy_x3y4_floo_req_o = floo_req_in[DummyTileX][DummyTileY][South];
+      assign ext_dummy_x3y4_floo_rsp_o = floo_rsp_in[DummyTileX][DummyTileY][South];
+      assign ext_dummy_x3y4_floo_wide_o = floo_wide_in[DummyTileX][DummyTileY][South];
+      assign floo_req_out[DummyTileX][DummyTileY][South] = ext_dummy_x3y4_floo_req_i;
+      assign floo_rsp_out[DummyTileX][DummyTileY][South] = ext_dummy_x3y4_floo_rsp_i;
+      assign floo_wide_out[DummyTileX][DummyTileY][South] = ext_dummy_x3y4_floo_wide_i;
+      for (genvar dir = int'(North); dir <= int'(West); dir++) begin : gen_ext_dummy_tie_off
+        if (route_direction_e'(dir) != South) begin : gen_tie_off
+          assign floo_req_out[DummyTileX][DummyTileY][dir]  = '0;
+          assign floo_rsp_out[DummyTileX][DummyTileY][dir]  = '0;
+          assign floo_wide_out[DummyTileX][DummyTileY][dir] = '0;
+        end
+      end
     end else begin : gen_dummy
       dummy_tile i_dummy_tile (
         .clk_i,

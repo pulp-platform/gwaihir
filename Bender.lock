@@ -213,7 +213,7 @@ packages:
     dependencies:
     - axi
   floo_noc:
-    revision: 0332d3995c95f4af7f197e29203962195ec360dd
+    revision: e42c6bf681d251b60e75dd07927158a1431cd3e2
     version: null
     source:
       Git: https://github.com/pulp-platform/FlooNoC.git
@@ -261,6 +261,7 @@ packages:
     - apb
     - axi
     - common_cells
+    - floo_noc
     - register_interface
     - tech_cells_generic
   hci:
@@ -511,7 +512,6 @@ packages:
     source:
       Path: .deps/ucie
     dependencies:
-    - axi
     - common_cells
   unbent:
     revision: 3797321f3387a8ba9c866a9fad66ce8c0ea03ac3

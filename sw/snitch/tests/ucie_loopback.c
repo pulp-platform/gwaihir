@@ -26,6 +26,8 @@ uint32_t *local_vec;
 
 uint32_t vec_inp [NUM_ELEM] __attribute__ ((aligned(64)));
 volatile uint32_t flag __attribute__ ((aligned(64)));
+// Set by the core that enables the UCIe link, read by all after the barrier
+volatile uint32_t ucie_ok __attribute__ ((aligned(64)));
 
 int main() {
 
@@ -52,7 +54,14 @@ int main() {
   volatile gw_ucie_tile_regs_t *ucie_cfg0 = (volatile gw_ucie_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_32b.ucie0_tile_cfg;
   volatile gw_ucie_tile_regs_t *ucie_cfg1 = (volatile gw_ucie_tile_regs_t *)(uintptr_t)&gwaihir_addrmap_32b.ucie1_tile_cfg;
 
-  if ( (ucie_tile_enable(ucie_cfg0) && (ucie_tile_enable(ucie_cfg1))) == 0) return 1;
+  // The link bring-up must run exactly once: the sender's DM core does it
+  if (cluster_idx == SENDER_CLUSTER && snrt_is_dm_core()) {
+    ucie_ok = ucie_tiles_enable(ucie_cfg0, ucie_cfg1,
+                                (uintptr_t)&gwaihir_addrmap_32b.ucie0_axi_serial_cfg.ctrl,
+                                (uintptr_t)&gwaihir_addrmap_32b.ucie1_axi_serial_cfg.ctrl,
+                                (uintptr_t)&gwaihir_addrmap_32b.ucie0_ucie_cfg,
+                                (uintptr_t)&gwaihir_addrmap_32b.ucie1_ucie_cfg);
+  }
 
   // The consumer's mailbox is uninitialized memory;
   // clear it before any cluster starts sending
@@ -60,6 +69,8 @@ int main() {
     *flag_phys = 0;
   }
   snrt_global_barrier();
+
+  if (!ucie_ok) return 1;
 
   if (cluster_idx == SENDER_CLUSTER) {
     if (core_idx == 0) {

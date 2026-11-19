@@ -10,6 +10,8 @@ module fixture_gwaihir_top;
 
   import cheshire_pkg::*;
   import gwaihir_pkg::*;
+  import floo_pkg::*;
+  import floo_gwaihir_noc_pkg::*;
 
   `CHESHIRE_TYPEDEF_ALL(, CheshireCfg)
 
@@ -53,8 +55,70 @@ module fixture_gwaihir_top;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_i;
   logic [SlinkNumChan-1:0][SlinkNumLanes-1:0] slink_o;
 
+  logic [NumUcieTiles-1:0]      ucie_txckp;
+  logic [NumUcieTiles-1:0]      ucie_txckn;
+  logic [NumUcieTiles-1:0][7:0] ucie_txdata;
+  logic [NumUcieTiles-1:0]      ucie_txtrk;
+  logic [NumUcieTiles-1:0]      ucie_txvld;
+  logic [NumUcieTiles-1:0]      ucie_rxckp;
+  logic [NumUcieTiles-1:0]      ucie_rxckn;
+  logic [NumUcieTiles-1:0][7:0] ucie_rxdata;
+  logic [NumUcieTiles-1:0]      ucie_rxtrk;
+  logic [NumUcieTiles-1:0]      ucie_rxvld;
+  logic [NumUcieTiles-1:0]      ucie_txclksb;
+  logic [NumUcieTiles-1:0]      ucie_txdatasb;
+  logic [NumUcieTiles-1:0]      ucie_rxclksb;
+  logic [NumUcieTiles-1:0]      ucie_rxdatasb;
+
+  // UCIe PHY reference clock (100 MHz), separate from the system clock as on the
+  // chip: the closed-source PHY model times its sideband on it
+  logic ucie_refclk;
+  clk_rst_gen #(
+    .ClkPeriod   (10ns),
+    .RstClkCycles(1)
+  ) i_ucie_refclk_gen (
+    .clk_o (ucie_refclk),
+    .rst_no()
+  );
+
   axi_llc_req_t axi_llc_mst_req;
   axi_llc_rsp_t axi_llc_mst_rsp;
+
+  floo_req_t  cheshire_external_floo_req_south_out;
+  floo_rsp_t  cheshire_external_floo_rsp_south_in;
+  floo_wide_t cheshire_external_floo_wide_south_out;
+  floo_req_t  cheshire_external_floo_req_south_in;
+  floo_rsp_t  cheshire_external_floo_rsp_south_out;
+  floo_wide_t cheshire_external_floo_wide_south_in;
+
+  floo_req_t  memctrl_external_floo_req_south_in;
+  floo_rsp_t  memctrl_external_floo_rsp_south_out;
+  floo_wide_t memctrl_external_floo_wide_south_in;
+  floo_req_t  memctrl_external_floo_req_south_out;
+  floo_rsp_t  memctrl_external_floo_rsp_south_in;
+  floo_wide_t memctrl_external_floo_wide_south_out;
+
+  floo_req_t  cheshire_external_floo_req_west_out;
+  floo_rsp_t  cheshire_external_floo_rsp_west_in;
+  floo_wide_t cheshire_external_floo_wide_west_out;
+  floo_req_t  cheshire_external_floo_req_west_in;
+  floo_rsp_t  cheshire_external_floo_rsp_west_out;
+  floo_wide_t cheshire_external_floo_wide_west_in;
+
+  floo_req_t  tum_external_floo_req_east_out;
+  floo_rsp_t  tum_external_floo_rsp_east_in;
+  floo_wide_t tum_external_floo_wide_east_out;
+  floo_req_t  tum_external_floo_req_east_in;
+  floo_rsp_t  tum_external_floo_rsp_east_out;
+  floo_wide_t tum_external_floo_wide_east_in;
+
+  id_t        ext_dummy_x2y4_id_out, ext_dummy_x3y4_id_out;
+  floo_req_t  ext_dummy_x2y4_floo_req_out, ext_dummy_x3y4_floo_req_out;
+  floo_rsp_t  ext_dummy_x2y4_floo_rsp_in, ext_dummy_x3y4_floo_rsp_in;
+  floo_wide_t ext_dummy_x2y4_floo_wide_out, ext_dummy_x3y4_floo_wide_out;
+  floo_req_t  ext_dummy_x2y4_floo_req_in, ext_dummy_x3y4_floo_req_in;
+  floo_rsp_t  ext_dummy_x2y4_floo_rsp_out, ext_dummy_x3y4_floo_rsp_out;
+  floo_wide_t ext_dummy_x2y4_floo_wide_in, ext_dummy_x3y4_floo_wide_in;
 
   // Set to 1 to bypass tile-specific clock gating and reset (use global signals instead)
   logic   clk_rst_bypass;
@@ -62,68 +126,140 @@ module fixture_gwaihir_top;
   // verilog_format: on
 
   gwaihir_top dut (
-    .clk_i                 (clk),
-    .rst_ni                (rst_n),
-    .test_mode_i           (test_mode),
-    .boot_mode_i           (boot_mode),
-    .rtc_i                 (rtc),
-    .clk_rst_bypass_i      (clk_rst_bypass),
-    .jtag_tck_i            (jtag_tck),
-    .jtag_trst_ni          (jtag_trst_n),
-    .jtag_tms_i            (jtag_tms),
-    .jtag_tdi_i            (jtag_tdi),
-    .jtag_tdo_o            (jtag_tdo),
-    .jtag_tdo_oe_o         (),
-    .uart_tx_o             (uart_tx),
-    .uart_rx_i             (uart_rx),
-    .uart_rts_no           (),
-    .uart_dtr_no           (),
-    .uart_cts_ni           (1'b0),
-    .uart_dsr_ni           (1'b0),
-    .uart_dcd_ni           (1'b0),
-    .uart_rin_ni           (1'b0),
-    .i2c_sda_o             (i2c_sda_o),
-    .i2c_sda_i             (i2c_sda_i),
-    .i2c_sda_en_o          (i2c_sda_en),
-    .i2c_scl_o             (i2c_scl_o),
-    .i2c_scl_i             (i2c_scl_i),
-    .i2c_scl_en_o          (i2c_scl_en),
-    .spih_sck_o            (spih_sck_o),
-    .spih_sck_en_o         (spih_sck_en),
-    .spih_csb_o            (spih_csb_o),
-    .spih_csb_en_o         (spih_csb_en),
-    .spih_sd_o             (spih_sd_o),
-    .spih_sd_en_o          (spih_sd_en),
-    .spih_sd_i             (spih_sd_i),
-    .gpio_i                ('0),
-    .gpio_o                (),
-    .gpio_en_o             (),
-    .apb_req_o             (),
-    .apb_rsp_i             ('0),
-    .slink_rcv_clk_i       (slink_rcv_clk_i),
-    .slink_rcv_clk_o       (slink_rcv_clk_o),
-    .slink_i               (slink_i),
-    .slink_o               (slink_o),
-    .pcie_refclk_n         (),
-    .pcie_refclk_p         (),
-    .pcie_button_rst_ni    (1'b1),
-    .pcie_rx_p             (),
-    .pcie_rx_n             (),
-    .pcie_tx_p             (),
-    .pcie_tx_n             (),
-    .pcie_test_clk_en_i    (1'b0),
-    .pcie_test_coreclk_i   (1'b0),
-    .pcie_test_rst_en_i    (1'b0),
-    .pcie_test_rst_n_i     (1'b1),
-    .pcie_test_phy_rst_n_i (1'b1),
-    .pcie_jtag_phys_tdi_i  (1'b0),
-    .pcie_jtag_phys_tck_i  (1'b0),
-    .pcie_jtag_phys_tms_i  (1'b0),
-    .pcie_jtag_phys_trst_ni(1'b1),
-    .pcie_jtag_phys_tdo_o  (),
-    .axi_llc_mst_req_o     (axi_llc_mst_req),
-    .axi_llc_mst_rsp_i     (axi_llc_mst_rsp)
+    .clk_i                              (clk),
+    .rst_ni                             (rst_n),
+    .test_mode_i                        (test_mode),
+    .boot_mode_i                        (boot_mode),
+    .rtc_i                              (rtc),
+    .clk_rst_bypass_i                   (clk_rst_bypass),
+    .jtag_tck_i                         (jtag_tck),
+    .jtag_trst_ni                       (jtag_trst_n),
+    .jtag_tms_i                         (jtag_tms),
+    .jtag_tdi_i                         (jtag_tdi),
+    .jtag_tdo_o                         (jtag_tdo),
+    .jtag_tdo_oe_o                      (),
+    .uart_tx_o                          (uart_tx),
+    .uart_rx_i                          (uart_rx),
+    .uart_rts_no                        (),
+    .uart_dtr_no                        (),
+    .uart_cts_ni                        (1'b0),
+    .uart_dsr_ni                        (1'b0),
+    .uart_dcd_ni                        (1'b0),
+    .uart_rin_ni                        (1'b0),
+    .i2c_sda_o                          (i2c_sda_o),
+    .i2c_sda_i                          (i2c_sda_i),
+    .i2c_sda_en_o                       (i2c_sda_en),
+    .i2c_scl_o                          (i2c_scl_o),
+    .i2c_scl_i                          (i2c_scl_i),
+    .i2c_scl_en_o                       (i2c_scl_en),
+    .spih_sck_o                         (spih_sck_o),
+    .spih_sck_en_o                      (spih_sck_en),
+    .spih_csb_o                         (spih_csb_o),
+    .spih_csb_en_o                      (spih_csb_en),
+    .spih_sd_o                          (spih_sd_o),
+    .spih_sd_en_o                       (spih_sd_en),
+    .spih_sd_i                          (spih_sd_i),
+    .gpio_i                             ('0),
+    .gpio_o                             (),
+    .gpio_en_o                          (),
+    .apb_req_o                          (),
+    .apb_rsp_i                          ('0),
+    .slink_rcv_clk_i                    (slink_rcv_clk_i),
+    .slink_rcv_clk_o                    (slink_rcv_clk_o),
+    .slink_i                            (slink_i),
+    .slink_o                            (slink_o),
+    .pcie_refclk_n                      (),
+    .pcie_refclk_p                      (),
+    .pcie_button_rst_ni                 (1'b1),
+    .pcie_rx_p                          (),
+    .pcie_rx_n                          (),
+    .pcie_tx_p                          (),
+    .pcie_tx_n                          (),
+    .pcie_test_clk_en_i                 (1'b0),
+    .pcie_test_coreclk_i                (1'b0),
+    .pcie_test_rst_en_i                 (1'b0),
+    .pcie_test_rst_n_i                  (1'b1),
+    .pcie_test_phy_rst_n_i              (1'b1),
+    .pcie_jtag_phys_tdi_i               (1'b0),
+    .pcie_jtag_phys_tck_i               (1'b0),
+    .pcie_jtag_phys_tms_i               (1'b0),
+    .pcie_jtag_phys_trst_ni             (1'b1),
+    .pcie_jtag_phys_tdo_o               (),
+    .ucie_refclk_i                      ({NumUcieTiles{ucie_refclk}}),
+    .ucie_txckp_o                       (ucie_txckp),
+    .ucie_txckn_o                       (ucie_txckn),
+    .ucie_txdata_o                      (ucie_txdata),
+    .ucie_txtrk_o                       (ucie_txtrk),
+    .ucie_txvld_o                       (ucie_txvld),
+    .ucie_rxckp_i                       (ucie_rxckp),
+    .ucie_rxckn_i                       (ucie_rxckn),
+    .ucie_rxdata_i                      (ucie_rxdata),
+    .ucie_rxtrk_i                       (ucie_rxtrk),
+    .ucie_rxvld_i                       (ucie_rxvld),
+    .ucie_txclksb_o                     (ucie_txclksb),
+    .ucie_txdatasb_o                    (ucie_txdatasb),
+    .ucie_rxclksb_i                     (ucie_rxclksb),
+    .ucie_rxdatasb_i                    (ucie_rxdatasb),
+    .axi_llc_mst_req_o                  (axi_llc_mst_req),
+    .axi_llc_mst_rsp_i                  (axi_llc_mst_rsp),
+    // FlooNoC ports for feed-through to the memory controller
+    .cheshire_external_floo_req_south_o (cheshire_external_floo_req_south_out),
+    .cheshire_external_floo_rsp_south_i (cheshire_external_floo_rsp_south_in),
+    .cheshire_external_floo_wide_south_o(cheshire_external_floo_wide_south_out),
+    .cheshire_external_floo_req_south_i (cheshire_external_floo_req_south_in),
+    .cheshire_external_floo_rsp_south_o (cheshire_external_floo_rsp_south_out),
+    .cheshire_external_floo_wide_south_i(cheshire_external_floo_wide_south_in),
+    .memctrl_external_floo_req_south_i  (memctrl_external_floo_req_south_in),
+    .memctrl_external_floo_rsp_south_o  (memctrl_external_floo_rsp_south_out),
+    .memctrl_external_floo_wide_south_i (memctrl_external_floo_wide_south_in),
+    .memctrl_external_floo_req_south_o  (memctrl_external_floo_req_south_out),
+    .memctrl_external_floo_rsp_south_i  (memctrl_external_floo_rsp_south_in),
+    .memctrl_external_floo_wide_south_o (memctrl_external_floo_wide_south_out),
+    // FlooNoC ports for dummy tiles in memory controller
+    .cheshire_external_floo_req_west_o  (cheshire_external_floo_req_west_out),
+    .cheshire_external_floo_rsp_west_i  (cheshire_external_floo_rsp_west_in),
+    .cheshire_external_floo_wide_west_o (cheshire_external_floo_wide_west_out),
+    .cheshire_external_floo_req_west_i  (cheshire_external_floo_req_west_in),
+    .cheshire_external_floo_rsp_west_o  (cheshire_external_floo_rsp_west_out),
+    .cheshire_external_floo_wide_west_i (cheshire_external_floo_wide_west_in),
+    .tum_external_floo_req_east_o       (tum_external_floo_req_east_out),
+    .tum_external_floo_rsp_east_i       (tum_external_floo_rsp_east_in),
+    .tum_external_floo_wide_east_o      (tum_external_floo_wide_east_out),
+    .tum_external_floo_req_east_i       (tum_external_floo_req_east_in),
+    .tum_external_floo_rsp_east_o       (tum_external_floo_rsp_east_out),
+    .tum_external_floo_wide_east_i      (tum_external_floo_wide_east_in),
+    .ext_dummy_x2y4_id_o                (ext_dummy_x2y4_id_out),
+    .ext_dummy_x2y4_floo_req_o          (ext_dummy_x2y4_floo_req_out),
+    .ext_dummy_x2y4_floo_rsp_i          (ext_dummy_x2y4_floo_rsp_in),
+    .ext_dummy_x2y4_floo_wide_o         (ext_dummy_x2y4_floo_wide_out),
+    .ext_dummy_x2y4_floo_req_i          (ext_dummy_x2y4_floo_req_in),
+    .ext_dummy_x2y4_floo_rsp_o          (ext_dummy_x2y4_floo_rsp_out),
+    .ext_dummy_x2y4_floo_wide_i         (ext_dummy_x2y4_floo_wide_in),
+    .ext_dummy_x3y4_id_o                (ext_dummy_x3y4_id_out),
+    .ext_dummy_x3y4_floo_req_o          (ext_dummy_x3y4_floo_req_out),
+    .ext_dummy_x3y4_floo_rsp_i          (ext_dummy_x3y4_floo_rsp_in),
+    .ext_dummy_x3y4_floo_wide_o         (ext_dummy_x3y4_floo_wide_out),
+    .ext_dummy_x3y4_floo_req_i          (ext_dummy_x3y4_floo_req_in),
+    .ext_dummy_x3y4_floo_rsp_o          (ext_dummy_x3y4_floo_rsp_out),
+    .ext_dummy_x3y4_floo_wide_i         (ext_dummy_x3y4_floo_wide_in)
   );
+
+  ////////////////////////
+  //  UCIe bump wiring  //
+  ////////////////////////
+
+  // Package-level loopback: the TX bumps of each UCIe tile drive the RX bumps
+  // of the other one.
+  for (genvar i = 0; i < NumUcieTiles; i++) begin : gen_ucie_loopback
+    localparam int unsigned Peer = NumUcieTiles - 1 - i;
+    assign ucie_rxckp[i]    = ucie_txckp[Peer];
+    assign ucie_rxckn[i]    = ucie_txckn[Peer];
+    assign ucie_rxdata[i]   = ucie_txdata[Peer];
+    assign ucie_rxtrk[i]    = ucie_txtrk[Peer];
+    assign ucie_rxvld[i]    = ucie_txvld[Peer];
+    assign ucie_rxclksb[i]  = ucie_txclksb[Peer];
+    assign ucie_rxdatasb[i] = ucie_txdatasb[Peer];
+  end
 
   ////////////////////////
   //  Tristate Adapter  //
@@ -156,6 +292,52 @@ module fixture_gwaihir_top;
     .axi_ext_mst_rsp_t(axi_mst_rsp_t)
   ) vip (
     .*
+  );
+
+  gwaihir_memctrl i_gwaihir_memctrl (
+    .clk_i                              (clk),
+    .rst_ni                             (rst_n),
+    .test_mode_i                        (test_mode),
+    // FlooNoC ports for feed-through to the memory controller
+    .cheshire_external_floo_req_south_i (cheshire_external_floo_req_south_out),
+    .cheshire_external_floo_rsp_south_o (cheshire_external_floo_rsp_south_in),
+    .cheshire_external_floo_wide_south_i(cheshire_external_floo_wide_south_out),
+    .cheshire_external_floo_req_south_o (cheshire_external_floo_req_south_in),
+    .cheshire_external_floo_rsp_south_i (cheshire_external_floo_rsp_south_out),
+    .cheshire_external_floo_wide_south_o(cheshire_external_floo_wide_south_in),
+    .memctrl_external_floo_req_south_o  (memctrl_external_floo_req_south_in),
+    .memctrl_external_floo_rsp_south_i  (memctrl_external_floo_rsp_south_out),
+    .memctrl_external_floo_wide_south_o (memctrl_external_floo_wide_south_in),
+    .memctrl_external_floo_req_south_i  (memctrl_external_floo_req_south_out),
+    .memctrl_external_floo_rsp_south_o  (memctrl_external_floo_rsp_south_in),
+    .memctrl_external_floo_wide_south_i (memctrl_external_floo_wide_south_out),
+    // FlooNoC ports for dummy tiles in memory controller
+    .cheshire_external_floo_req_west_i  (cheshire_external_floo_req_west_out),
+    .cheshire_external_floo_rsp_west_o  (cheshire_external_floo_rsp_west_in),
+    .cheshire_external_floo_wide_west_i (cheshire_external_floo_wide_west_out),
+    .cheshire_external_floo_req_west_o  (cheshire_external_floo_req_west_in),
+    .cheshire_external_floo_rsp_west_i  (cheshire_external_floo_rsp_west_out),
+    .cheshire_external_floo_wide_west_o (cheshire_external_floo_wide_west_in),
+    .tum_external_floo_req_east_i       (tum_external_floo_req_east_out),
+    .tum_external_floo_rsp_east_o       (tum_external_floo_rsp_east_in),
+    .tum_external_floo_wide_east_i      (tum_external_floo_wide_east_out),
+    .tum_external_floo_req_east_o       (tum_external_floo_req_east_in),
+    .tum_external_floo_rsp_east_i       (tum_external_floo_rsp_east_out),
+    .tum_external_floo_wide_east_o      (tum_external_floo_wide_east_in),
+    .ext_dummy_x2y4_id_i                (ext_dummy_x2y4_id_out),
+    .ext_dummy_x2y4_floo_req_i          (ext_dummy_x2y4_floo_req_out),
+    .ext_dummy_x2y4_floo_rsp_o          (ext_dummy_x2y4_floo_rsp_in),
+    .ext_dummy_x2y4_floo_wide_i         (ext_dummy_x2y4_floo_wide_out),
+    .ext_dummy_x2y4_floo_req_o          (ext_dummy_x2y4_floo_req_in),
+    .ext_dummy_x2y4_floo_rsp_i          (ext_dummy_x2y4_floo_rsp_out),
+    .ext_dummy_x2y4_floo_wide_o         (ext_dummy_x2y4_floo_wide_in),
+    .ext_dummy_x3y4_id_i                (ext_dummy_x3y4_id_out),
+    .ext_dummy_x3y4_floo_req_i          (ext_dummy_x3y4_floo_req_out),
+    .ext_dummy_x3y4_floo_rsp_o          (ext_dummy_x3y4_floo_rsp_in),
+    .ext_dummy_x3y4_floo_wide_i         (ext_dummy_x3y4_floo_wide_out),
+    .ext_dummy_x3y4_floo_req_o          (ext_dummy_x3y4_floo_req_in),
+    .ext_dummy_x3y4_floo_rsp_i          (ext_dummy_x3y4_floo_rsp_out),
+    .ext_dummy_x3y4_floo_wide_o         (ext_dummy_x3y4_floo_wide_in)
   );
 
 endmodule
