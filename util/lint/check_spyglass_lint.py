@@ -173,7 +173,7 @@ IMPLICIT_MACROS = [
     'TARGET_FLIST',
     'TARGET_RTL',
     'TARGET_CVA6',
-    'TARGET_CV64A6_RT_HPDCACHE',
+    'TARGET_CV64A6_GWAIHIR',
     'TARGET_GW_GEN_RTL',
     'TARGET_MXCORE_HWPE',
     'TARGET_TECH_CELLS_GENERIC_INCLUDE_TC_SYNC',
@@ -284,6 +284,18 @@ def main():
     DCA_RULES = ['W263', 'STARC05-2.1.3.1', 'WRN_1459']
     df = df[~(df.rule.isin(DCA_RULES) & df.file.str.contains(r'floo_dca_decode\.sv'))]
     print(f'Ignore {", ".join(DCA_RULES)} in floo_dca_decode. {len(df)} messages remaining.')
+
+    # Ignore the out-of-range bit-selects in CVA6 branches that this configuration disables: the
+    # CSRs of TLB lock entries 9-16 (8 lockable ways) and the AES operands of the second issue port
+    # (single issue). Both are guarded by configuration parameters and never evaluated.
+    tlb_lock = (df.file.str.contains(r'/cva6-[0-9a-f]+/core/csr_regfile\.sv') &
+                df.message.str.contains(r'Bit-select \( tlb_lock_(?:pte|vpn|id)_[qd]'
+                                        r'\[(?:[89]|1[0-5])\] \)'))
+    issue_port = (df.file.str.contains(r'/cva6-[0-9a-f]+/core/issue_read_operands\.sv') &
+                  df.message.str.contains(r'Bit-select \( (?:aes_valid_n|orig_instr_i)\[1\]'))
+    df = df[~((df.rule == 'WRN_27') & (tlb_lock | issue_port))]
+    print(f'Ignore WRN_27 on the disabled TLB lock entries and issue port of CVA6. '
+          f'{len(df)} messages remaining.')
 
     # Ignore everything in the deprecated common_cells wrappers (src/deprecated/*). They are thin
     # compatibility shims for the old module names and are not used by FlooNoC.
