@@ -25,7 +25,7 @@ dependencies:
     rev: f5d6cdf020e0c404638e0ff6d248ebad56b2b01c
   cheshire:
     git: https://github.com/pulp-platform/cheshire.git
-    rev: gwaihir
+    rev: ez/gwaihir
   common_cells:
     git: https://github.com/pulp-platform/common_cells.git
     rev: master

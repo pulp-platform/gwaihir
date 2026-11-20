@@ -411,6 +411,7 @@ package gwaihir_pkg;
     ret.ClicVsprio          = 1;
     ret.ClicNumVsctxts      = 4;
     ret.ClicPrioWidth       = 1;
+    ret.ClicPipe            = 1;
     ret.LlcCachePartition   = 1;
     return ret;
   endfunction

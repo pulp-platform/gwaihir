@@ -45,7 +45,7 @@ BENDER_LOCK = $(GW_ROOT)/Bender.lock
 # Bender flags #
 ################
 
-COMMON_TARGS += -t rtl -t cva6 -t cv64a6_rt_hpdcache -t gw_gen_rtl -t tech_cells_generic_include_tc_sync -t mxcore_hwpe
+COMMON_TARGS += -t rtl -t cva6 -t cv64a6_gwaihir -t gw_gen_rtl -t tech_cells_generic_include_tc_sync -t mxcore_hwpe
 SIM_TARGS += -t simulation -t test -t idma_test
 
 COMMON_DEFINES += $(SN_COMMON_BENDER_FLAGS)
@@ -235,7 +235,7 @@ floo-clean:
 ###################
 
 PD_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/gwaihir-pd.git
-PD_COMMIT ?= f7e304570544e431bf0318327349510aa2c6636f
+PD_COMMIT ?= 5b5570872b7d17e9e5934393d948d80d05c780c3
 PD_DIR = $(GW_ROOT)/pd
 
 PCIE_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pcie.git
