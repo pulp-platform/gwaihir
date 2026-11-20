@@ -18,6 +18,16 @@
 #define TRANSFER_DATA_FULL_BW 0xdeadbeef
 #define TRANSFER_DATA_HALF_BW 0xcafef00d
 
+// Debug: end the test at the first trap; return code 0xCCAAAAAA, CC = mcause, AAAAAA = mtval[23:0]
+void trap_vector(void) {
+  uint64_t cause, tval;
+  asm volatile("csrr %0, mcause" : "=r"(cause));
+  asm volatile("csrr %0, mtval" : "=r"(tval));
+  uint32_t code = ((uint32_t)(cause & 0x1f) << 24) | ((uint32_t)tval & 0xffffff);
+  CHS_REGS->scratch[2].w = (code << 1) | 1u;
+  while (1) asm volatile("wfi");
+}
+
 int main() {
 
   // Enable clk/rst for ucie tiles
