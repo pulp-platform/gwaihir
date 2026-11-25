@@ -6,11 +6,27 @@
 
 #include "snrt.h"
 
-#define PRELOAD 0 // PRELOAD Enable/Disable
-#define TIMING  0 // TIMING Enable/Disable
+#define OUT_MXFP8    0
+#define OUT_MXFP8ALT 1
+#define OUT_MXFP4    2
+#define OUT_BF16     3
+
+#define PRELOAD       0         // PRELOAD Enable/Disable
+#define TIMING        0         // TIMING Enable/Disable
+#define OUTPUT_FORMAT OUT_MXFP8 // OUTPUT_FORMAT OUT_MXFP8/OUT_MXFP8ALT/OUT_MXFP4/OUT_BF16
+
+#if PRELOAD && (OUTPUT_FORMAT != OUT_MXFP8)
+#error "PRELOAD data is only available for OUTPUT_FORMAT OUT_MXFP8"
+#endif
 
 #if PRELOAD
 #include "data/mxcore_multi_preload_data.h"
+#elif OUTPUT_FORMAT == OUT_MXFP8ALT
+#include "data/mxcore_multi_mxfp8alt_data.h"
+#elif OUTPUT_FORMAT == OUT_MXFP4
+#include "data/mxcore_multi_mxfp4_data.h"
+#elif OUTPUT_FORMAT == OUT_BF16
+#include "data/mxcore_multi_bf16_data.h"
 #else
 #include "data/mxcore_multi_data.h"
 #endif
@@ -41,10 +57,23 @@
 
 // MX Parameters
 #define BLOCK_SIZE      32
-#define QUANTIZE_OUTPUT 1
 #define SRC_WIDTH       8
 #define DST_WIDTH       32
 #define SCALE_WIDTH     8
+
+#if OUTPUT_FORMAT == OUT_MXFP8ALT
+#define QUANTIZE_BIT    22
+#define RESULT_WIDTH    8
+#elif OUTPUT_FORMAT == OUT_MXFP4
+#define QUANTIZE_BIT    21
+#define RESULT_WIDTH    4
+#elif OUTPUT_FORMAT == OUT_BF16
+#define QUANTIZE_BIT    24
+#define RESULT_WIDTH    16
+#else
+#define QUANTIZE_BIT    23
+#define RESULT_WIDTH    8
+#endif
 
 #if TIMING
 #define TIMING_ROWS       NUM_CLUSTERS
@@ -143,19 +172,18 @@ int main() {
     // Size Parameters
     uint32_t NBYTES_VEC = sizeof(int8_t);
     uint32_t NBYTES_SCALE = sizeof(uint8_t);
-    uint32_t NBYTES_RESULT = sizeof(uint8_t);
 
     // Input/Output Sizes (per-cluster tile)
     uint32_t a_size = M*K*NBYTES_VEC;
     uint32_t b_size = K*N*NBYTES_VEC;
     uint32_t scale_a_size = (M*K/BLOCK_SIZE)*NBYTES_SCALE;
     uint32_t scale_b_size = (K*N/BLOCK_SIZE)*NBYTES_SCALE;
-    uint32_t result_size = M*N*NBYTES_RESULT;
+    uint32_t result_size = (M*N*RESULT_WIDTH)/8;
     uint32_t result_scale_size = (M*N/BLOCK_SIZE)*NBYTES_SCALE;
     uint32_t c_size = (PRELOAD == 1) ? (M*N*sizeof(float)) : result_size;
 
     // Control Engine Register Value
-    uint32_t engine_ctrl = 0x00400678 | ((uint32_t)PRELOAD << 24);
+    uint32_t engine_ctrl = 0x00000678 | (1u << QUANTIZE_BIT) | ((uint32_t)PRELOAD << 26);
 
     // REG_GEMM_SIZE: [9:0] M, [21:10] K, [31:22] N
     uint32_t gemm_size = ((uint32_t)M & 0x3FF) | (((uint32_t)K & 0xFFF) << 10) | (((uint32_t)N & 0x3FF) << 22);
@@ -173,7 +201,7 @@ int main() {
     uint32_t a_tile_size            = OBuff * VS * SRC_WIDTH;
     uint32_t b_tile_size            = VS * MXU * SRC_WIDTH;
     uint32_t preload_tile_size      = MXU * OBuff * DST_WIDTH;
-    uint32_t result_tile_size       = MXU * OBuff * SRC_WIDTH; // QUANTIZE_OUTPUT == 1
+    uint32_t result_tile_size       = MXU * OBuff * RESULT_WIDTH;
     uint32_t result_scale_tile_size = (MXU / BLOCK_SIZE) * OBuff * SCALE_WIDTH;
     uint32_t iter_count             = ((uint32_t)K * OBuff) / VS;
 
@@ -239,7 +267,9 @@ int main() {
     if (snrt_is_dm_core()) {
         MXCORE_TIMESTAMP(cluster_idx, TS_DMA_OUT_START);
         snrt_dma_start_1d((volatile void *)result_mx[cluster_idx], (volatile void *)local_result, sizeof(golden_result_mx[0]));
+#if OUTPUT_FORMAT != OUT_BF16
         snrt_dma_start_1d((volatile void *)scale_result_mx[cluster_idx], (volatile void *)local_result_scale, sizeof(golden_scale_result_mx[0]));
+#endif
         snrt_dma_wait_all();
         MXCORE_TIMESTAMP(cluster_idx, TS_DMA_OUT_END);
     }
