@@ -74,7 +74,7 @@
             // TODO(fischeti): Check with Luca Bertaccini
             lat_conv: 2,
             lat_sdotp: 3,
-            fpu_pipe_config: "BEFORE",
+            fpu_pipe_config: "DISTRIBUTED",
             narrow_xbar_latency: "CUT_ALL_PORTS",
             wide_xbar_latency: "CUT_ALL_PORTS",
             // Isolate the core.
