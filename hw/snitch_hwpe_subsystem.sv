@@ -263,15 +263,17 @@ module snitch_hwpe_subsystem
     );
 
     datamover_top #(
-      .ID           (IdWidth),
-      .N_CORES      (NrCores),
-      .BW           (HwpeDataWidth),
-      .HCI_SIZE_tcdm(HCISizeTcdm)
+      .IdWidth           (IdWidth),
+      .Bandwidth         (HwpeDataWidth),
+      .NumCores          (NrCores),
+      .MisalignedAccesses(0),
+      .HCI_SIZE_tcdm     (HCISizeTcdm)
     ) i_datamover_top (
       .clk_i      (hwpe_clk[DmaPort]),
       .rst_ni     (rst_ni),
       .test_mode_i(test_mode_i),
       .evt_o      (evt[DmaPort]),
+      .busy_o     (),
       .tcdm       (tcdm_to_mux[DmaPort]),
       .periph     (periph[DmaPort])
     );
