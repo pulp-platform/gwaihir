@@ -206,7 +206,7 @@ endtask
 
 // Headless offload (tb-driven simple_offload): preload firmware + optional job, set scratch, wake, poll return codes -- no host.
 // With htile set, the job runs on the H tile alone.
-task automatic headless_offload(const ref logic clk, input bit htile, output logic [31:0] exit_code);
+task automatic headless_offload(const ref logic clk, output logic [31:0] exit_code, input bit htile = 1'b0);
   import floo_gwaihir_noc_pkg::*;
   // HW counts + L2 aperture come from the SoC cfg/addrmap, never hardcoded.
   localparam longint L2Base     = Sam[L2Spm0SamIdx].start_addr;
