@@ -11,6 +11,7 @@ variables:
     key:
       files:
         - Bender.lock
+      prefix: bender-db-dir
     paths:
       - .bender
     policy: pull
