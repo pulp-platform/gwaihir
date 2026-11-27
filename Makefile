@@ -255,7 +255,7 @@ TUM_NPU_COMMIT ?= 0b3e5df7e21bcf7bfee162cd88c38ab09e30477d
 TUM_NPU_DIR = $(GW_ROOT)/.deps/tum_npu
 
 PLL_REMOTE ?= git@iis-git.ee.ethz.ch:gwaihir/pll.git
-PLL_COMMIT ?= 89ac98a691e8a4deab239851fdbe50088552e4ca
+PLL_COMMIT ?= 5916e2a8af840d83c5648333c9fdbc0a54e3d245
 PLL_DIR = $(GW_ROOT)/.deps/pll
 
 .PHONY: init-pd clean-pd update-pd-commit
