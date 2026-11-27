@@ -342,7 +342,8 @@ package gwaihir_pkg;
     CshRegExtFLL      = 0,  // FLL registers
     CshRegExtChipCtrl = 1,  // Chip-level registers
     CshRegLPDDR       = 2,  // LPDDR config
-    CshRegExtNumSlv   = 3   // Number of external register slaves
+    CshRegExtPLL      = 3,  // PLL registers
+    CshRegExtNumSlv   = 4   // Number of external register slaves
   } cheshire_reg_ext_e;
 
   // Define function to derive configuration from Cheshire defaults.
@@ -362,6 +363,9 @@ package gwaihir_pkg;
     ret.RegExtRegionIdx[CshRegExtChipCtrl] = CshRegExtChipCtrl;
     ret.RegExtRegionStart[CshRegExtChipCtrl] = 'h1800_2000;
     ret.RegExtRegionEnd[CshRegExtChipCtrl] = 'h1800_3000;
+    ret.RegExtRegionIdx[CshRegExtPLL] = CshRegExtPLL;
+    ret.RegExtRegionStart[CshRegExtPLL] = 'h1800_3000;
+    ret.RegExtRegionEnd[CshRegExtPLL] = 'h1800_4000;
     ret.RegExtRegionIdx[CshRegLPDDR] = CshRegLPDDR;
     // LPDDR registers occupy the existing external non-idempotent region.
     ret.RegExtRegionStart[CshRegLPDDR] = gwaihir_addrmap_64b_addrmap_pkg::CHESHIRE_LPDDR_BASE_ADDR;
