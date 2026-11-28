@@ -8,7 +8,7 @@
 
 `include "hci_helpers.svh"
 
-// Splits a DW-bit HCI-Core transaction into NB_OUT_CHAN Snitch TCDM bus plugs. Each plug commits
+// Splits a DW-bit HCI-Core transaction into NB_OUT_CHAN Snitch TCDM ports. Each port commits
 // on its own q_ready, and gnt rises once all are committed. r_valid is a one-cycle pulse one cycle
 // after gnt. The accelerator must not issue a new req before r_valid.
 
@@ -39,12 +39,12 @@ module konark_tcdm_split
   // Request path
   // ---------------------------------------------------------------------------
 
-  // Plugs granted in an earlier cycle; their requests stay off until gnt.
+  // Ports granted in an earlier cycle; their requests stay off until gnt.
   logic [NB_OUT_CHAN-1:0] sub_granted_q;
 
   logic [NB_OUT_CHAN-1:0] chan_req;  // q_valid forwarded to each bank
   logic [NB_OUT_CHAN-1:0] chan_gnt;  // q_ready from each bank
-  logic [NB_OUT_CHAN-1:0] chan_committed;  // plug committed this cycle
+  logic [NB_OUT_CHAN-1:0] chan_committed;  // port committed this cycle
 
   for (genvar ii = 0; ii < NB_OUT_CHAN; ii++) begin : gen_req_binding
     assign chan_req[ii]       = tcdm_target.req & ~sub_granted_q[ii];
@@ -61,7 +61,7 @@ module konark_tcdm_split
     assign tcdm_req_o[ii].q.user  = '0;
   end
 
-  // Grant to accelerator only when every plug has been committed to its bank.
+  // Grant to accelerator only when every port has been committed to its bank.
   assign tcdm_target.gnt = tcdm_target.req & (&chan_committed);
 
   // Accumulate partial grants; cleared when all committed or on req drop.

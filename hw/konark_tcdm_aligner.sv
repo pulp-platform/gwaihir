@@ -11,7 +11,7 @@
 
 module konark_tcdm_aligner
   import hci_package::*;
-  import gwaihir_pkg::tcdm_plugs;
+  import gwaihir_pkg::wide_tcdm_ports;
 #(
   parameter type         tcdm_req_t          = logic,
   parameter type         tcdm_rsp_t          = logic,
@@ -23,19 +23,21 @@ module konark_tcdm_aligner
 
   // Dependent parameters: do not modify!
   localparam int unsigned ByteWidth = 8,
-  localparam int unsigned NumPlugs = tcdm_plugs(DATA_WIDTH, SB_WIDTH, MISALIGNED_ACCESSES == 1),
+  localparam int unsigned NumWidePorts = wide_tcdm_ports(
+      DATA_WIDTH, SB_WIDTH, MISALIGNED_ACCESSES == 1
+  ),
   // SB_WIDTH has to be power of 2!
   localparam int unsigned SbAddrBits = $clog2(SB_WIDTH / ByteWidth),
   localparam logic [ADDR_WIDTH-1:0] SbAddrMask = {
     {ADDR_WIDTH - SbAddrBits{1'b1}}, {SbAddrBits{1'b0}}
   },
-  localparam int unsigned AlignedDW = NumPlugs * SB_WIDTH  // Full aligned window width [bits]
+  localparam int unsigned AlignedDW = NumWidePorts * SB_WIDTH  // Full aligned window width [bits]
 ) (
-  input  logic                        clk_i,
-  input  logic                        rst_ni,
-         hci_core_intf                tcdm_misaligned,
-  output tcdm_req_t    [NumPlugs-1:0] tcdm_req_aligned_o,
-  input  tcdm_rsp_t    [NumPlugs-1:0] tcdm_rsp_aligned_i
+  input  logic                            clk_i,
+  input  logic                            rst_ni,
+         hci_core_intf                    tcdm_misaligned,
+  output tcdm_req_t    [NumWidePorts-1:0] tcdm_req_aligned_o,
+  input  tcdm_rsp_t    [NumWidePorts-1:0] tcdm_rsp_aligned_i
 );
 
   logic [SbAddrBits-1:0] sb_offset_d, sb_offset_q;
@@ -93,11 +95,11 @@ module konark_tcdm_aligner
   assign tcdm_aligned_wide.ereq     = '0;
   assign tcdm_aligned_wide.r_eready = '1;
 
-  // Split the aligned window into NumPlugs superbank-width ports.
+  // Split the aligned window into one wide TCDM port per superbank.
   konark_tcdm_split #(
     .DW                  (AlignedDW),
     .BW                  (ByteWidth),
-    .NB_OUT_CHAN         (NumPlugs),
+    .NB_OUT_CHAN         (NumWidePorts),
     .tcdm_req_t          (tcdm_req_t),
     .tcdm_rsp_t          (tcdm_rsp_t),
     .HCI_SIZE_tcdm_target(HCI_SIZE_tcdm_aligned_wide)

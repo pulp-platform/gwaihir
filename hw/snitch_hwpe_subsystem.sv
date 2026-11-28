@@ -10,7 +10,7 @@ module snitch_hwpe_subsystem
   import hwpe_ctrl_package::*;
   import lsu_pkg::amo_op_e;
   import gwaihir_pkg::hwpe_acc_e;
-  import gwaihir_pkg::tcdm_plugs;
+  import gwaihir_pkg::wide_tcdm_ports;
 #(
   parameter type tcdm_req_t   = logic,
   parameter type tcdm_rsp_t   = logic,
@@ -26,19 +26,21 @@ module snitch_hwpe_subsystem
   parameter hwpe_acc_e Accelerator = gwaihir_pkg::HwpeMxCore,
   parameter bit UseDatamover = 1'b1,
   // Dependent parameters: do not modify!
-  // The datamover moves one superbank of data per beat. Each HWPE takes its own plugs if there is a
-  // datamover or if the accelerator is wider than a superbank.
-  localparam bit SplitPlugs = UseDatamover || (HwpeDataWidth > SbWidth),
+  // The datamover moves one superbank of data per beat. Each HWPE takes its own wide TCDM ports
+  // if there is a datamover or if the accelerator is wider than a superbank.
+  localparam bit SplitPorts = UseDatamover || (HwpeDataWidth > SbWidth),
   // A misaligned datamover port carries one bank word more than its data.
   localparam int unsigned DmaDataWidth = SbWidth + (MisalignedAccesses ?
       datamover_pkg::ElemsPerWord * datamover_pkg::ElemWidth : 0),
-  localparam int unsigned AccPlugs = tcdm_plugs(HwpeDataWidth, SbWidth, MisalignedAccesses == 1),
-  localparam int unsigned DmaPlugs = UseDatamover ? tcdm_plugs(
+  localparam int unsigned AccWidePorts = wide_tcdm_ports(
+      HwpeDataWidth, SbWidth, MisalignedAccesses == 1
+  ),
+  localparam int unsigned DmaWidePorts = UseDatamover ? wide_tcdm_ports(
       DmaDataWidth, SbWidth, MisalignedAccesses == 1
   ) : 0,
-  localparam int unsigned NumTcdmPlugs = SplitPlugs ? AccPlugs + DmaPlugs : 1,
-  // The exposed wide TCDM port count of the cluster config. It must equal NumTcdmPlugs.
-  parameter int unsigned NumTcdmPorts = NumTcdmPlugs
+  localparam int unsigned HwpeWidePorts = SplitPorts ? AccWidePorts + DmaWidePorts : 1,
+  // The exposed wide TCDM port count of the cluster config. It must equal HwpeWidePorts.
+  parameter int unsigned NumTcdmPorts = HwpeWidePorts
 ) (
   input logic clk_i,
   input logic rst_ni,
@@ -81,12 +83,12 @@ module snitch_hwpe_subsystem
                "The control registers must fit in one slot")
 
   // Fails at elaboration, so simulation, lint and synthesis all stop on a mismatch.
-  if (NumTcdmPorts != NumTcdmPlugs) begin : gen_tcdm_port_mismatch
+  if (NumTcdmPorts != HwpeWidePorts) begin : gen_tcdm_port_mismatch
     $fatal(
         1,
         "[snitch_hwpe_subsystem] %0d wide TCDM ports, but the HWPEs need %0d.",
         NumTcdmPorts,
-        NumTcdmPlugs
+        HwpeWidePorts
     );
   end
 
@@ -126,7 +128,7 @@ module snitch_hwpe_subsystem
     .clk(clk_i)
   );
 
-  if (SplitPlugs) begin : gen_acc_plugs
+  if (SplitPorts) begin : gen_acc_ports
     konark_tcdm_aligner #(
       .tcdm_req_t         (tcdm_req_t),
       .tcdm_rsp_t         (tcdm_rsp_t),
@@ -138,10 +140,10 @@ module snitch_hwpe_subsystem
       .clk_i,
       .rst_ni,
       .tcdm_misaligned   (tcdm_acc),
-      .tcdm_req_aligned_o(tcdm_req_o[0+:AccPlugs]),
-      .tcdm_rsp_aligned_i(tcdm_rsp_i[0+:AccPlugs])
+      .tcdm_req_aligned_o(tcdm_req_o[0+:AccWidePorts]),
+      .tcdm_rsp_aligned_i(tcdm_rsp_i[0+:AccWidePorts])
     );
-  end else begin : gen_acc_plug
+  end else begin : gen_acc_port
     // request channel
     assign tcdm_req_o[0].q_valid = tcdm_acc.req;
     assign tcdm_req_o[0].q.addr  = tcdm_acc.add;
@@ -346,8 +348,8 @@ module snitch_hwpe_subsystem
       .clk_i,
       .rst_ni,
       .tcdm_misaligned   (tcdm_dma),
-      .tcdm_req_aligned_o(tcdm_req_o[AccPlugs+:DmaPlugs]),
-      .tcdm_rsp_aligned_i(tcdm_rsp_i[AccPlugs+:DmaPlugs])
+      .tcdm_req_aligned_o(tcdm_req_o[AccWidePorts+:DmaWidePorts]),
+      .tcdm_rsp_aligned_i(tcdm_rsp_i[AccWidePorts+:DmaWidePorts])
     );
   end
 

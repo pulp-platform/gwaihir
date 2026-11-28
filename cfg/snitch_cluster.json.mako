@@ -52,7 +52,8 @@
         cluster_base_expose: true,
         alias_region_enable: true,
         alias_region_base: 0x20440000,
-        // On the H tile, Surya and the datamover take 2 superbank plugs each (misaligned accesses).
+        // H tile: Surya and the datamover each need 2 wide TCDM ports. Their misaligned 576-bit
+        // accesses start at any 64-bit word and span 2 superbanks.
         num_exposed_wide_tcdm_ports: ${4 if name == "htile" else 1},
         narrow_axi_port_expose: true,
         collective_width: ${collective_width},
