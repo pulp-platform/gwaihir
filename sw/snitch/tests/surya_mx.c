@@ -16,8 +16,8 @@
 //
 // Build and run the test on the H tile:
 //   make sn-tests chs-sw-tests
-//   make vsim-run-batch CHS_BINARY=sw/cheshire/tests/simple_htile_offload.spm.elf
-//     SN_BINARY=sw/snitch/tests/build/surya_mx.elf PRELMODE=5
+//   make vsim-run-batch CHS_BINARY=sw/cheshire/tests/simple_htile_offload.spm.elf \
+//     SN_BINARY=sw/snitch/tests/build/htile/surya_mx.elf PRELMODE=3
 //
 // The Surya-MX model writes `data/surya_mx` for the package defaults of the
 // Surya-MX build. Run it in the Surya-MX checkout, keep the `.h` files, and add
@@ -119,8 +119,7 @@ static surya_task_config_t surya_tasks[NUM_TASKS];
     t->op_mode              = (surya_op_mode_t)TASK##i##_OP_MODE;             \
     t->pace                 = TASK##i##_PACE;                                 \
     t->accum_init_mode      = (surya_accum_init_mode_t)TASK##i##_ACCUM_INIT_MODE; \
-    t->a_signed             = TASK##i##_A_SIGNED;                             \
-    t->b_signed             = TASK##i##_B_SIGNED;                             \
+    t->compute              = TASK##i##_COMPUTE;                              \
     t->out_unsigned         = TASK##i##_OUT_UNSIGNED;                         \
     t->force_rr_priority    = TASK##i##_FORCE_RR_PRIORITY;                    \
     t->weight_ctx           = TASK##i##_WEIGHT_CTX;                           \

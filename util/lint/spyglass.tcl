@@ -16,6 +16,8 @@ set_option allow_module_override yes
 set_option designread_disable_flatten no
 set_option nopreserve yes
 set_parameter handle_large_bus yes
+# The datamover buffer has 32768-bit variables
+set_option mthresh 65536
 
 # Do not elaborate non-synthesizable modules
 set_option stop sram

@@ -197,14 +197,16 @@ packages:
     - register_interface
     - tech_cells_generic
   datamover:
-    revision: 5df9c9bd9e10ad020763c4291c571adf35ef4ae2
+    revision: 2e7ebf8dccdb0ea895f2d885e2c6e9dd1176337b
     version: null
     source:
       Git: https://github.com/pulp-platform/datamover.git
     dependencies:
+    - common_cells
     - hci
     - hwpe-ctrl
     - hwpe-stream
+    - ibex
   dram_rtl_sim:
     revision: 5566a81f2f745b5374d092208086aaf9ba6c9d75
     version: null
@@ -265,7 +267,7 @@ packages:
     - register_interface
     - tech_cells_generic
   hci:
-    revision: 3957551f964aab36454b1da322e5749f7cbb74e0
+    revision: f0cf413366fec3b0ad267a9a8f15361f0c859dba
     version: null
     source:
       Git: https://github.com/pulp-platform/hci.git
@@ -470,7 +472,7 @@ packages:
     - reqrsp_interface
     - tech_cells_generic
   surya-mx:
-    revision: 922ceb9ab8a84f3bc944d7599c6fe2af2e662a72
+    revision: 39aac3bf49ae9c74a153e737835203c9d2742169
     version: null
     source:
       Git: git@iis-git.ee.ethz.ch:visual-wakeup/surya-mx.git

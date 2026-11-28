@@ -14,5 +14,9 @@
 #include "gw_raw_addrmap_32b.h"
 #define SNRT_TCDM_START_ADDR GW_CLUSTER_TCDM_BASE_ADDR(0)
 
+#ifdef GW_HTILE_RUNTIME
+#include "htile_cfg.h"
+#else
 #include "snitch_cluster_cfg.h"
+#endif
 #include "start.S"
