@@ -156,6 +156,11 @@ TILE_FILE_WAIVERS = {
         ('STARC05-1.4.3.4',   r'/tech_cells_generic-[0-9a-f]+/'),
     ],
 
+    'h_tile': [
+        # the aligner of the 1088-bit Surya port has a mux with a 2048-bit input, above the limit
+        ('FLAT_504', r'konark_tcdm_aligner\.sv'),
+    ],
+
     'ucie_tile': [
         # blocking assignment in the T-flip-flops of the APB clock divider (intentional)
         ('W336', r'/common_cells-[0-9a-f]+/src/cc_clk_int_div\.sv'),

@@ -19,13 +19,14 @@
 //   make vsim-run-batch CHS_BINARY=sw/cheshire/tests/simple_htile_offload.spm.elf \
 //     SN_BINARY=sw/snitch/tests/build/htile/surya_mx.elf PRELMODE=3
 //
-// The Surya-MX model writes `data/surya_mx` for the package defaults of the
-// Surya-MX build. Run it in the Surya-MX checkout, keep the `.h` files, and add
-// the license header to each file:
+// The Surya-MX model writes `data/surya_mx` for the default geometry of
+// `surya_hwpe_cfg_pkg`. Run it in the Surya-MX checkout, keep the `.h` files,
+// and add the license header to each file:
 //   cd $(bender path surya-mx)
 //   python -m surya_model.workloads.cli --MX --M 128 --N 256 --P 128
-//     --NUM_ARRAYS 4 --ARRAY_N 32 --ARRAY_P 8 --N_ACCUM 32 --OPTIMAL_BW 1
-//     --ENABLE_PACE 0 --MX_FP_ADD 1 --MX_OUT_TRANSPOSE 1 --MX_OUT_INT8 --no-debug
+//     --NUM_ARRAYS 8 --ARRAY_N 64 --ARRAY_P 4 --N_ACCUM 32 --OPTIMAL_BW 1
+//     --ENABLE_PACE 0 --ENABLE_MXINT4 1 --MX_FP_ADD 1 --MX_OUT_TRANSPOSE 1
+//     --MX_OUT_INT8 --no-debug
 //     --output_dir <gwaihir>/sw/snitch/tests/data/surya_mx
 //
 // The accelerator sits in the `ext_mem` window of the cluster, after the zero
@@ -138,6 +139,8 @@ int main(void) {
   if (snrt_cluster_idx() != GW_HTILE_CLUSTER_IDX) return 0;
 
   if (snrt_is_dm_core()) {
+    // Use the top 128 KiB, so that the buffers sit above 128 KiB on a larger TCDM.
+    snrt_l1_alloc_cluster_local(SNRT_TCDM_SIZE - 0x20000, 64);
     SURYA_TASKS(TASK_ALLOC_AND_DMA)
     snrt_dma_wait_all();
   }
