@@ -13,9 +13,9 @@
 //      the clock. It returns the number of wrong 64-bit words and wrong bytes.
 //
 // Build and run the test on the H tile:
-//   make sn-tests
-//   make vsim-run-batch SN_BINARY=sw/snitch/tests/build/htile/datamover.elf \
-//     PRELMODE=5 OFFLOAD_HTILE=1
+//   make sn-tests chs-sw-tests
+//   make vsim-run-batch CHS_BINARY=sw/cheshire/tests/simple_htile_offload.spm.elf \
+//     SN_BINARY=sw/snitch/tests/build/htile/datamover.elf PRELMODE=3
 
 #include <stdint.h>
 
