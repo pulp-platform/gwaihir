@@ -33,11 +33,11 @@ module konark_tcdm_aligner
   },
   localparam int unsigned AlignedDW = NumWidePorts * SB_WIDTH  // Full aligned window width [bits]
 ) (
-  input  logic                            clk_i,
-  input  logic                            rst_ni,
-         hci_core_intf                    tcdm_misaligned,
-  output tcdm_req_t    [NumWidePorts-1:0] tcdm_req_aligned_o,
-  input  tcdm_rsp_t    [NumWidePorts-1:0] tcdm_rsp_aligned_i
+  input  logic                                   clk_i,
+  input  logic                                   rst_ni,
+         hci_core_intf.target                    tcdm_misaligned,
+  output tcdm_req_t           [NumWidePorts-1:0] tcdm_req_aligned_o,
+  input  tcdm_rsp_t           [NumWidePorts-1:0] tcdm_rsp_aligned_i
 );
 
   logic [SbAddrBits-1:0] sb_offset_d, sb_offset_q;
